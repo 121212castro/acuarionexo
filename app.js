@@ -4,6 +4,12 @@ const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
 const app = document.getElementById("app");
 document.getElementById("version").textContent = cfg.APP_VERSION;
 
+document.getElementById("refreshAppBtn")?.addEventListener("click", () => {
+  const url = new URL(window.location.href);
+  url.searchParams.set("v", Date.now().toString());
+  window.location.href = url.toString();
+});
+
 let session=null,user=null,currentAquarium=null;
 
 const $=id=>document.getElementById(id);
