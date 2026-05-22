@@ -7,12 +7,18 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>AcuarioNexo</title>
-  <link rel="manifest" href="manifest.webmanifest?v=23-05-nav2">
-  <link rel="apple-touch-icon" href="icon-512.png?v=23-05-nav2">
-  <link rel="icon" href="icon-512.png?v=23-05-nav2">
-  <link rel="stylesheet" href="styles.css?v=23-05-nav2">
+  <link rel="manifest" href="manifest.webmanifest?v=23-05-nav3">
+  <link rel="apple-touch-icon" href="icon-512.png?v=23-05-nav3">
+  <link rel="icon" href="icon-512.png?v=23-05-nav3">
+  <link rel="stylesheet" href="styles.css?v=23-05-nav3">
+  <style>
+    body{background:#061426!important;color:#f6fbff!important;padding-bottom:90px!important}
+    .topbar{flex-wrap:nowrap!important;align-items:center!important;background:#07172b!important;gap:10px!important}
+    .brand-wrap{display:flex!important;align-items:center!important;gap:10px!important}.brand-logo{width:50px!important;height:50px!important;display:grid!important;place-items:center!important;font-size:30px!important}.topbar h1{font-size:34px!important}.topbar h1 span{color:#2f9bff!important}.connection-pill i{display:inline-block;width:9px;height:9px;border-radius:99px;background:#2ee87c;margin-right:5px}.top-actions{display:flex!important;gap:8px!important}.ghost{width:auto!important;min-width:68px!important;padding:9px 8px!important}.ghost small{display:block!important;font-size:11px!important}
+    .premium-nav{position:sticky!important;top:calc(86px + env(safe-area-inset-top))!important;z-index:70!important;margin:0 -10px 14px!important;padding:8px 10px!important;background:#051222!important;border-bottom:1px solid rgba(139,190,255,.24)!important;overflow:hidden!important}.premium-scroll{display:flex!important;flex-direction:row!important;gap:9px!important;overflow-x:auto!important;overflow-y:hidden!important;padding-bottom:7px!important;-webkit-overflow-scrolling:touch!important}.premium-scroll button{flex:0 0 86px!important;width:86px!important;min-width:86px!important;max-width:86px!important;min-height:72px!important;border-radius:18px!important;background:#102f4b!important;color:#eef8ff!important;border:1px solid rgba(150,210,255,.3)!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;padding:8px 6px!important}.premium-scroll button:first-child{background:#075adf!important}.premium-scroll span{font-size:25px!important}.premium-scroll small{font-size:12px!important;white-space:nowrap!important}.hero-premium,.premium-block,.quick-grid article,.dashboard-grid article{background:#0b2238!important;border:1px solid rgba(139,190,255,.24)!important;border-radius:22px!important;color:#f6fbff!important}.quick-grid{display:grid!important;grid-template-columns:repeat(2,1fr)!important;gap:10px!important}.aquarium-row{display:flex!important;gap:12px!important;overflow-x:auto!important}.aqua-card{flex:0 0 158px!important;background:#0b2238!important;border-radius:18px!important;color:white!important;overflow:hidden!important}.aqua-photo{height:90px!important;display:grid!important;place-items:center!important;background:#123e67!important}.dashboard-grid{display:grid!important;grid-template-columns:1fr!important;gap:12px!important}.bottom-nav{position:fixed!important;left:0!important;right:0!important;bottom:0!important;z-index:90!important;display:flex!important;gap:8px!important;padding:10px 8px calc(10px + env(safe-area-inset-bottom))!important;background:#03101e!important}.bottom-nav button{flex:1!important;width:auto!important;min-width:0!important;background:#0b2238!important;color:white!important;border-radius:18px!important}.bottom-nav small{display:block!important;font-size:12px!important}@media(max-width:430px){.brand-logo{display:none!important}}
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=23-05-nav2"></script>
+  <script src="config.js?v=23-05-nav3"></script>
 </head>
 <body>
   <header class="topbar premium-topbar">
@@ -21,27 +27,15 @@
   </header>
   <main id="app"></main>
   <script>
-    window.ACUARIONEXO_BUILD='23-05-nav2';
-    async function hardRefreshAcuarioNexo(){
-      try{
-        if('serviceWorker' in navigator){
-          const regs=await navigator.serviceWorker.getRegistrations();
-          await Promise.all(regs.map(r=>r.unregister()));
-        }
-        if(window.caches){
-          const names=await caches.keys();
-          await Promise.all(names.map(n=>caches.delete(n)));
-        }
-      }catch(e){}
-      location.replace(location.pathname+'?v='+Date.now());
-    }
+    window.ACUARIONEXO_BUILD='23-05-nav3';
+    async function hardRefreshAcuarioNexo(){try{if('serviceWorker' in navigator){const regs=await navigator.serviceWorker.getRegistrations();await Promise.all(regs.map(r=>r.unregister()))}if(window.caches){const names=await caches.keys();await Promise.all(names.map(n=>caches.delete(n)))}}catch(e){}location.replace(location.pathname+'?v='+Date.now())}
   </script>
-  <script src="measurement-schema.js?v=23-05-nav2"></script>
-  <script src="measurement-ai.js?v=23-05-nav2"></script>
-  <script src="measurement-engine.js?v=23-05-nav2"></script>
-  <script src="photo-ai.js?v=23-05-nav2"></script>
-  <script src="app.js?v=23-05-nav2"></script>
-  <script src="parameters-ui.js?v=23-05-nav2"></script>
-  <script src="premium-ui.js?v=23-05-nav2"></script>
+  <script src="measurement-schema.js?v=23-05-nav3"></script>
+  <script src="measurement-ai.js?v=23-05-nav3"></script>
+  <script src="measurement-engine.js?v=23-05-nav3"></script>
+  <script src="photo-ai.js?v=23-05-nav3"></script>
+  <script src="app.js?v=23-05-nav3"></script>
+  <script src="parameters-ui.js?v=23-05-nav3"></script>
+  <script src="premium-ui.js?v=23-05-nav3"></script>
 </body>
 </html>
