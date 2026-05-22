@@ -1,15 +1,19 @@
-# AcuarioNexo
+# AcuarioNexo Base Real V1
 
-Proyecto limpio nuevo.
+Base limpia conectada a Supabase.
 
-Reglas:
-- Sin /v0-final/
-- Sin scripts antiguos
-- Sin service worker
-- Sin manifest inicial
-- GitHub solo app ligera
-- Supabase para datos y fotos
-- Entrada principal: index.html
+Destino:
+- GitHub Pages para servir la app.
+- Supabase para datos y fotos.
+- Sin Vercel.
 
-Versión inicial:
-AcuarioNexo limpio 21-05-2026
+Prioridad:
+- acuario marino enfermo,
+- avisos críticos,
+- hospital/tratamientos,
+- parámetros,
+- animales,
+- inventario,
+- fotos,
+- historial,
+- IA contextual preparada.

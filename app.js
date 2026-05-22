@@ -4,192 +4,175 @@ const supa = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
 const app = document.getElementById("app");
 document.getElementById("version").textContent = cfg.APP_VERSION;
 
-document.getElementById("refreshAppBtn")?.addEventListener("click", () => {
-  const url = new URL(window.location.href);
-  url.searchParams.set("v", Date.now().toString());
-  window.location.href = url.toString();
+let user = null;
+let currentAquarium = null;
+
+const $ = id => document.getElementById(id);
+const esc = v => String(v ?? "").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
+const val = id => $(id)?.value?.trim() || "";
+const num = id => val(id)==="" ? null : Number(val(id));
+const checked = id => !!$(id)?.checked;
+const msg = (t,c="notice") => `<div class="${c}">${esc(t)}</div>`;
+const set = html => { app.innerHTML = html; scrollTo(0,0); };
+
+document.getElementById("refreshAppBtn")?.addEventListener("click",()=>{
+  const u = new URL(location.href);
+  u.searchParams.set("v", Date.now());
+  location.href = u.toString();
 });
 
-let session=null,user=null,currentAquarium=null;
-
-const $=id=>document.getElementById(id);
-const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"}[m]));
-const val=id=>$(id)?.value?.trim()||"";
-const num=id=>val(id)===""?null:Number(val(id));
-const bool=id=>$(id)?.checked||false;
-const msg=(t,c="notice")=>`<div class="${c}">${esc(t)}</div>`;
-const set=html=>{app.innerHTML=html;scrollTo(0,0)};
-const today=()=>new Date().toISOString().slice(0,10);
-
 async function init(){
-  const r=await supa.auth.getSession(); session=r.data.session; user=session?.user||null;
-  $("logoutBtn").classList.toggle("hidden",!user);
-  $("logoutBtn").onclick=async()=>{await supa.auth.signOut();currentAquarium=null;init()};
-  user?home():login();
+  const res = await supa.auth.getSession();
+  user = res.data.session?.user || null;
+  $("logoutBtn").classList.toggle("hidden", !user);
+  $("logoutBtn").onclick = async()=>{ await supa.auth.signOut(); user=null; currentAquarium=null; init(); };
+  user ? home() : login();
 }
-function login(){
-  set(`<section class="card"><h2>Entrar</h2><label>Email</label><input id="email" type="email"><label>Contrase√±a</label><input id="pass" type="password"><div class="grid"><button onclick="doLogin()">Entrar</button><button class="secondary" onclick="doSignup()">Crear cuenta</button></div><div id="m"></div></section>`);
-}
-async function doLogin(){const {error}=await supa.auth.signInWithPassword({email:val("email"),password:val("pass")}); if(error)$("m").innerHTML=msg(error.message,"error"); else init()}
-async function doSignup(){const {error}=await supa.auth.signUp({email:val("email"),password:val("pass")}); $("m").innerHTML=error?msg(error.message,"error"):msg("Cuenta creada. Si Supabase pide confirmaci√≥n, revisa el correo.","success")}
 
-async function upload(bucket,id){
-  const f=$(id)?.files?.[0]; if(!f)return null;
-  const ext=(f.name.split(".").pop()||"jpg").toLowerCase();
-  const path=`${user.id}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
-  const {error}=await supa.storage.from(bucket).upload(path,f);
-  if(error)throw error;
+function login(){
+  set(`<section class="card">
+    <h2>Entrar</h2>
+    <label>Email</label><input id="email" type="email">
+    <label>Contrase√±a</label><input id="pass" type="password">
+    <div class="grid2"><button class="primary" onclick="doLogin()">Entrar</button><button onclick="doSignup()">Crear cuenta</button></div>
+    <div id="m"></div>
+  </section>`);
+}
+async function doLogin(){
+  const {error} = await supa.auth.signInWithPassword({email:val("email"), password:val("pass")});
+  if(error) $("m").innerHTML = msg(error.message,"error"); else init();
+}
+async function doSignup(){
+  const {error} = await supa.auth.signUp({email:val("email"), password:val("pass")});
+  $("m").innerHTML = error ? msg(error.message,"error") : msg("Cuenta creada. Revisa el correo si Supabase pide confirmaci√≥n.","success");
+}
+
+async function upload(bucket, id){
+  const f = $(id)?.files?.[0];
+  if(!f) return null;
+  const ext = (f.name.split(".").pop()||"jpg").toLowerCase();
+  const path = `${user.id}/${Date.now()}-${Math.random().toString(16).slice(2)}.${ext}`;
+  const {error} = await supa.storage.from(bucket).upload(path, f, {upsert:false});
+  if(error) throw error;
   return supa.storage.from(bucket).getPublicUrl(path).data.publicUrl;
 }
-async function history(aq,table,id,action,summary,payload={}){
-  if(!user)return;
+
+async function hist(aq, table, id, action, summary, payload={}){
   await supa.from("history_events").insert({user_id:user.id,aquarium_id:aq,source_table:table,source_id:id,action,summary,payload});
 }
+
 function mainMenu(){
   return `<section class="card"><div class="grid">
     <button onclick="aquariums()">Acuarios</button>
+    <button onclick="alerts()">Avisos</button>
     <button onclick="inventory()">Inventario t√©cnico</button>
     <button onclick="library()">Biblioteca</button>
     <button onclick="microfauna()">Microfauna</button>
-    <button onclick="alerts()">Avisos</button>
-    <button onclick="treatmentsGlobal()">Hospital/Tratamientos</button>
+    <button onclick="hospitalGlobal()">Hospital/Tratamientos</button>
   </div></section>`;
 }
-function home(){currentAquarium=null;set(`${mainMenu()}<section class="card"><h2>Panel principal</h2><p>App real conectada a Supabase. Los datos se guardan online.</p><p class="small">${esc(user.email)}</p></section>`)}
+function home(){
+  currentAquarium=null;
+  set(`${mainMenu()}<section class="card"><h2>Panel principal</h2><p class="notice">Datos reales en Supabase. App base real V1.</p><p class="small">${esc(user.email)}</p></section>`);
+}
+
+function calcLiters(l,w,h){
+  if(!l||!w||!h) return null;
+  const r = Number(l)*Number(w)*Number(h)/1000;
+  return Number.isFinite(r) ? Math.round(r*100)/100 : null;
+}
+function refreshAquariumCalc(){
+  const dg = calcLiters(val("display_length_cm"),val("display_width_cm"),val("display_height_cm"));
+  const dr = val("display_manual_liters") ? Number(val("display_manual_liters")) : calcLiters(val("display_length_cm"),val("display_width_cm"),val("display_water_height_cm"));
+  const sr = checked("sump_enabled") ? calcLiters(val("sump_length_cm"),val("sump_width_cm"),val("sump_water_height_cm")) : null;
+  const au = checked("ato_enabled") ? calcLiters(val("ato_length_cm"),val("ato_width_cm"),val("ato_useful_height_cm")||val("ato_height_cm")) : null;
+  const disp = num("estimated_displacement_liters") || 0;
+  const total = Math.round(((dr||0)+(sr||0)-disp)*100)/100;
+  $("calcBox").innerHTML = msg(`Urna bruta: ${dg??"-"} L ¬∑ Urna real: ${dr??"-"} L ¬∑ Sump real: ${sr??"-"} L ¬∑ Relleno √∫til: ${au??"-"} L ¬∑ Total sistema para dosis: ${total||"-"} l`);
+}
 
 async function aquariums(){
   const {data,error}=await supa.from("aquariums").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
-  if(error)return set(mainMenu()+msg(error.message,"error"));
-  set(`${mainMenu()}<section class="card"><h2>Acuarios</h2><button onclick="aquariumForm()">+ Nuevo acuario completo</button><hr>${(data||[]).map(a=>`
-    <div class="item"><h3>${esc(a.name)}</h3><span class="badge">${esc(a.aquarium_type)}</span><span class="badge">${esc(a.subtype||"")}</span><p class="small">Real: ${esc(a.real_liters||"-")} L ¬∑ Bruto: ${esc(a.gross_liters||"-")} L ¬∑ Estado: ${esc(a.status)}</p>${a.cover_photo_url?`<img class="photo" src="${esc(a.cover_photo_url)}">`:""}<div class="grid"><button onclick="openAquarium('${a.id}')">Abrir</button><button class="danger" onclick="del('aquariums','${a.id}',aquariums)">Borrar</button></div></div>`).join("")||msg("Sin acuarios.")}</section>`);
+  if(error) return set(mainMenu()+msg(error.message,"error"));
+  set(`${mainMenu()}<section class="card"><h2>Acuarios</h2><button class="primary" onclick="aquariumForm()">+ Nuevo acuario completo</button><hr>
+  ${{(data||[]).map(a=>`<div class="item">
+    <h3>${esc(a.name)}</h3>
+    <span class="badge">${esc(a.aquarium_type)}</span><span class="badge">${esc(a.aquarium_subtype||"")}</span><span class="badge">${esc(a.status||"")}</span>
+    <p><b>Total real:</b> ${esc(a.total_real_liters??"-")} L ¬∑ <b>Urna:</b> ${esc(a.display_real_liters??"-")} L ¬∑ <b>Sump:</b> ${esc(a.sump_real_liters??"-")} L ¬∑ <b>Relleno:</b> ${esc(a.ato_useful_liters??"-")} L</p>
+    ${a.cover_photo_url?`<img class="photo" src="${esc(a.cover_photo_url)}">`:""}
+    <div class="grid2"><button onclick="openAquarium('${a.id}')">Abrir</button><button class="danger" onclick="del('aquariums','${a.id}',aquariums)">Borrar</button></div>
+  </div>`).join("") || msg("Sin acuarios.")}</section>`);
 }
+
 function aquariumForm(){
-  set(`<section class="card"><button class="secondary" onclick="aquariums()">‚Üê Volver</button><h2>Acuario completo</h2>
-  <div class="row"><div><label>Nombre</label><input id="name"></div><div><label>Tipo</label><select id="aquarium_type"><option value="reef">Reef</option><option value="marine">Marino</option><option value="freshwater">Dulce</option><option value="planted">Plantado</option><option value="breeding">Cr√≠a</option><option value="hospital">Hospital</option><option value="quarantine">Cuarentena</option><option value="other">Otro</option></select></div></div>
-  <label>Subtipo</label><input id="subtype" placeholder="SPS/LPS/blandos, comunitario, betta, cr√≠a...">
-  <h3>Medidas urna</h3><div class="row4"><div><label>Largo cm</label><input id="tank_length_cm" type="number"></div><div><label>Ancho cm</label><input id="tank_width_cm" type="number"></div><div><label>Alto cm</label><input id="tank_height_cm" type="number"></div><div><label>Relleno cm</label><input id="display_water_height_cm" type="number"></div></div>
-  <h3>Sump</h3><div class="row3"><div><label>Largo</label><input id="sump_length_cm" type="number"></div><div><label>Ancho</label><input id="sump_width_cm" type="number"></div><div><label>Alto agua</label><input id="sump_height_cm" type="number"></div></div>
-  <div class="row"><div><label>Litros brutos</label><input id="gross_liters" type="number"></div><div><label>Litros reales</label><input id="real_liters" type="number"></div></div>
-  <div class="row"><div><label>Fecha montaje</label><input id="mounted_at" type="date"></div><div><label>Inicio ciclado</label><input id="cycling_start_date" type="date"></div></div>
-  <label>Objetivos</label><textarea id="goals"></textarea><label>Estado</label><select id="status"><option value="active">Activo</option><option value="paused">Pausado</option><option value="archived">Archivado</option></select>
-  <label>Descripci√≥n</label><textarea id="description"></textarea><label>Foto portada</label><input id="photo" type="file" accept="image/*">
-  <button onclick="saveAquarium()">Guardar</button><div id="m"></div></section>`);
+  set(`<section class="card"><button onclick="aquariums()">‚Üë Volver</button><h2>Acuario completo</h2>
+    <h3>Identidad</h3>
+    <div class="grid2"><div><label>Nombre</label><input id="name"></div><div><label>Tipo</label><select id="aquarium_type"><option>marino</option><option>dulce</option><option>salobre</option><option>hospital</option><option>cuarentena</option><option>otro</option></select></div></div>
+    <label>Subtipo</label><input id="aquarium_subtype" placeholder="Reef, FOWLR, comunitario, cr√≠a...">
+    <div class="grid2"><div><label>Ubicaci√≥n</label><input id="location"></div><div><label>Estado</label><select id="status"><option>activo</option><option>ciclando</option><option>madurando</option><option>enfermo</option><option>tratamiento</option><option>cuarentena</option><option>desmontado</option></select></div></div>
+    <div class="grid2"><div><label>Fecha montaje</label><input id="setup_date" type="date"></div><div><label>Inicio ciclado</label><input id="cycling_start_date" type="date"></div></div>
+    <label>Objetivo</label><textarea id="objective"></textarea>
+    <h3>Urna principal</h3>
+    <div class="grid4">
+      <div><label>Largo cm</label><input id="display_length_cm" type="number" oninput="refreshAquariumCalc()"></div>
+      <div><label>Ancho cm</label><input id="display_width_cm" type="number" oninput="refreshAquariumCalc()"></div>
+      <div><label>Alto total cm</label><input id="display_height_cm" type="number" oninput="refreshAquariumCalc()"></div>
+      <div><label>Alto real agua cm</label><input id="display_water_height_cm" type="number" oninput="refreshAquariumCalc()"></div>
+    </div>
+    <div class="grid2"><div><label>Litros manuales corregidos</label><input id="display_manual_liters" type="number" oninput="refreshAquariumCalc()"></div><div><label>Desplazamiento roca/arena L</label><input id="estimated_displacement_liters" type="number" oninput="refreshAquariumCalc()"></div></div>
+    <h3>Sump</h3>
+    <label><input id="sump_enabled" type="checkbox" onchange="refreshAquariumCalc()"> Tiene sump</label>
+    <div class="grid4"><div><label>Largo</label><input id="sump_length_cm" type="number" oninput="refreshAquariumCalc()"></div><div><label>Ancho</label><input id="sump_width_cm" type="number" oninput="refreshAquariumCalc()"></div><div><label>Alto total</label><input id="sump_height_cm" type="number" oninput="refreshAquariumCalc()"></div><div><label>Alto agua</label><input id="sump_water_height_cm" type="number" oninput="refreshAquariumCalc()"></div></div>
+    <h3>Urna de relleno / ATO</h3>
+    <label><input id="ato_enabled" type="checkbox" onchange="refreshAquariumCalc()"> Tiene urna de relleno</label>
+    <div class="grid4"><div><label>Largo</label><input id="ato_length_cm" type="number" oninput="refreshAquariumCalc()"></div><div><label>Ancho</label><input id="ato_width_cm" type="number" oninput="refreshAquariumCalc()"></div><div><label>Alto</label><input id="ato_height_cm" type="number" oninput="refreshAquariumCalc()"></div><div><label>Alto √∫til</label><input id="ato_useful_height_cm" type="number" oninput="refreshAquariumCalc()"></div></div>
+    <div class="grid2"><div><label>Tipo agua relleno</label><input id="ato_water_type" placeholder="√≥smosis, salada..."></div><div><label>Evaporaci√≥n L/d√≠a</label><input id="ato_daily_evaporation_liters" type="number" oninput="refreshAquariumCalc()"></div></div>
+    <div id="calcBox">${msg("Introduce medidas para calcular litros autom√°ticamente.")}</div>
+    <h3>Objetivos</h3>
+    <div class="grid4"><div><label>Temp objetivo</label><input id="target_temperature_c" type="number"></div><div><label>Salinidad ppt</label><input id="target_salinity_ppt" type="number"></div><div><label>Densidad</label><input id="target_specific_gravity" type="number" step="0.001"></div><div><label>Foto portada</label><input id="photo" type="file" accept="image/*"></div></div>
+    <label>Descripci√≥n </label><textarea id="description"></textarea>
+    <button class="primary" onclick="saveAquarium()">Guardar acuario</button><div id="m"></div>
+  </section>`);
 }
+
 async function saveAquarium(){
   try{
-    const photo=await upload("aquarium-photos","photo");
-    const row={user_id:user.id,name:val("name"),aquarium_type:val("aquarium_type"),subtype:val("subtype"),tank_length_cm:num("tank_length_cm"),tank_width_cm:num("tank_width_cm"),tank_height_cm:num("tank_height_cm"),display_water_height_cm:num("display_water_height_cm"),sump_length_cm:num("sump_length_cm"),sump_width_cm:num("sump_width_cm"),sump_height_cm:num("sump_height_cm"),gross_liters:num("gross_liters"),real_liters:num("real_liters"),liters:num("real_liters"),mounted_at:val("mounted_at")||null,cycling_start_date:val("cycling_start_date")||null,start_date:val("mounted_at")||null,goals:val("goals"),status:val("status"),description:val("description"),cover_photo_url:photo,ai_summary:"Pendiente de analizar con datos reales."};
-    const {data,error}=await supa.from("aquariums").insert(row).select().single(); if(error)throw error;
-    await history(data.id,"aquariums",data.id,"create","Acuario creado",row); aquariums();
-  }catch(e){$("m").innerHTML=msg(e.message,"error")}
+    const photo = await upload("aquarium-photos","photo");
+    const row = {
+      user_id:user.id,name:val("name"),aquarium_type:val("aquarium_type"),aquarium_subtype:val("aquarium_subtype"),
+      status:val("status"),location:val("location"),setup_date:val("setup_date")||null,cycling_start_date:val("cycling_start_date")||null,
+      objective:val("objective"),description:val("description"),cover_photo_url:photo,
+      display_length_cm:num("display_length_cm"),display_width_cm:num("display_width_cm"),display_height_cm:num("display_height_cm"),display_water_height_cm:num("display_water_height_cm"),
+      display_manual_liters:num("display_manual_liters"),estimated_displacement_liters:num("estimated_displacement_liters"),
+      sump_enabled:checked("sump_enabled"),sump_length_cm:num("sump_length_cm"),sump_width_cm:num("sump_width_cm"),sump_height_cm:num("sump_height_cm"),sump_water_height_cm:num("sump_water_height_cm"),
+      ato_enabled:checked("ato_enabled"),ato_length_cm:num("ato_length_cm"),ato_width_cm:num("ato_width_cm"),ato_height_cm:num("ato_height_cm"),ato_useful_height_cm:num("ato_useful_height_cm"),ato_water_type:val("ato_water_type"),ato_daily_evaporation_liters:num("ato_daily_evaporation_liters"),
+      target_temperature_c:num("target_temperature_c"),target_salinity_ppt:num("target_salinity_ppt"),target_specific_gravity:num("target_specific_gravity"),
+      ai_summary:"Pendiente de datos reales para an√°lisis contextual.", ai_risk_level:"unknown"
+    };
+    const {data,error}=await supa.from("aquariums").insert(row).select().single();
+    if(error) throw error;
+    await hist(data.id,"aquariums",data.id,"create","Acuario creado",row);
+    aquariums();
+  }catch(e){ $("m").innerHTML = msg(e.message,"error"); }
 }
+
 async function openAquarium(id){
   const {data,error}=await supa.from("aquariums").select("*").eq("id",id).eq("user_id",user.id).single();
-  if(error)return set(msg(error.message,"error")); currentAquarium=data; aqPanel();
+  if(error) return set(msg(error.message,"error"));
+  currentAquarium=data; aquariumPanel();
 }
 function aqMenu(){
-  return `<section class="card"><button class="secondary" onclick="aquariums()">‚Üê Acuarios</button><h2>${esc(currentAquarium.name)}</h2><p class="small">${esc(currentAquarium.aquarium_type)} ¬∑ ${esc(currentAquarium.real_liters||currentAquarium.liters||"-")} L</p><div class="grid">
-  <button onclick="currentCard()">Ficha actual</button><button onclick="parameters()">Par√°metros</button><button onclick="animals()">Animales</button><button onclick="equipment()">Equipamiento</button><button onclick="usedInventory()">Inventario usado</button><button onclick="photos()">Fotos</button><button onclick="maintenance('cleaning')">Limpieza</button><button onclick="maintenance('maintenance')">Mantenimiento</button><button onclick="tasksAq()">Tareas</button><button onclick="historyAq()">Historial</button><button onclick="treatmentsAq()">Tratamientos/Hospital</button><button onclick="aiContext()">IA contexto</button></div></section>`;
+  return `<section class="card"><button onclick="aquariums()">‚Üê Acuarios</button><h2>${esc(currentAquarium.name)}</h2>
+  <p><b>Total:</b> ${esc(currentAquarium.total_real_liters??"-")} L ¬∑ <b>Urna:</b> ${esc(currentAquarium.display_real_liters??"-")} L ¬∑ <b>Sump:</b> ${esc(currentAquarium.sump_real_liters??"-")} L ¬∑ <b>Relleno:</b> ${esc(currentAquarium.ato_useful_liters??"-")} L</p>
+  <div class="grid">
+    <button onclick="parameters()">Par√°metros</button><button onclick="animals()">Animales</button><button onclick="hospital()">Hospital</button>
+    <button onclick="photos()">Fotos</button><button onclick="tasks()">Tareas</button><button onclick="historyView()">Historial</button>
+    <button onclick="aiContext()">IA contexto</button><button onclick="inventory()">Inventario</button><button onclick="home()">Principal</button>
+  </div></section>`;
 }
-function aqPanel(){set(aqMenu()+`<section class="card"><h2>Resumen</h2><p>${esc(currentAquarium.description||"")}</p><p class="notice">${esc(currentAquarium.ai_summary||"Sin resumen IA contextual.")}</p></section>`)}
-
-async function currentCard(){
- const {data}=await supa.from("aquarium_current_cards").select("*").eq("aquarium_id",currentAquarium.id).maybeSingle();
- set(aqMenu()+`<section class="card"><h2>Ficha actual</h2>${["summary","lighting","filtration","flow","substrate","rocks","salt_or_minerals","target_notes"].map(f=>`<label>${f}</label><textarea id="${f}">${esc(data?.[f]||"")}</textarea>`).join("")}<button onclick="saveCurrentCard('${data?.id||""}')">Guardar</button><div id="m"></div></section>`);
-}
-async function saveCurrentCard(id){
- const row={user_id:user.id,aquarium_id:currentAquarium.id,summary:val("summary"),lighting:val("lighting"),filtration:val("filtration"),flow:val("flow"),substrate:val("substrate"),rocks:val("rocks"),salt_or_minerals:val("salt_or_minerals"),target_notes:val("target_notes")};
- const q=id?supa.from("aquarium_current_cards").update(row).eq("id",id).select().single():supa.from("aquarium_current_cards").insert(row).select().single();
- const {data,error}=await q;if(error)return $("m").innerHTML=msg(error.message,"error");await history(currentAquarium.id,"aquarium_current_cards",data.id,id?"update":"create","Ficha actual guardada",row);$("m").innerHTML=msg("Guardado.","success")
-}
-
-async function parameters(){
- const {data,error}=await supa.from("parameters").select("*").eq("aquarium_id",currentAquarium.id).order("measured_at",{ascending:false}).limit(100);
- if(error)return set(aqMenu()+msg(error.message,"error"));
- set(aqMenu()+`<section class="card"><h2>Par√°metros completos</h2>
- <div class="row"><div><label>Fecha/hora</label><input id="measured_at" type="datetime-local"></div><div><label>M√©todo test</label><input id="test_method" placeholder="Hanna, JBL, Salifert..."></div></div>
- <div class="row3"><div><label>Marca kit</label><input id="test_kit_brand"></div><div><label>Lote</label><input id="test_kit_lot"></div><div><label>Comparador</label><select id="comparator"><option>=</option><option>&lt;</option><option>&gt;</option><option>&lt;=</option><option>&gt;=</option></select></div></div>
- <div class="row3"><div><label>Hanna F√≥sforo ULR ppb P</label><input id="hanna_phosphorus_ulr_ppb_p" type="number" step="0.01" oninput="calcPo4()"></div><div><label>PO4 ppm</label><input id="phosphate_po4" type="number" step="0.001"></div><div><label>NO3</label><input id="nitrate_no3" type="number" step="0.01"></div></div>
- <p id="calc" class="notice">Conversi√≥n Hanna: -</p>
- <div class="row4"><div><label>Temp ¬∞C</label><input id="temperature_c" type="number" step="0.1"></div><div><label>Salinidad ppt</label><input id="salinity_ppt" type="number" step="0.1"></div><div><label>Densidad</label><input id="specific_gravity" type="number" step="0.001"></div><div><label>pH</label><input id="ph" type="number" step="0.01"></div></div>
- <div class="row4"><div><label>KH</label><input id="kh_dkh" type="number" step="0.1"></div><div><label>NH3</label><input id="ammonia_nh3" type="number" step="0.01"></div><div><label>NO2</label><input id="nitrite_no2" type="number" step="0.01"></div><div><label>O2</label><input id="oxygen_o2" type="number" step="0.1"></div></div>
- <div class="row4"><div><label>Ca</label><input id="calcium_ca" type="number"></div><div><label>Mg</label><input id="magnesium_mg" type="number"></div><div><label>K</label><input id="potassium_k" type="number"></div><div><label>Fe</label><input id="iron_fe" type="number" step="0.01"></div></div>
- <div class="row3"><div><label>Iodo</label><input id="iodine_i" type="number" step="0.01"></div><div><label>Silicato</label><input id="silicate_sio2" type="number" step="0.01"></div><div><label>ORP mV</label><input id="orp_mv" type="number"></div></div>
- <label>Notas</label><textarea id="notes"></textarea><button onclick="saveParameters()">Guardar par√°metros</button><div id="m"></div><hr>
- <h3>Gr√°fica PO4 / NO3 / KH</h3><canvas id="chart" width="900" height="260"></canvas><hr>
- ${(data||[]).map(p=>`<div class="item"><h3>${new Date(p.measured_at).toLocaleString()}</h3><p class="small">${esc(p.test_method||"")} ${esc(p.comparator||"=")} ¬∑ PO4 ${esc(p.phosphate_po4??"-")} ¬∑ NO3 ${esc(p.nitrate_no3??"-")} ¬∑ KH ${esc(p.kh_dkh??"-")} ¬∑ pH ${esc(p.ph??"-")}</p><p>${esc(p.ai_interpretation||p.notes||"")}</p><button class="danger" onclick="del('parameters','${p.id}',parameters)">Borrar</button></div>`).join("")||msg("Sin par√°metros.")}</section>`);
- drawChart(data||[]);
-}
-function calcPo4(){const v=num("hanna_phosphorus_ulr_ppb_p");$("calc").textContent=v==null?"Conversi√≥n Hanna: -":`PO4 calculado: ${(v*3.066/1000).toFixed(4)} ppm`; if(v!=null && !val("phosphate_po4"))$("phosphate_po4").value=(v*3.066/1000).toFixed(4)}
-function interpretParams(r){let a=[];if(r.phosphate_po4>0.08)a.push("PO4 alto");if(r.nitrate_no3>25)a.push("NO3 alto");if(r.kh_dkh&& (r.kh_dkh<7||r.kh_dkh>9.5))a.push("KH fuera de zona estable");if(r.ammonia_nh3>0)a.push("amonio detectable");return a.length?a.join(", "):"Sin alerta principal con los datos introducidos."}
-async function saveParameters(){
- const fields=["temperature_c","salinity_ppt","specific_gravity","ph","kh_dkh","ammonia_nh3","nitrite_no2","nitrate_no3","phosphate_po4","hanna_phosphorus_ulr_ppb_p","calcium_ca","magnesium_mg","potassium_k","iodine_i","iron_fe","silicate_sio2","oxygen_o2","orp_mv"];
- const row={user_id:user.id,aquarium_id:currentAquarium.id,measured_at:val("measured_at")?new Date(val("measured_at")).toISOString():new Date().toISOString(),test_method:val("test_method"),test_kit_brand:val("test_kit_brand"),test_kit_lot:val("test_kit_lot"),comparator:val("comparator"),notes:val("notes")};
- fields.forEach(f=>row[f]=num(f)); if(row.hanna_phosphorus_ulr_ppb_p&&!row.phosphate_po4)row.phosphate_po4=Number((row.hanna_phosphorus_ulr_ppb_p*3.066/1000).toFixed(4));
- row.ai_interpretation=interpretParams(row); row.contextual_risk=row.ai_interpretation.includes("alto")||row.ai_interpretation.includes("detectable")?"medium":"low";
- const {data,error}=await supa.from("parameters").insert(row).select().single(); if(error)return $("m").innerHTML=msg(error.message,"error");
- await history(currentAquarium.id,"parameters",data.id,"create","Par√°metros guardados",row);parameters();
-}
-function drawChart(rows){const c=$("chart"); if(!c)return; const x=c.getContext("2d");x.clearRect(0,0,c.width,c.height);x.fillStyle="#64748b";x.fillText("Historial reciente",20,20);const arr=[...rows].reverse().slice(-20);["phosphate_po4","nitrate_no3","kh_dkh"].forEach((k,ki)=>{x.beginPath();arr.forEach((r,i)=>{let v=Number(r[k]);if(!isFinite(v))return;let px=40+i*(820/Math.max(1,arr.length-1));let py=230-Math.min(210,(v/(k=="kh_dkh"?15:k=="nitrate_no3"?50:.3))*210);i?x.lineTo(px,py):x.moveTo(px,py)});x.stroke();x.fillText(k,40,40+ki*16)})}
-
-async function animals(){
- const {data,error}=await supa.from("animals").select("*").eq("aquarium_id",currentAquarium.id).order("created_at",{ascending:false});
- if(error)return set(aqMenu()+msg(error.message,"error"));
- set(aqMenu()+`<section class="card"><h2>Animales completos</h2>
- <div class="row"><div><label>Nombre com√∫n</label><input id="common_name"></div><div><label>Nombre cient√≠fico</label><input id="scientific_name"></div></div>
- <div class="row3"><div><label>Categor√≠a</label><select id="category"><option value="fish">Pez</option><option value="coral">Coral</option><option value="invertebrate">Invertebrado</option><option value="crustacean">Crust√°ceo</option><option value="mollusk">Molusco</option><option value="plant">Planta</option><option value="algae">Alga</option><option value="other">Otro</option></select></div><div><label>Cantidad</label><input id="quantity" type="number" value="1"></div><div><label>Reef safe</label><select id="reef_safe"><option value="unknown">Desconocido</option><option value="yes">S√≠</option><option value="no">No</option><option value="caution">Con cuidado</option></select></div></div>
- <div class="row3"><div><label>D√≠a entrada</label><input id="acquisition_day" type="number" min="1" max="31"></div><div><label>Mes</label><input id="acquisition_month" type="number" min="1" max="12"></div><div><label>A√±o</label><input id="acquisition_year" type="number" min="1900" max="2200"></div></div>
- <label>Compatibilidad</label><textarea id="compatibility"></textarea><label>Alimentaci√≥n</label><textarea id="feeding"></textarea><label>Zona</label><input id="aquarium_zone"><label>Seguimiento / observaci√≥n</label><textarea id="observation_schedule"></textarea><label>Estado salud</label><input id="health_status"><label>Foto</label><input id="photo" type="file" accept="image/*"><label>Notas</label><textarea id="notes"></textarea>
- <button onclick="saveAnimal()">Guardar animal</button><div id="m"></div><hr>
- ${(data||[]).map(a=>`<div class="item"><h3>${esc(a.common_name)}</h3><p class="small">${esc(a.scientific_name||"")} ¬∑ ${esc(a.category||"")} ¬∑ ${esc(a.quantity)} ud ¬∑ reef safe: ${esc(a.reef_safe||"")}</p><p class="small">Entrada: ${esc([a.acquisition_day,a.acquisition_month,a.acquisition_year].filter(Boolean).join("/"))}</p>${a.photo_url?`<img class="photo" src="${esc(a.photo_url)}">`:""}<p>${esc(a.compatibility||"")}</p><p>${esc(a.feeding||"")}</p><button onclick="animalObservation('${a.id}')">A√±adir seguimiento</button> <button class="danger" onclick="del('animals','${a.id}',animals)">Borrar</button></div>`).join("")||msg("Sin animales.")}</section>`);
-}
-async function saveAnimal(){
- try{const photo=await upload("animal-photos","photo");const row={user_id:user.id,aquarium_id:currentAquarium.id,common_name:val("common_name"),scientific_name:val("scientific_name"),category:val("category"),quantity:num("quantity")||1,reef_safe:val("reef_safe"),acquisition_day:num("acquisition_day"),acquisition_month:num("acquisition_month"),acquisition_year:num("acquisition_year"),compatibility:val("compatibility"),feeding:val("feeding"),aquarium_zone:val("aquarium_zone"),observation_schedule:val("observation_schedule"),health_status:val("health_status"),photo_url:photo,notes:val("notes"),ai_notes:"IA contextual pendiente de suficientes datos."};const {data,error}=await supa.from("animals").insert(row).select().single();if(error)throw error;await history(currentAquarium.id,"animals",data.id,"create","Animal guardado",row);animals()}catch(e){$("m").innerHTML=msg(e.message,"error")}}
-function animalObservation(id){set(aqMenu()+`<section class="card"><h2>Seguimiento animal</h2><label>Apetito</label><input id="appetite"><label>Comportamiento</label><textarea id="behavior"></textarea><label>S√≠ntomas</label><textarea id="symptoms"></textarea><label>Foto</label><input id="photo" type="file" accept="image/*"><label>Notas</label><textarea id="notes"></textarea><button onclick="saveAnimalObservation('${id}')">Guardar seguimiento</button><div id="m"></div></section>`)}
-async function saveAnimalObservation(id){try{const photo=await upload("animal-photos","photo");const row={user_id:user.id,aquarium_id:currentAquarium.id,animal_id:id,appetite:val("appetite"),behavior:val("behavior"),symptoms:val("symptoms"),photo_url:photo,notes:val("notes"),ai_interpretation:val("symptoms")?"Revisar s√≠ntomas y evoluci√≥n.":"Seguimiento sin s√≠ntomas registrados."};const {data,error}=await supa.from("animal_observations").insert(row).select().single();if(error)throw error;await history(currentAquarium.id,"animal_observations",data.id,"create","Seguimiento animal",row);animals()}catch(e){$("m").innerHTML=msg(e.message,"error")}}
-
-async function inventory(){
- const {data,error}=await supa.from("inventory_items").select("*").eq("user_id",user.id).order("created_at",{ascending:false});
- if(error)return set(mainMenu()+msg(error.message,"error"));
- set(mainMenu()+`<section class="card"><h2>Inventario t√©cnico completo</h2>
- <div class="row3"><div><label>Producto</label><input id="name"></div><div><label>Marca</label><input id="brand"></div><div><label>Modelo</label><input id="model"></div></div>
- <div class="row4"><div><label>Categor√≠a</label><input id="category"></div><div><label>Cantidad</label><input id="quantity" type="number" step="0.1"></div><div><label>Unidad</label><input id="unit"></div><div><label>Stock m√≠nimo</label><input id="min_stock" type="number" step="0.1"></div></div>
- <div class="row4"><div><label>Compra</label><input id="purchase_date" type="date"></div><div><label>Tienda</label><input id="purchase_place"></div><div><label>Precio</label><input id="purchase_price" type="number" step="0.01"></div><div><label>Garant√≠a hasta</label><input id="warranty_until" type="date"></div></div>
- <label>Caducidad</label><input id="expiry_date" type="date"><label>URL fabricante/fuente</label><input id="source_url"><label>Manual URL/PDF</label><input id="manual_url"><label>Foto producto</label><input id="photo" type="file" accept="image/*"><label>Notas</label><textarea id="notes"></textarea>
- <button onclick="saveInventory()">Guardar inventario</button><div id="m"></div><hr>
- ${(data||[]).map(i=>`<div class="item"><h3>${esc(i.name)}</h3><p class="small">${esc(i.brand||"")} ${esc(i.model||"")} ¬∑ stock ${esc(i.quantity||"-")} ${esc(i.unit||"")} ¬∑ caduca ${esc(i.expiry_date||"-")}</p>${i.photo_url?`<img class="photo" src="${esc(i.photo_url)}">`:""}<p>${esc(i.ai_product_summary||"")}</p><button class="danger" onclick="del('inventory_items','${i.id}',inventory)">Borrar ficha mala</button></div>`).join("")||msg("Sin inventario.")}</section>`);
-}
-async function saveInventory(){try{const photo=await upload("inventory-photos","photo");const row={user_id:user.id,name:val("name"),brand:val("brand"),model:val("model"),category:val("category"),quantity:num("quantity"),unit:val("unit"),min_stock:num("min_stock"),purchase_date:val("purchase_date")||null,purchase_place:val("purchase_place"),purchase_price:num("purchase_price"),warranty_until:val("warranty_until")||null,expiry_date:val("expiry_date")||null,source_url:val("source_url"),manufacturer_url:val("source_url"),manual_url:val("manual_url"),source_checked_at:val("source_url")?new Date().toISOString():null,photo_url:photo,notes:val("notes"),ai_review_status:"manual",ai_product_summary:"Ficha manual pendiente de reconocimiento IA de producto/fabricante."};const {data,error}=await supa.from("inventory_items").insert(row).select().single();if(error)throw error;await history(null,"inventory_items",data.id,"create","Inventario guardado",row);inventory()}catch(e){$("m").innerHTML=msg(e.message,"error")}}
-
-function simpleForm(title,table,fields,bucket=null,scope="aq"){
- set((scope==="aq"?aqMenu():mainMenu())+`<section class="card"><h2>${esc(title)}</h2>${fields.map(f=>f.type==="textarea"?`<label>${f.label}</label><textarea id="${f.id}"></textarea>`:f.type==="select"?`<label>${f.label}</label><select id="${f.id}">${f.options.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join("")}</select>`:`<label>${f.label}</label><input id="${f.id}" type="${f.type||"text"}">`).join("")}${bucket?`<label>Foto/archivo</label><input id="photo" type="file">`:""}<button onclick='saveSimple(${JSON.stringify(title)},${JSON.stringify(table)},${JSON.stringify(fields)},${JSON.stringify(bucket)},${JSON.stringify(scope)})'>Guardar</button><div id="m"></div><hr><div id="list"></div></section>`); listSimple(title,table,fields,scope);
-}
-async function listSimple(title,table,fields,scope){
- let q=supa.from(table).select("*").eq("user_id",user.id).order("created_at",{ascending:false}); if(scope==="aq")q=q.eq("aquarium_id",currentAquarium.id);
- const {data,error}=await q;if(error){$("list").innerHTML=msg(error.message,"error");return}
- $("list").innerHTML=(data||[]).map(r=>`<div class="item"><h3>${esc(r.title||r.name||r.caption||r.culture_type||"Registro")}</h3><p>${esc(r.notes||r.diagnosis||r.description||"")}</p>${r.photo_url||r.public_url?`<img class="photo" src="${esc(r.photo_url||r.public_url)}">`:""}<button class="danger" onclick="del('${table}','${r.id}',()=>simpleForm('${title}','${table}',${JSON.stringify(fields).replaceAll('"','&quot;')},${JSON.stringify(null)},'${scope}'))">Borrar</button></div>`).join("")||msg("Sin registros.");
-}
-async function saveSimple(title,table,fields,bucket,scope){
- try{const row={user_id:user.id}; if(scope==="aq")row.aquarium_id=currentAquarium.id; fields.forEach(f=>row[f.id]=f.num?num(f.id):(f.date?(val(f.id)||null):val(f.id))); if(bucket){const u=await upload(bucket,"photo");row.photo_url=u;row.public_url=u;row.bucket=bucket;row.path=u||""} if(table==="maintenance_events"&&!row.event_type)row.event_type="other"; const {data,error}=await supa.from(table).insert(row).select().single();if(error)throw error;await history(scope==="aq"?currentAquarium.id:null,table,data.id,"create",`${title} guardado`,row);simpleForm(title,table,fields,bucket,scope)}catch(e){$("m").innerHTML=msg(e.message,"error")}}
-function equipment(){simpleForm("Equipamiento","equipment",[{id:"name",label:"Equipo"},{id:"brand",label:"Marca"},{id:"model",label:"Modelo"},{id:"category",label:"Categor√≠a"},{id:"serial_number",label:"N¬∫ serie"},{id:"installed_at",label:"Instalado",type:"date",date:true},{id:"notes",label:"Notas",type:"textarea"}],"inventory-photos","aq")}
-function usedInventory(){simpleForm("Inventario usado","aquarium_inventory_usage",[{id:"quantity",label:"Cantidad",type:"number",num:true},{id:"unit",label:"Unidad"},{id:"notes",label:"Notas",type:"textarea"}],null,"aq")}
-function photos(){simpleForm("Fotos","photos",[{id:"caption",label:"Descripci√≥n"},{id:"taken_at",label:"Fecha",type:"date",date:true}],"aquarium-photos","aq")}
-function maintenance(kind){simpleForm(kind==="cleaning"?"Limpieza":"Mantenimiento","maintenance_events",[{id:"event_type",label:"Tipo",type:"select",options:[[kind==="cleaning"?"cleaning":"filter",kind==="cleaning"?"Limpieza":"Mantenimiento"],["water_change","Cambio agua"],["calibration","Calibraci√≥n"],["dosing","Aditado"],["inspection","Inspecci√≥n"],["other","Otro"]]},{id:"title",label:"T√≠tulo"},{id:"performed_at",label:"Fecha",type:"datetime-local"},{id:"next_due_at",label:"Pr√≥xima",type:"datetime-local"},{id:"notes",label:"Notas",type:"textarea"}],null,"aq")}
-function tasksAq(){simpleForm("Tareas","tasks",[{id:"title",label:"Tarea"},{id:"task_type",label:"Tipo",type:"select",options:[["task","Tarea"],["expiry","Caducidad"],["low_stock","Stock bajo"],["culture","Cultivo"],["treatment","Tratamiento"],["maintenance","Mantenimiento"],["test","Test"]]},{id:"due_at",label:"Vence",type:"datetime-local"},{id:"priority",label:"Prioridad",type:"select",options:[["low","Baja"],["normal","Normal"],["high","Alta"],["urgent","Urgente"]]},{id:"notes",label:"Notas",type:"textarea"}],null,"aq")}
-function treatmentsAq(){treatmentForm("aq")} function treatmentsGlobal(){treatmentForm("global")}
-function treatmentForm(scope){simpleForm("Hospital / Tratamientos","treatments",[{id:"title",label:"Caso/tratamiento"},{id:"symptoms",label:"S√≠ntomas",type:"textarea"},{id:"diagnosis",label:"Diagn√≥stico",type:"textarea"},{id:"medication",label:"Medicamento"},{id:"dose",label:"Dosis"},{id:"dose_frequency",label:"Frecuencia"},{id:"started_at",label:"Inicio",type:"date",date:true},{id:"ended_at",label:"Fin",type:"date",date:true},{id:"evolution",label:"Evoluci√≥n",type:"textarea"},{id:"mortality_count",label:"Mortalidad",type:"number",num:true},{id:"notes",label:"Notas",type:"textarea"}],"hospital-photos",scope)}
-function library(){simpleForm("Biblioteca enciclopedia","library_entries",[{id:"title",label:"T√≠tulo"},{id:"scientific_name",label:"Nombre cient√≠fico"},{id:"category",label:"Categor√≠a"},{id:"description",label:"Ficha completa",type:"textarea"},{id:"compatibility",label:"Compatibilidad",type:"textarea"},{id:"diet",label:"Alimentaci√≥n"},{id:"reef_safe",label:"Reef safe"},{id:"references_text",label:"Referencias",type:"textarea"},{id:"source_url",label:"Fuente URL"}],"library-photos","global")}
-function microfauna(){simpleForm("Microfauna","microfauna_cultures",[{id:"culture_type",label:"Tipo",type:"select",options:[["fitoplancton","Fitoplancton"],["copepodos","Cop√©podos"],["rotiferos","Rot√≠feros"],["artemia","Artemia"],["infusorios","Infusorios"],["paramecios","Paramecios"],["other","Otro"]]},{id:"name",label:"Nombre cultivo"},{id:"container",label:"Recipiente"},{id:"volume_ml",label:"Volumen ml",type:"number",num:true},{id:"density",label:"Densidad"},{id:"contamination_status",label:"Contaminaci√≥n"},{id:"production_rate",label:"Producci√≥n"},{id:"started_at",label:"Inicio",type:"date",date:true},{id:"feeding_schedule",label:"Alimentaci√≥n",type:"textarea"},{id:"harvest_schedule",label:"Cosecha",type:"textarea"},{id:"next_action_at",label:"Pr√≥xima acci√≥n",type:"datetime-local"},{id:"notes",label:"Notas",type:"textarea"}],"microfauna-photos","global")}
-async function alerts(){
- const {data}=await supa.from("tasks").select("*").eq("user_id",user.id).order("due_at",{ascending:true});
- const now=new Date(); const groups={over:[],today:[],next:[],none:[]};
- (data||[]).forEach(t=>{if(!t.due_at)groups.none.push(t);else{const d=new Date(t.due_at);if(d<now&&t.status==="open")groups.over.push(t);else if(d.toDateString()===now.toDateString())groups.today.push(t);else groups.next.push(t)}});
- set(mainMenu()+`<section class="card"><h2>Avisos</h2>${["over","today","next","none"].map(k=>`<h3>${{over:"Vencidos",today:"Hoy",next:"Pr√≥ximos",none:"Sin fecha"}[k]}</h3>${groups[k].map(t=>`<div class="item"><h3>${esc(t.title)}</h3><p class="small">${esc(t.task_type)} ¬∑ ${esc(t.priority)} ¬∑ ${esc(t.due_at||"-")}</p></div>`).join("")||msg("Nada.")}`).join("")}</section>`)
-}
-async function historyAq(){const {data}=await supa.from("history_events").select("*").eq("aquarium_id",currentAquarium.id).order("created_at",{ascending:false}).limit(100);set(aqMenu()+`<section class="card"><h2>Historial</h2>${(data||[]).map(h=>`<div class="item"><h3>${esc(h.summary)}</h3><p class="small">${new Date(h.created_at).toLocaleString()} ¬∑ ${esc(h.source_table)} ¬∑ ${esc(h.action)}</p></div>`).join("")||msg("Sin historial.")}</section>`)}
-function aiContext(){set(aqMenu()+`<section class="card"><h2>IA contextual</h2><p class="notice">Motor contextual por m√≥dulo preparado en base de datos. Sin chatbot gen√©rico. En esta fase genera interpretaci√≥n local con datos del acuario; la IA externa se conecta despu√©s mediante Edge Function si se decide.</p><button onclick="buildLocalContext()">Generar resumen contextual local</button><div id="m"></div></section>`)}
-async function buildLocalContext(){const {data:p}=await supa.from("parameters").select("*").eq("aquarium_id",currentAquarium.id).order("measured_at",{ascending:false}).limit(1);const text=p?.[0]?interpretParams(p[0]):"No hay par√°metros todav√≠a.";await supa.from("aquarium_ai_contexts").insert({user_id:user.id,aquarium_id:currentAquarium.id,module:"global",context_summary:text,risk_level:text.includes("alto")?"medium":"low"});$("m").innerHTML=msg(text,"success")}
-async function del(table,id,cb){if(!confirm("¬øBorrar?"))return;await supa.from(table).delete().eq("id",id).eq("user_id",user.id);cb()}
-
-Object.assign(window,{doLogin,doSignup,home,aquariums,aquariumForm,saveAquarium,openAquarium,del,currentCard,saveCurrentCard,parameters,saveParameters,calcPo4,animals,saveAnimal,animalObservation,saveAnimalObservation,inventory,saveInventory,equipment,usedInventory,photos,maintenance,tasksAq,historyAq,treatmentsAq,treatmentsGlobal,library,microfauna,alerts,aiContext,buildLocalContext,saveSimple});
-init();
+function aquariumPanel(){ set(aqMenu()+`<section class="card"><h2>Ficha actual</h2><p>${esc(currentAquarium.description||"")}</p><p class="notice">${esc(currentAquarium.ai_summary||âM•∏Å%Å—ΩëÖ€µÑ∏à•ÙΩ¿¯ΩÕïç—•Ω∏˘Ä§ÏÅÙ()ÖÕÂπåÅô’πç—•Ω∏Å¡Ö…Öµï—ï…Ã†•Ï(ÄÅçΩπÕ–ÅÌëÖ—ÖÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†â¡Ö…Öµï—ï…}…ïÖë•πùÃà§πÕï±ïç–†à®à§πïƒ†âÖ≈’Ö…•’µ}•êà±ç’……ïπ—≈’Ö…•’¥π•ê§πΩ…ëï»†âµïÖÕ’…ïë}Ö–à±ÌÖÕçïπë•πúÈôÖ±ÕïÙ§π±•µ•–†‡¿§Ï(ÄÅÕï–°Ö≈5ïπ‘†§≠ÄÒÕïç—•Ω∏Åç±ÖÕÃÙâçÖ…êà¯Ò†»˘AÖÀÖµï—…ΩÃΩ†»¯(ÄÄÒë•ÿÅç±ÖÕÃÙâù…•ê»à¯Òë•ÿ¯Ò±Öâï∞˘AÖ…Öµï—…ºΩ±Öâï∞¯Ò•π¡’–Å•êÙâ¡Ö…Öµï—ï…}πÖµîàÅ¡±Öçï°Ω±ëï»ÙâA<–∞Å9<Ã∞Å- ∏∏∏à¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘Ωµ¡Ö…ÖëΩ»Ω±Öâï∞¯ÒÕï±ïç–Å•êÙâçΩµ¡Ö…Ö—Ω»à¯ÒΩ¡—•Ω∏¯ÙΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏¯ô±–ÏΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏¯ôù–ÏΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏¯ô±–ÏÙΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏¯ôù–ÏÙΩΩ¡—•Ω∏¯ΩÕï±ïç–¯Ωë•ÿ¯Ωë•ÿ¯(ÄÄÒë•ÿÅç±ÖÕÃÙâù…•ê»à¯Òë•ÿ¯Ò±Öâï∞˘YÖ±Ω»Ω±Öâï∞¯Ò•π¡’–Å•êÙâŸÖ±’îàÅ—Â¡îÙâπ’µâï»àÅÕ—ï¿Ùà¿∏¿¿ƒà¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘Uπ•ëÖêΩ±Öâï∞¯Ò•π¡’–Å•êÙâ’π•–àÅ¡±Öçï°Ω±ëï»Ùâ¡¡¥∞Åë- ∏∏∏à¯Ωë•ÿ¯Ωë•ÿ¯(ÄÄÒë•ÿÅç±ÖÕÃÙâù…•ê»à¯Òë•ÿ¯Ò±Öâï∞˘!ÖππÑÅÕÕôΩ…ºÅU1HÅ¡¡àÅ@Ω±Öâï∞¯Ò•π¡’–Å•êÙâ°ÖππÖ}¡°ΩÕ¡°Ω…’Õ}’±…}¡¡â}¿àÅ—Â¡îÙâπ’µâï»àÅÕ—ï¿Ùà¿∏¿ƒà¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘7•—ΩëºΩ—ïÕ–Ω±Öâï∞¯Ò•π¡’–Å•êÙâ—ïÕ—}µï—°Ωêà¯Ωë•ÿ¯Ωë•ÿ¯(ÄÄÒ±Öâï∞˘9Ω—ÖÃΩ±Öâï∞¯Ò—ï·—Ö…ïÑÅ•êÙâπΩ—ïÃà¯Ω—ï·—Ö…ïÑ¯Ò±Öâï∞˘Ω—ºÅ—ïÕ–Ω±Öâï∞¯Ò•π¡’–Å•êÙâ¡°Ω—ºàÅ—Â¡îÙâô•±îàÅÖççï¡–Ùâ•µÖùîº®à¯(ÄÄÒâ’——Ω∏Åç±ÖÕÃÙâ¡…•µÖ…‰àÅΩπç±•ç¨ÙâÕÖŸïAÖ…Öµï—ï»†§à˘’Ö…ëÖ»Å¡ÖÀÖµï—…ºΩâ’——Ω∏¯Òë•ÿÅ•êÙâ¥à¯Ωë•ÿ¯Ò°»¯(ÄÄëÏ°ëÖ—ÖÒÒmt§πµÖ¿°‡Ù˘ÄÒë•ÿÅç±ÖÕÃÙâ•—ï¥à¯Òà¯ëÌïÕå°‡π¡Ö…Öµï—ï…}πÖµî•ÙΩà¯ÄëÌïÕå°‡πçΩµ¡Ö…Ö—Ω»•ÙÄëÌïÕå°‡πŸÖ±’î¸¸à¥à•ÙÄëÌïÕå°‡π’π•—Òàà•ÙÒ¿Åç±ÖÕÃÙâÕµÖ±∞à¯ëÌπï‹ÅÖ—î°‡πµïÖÕ’…ïë}Ö–§π—Ω1ΩçÖ±ïM—…•πú†•ÙÉ
+‹ÄëÌïÕå°‡π—ïÕ—}µï—°ΩëÒàà•ÙΩ¿¯Ò¿¯ëÌïÕå°‡πÖ•}•π—ï…¡…ï—Ö—•ΩπÒÒ‡ππΩ—ïÕÒàà•ÙΩ¿¯Ωë•ÿ˘Ä§π©Ω•∏†àà•ÒÒµÕú†âM•∏Å¡ÖÀÖµï—…ΩÃ∏à•ÙΩÕïç—•Ω∏˘Ä§Ï)Ù)ÖÕÂπåÅô’πç—•Ω∏ÅÕÖŸïAÖ…Öµï—ï»†•Ï(ÄÅ—…ÂÏ(ÄÄÄÅçΩπÕ–Å¡°Ω—ºıÖ›Ö•–Å’¡±ΩÖê†â¡Ö…Öµï—ï»µ¡°Ω—ΩÃà∞â¡°Ω—ºà§Ï(ÄÄÄÅçΩπÕ–Å…Ω‹ıÌ’Õï…}•êÈ’Õï»π•ê±Ö≈’Ö…•’µ}•êÈç’……ïπ—≈’Ö…•’¥π•ê±Ö≈’Ö…•’µ}—Â¡ï}ÕπÖ¡Õ°Ω–Èç’……ïπ—≈’Ö…•’¥πÖ≈’Ö…•’µ}—Â¡î±¡Ö…Öµï—ï…}πÖµîÈŸÖ∞†â¡Ö…Öµï—ï…}πÖµîà§±çΩµ¡Ö…Ö—Ω»ÈŸÖ∞†âçΩµ¡Ö…Ö—Ω»à§±ŸÖ±’îÈπ’¥†âŸÖ±’îà§±’π•–ÈŸÖ∞†â’π•–à§±°ÖππÖ}¡°ΩÕ¡°Ω…’Õ}’±…}¡¡â}¿Èπ’¥†â°ÖππÖ}¡°ΩÕ¡°Ω…’Õ}’±…}¡¡â}¿à§±—ïÕ—}µï—°ΩêÈŸÖ∞†â—ïÕ—}µï—°Ωêà§±πΩ—ïÃÈŸÖ∞†âπΩ—ïÃà§±¡°Ω—Ω}’…∞È¡°Ω—º±Ö•}•π—ï…¡…ï—Ö—•Ω∏Ëâ%Å¡ïπë•ïπ—îÅëîÅç…’ÈÖ»ÅçΩ∏Å°•Õ”Õ…•çºÅ‰ÅÖπ•µÖ±ïÃ∏à±Ö•}Ö±ï…—}±ïŸï∞Ëâ’π≠πΩ›∏âÙÏ(ÄÄÄÅçΩπÕ–ÅÌëÖ—Ñ±ï……Ω…ÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†â¡Ö…Öµï—ï…}…ïÖë•πùÃà§π•πÕï…–°…Ω‹§πÕï±ïç–†§πÕ•πù±î†§ÏÅ•ò°ï……Ω»§Å—°…Ω‹Åï……Ω»Ï(ÄÄÄÅÖ›Ö•–Å°•Õ–°ç’……ïπ—≈’Ö…•’¥π•ê∞â¡Ö…Öµï—ï…}…ïÖë•πùÃà±ëÖ—Ñπ•ê∞âç…ïÖ—îà∞âAÖÀÖµï—…ºÅ…ïù•Õ—…Öëºà±…Ω‹§ÏÅ¡Ö…Öµï—ï…Ã†§Ï(ÄÅıçÖ—ç†°î•ÏÄê†â¥à§π•ππï…!Q50ıµÕú°îπµïÕÕÖùî∞âï……Ω»à§ÏÅÙ)Ù()ÖÕÂπåÅô’πç—•Ω∏ÅÖπ•µÖ±Ã†•Ï(ÄÅçΩπÕ–ÅÌëÖ—ÖÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†âÖπ•µÖ±Ãà§πÕï±ïç–†à®à§πïƒ†âÖ≈’Ö…•’µ}•êà±ç’……ïπ—≈’Ö…•’¥π•ê§πΩ…ëï»†âç…ïÖ—ïë}Ö–à±ÌÖÕçïπë•πúÈôÖ±ÕïÙ§Ï(ÄÅÕï–°Ö≈5ïπ‘†§≠ÄÒÕïç—•Ω∏Åç±ÖÕÃÙâçÖ…êà¯Ò†»˘π•µÖ±ïÃΩ†»¯(ÄÄÒë•ÿÅç±ÖÕÃÙâù…•ê»à¯Òë•ÿ¯Ò±Öâï∞˘Q•¡ºΩ±Öâï∞¯ÒÕï±ïç–Å•êÙâÖπ•µÖ±}—Â¡îà¯ÒΩ¡—•Ω∏˘¡ïËΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘çΩ…Ö∞ΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘•πŸï…—ïâ…ÖëºΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘ç…’Õ”ÖçïºΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘µΩ±’ÕçºΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘Ω—…ºΩΩ¡—•Ω∏¯ΩÕï±ïç–¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘Öπ—•ëÖêΩ±Öâï∞¯Ò•π¡’–Å•êÙâ≈’Öπ—•—‰àÅ—Â¡îÙâπ’µâï»àÅŸÖ±’îÙàƒà¯Ωë•ÿ¯Ωë•ÿ¯(ÄÄÒë•ÿÅç±ÖÕÃÙâù…•ê»à¯Òë•ÿ¯Ò±Öâï∞˘9Ωµâ…îÅçΩ∑È∏Ω±Öâï∞¯Ò•π¡’–Å•êÙâçΩµµΩπ}πÖµîà¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘9Ωµâ…îÅç•ïπ”µô•çºΩ±Öâï∞¯Ò•π¡’–Å•êÙâÕç•ïπ—•ô•ç}πÖµîà¯Ωë•ÿ¯Ωë•ÿ¯(ÄÄÒë•ÿÅç±ÖÕÃÙâù…•ê–à¯Òë•ÿ¯Ò±Öâï∞˘µÑΩ±Öâï∞¯Ò•π¡’–Å•êÙâïπ—…Â}ëÖ‰àÅ—Â¡îÙâπ’µâï»à¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘5ïÃΩ±Öâï∞¯Ò•π¡’–Å•êÙâïπ—…Â}µΩπ—†àÅ—Â¡îÙâπ’µâï»à¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘≈ºΩ±Öâï∞¯Ò•π¡’–Å•êÙâïπ—…Â}ÂïÖ»àÅ—Â¡îÙâπ’µâï»à¯Ωë•ÿ¯Òë•ÿ¯Ò±Öâï∞˘Õ—ÖëºΩ±Öâï∞¯ÒÕï±ïç–Å•êÙâÕ—Ö—’Ãà¯ÒΩ¡—•Ω∏˘Öç—•ŸºΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘ïπôï…µºΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘ΩâÕï…ŸÖçßÕ∏ΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘µ’ï…—ºΩΩ¡—•Ω∏¯ÒΩ¡—•Ω∏˘ëïÕÖ¡Ö…ïç•ëºΩΩ¡—•Ω∏¯ΩÕï±ïç–¯Ωë•ÿ¯Ωë•ÿ¯(ÄÄÒ±Öâï∞˘±•µïπ—ÖçßÕ∏Ω±Öâï∞¯Ò—ï·—Ö…ïÑÅ•êÙâôïïë•πúà¯Ω—ï·—Ö…ïÑ¯Ò±Öâï∞˘Ωµ¡Ö—•â•±•ëÖêΩ±Öâï∞¯Ò—ï·—Ö…ïÑÅ•êÙâçΩµ¡Ö—•â•±•—‰à¯Ω—ï·—Ö…ïÑ¯Ò±Öâï∞˘=âÕï…ŸÖç•ΩπïÃΩ±Öâï∞¯Ò—ï·—Ö…ïÑÅ•êÙâπΩ—ïÃà¯Ω—ï·—Ö…ïÑ¯(ÄÄÒ±Öâï∞˘Ω—ºΩ±Öâï∞¯Ò•π¡’–Å•êÙâ¡°Ω—ºàÅ—Â¡îÙâô•±îàÅÖççï¡–Ùâ•µÖùîº®à¯(ÄÄÒâ’——Ω∏Åç±ÖÕÃÙâ¡…•µÖ…‰àÅΩπç±•ç¨ÙâÕÖŸïπ•µÖ∞†§à˘’Ö…ëÖ»ÅÖπ•µÖ∞Ωâ’——Ω∏¯Òë•ÿÅ•êÙâ¥à¯Ωë•ÿ¯Ò°»¯(ÄÄëÌÏ°ëÖ—ÖÒÒmt§πµÖ¿°ÑÙ˘ÄÒë•ÿÅç±ÖÕÃÙâ•—ï¥à¯Ò†Ã¯ëÌïÕå°ÑπçΩµµΩπ}πÖµïÒâπ•µÖ∞à•ÙΩ†Ã¯Ò¿¯ëÌïÕå°ÑπÕç•ïπ—•ô•ç}πÖµïÒàà•ÙÉ
+‹ÄëÌïÕå°ÑπÕ—Ö—’ÕÒàà•ÙÉ
+‹ÄëÌïÕå°Ñπ≈’Öπ—•—‰•ÙÅ’ê∏Ω¿¯ëÌÑπ¡°Ω—Ω}’…∞˝ÄÒ•µúÅç±ÖÕÃÙâ¡°Ω—ºàÅÕ…åÙàëÌïÕå°Ñπ¡°Ω—Ω}’…∞•Ùà˘ÄËàâÙÒ¿¯ëÌïÕå°ÑπÖ•}çÖ…ï}Õ’µµÖ…ÂÒÒÑππΩ—ïÕÒàà•ÙΩ¿¯Ωë•ÿ˘Ä§π©Ω•∏†àà•ÒÒµÕú†âM•∏ÅÖπ•µÖ±ïÃ∏à•ÙΩÕïç—•Ω∏˘Ä§Ï)Ù)ÖÕÂπåÅô’πç—•Ω∏ÅÕÖŸïπ•µÖ∞†•Ï(ÄÅ—…ÂÏ(ÄÄÄÅçΩπÕ–Å¡°Ω—ºıÖ›Ö•–Å’¡±ΩÖê†âÖπ•µÖ∞µ¡°Ω—ΩÃà∞â¡°Ω—ºà§Ï(ÄÄÄÅçΩπÕ–Å…Ω‹ıÌ’Õï…}•êÈ’Õï»π•ê±Ö≈’Ö…•’µ}•êÈç’……ïπ—≈’Ö…•’¥π•ê±Öπ•µÖ±}—Â¡îÈŸÖ∞†âÖπ•µÖ±}—Â¡îà§±çΩµµΩπ}πÖµîÈŸÖ∞†âçΩµµΩπ}πÖµîà§±Õç•ïπ—•ô•ç}πÖµîÈŸÖ∞†âÕç•ïπ—•ô•ç}πÖµîà§±≈’Öπ—•—‰Èπ’¥†â≈’Öπ—•—‰à•Òƒ±ïπ—…Â}ëÖ‰Èπ’¥†âïπ—…Â}ëÖ‰à§±ïπ—…Â}µΩπ—†Èπ’¥†âïπ—…Â}µΩπ—†à§±ïπ—…Â}ÂïÖ»Èπ’¥†âïπ—…Â}ÂïÖ»à§±Õ—Ö—’ÃÈŸÖ∞†âÕ—Ö—’Ãà§±ôïïë•πúÈŸÖ∞†âôïïë•πúà§±çΩµ¡Ö—•â•±•—‰ÈŸÖ∞†âçΩµ¡Ö—•â•±•—‰à§±πΩ—ïÃÈŸÖ∞†âπΩ—ïÃà§±¡°Ω—Ω}’…∞È¡°Ω—º±Ö•}çÖ…ï}Õ’µµÖ…‰Ëâ%Å¡ïπë•ïπ—îÅëîÅ•ëïπ—•ô•çÖçßÕ∏Å¡Ω»ÅôΩ—ºΩô•ç°Ñ∏âÙÏ(ÄÄÄÅçΩπÕ–ÅÌëÖ—Ñ±ï……Ω…ÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†âÖπ•µÖ±Ãà§π•πÕï…–°…Ω‹§πÕï±ïç–†§πÕ•πù±î†§ÏÅ•ò°ï……Ω»§Å—°…Ω‹Åï……Ω»Ï(ÄÄÄÅÖ›Ö•–Å°•Õ–°ç’……ïπ—≈’Ö…•’¥π•ê∞âÖπ•µÖ±Ãà±ëÖ—Ñπ•ê∞âç…ïÖ—îà∞âπ•µÖ∞Å…ïù•Õ—…Öëºà±…Ω‹§ÏÅÖπ•µÖ±Ã†§Ï(ÄÅıçÖ—ç†°î•ÏÄê†â¥à§π•ππï…!Q50ıµÕú°îπµïÕÕÖùî∞âï……Ω»à§ÏÅÙ)Ù()ô’πç—•Ω∏ÅÕ•µ¡±ï5Ωë’±î°—•—±î∞Å—Öâ±î∞Åô•ï±ëÃ∞Åâ’ç≠ï–ıπ’±∞∞ÅÕçΩ¡îÙâÖ≈’Ö…•’¥à•Ï(ÄÅÕï–†°ÕçΩ¡îÙÙÙâÖ≈’Ö…•’¥à˝Ö≈5ïπ‘†§ÈµÖ•π5ïπ‘†§§≠ÄÒÕïç—•Ω∏Åç±ÖÕÃÙâçÖ…êà¯Ò†»¯ëÌïÕå°—•—±î•ÙΩ†»¯(ÄÄëÌô•ï±ëÃπµÖ¿°òÙ˘ÄÒ±Öâï∞¯ëÌïÕå°òπ±Öâï∞•ÙΩ±Öâï∞¯ëÌòπÖ…ïÑ˝ÄÒ—ï·—Ö…ïÑÅ•êÙàëÌòπ•ëÙà¯Ω—ï·—Ö…ïÑ˘ÄÈÄÒ•π¡’–Å•êÙàëÌòπ•ëÙàÅ—Â¡îÙàëÌòπ—Â¡ïÒâ—ï·–âÙà˘ÅıÄ§π©Ω•∏†àà•Ù(ÄÄëÌâ’ç≠ï–˝ÄÒ±Öâï∞˘Ω—ºΩ±Öâï∞¯Ò•π¡’–Å•êÙâ¡°Ω—ºàÅ—Â¡îÙâô•±îàÅÖççï¡–Ùâ•µÖùîº®à˘ÄËàâÙ(ÄÄÒâ’——Ω∏Åç±ÖÕÃÙâ¡…•µÖ…‰àÅΩπç±•ç¨ÙùÕÖŸïM•µ¡±î†ëÌ)M=8πÕ—…•πù•ô‰°—•—±î•Ù∞ëÌ)M=8πÕ—…•πù•ô‰°—Öâ±î•Ù∞ëÌ)M=8πÕ—…•πù•ô‰°ô•ï±ëÃ•Ù∞ëÌ)M=8πÕ—…•πù•ô‰°â’ç≠ï–•Ù∞ëÌ)M=8πÕ—…•πù•ô‰°ÕçΩ¡î•Ù§ú˘’Ö…ëÖ»Ωâ’——Ω∏¯Òë•ÿÅ•êÙâ¥à¯Ωë•ÿ¯Ò°»¯Òë•ÿÅ•êÙâ±•Õ–à¯Ωë•ÿ¯ΩÕïç—•Ω∏˘Ä§Ï(ÄÅ±•Õ—M•µ¡±î°—Öâ±î±ÕçΩ¡î§Ï)Ù)ÖÕÂπåÅô’πç—•Ω∏Å±•Õ—M•µ¡±î°—Öâ±î±ÕçΩ¡î•Ï(ÄÅ±ï–ÅƒıÕ’¡Ñπô…Ω¥°—Öâ±î§πÕï±ïç–†à®à§πïƒ†â’Õï…}•êà±’Õï»π•ê§πΩ…ëï»†âç…ïÖ—ïë}Ö–à±ÌÖÕçïπë•πúÈôÖ±ÕïÙ§Ï(ÄÅ•ò°ÕçΩ¡îÙÙÙâÖ≈’Ö…•’¥à§Åƒıƒπïƒ†âÖ≈’Ö…•’µ}•êà±ç’……ïπ—≈’Ö…•’¥π•ê§Ï(ÄÅçΩπÕ–ÅÌëÖ—Ñ±ï……Ω…ÙıÖ›Ö•–ÅƒÏ(ÄÅ•ò°ï……Ω»•ÏÄê†â±•Õ–à§π•ππï…!Q50ıµÕú°ï……Ω»πµïÕÕÖùî∞âï……Ω»à§ÏÅ…ï—’…∏ÏÅÙ(ÄÄê†â±•Õ–à§π•ππï…!Q50Ù°ëÖ—ÖÒÒmt§πµÖ¿°‡Ù˘ÄÒë•ÿÅç±ÖÕÃÙâ•—ï¥à¯Ò†Ã¯ëÌïÕå°‡π—•—±ïÒÒ‡π¡…Ωë’ç—}πÖµïÒÒ‡πç’±—’…ï}—Â¡ïÒÒ‡πëïÕç…•¡—•ΩπÒÒ‡π°Ω—Ω}—Â¡ïÒâIïù•Õ—…ºà•ÙΩ†Ã¯Ò¿¯ëÌïÕå°‡πëïÕç…•¡—•ΩπÒÒ‡πçÖ¡—•ΩπÒÒ‡ππΩ—ïÕÒÒ‡πÕÂµ¡—ΩµÕÒÒ‡πÖ•}Õ’µµÖ…ÂÒàà•ÙΩ¿¯ëÌ‡π¡°Ω—Ω}’…∞˝ÄÒ•µúÅç±ÖÕÃÙâ¡°Ω—ºàÅÕ…åÙàëÌïÕå°‡π¡°Ω—Ω}’…∞•Ùà˘ÄËàâÙΩë•ÿ˘Ä§π©Ω•∏†àà•ÒÒµÕú†âM•∏Å…ïù•Õ—…ΩÃ∏à§Ï)Ù)ÖÕÂπåÅô’πç—•Ω∏ÅÕÖŸïM•µ¡±î°—•—±î±—Öâ±î±ô•ï±ëÃ±â’ç≠ï–±ÕçΩ¡î•Ï(ÄÅ—…ÂÏ(ÄÄÄÅçΩπÕ–Å…Ω‹ıÌ’Õï…}•êÈ’Õï»π•ëÙÏ(ÄÄÄÅ•ò°ÕçΩ¡îÙÙÙâÖ≈’Ö…•’¥à§Å…Ω‹πÖ≈’Ö…•’µ}•êıç’……ïπ—≈’Ö…•’¥π•êÏ(ÄÄÄÅô•ï±ëÃπôΩ…Öç†°òÙ˘…Ω›mòπ•ëtıòππ’¥˝π’¥°òπ•ê§ÈŸÖ∞°òπ•ê§§Ï(ÄÄÄÅ•ò°â’ç≠ï–§Å…Ω‹π¡°Ω—Ω}’…∞ıÖ›Ö•–Å’¡±ΩÖê°â’ç≠ï–∞â¡°Ω—ºà§Ï(ÄÄÄÅçΩπÕ–ÅÌëÖ—Ñ±ï……Ω…ÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥°—Öâ±î§π•πÕï…–°…Ω‹§πÕï±ïç–†§πÕ•πù±î†§ÏÅ•ò°ï……Ω»§Å—°…Ω‹Åï……Ω»Ï(ÄÄÄÅÖ›Ö•–Å°•Õ–°ÕçΩ¡îÙÙÙâÖ≈’Ö…•’¥à˝ç’……ïπ—≈’Ö…•’¥π•êÈπ’±∞±—Öâ±î±ëÖ—Ñπ•ê∞âç…ïÖ—îà±ÄëÌ—•—±ïÙÅù’Ö…ëÖëΩÄ±…Ω‹§Ï(ÄÄÄÅÕ•µ¡±ï5Ωë’±î°—•—±î±—Öâ±î±ô•ï±ëÃ±â’ç≠ï–±ÕçΩ¡î§Ï(ÄÅıçÖ—ç†°î•ÏÄê†â¥à§π•ππï…!Q50ıµÕú°îπµïÕÕÖùî∞âï……Ω»à§ÏÅÙ)Ù()ô’πç—•Ω∏Å°ΩÕ¡•—Ö∞†•ÌÕ•µ¡±ï5Ωë’±î†â!ΩÕ¡•—Ö∞ÄºÅQ…Ö—Öµ•ïπ—ΩÃà∞â°ΩÕ¡•—Ö±}çÖÕïÃà±mÌ•êËâ—•—±îà±±Öâï∞ËâSµ—’±ºâÙ±Ì•êËâÕÂµ¡—ΩµÃà±±Öâï∞ËâOπ—ΩµÖÃà±Ö…ïÑÈ—…’ïÙ±Ì•êËâÕ’Õ¡ïç—ïë}ë•ÖùπΩÕ•Ãà±±Öâï∞Ëâ•ÖùªÕÕ—•çºÅÕΩÕ¡ïç°Öëºà±Ö…ïÑÈ—…’ïÙ±Ì•êËâÕïŸï…•—‰à±±Öâï∞Ëâ…ÖŸïëÖêâÙ±Ì•êËâπΩ—ïÃà±±Öâï∞Ëâ9Ω—ÖÃà±Ö…ïÑÈ—…’ïıt∞â°ΩÕ¡•—Ö∞µ¡°Ω—ΩÃà§ÌÙ)ô’πç—•Ω∏Å¡°Ω—ΩÃ†•ÌÕ•µ¡±ï5Ωë’±î†âΩ—ΩÃà∞â¡°Ω—ΩÃà±mÌ•êËâ¡°Ω—Ω}—Â¡îà±±Öâï∞ËâQ•¡ºâÙ±Ì•êËâçÖ¡—•Ω∏à±±Öâï∞Ëâ9Ω—ÖÃà±Ö…ïÑÈ—…’ïÙ±Ì•êËâ—ÖùÃà±±Öâï∞Ëâ—•≈’ï—ÖÃâıt∞âÖ≈’Ö…•’¥µ¡°Ω—ΩÃà§ÌÙ)ô’πç—•Ω∏Å—ÖÕ≠Ã†•ÌÕ•µ¡±ï5Ωë’±î†âQÖ…ïÖÃà∞â—ÖÕ≠Ãà±mÌ•êËâ—ÖÕ≠}—Â¡îà±±Öâï∞ËâQ•¡ºâÙ±Ì•êËâ—•—±îà±±Öâï∞ËâSµ—’±ºâÙ±Ì•êËâπΩ—ïÃà±±Öâï∞Ëâ9Ω—ÖÃà±Ö…ïÑÈ—…’ïÙ±Ì•êËâë’ï}Ö–à±±Öâï∞Ëâïç°ÑΩ°Ω…Ñà±—Â¡îËâëÖ—ï—•µîµ±ΩçÖ∞âıt±π’±∞§ÌÙ)ô’πç—•Ω∏Å•πŸïπ—Ω…‰†•ÌÕ•µ¡±ï5Ωë’±î†â%πŸïπ—Ö…•ºÅ”•çπ•çºà∞â•πŸïπ—Ω…Â}¡…Ωë’ç—Ãà±mÌ•êËâ¡…Ωë’ç—}πÖµîà±±Öâï∞ËâA…Ωë’ç—ºâÙ±Ì•êËââ…Öπêà±±Öâï∞Ëâ5Ö…çÑâÙ±Ì•êËâçÖ—ïùΩ…‰à±±Öâï∞ËâÖ—ïùΩÀµÑâÙ±Ì•êËâ≈’Öπ—•—Â}ç’……ïπ–à±±Öâï∞ËâÖπ—•ëÖêà±π’¥È—…’ïÙ±Ì•êËâ≈’Öπ—•—Â}’π•–à±±Öâï∞ËâUπ•ëÖêâÙ±Ì•êËâï·¡•…Ö—•Ωπ}ëÖ—îà±±Öâï∞ËâÖë’ç•ëÖêà±—Â¡îËâëÖ—îâÙ±Ì•êËâëΩÕÖùîà±±Öâï∞ËâΩÕ•Ãà±Ö…ïÑÈ—…’ïÙ±Ì•êËâ›Ö…π•πùÃà±±Öâï∞ËâŸ•ÕΩÃà±Ö…ïÑÈ—…’ïÙ±Ì•êËâµÖπ’ôÖç—’…ï…}’…∞à±±Öâï∞Ëâ’ïπ—îÅôÖâ…•çÖπ—îâıt∞â¡…Ωë’ç–µ¡°Ω—ΩÃà∞âù±ΩâÖ∞à§ÌÙ)ô’πç—•Ω∏Åµ•ç…ΩôÖ’πÑ†•ÌÕ•µ¡±ï5Ωë’±î†â5•ç…ΩôÖ’πÑà∞âµ•ç…ΩôÖ’πÖ}ç’±—’…ïÃà±mÌ•êËâç’±—’…ï}—Â¡îà±±Öâï∞ËâQ•¡ºÅç’±—•ŸºâÙ±Ì•êËâÕ—…Ö•π}Õ¡ïç•ïÃà±±Öâï∞Ëâï¡ÑΩïÕ¡ïç•îâÙ±Ì•êËâŸΩ±’µï}±•—ï…Ãà±±Öâï∞ËâYΩ±’µï∏Å0à±π’¥È—…’ïÙ±Ì•êËâÕÖ±•π•—Â}¡¡–à±±Öâï∞ËâMÖ±•π•ëÖêà±π’¥È—…’ïÙ±Ì•êËâ—ïµ¡ï…Ö—’…ï}åà±±Öâï∞ËâQïµ¡ï…Ö—’…Ñà±π’¥È—…’ïÙ±Ì•êËâôΩΩêà±±Öâï∞Ëâ±•µïπ—ºâÙ±Ì•êËâ¡…Ωë’ç—•Ωπ}πΩ—ïÃà±±Öâï∞Ëâ9Ω—ÖÃà±Ö…ïÑÈ—…’ïıt∞âµ•ç…ΩôÖ’πÑµ¡°Ω—ΩÃà∞âù±ΩâÖ∞à§ÌÙ)ô’πç—•Ω∏Å±•â…Ö…‰†•ÌÕ•µ¡±ï5Ωë’±î†â	•â±•Ω—ïçÑà∞â±•â…Ö…Â}ïπ—…•ïÃà±mÌ•êËâïπ—…Â}—Â¡îà±±Öâï∞ËâQ•¡ºâÙ±Ì•êËâ—•—±îà±±Öâï∞ËâSµ—’±ºâÙ±Ì•êËâÕç•ïπ—•ô•ç}πÖµîà±±Öâï∞Ëâ9Ωµâ…îÅç•ïπ”µô•çºâÙ±Ì•êËâëïÕç…•¡—•Ω∏à±±Öâï∞ËâïÕç…•¡çßÕ∏à±Ö…ïÑÈ—…’ïÙ±Ì•êËâçΩµ¡Ö—•â•±•—‰à±±Öâï∞ËâΩµ¡Ö—•â•±•ëÖêà±Ö…ïÑÈ—…’ïÙ±Ì•êËâ…ïôï…ïπçïÕ}—ï·–à±±Öâï∞ËâIïôï…ïπç•ÖÃà±Ö…ïÑÈ—…’ïıt∞â±•â…Ö…‰µ¡°Ω—ΩÃà∞âù±ΩâÖ∞à§ÌÙ)ô’πç—•Ω∏Å°ΩÕ¡•—Ö±±ΩâÖ∞†•ÌÕ•µ¡±ï5Ωë’±î†â!ΩÕ¡•—Ö∞Åù±ΩâÖ∞à∞â°ΩÕ¡•—Ö±}çÖÕïÃà±mÌ•êËâ—•—±îà±±Öâï∞ËâSµ—’±ºâÙ±Ì•êËâÕÂµ¡—ΩµÃà±±Öâï∞ËâOµπ—ΩµÖÃà±Ö…ïÑÈ—…’ïÙ±Ì•êËâÕ’Õ¡ïç—ïë}ë•ÖùπΩÕ•Ãà±±Öâï∞Ëâ•ÖùªÕÕ—•çºà±Ö…ïÑÈ—…’ïÙ±Ì•êËâÕïŸï…•—‰à±±Öâï∞Ëâ…ÖŸïëÖêâıt∞â°ΩÕ¡•—Ö∞µ¡°Ω—ΩÃà∞âù±ΩâÖ∞à§ÌÙ)ÖÕÂπåÅô’πç—•Ω∏ÅÖ±ï…—Ã†•ÏÅçΩπÕ–ÅÌëÖ—ÖÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†âÖ±ï…—Ãà§πÕï±ïç–†à®à§πïƒ†â’Õï…}•êà±’Õï»π•ê§πΩ…ëï»†âç…ïÖ—ïë}Ö–à±ÌÖÕçïπë•πúÈôÖ±ÕïÙ§ÏÅÕï–°µÖ•π5ïπ‘†§≠ÄÒÕïç—•Ω∏Åç±ÖÕÃÙâçÖ…êà¯Ò†»˘Ÿ•ÕΩÃΩ†»¯ëÌÏ°ëÖ—ÖÒÒmt§πµÖ¿°ÑÙ˘ÄÒë•ÿÅç±ÖÕÃÙâ•—ï¥à¯Ò†Ã¯ëÌïÕå°Ñπ—•—±î•ÙΩ†Ã¯ÒÕ¡Ö∏Åç±ÖÕÃÙââÖëùîà¯ëÌïÕå°Ñπ¡…•Ω…•—‰•ÙΩÕ¡Ö∏¯Ò¿¯ëÌïÕå°ÑπëïÕç…•¡—•ΩπÒàà•ÙΩ¿¯Ωë•ÿ˘Ä§π©Ω•∏†àà•ÒÒµÕú†âM•∏ÅÖŸ•ÕΩÃ∏à•ÙΩÕïç—•Ω∏˘Ä§ÏÅÙ)ÖÕÂπåÅô’πç—•Ω∏Å°•Õ—Ω…ÂY•ï‹†•ÏÅçΩπÕ–ÅÌëÖ—ÖÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†â°•Õ—Ω…Â}ïŸïπ—Ãà§πÕï±ïç–†à®à§πïƒ†âÖ≈’Ö…•’µ}•êà±ç’……ïπ—≈’Ö…•’¥π•ê§πΩ…ëï»†âç…ïÖ—ïë}Ö–à±ÌÖÕçïπë•πúÈôÖ±ÕïÙ§π±•µ•–†ƒ¿¿§ÏÅÕï–°Ö≈5ïπ‘†§≠ÄÒÕïç—•Ω∏Åç±ÖÕÃÙâçÖ…êà¯Ò†»˘!•Õ—Ω…•Ö∞Ω†»¯ëÏ°ëÖ—ÖÒÒmt§πµÖ¿°†Ù˘ÄÒë•ÿÅç±ÖÕÃÙâ•—ï¥à¯Ò†Ã¯ëÌïÕå°†πÕ’µµÖ…‰•ÙΩ†Ã¯Ò¿Åç±ÖÕÃÙâÕµÖ±∞à¯ëÌπï‹ÅÖ—î°†πç…ïÖ—ïë}Ö–§π—Ω1ΩçÖ±ïM—…•πú†•ÙÉ
+‹ÄëÌïÕå°†πÕΩ’…çï}—Öâ±ïÒàà•ÙΩ¿¯Ωë•ÿ˘Ä§π©Ω•∏†àà•ÒÒµÕú†âM•∏Å°•Õ—Ω…•Ö∞∏à•ÙΩÕïç—•Ω∏˘Ä§ÌÙ)ÖÕÂπåÅô’πç—•Ω∏ÅÖ•Ωπ—ï·–†•ÏÅçΩπÕ–ÅÌëÖ—Ñ±ï……Ω…ÙıÖ›Ö•–ÅÕ’¡Ñπô…Ω¥†âÖ≈’Ö…•’µ}çΩπ—ï·—}Ÿ•ï‹à§πÕï±ïç–†à®à§πïƒ†âÖ≈’Ö…•’µ}•êà±ç’……ïπ—≈’Ö…•’¥π•ê§πÕ•πù±î†§ÏÅÕï–°Ö≈5ïπ‘†§≠ÄÒÕïç—•Ω∏Åç±ÖÕÃÙâçÖ…êà¯Ò†»˘%ÅçΩπ—ï·—ºΩ†»¯Ò¿Åç±ÖÕÃÙâπΩ—•çîà˘5ΩëºÅ%ÅçΩπ—ï·—’Ö∞Å¡…ï¡Ö…ÖëºËÅ…ïÕ’µîÅÖç’Ö…•º∞Å…•ïÕùΩÃ∞ÅÖπ•µÖ±ïÃ∞ÅâÖ©ÖÃ∞Å°ΩÕ¡•—Ö∞Å‰ÅÖŸ•ÕΩÃ∏Ω¿¯ëÌï……Ω»˝µÕú°ï……Ω»πµïÕÕÖùî∞âï……Ω»à§ÈÄÒ¡…î¯ëÌïÕå°)M=8πÕ—…•πù•ô‰°ëÖ—Ñ±π’±∞∞»§•ÙΩ¡…î˘ÅÙΩÕïç—•Ω∏˘Ä§ÏÅÙ()ÖÕÂπåÅô’πç—•Ω∏Åëï∞°—Öâ±î±•ê±çà•Ï(ÄÅ•ò†ÖçΩπô•…¥†ã
+˝	Ω……Ö»¸à§§Å…ï—’…∏Ï(ÄÅÖ›Ö•–ÅÕ’¡Ñπô…Ω¥°—Öâ±î§πëï±ï—î†§πïƒ†â•êà±•ê§πïƒ†â’Õï…}•êà±’Õï»π•ê§Ï(ÄÅçà†§Ï)Ù()•π•–†§Ï(
