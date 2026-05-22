@@ -1,0 +1,19 @@
+{
+  "name": "AcuarioNexo",
+  "short_name": "AcuarioNexo",
+  "description": "Gestión inteligente de acuarios marinos y dulce con IA.",
+  "start_url": "/acuarionexo/",
+  "scope": "/acuarionexo/",
+  "display": "standalone",
+  "background_color": "#081b2f",
+  "theme_color": "#0d3155",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
