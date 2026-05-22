@@ -7,22 +7,21 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>AcuarioNexo</title>
-  <link rel="manifest" href="manifest.webmanifest?v=22-05-2210">
-  <link rel="apple-touch-icon" href="icon-512.png?v=22-05-2210">
-  <link rel="icon" href="icon-512.png?v=22-05-2210">
-  <link rel="stylesheet" href="styles.css?v=22-05-2210">
+  <link rel="manifest" href="manifest.webmanifest?v=23-05-nav2">
+  <link rel="apple-touch-icon" href="icon-512.png?v=23-05-nav2">
+  <link rel="icon" href="icon-512.png?v=23-05-nav2">
+  <link rel="stylesheet" href="styles.css?v=23-05-nav2">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="config.js?v=22-05-2210"></script>
+  <script src="config.js?v=23-05-nav2"></script>
 </head>
 <body>
   <header class="topbar premium-topbar">
-    <div><h1>AcuarioNexo</h1><p id="version"></p></div>
-    <button id="refreshAppBtn" class="ghost">Refrescar app</button>
-    <button id="logoutBtn" class="ghost hidden">Salir</button>
+    <div class="brand-wrap"><div class="brand-logo">🐠</div><div><h1>Acuario<span>Nexo</span></h1><p id="version"></p><p class="connection-pill"><i></i> Conectado a Supabase</p></div></div>
+    <div class="top-actions"><button id="refreshAppBtn" class="ghost">↻<small>Refrescar</small></button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
   </header>
   <main id="app"></main>
   <script>
-    window.ACUARIONEXO_BUILD='22-05-2210';
+    window.ACUARIONEXO_BUILD='23-05-nav2';
     async function hardRefreshAcuarioNexo(){
       try{
         if('serviceWorker' in navigator){
@@ -37,12 +36,12 @@
       location.replace(location.pathname+'?v='+Date.now());
     }
   </script>
-  <script src="measurement-schema.js?v=22-05-2210"></script>
-  <script src="measurement-ai.js?v=22-05-2210"></script>
-  <script src="measurement-engine.js?v=22-05-2210"></script>
-  <script src="photo-ai.js?v=22-05-2210"></script>
-  <script src="app.js?v=22-05-2210"></script>
-  <script src="parameters-ui.js?v=22-05-2210"></script>
-  <script src="premium-ui.js?v=22-05-2210"></script>
+  <script src="measurement-schema.js?v=23-05-nav2"></script>
+  <script src="measurement-ai.js?v=23-05-nav2"></script>
+  <script src="measurement-engine.js?v=23-05-nav2"></script>
+  <script src="photo-ai.js?v=23-05-nav2"></script>
+  <script src="app.js?v=23-05-nav2"></script>
+  <script src="parameters-ui.js?v=23-05-nav2"></script>
+  <script src="premium-ui.js?v=23-05-nav2"></script>
 </body>
 </html>
