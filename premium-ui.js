@@ -40,15 +40,38 @@
     return `<nav class="bottom-nav"><button onclick="goSection('Dashboard')">🏠<small>Inicio</small></button><button onclick="goSection('Acuarios')">🐠<small>Acuarios</small></button><button onclick="goSection('Acuarios')">＋<small>Añadir</small></button><button onclick="goSection('Timeline')">🕒<small>Timeline</small></button><button onclick="goSection('IA')">🧠<small>IA</small></button></nav>`;
   }
 
-  async function dashboard(){
-    setActive('Dashboard');
-    const {data:aqs=[]}=await window.s.from('aquariums').select('*').eq('user_id',window.u.id).order('created_at',{ascending:false}).limit(6);
-    const reef=aqs[0]||{name:'Reef iglesias',real_liters:'84',aquarium_type:'reef'};
+  function cachedAcuarios(){
+    try{return JSON.parse(localStorage.getItem('acuarionexo_dashboard_aqs')||'[]')}catch(e){return []}
+  }
+  function saveCachedAcuarios(aqs){
+    try{localStorage.setItem('acuarionexo_dashboard_aqs',JSON.stringify((aqs||[]).slice(0,6)))}catch(e){}
+  }
+  function aquariumCards(aqs){
+    return aqs&&aqs.length?aqs.map(a=>`<article class="aqua-card" onclick="openA('${a.id}')"><div class="aqua-photo">🌊</div><h3>${E(a.name)}</h3><p>${E(a.aquarium_type||'')}</p><span>${E(a.real_liters??a.liters??'-')} L</span><em>Todo estable</em></article>`).join(''):`<article class="aqua-card"><div class="aqua-photo">🌊</div><h3>Cargando...</h3><p>Supabase</p><span>...</span><em>Un momento</em></article>`;
+  }
+  function renderDashboard(aqs,loading){
+    const reef=(aqs&&aqs[0])||{name:'AcuarioNexo',real_liters:'-',aquarium_type:'reef'};
     S(topNav('Dashboard')+`
-      <section class="hero-premium"><div><p>IA · Resumen general</p><h2>${E(reef.name||'AcuarioNexo')}</h2><span>Conectado a Supabase · sistema activo</span></div><button onclick="hardRefreshAcuarioNexo&&hardRefreshAcuarioNexo()">↻</button></section>
-      <section class="quick-grid"><article><small>Temperatura</small><b>25.3°C</b><em>Estable</em></article><article><small>Salinidad</small><b>1.025</b><em>Correcta</em></article><article><small>KH</small><b>8.1</b><em>Vigilar</em></article><article><small>Alertas</small><b>2</b><em>Pendientes</em></article></section>
-      <section class="premium-block"><div class="block-head"><h2>Mis acuarios</h2><button onclick="goSection('Acuarios')">Ver todos</button></div><div class="aquarium-row">${aqs.length?aqs.map(a=>`<article class="aqua-card" onclick="openA('${a.id}')"><div class="aqua-photo">🌊</div><h3>${E(a.name)}</h3><p>${E(a.aquarium_type||'')}</p><span>${E(a.real_liters??a.liters??'-')} L</span><em>Todo estable</em></article>`).join(''):`<article class="aqua-card"><div class="aqua-photo">🌊</div><h3>Reef iglesias</h3><p>reef</p><span>84 L</span><em>Todo estable</em></article>`}</div></section>
+      <section class="hero-premium"><div><p>IA · Resumen general</p><h2>${E(reef.name||'AcuarioNexo')}</h2><span>Conectado a Supabase · sistema activo${loading?' · cargando datos...':''}</span></div><button onclick="hardRefreshAcuarioNexo&&hardRefreshAcuarioNexo()">↻</button></section>
+      <section class="quick-grid"><article><small>Temperatura</small><b>--</b><em>Sin cargar</em></article><article><small>Salinidad</small><b>--</b><em>Sin cargar</em></article><article><small>KH</small><b>--</b><em>Sin cargar</em></article><article><small>Alertas</small><b>--</b><em>Sin cargar</em></article></section>
+      <section class="premium-block"><div class="block-head"><h2>Mis acuarios</h2><button onclick="goSection('Acuarios')">Ver todos</button></div><div id="dashboardAcuarios" class="aquarium-row">${aquariumCards(aqs||[])}</div></section>
       <section class="dashboard-grid"><article><h3>🧪 Parámetros</h3><p>Acceso rápido al control del agua.</p><button onclick="goSection('Parámetros')">Abrir</button></article><article><h3>🐟 Animales</h3><p>Inventario vivo por acuario.</p><button onclick="goSection('Animales')">Abrir</button></article><article><h3>📚 Biblioteca</h3><p>Fichas generales y guías.</p><button onclick="goSection('Biblioteca')">Abrir</button></article><article><h3>🦠 Microfauna</h3><p>Cultivos y alimentación viva.</p><button onclick="goSection('Microfauna')">Abrir</button></article></section>`+bottomNav());
+  }
+  function dashboard(){
+    setActive('Dashboard');
+    const cached=cachedAcuarios();
+    renderDashboard(cached,true);
+    if(!window.s||!window.u||!window.u.id)return;
+    setTimeout(async function(){
+      try{
+        const {data:aqs=[]}=await window.s.from('aquariums').select('id,name,aquarium_type,real_liters,liters,created_at').eq('user_id',window.u.id).order('created_at',{ascending:false}).limit(6);
+        saveCachedAcuarios(aqs||[]);
+        if(getActive()==='Dashboard') renderDashboard(aqs||[],false);
+      }catch(e){
+        const el=document.getElementById('dashboardAcuarios');
+        if(el)el.innerHTML='<article class="aqua-card"><div class="aqua-photo">⚠️</div><h3>No cargó</h3><p>'+E(e.message||'Error')+'</p><span>Dashboard</span><em>Reintentar</em></article>';
+      }
+    },20);
   }
 
   function section(nombre){
