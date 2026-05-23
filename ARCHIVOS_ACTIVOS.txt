@@ -1,0 +1,54 @@
+ACUARIONEXO - MAPA DE ARCHIVOS ACTIVOS
+
+ACTIVOS PRINCIPALES
+index.html
+index-clean.html
+config.js
+styles.css
+manifest.webmanifest
+app-loader-clean.js
+
+MOTORES ACTIVOS
+version-engine.js
+cache-engine.js
+state-engine.js
+navigation-engine.js
+fichas-engine.js
+ai-engine.js
+gemini-engine.js
+inventario-engine.js
+microfauna-engine.js
+parameters-engine.js
+admin-engine.js
+studio-visual-engine.js
+nav-visual-fix.js
+
+RECURSOS ACTIVOS
+assets/fondos/
+
+DOCUMENTACION UTIL
+README.md
+ADMIN_PANEL_PLAN.md
+CONSOLIDACION_23_05.md
+MOTOR_LIMPIO_ESTADO.md
+NEXOADMIN_FICHAS_SCHEMA.md
+NEXOADMIN_NOTAS.md
+
+EN REVISION ANTES DE ARCHIVAR
+app.js
+modules-lite.js
+photo-ai.js
+measurement-ai.js
+measurement-engine.js
+measurement-schema.js
+parameters-ui.js
+premium-ui.js
+recommendation-engine.js
+alerts-engine.js
+alerts-inbox-engine.js
+crop-visual-engine.js
+product-crop-engine.js
+performance-engine.js
+
+REGLA DE LIMPIEZA
+No borrar nada critico sin comprobar primero que abre la app, carga Admin, carga Studio visual y funcionan Inventario, Parametros, Microfauna y Acuarios.
