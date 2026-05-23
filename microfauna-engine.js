@@ -1,0 +1,17 @@
+window.AcuarioNexoMicrofauna={version:'microfauna-clean-23-05'};
+(function(){
+function E(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})}
+function uid(){return window.u&&window.u.id?window.u.id:'local'}
+function key(){return 'an_micro_'+uid()}
+function get(){try{return JSON.parse(localStorage.getItem(key())||'[]')}catch(e){return []}}
+function set(a){localStorage.setItem(key(),JSON.stringify(a))}
+function bot(){return '<nav class="bottom-nav"><button onclick="goSection(\'Dashboard\')">🏠<small>Inicio</small></button><button onclick="goSection(\'Acuarios\')">🐠<small>Acuarios</small></button><button onclick="goSection(\'Microfauna\')">🦠<small>Microfauna</small></button><button onclick="goSection(\'Inventario\')">📦<small>Inventario</small></button><button onclick="goSection(\'IA\')">🧠<small>IA</small></button></nav>'}
+function menu(){window.acuarionexoActiveNav='Microfauna';localStorage.setItem('acuarionexo_active_nav','Microfauna');return window.menu?window.menu():''}
+function paint(h){document.getElementById('app').innerHTML=menu()+h+bot();scrollTo(0,0)}
+window.microClean=function(){var a=get();var html=a.length?a.map(function(x){return '<article class="item"><h3>'+E(x.tipo)+' · '+E(x.nombre)+'</h3><p><b>Estado:</b> '+E(x.estado||'-')+' · <b>Fecha:</b> '+E(x.fecha||'-')+'</p><p>'+E(x.notas||'')+'</p><div class="grid2"><button onclick="mfCleanForm(\''+x.id+'\')">Editar</button><button class="danger" onclick="mfCleanDel(\''+x.id+'\')">Borrar</button></div></article>'}).join(''):'<p class="notice">Sin cultivos todavía.</p>';paint('<section class="premium-block"><h2>🦠 Microfauna</h2><p>Motor limpio para cultivos: fito, copépodos, rotíferos, artemia e infusorios.</p><button class="primary" onclick="mfCleanForm()">+ Nuevo cultivo</button></section><section class="premium-block"><h2>Cultivos</h2>'+html+'</section>')};
+window.mfCleanForm=function(id){var a=get();var x=a.find(function(r){return r.id===id})||{};paint('<section class="premium-block"><button onclick="goSection(\'Microfauna\')">← Volver</button><h2>Cultivo</h2><label>Tipo</label><select id="mftipo"><option>Fitoplancton</option><option>Copépodos</option><option>Rotíferos</option><option>Artemia</option><option>Infusorios</option></select><label>Nombre</label><input id="mfnombre" value="'+E(x.nombre||'')+'"><label>Estado</label><select id="mfestado"><option>Activo</option><option>Vigilar</option><option>Parado</option><option>Descartado</option></select><label>Fecha</label><input id="mffecha" type="date" value="'+E(x.fecha||'')+'"><label>Notas</label><textarea id="mfnotas">'+E(x.notas||'')+'</textarea><button class="primary" onclick="mfCleanSave(\''+(id||'')+'\')">Guardar cultivo</button></section>');if(x.tipo)mftipo.value=x.tipo;if(x.estado)mfestado.value=x.estado};
+window.mfCleanSave=function(id){var a=get();var row={id:id||Date.now().toString(),tipo:mftipo.value,nombre:mfnombre.value||'Sin nombre',estado:mfestado.value,fecha:mffecha.value,notas:mfnotas.value};var i=a.findIndex(function(x){return x.id===row.id});if(i>=0)a[i]=row;else a.unshift(row);set(a);microClean()};
+window.mfCleanDel=function(id){set(get().filter(function(x){return x.id!==id}));microClean()};
+var old=window.goSection;window.goSection=function(n){if(n==='Microfauna')return microClean();return old?old(n):null};
+window.microfauna=window.microClean;
+})();
