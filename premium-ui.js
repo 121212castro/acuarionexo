@@ -19,7 +19,7 @@
     'Hospital':['🏥','Hospital','Resumen global de hospital, cuarentena, síntomas y tratamientos.'],
     'Equipamiento':['🔌','Equipamiento','Resumen global de equipos, garantías, compras y mantenimiento.'],
     'ICP':['🧬','ICP','Resumen global de análisis ICP y avisos.'],
-    'IA':['🧠','IA','Resumen, avisos y recomendaciones inteligentes.'],
+    'IA':['🧠','IA','Resumen y recomendaciones inteligentes.'],
     'Biblioteca':['📚','Biblioteca','Fichas generales y guías.'],
     'Microfauna':['🦠','Microfauna','Cultivos y alimentación viva.'],
     'Inventario':['📦','Inventario','Stock, comida, sales, medicación, repuestos, compras, garantías y facturas.'],
@@ -42,37 +42,100 @@
 
   function cachedAcuarios(){try{return JSON.parse(localStorage.getItem('acuarionexo_dashboard_aqs')||'[]')}catch(e){return []}}
   function saveCachedAcuarios(aqs){try{localStorage.setItem('acuarionexo_dashboard_aqs',JSON.stringify((aqs||[]).slice(0,8)))}catch(e){}}
+
   function aquariumKind(a){
     const t=String([a?.aquarium_type,a?.subtype,a?.name].join(' ')).toLowerCase();
-    if(t.includes('fresh')||t.includes('dulce')||t.includes('betta')||t.includes('beta')||t.includes('escala'))return 'fresh';
+    if(t.includes('fresh')||t.includes('dulce')||t.includes('betta')||t.includes('beta')||t.includes('escala')||t.includes('plant')) return 'fresh';
     return 'marine';
   }
+
   function coverStyle(a){
-    if(a?.cover_url||a?.photo_url||a?.image_url){return `style="background-image:linear-gradient(180deg,rgba(4,14,26,.12),rgba(4,14,26,.70)),url('${E(a.cover_url||a.photo_url||a.image_url)}')"`}
+    const url=a?.cover_url||a?.photo_url||a?.image_url||a?.main_photo_url||'';
+    if(url){
+      return `style="background-image:linear-gradient(180deg,rgba(4,14,26,.06),rgba(4,14,26,.72)),url('${E(url)}')"`;
+    }
     return '';
   }
+
   function aquariumCards(aqs){
-    return aqs&&aqs.length?aqs.map(a=>{const kind=aquariumKind(a);return `<article class="aqua-card aqua-${kind}" onclick="openA('${a.id}')"><div class="aqua-photo aqua-cover-${kind}" ${coverStyle(a)}><span>${kind==='fresh'?'🌿':'🪸'}</span></div><h3>${E(a.name)}</h3><p>${E(a.aquarium_type||'')}</p><span>${E(a.real_liters??a.liters??'-')} L</span><em>Tocar para abrir</em></article>`}).join(''):`<article class="aqua-card"><div class="aqua-photo aqua-cover-marine"><span>🌊</span></div><h3>Cargando...</h3><p>Supabase</p><span>...</span><em>Un momento</em></article>`;
+    if(!aqs||!aqs.length){
+      return `<article class="dashboard-empty"><h3>🐠 Sin acuarios todavía</h3><p>Crea tu primer acuario para empezar a usar el Dashboard premium de AcuarioNexo.</p><button class="primary" onclick="goSection('Acuarios')">Crear acuario</button></article>`;
+    }
+
+    return aqs.map(a=>{
+      const kind=aquariumKind(a);
+      const tipo=kind==='fresh'?'Dulce / Plantado':'Marino / Reef';
+      return `<article class="dashboard-aqua-card" onclick="openA('${a.id}')"><div class="dashboard-aqua-cover dashboard-cover-${kind}" ${coverStyle(a)}><span>${kind==='fresh'?'🌿':'🪸'}</span></div><div class="dashboard-aqua-body"><h3>${E(a.name||'Acuario')}</h3><div class="dashboard-aqua-meta"><span>${E(tipo)}</span><span>${E(a.real_liters??a.liters??'?')} L</span></div><div class="dashboard-aqua-open">Abrir acuario</div></div></article>`;
+    }).join('');
   }
 
   function renderDashboard(aqs,loading){
-    const reef=(aqs&&aqs[0])||{name:'AcuarioNexo',real_liters:'-',aquarium_type:'reef'};
+    const principal=(aqs&&aqs[0])||{name:'AcuarioNexo'};
+
     S(topNav('Dashboard')+`
-      <section class="hero-premium"><div><p>IA · Resumen general</p><h2>${E(reef.name||'AcuarioNexo')}</h2><span>Conectado a Supabase · sistema activo${loading?' · cargando datos...':''}</span></div><button onclick="hardRefreshAcuarioNexo&&hardRefreshAcuarioNexo()">↻</button></section>
-      <section class="quick-grid"><article><small>Acuarios</small><b>${aqs?.length||'--'}</b><em>Activos</em></article><article><small>Parámetros</small><b>↗</b><em>Resumen global</em></article><article><small>Animales</small><b>↗</b><em>Resumen global</em></article><article><small>Alertas</small><b>--</b><em>IA global</em></article></section>
-      <section class="premium-block"><div class="block-head"><h2>Mis acuarios</h2><button onclick="goSection('Acuarios')">Ver todos</button></div><div id="dashboardAcuarios" class="aquarium-row">${aquariumCards(aqs||[])}</div></section>
-      <section class="dashboard-grid"><article><h3>🧪 Parámetros</h3><p>Últimas lecturas y avisos de todos los acuarios.</p><button onclick="goSection('Parámetros')">Abrir</button></article><article><h3>🐟 Animales</h3><p>Resumen de animales guardados por acuario.</p><button onclick="goSection('Animales')">Abrir</button></article><article><h3>📚 Biblioteca</h3><p>Fichas generales y guías.</p><button onclick="goSection('Biblioteca')">Abrir</button></article><article><h3>🦠 Microfauna</h3><p>Cultivos y alimentación viva.</p><button onclick="goSection('Microfauna')">Abrir</button></article></section>`+bottomNav());
+      <section class="dashboard-hero-main">
+        <div class="dashboard-hero-head">
+          <div>
+            <p class="dashboard-hero-kicker">Dashboard premium · AcuarioNexo</p>
+            <h2>Mis acuarios</h2>
+            <span>${loading?'Sincronizando datos desde Supabase...':'Acceso rápido a todos tus acuarios, parámetros, animales y estado general.'}</span>
+          </div>
+          <div class="dashboard-hero-actions">
+            <button onclick="goSection('Acuarios')">🐠 Ver acuarios</button>
+            <button onclick="hardRefreshAcuarioNexo&&hardRefreshAcuarioNexo()">↻ Actualizar</button>
+          </div>
+        </div>
+        <div class="dashboard-aquarium-row">${aquariumCards(aqs||[])}</div>
+      </section>
+
+      <section class="dashboard-ai-card">
+        <h3>🧠 Resumen IA global</h3>
+        <p>${aqs&&aqs.length?`Sistema estable con ${aqs.length} acuarios cargados. Dashboard preparado para parámetros, avisos inteligentes, consumo, seguimiento visual y automatización.`:'Empieza creando acuarios para generar avisos, historial y resúmenes inteligentes.'}</p>
+        <div class="dashboard-ai-pills">
+          <span>Supabase conectado</span>
+          <span>Dashboard limpio</span>
+          <span>Navegación rápida</span>
+          <span>Acceso directo a ficha</span>
+        </div>
+      </section>
+
+      <section class="dashboard-utility-grid">
+        <article>
+          <h3>🧪 Parámetros</h3>
+          <p>Lecturas, gráficas, tendencias y estado general por acuario.</p>
+          <button onclick="goSection('Parámetros')">Abrir parámetros</button>
+        </article>
+        <article>
+          <h3>🐟 Animales</h3>
+          <p>Inventario vivo, seguimiento y estado de peces, corales e invertebrados.</p>
+          <button onclick="goSection('Animales')">Abrir animales</button>
+        </article>
+        <article>
+          <h3>📚 Biblioteca</h3>
+          <p>Biblioteca técnica, fichas, guías y conocimiento integrado.</p>
+          <button onclick="goSection('Biblioteca')">Abrir biblioteca</button>
+        </article>
+      </section>`+bottomNav());
   }
 
   function dashboard(){
     setActive('Dashboard');
     const cached=cachedAcuarios();
     renderDashboard(cached,true);
+
     if(!window.s||!window.u||!window.u.id)return;
+
     setTimeout(async function(){
       try{
-        const {data:aqs=[]}=await window.s.from('aquariums').select('id,name,aquarium_type,subtype,real_liters,liters,cover_url,photo_url,image_url,created_at').eq('user_id',window.u.id).order('created_at',{ascending:false}).limit(8);
+        const {data:aqs=[]}=await window.s
+          .from('aquariums')
+          .select('id,name,aquarium_type,subtype,real_liters,liters,cover_url,photo_url,image_url,created_at')
+          .eq('user_id',window.u.id)
+          .order('created_at',{ascending:false})
+          .limit(8);
+
         saveCachedAcuarios(aqs||[]);
+
         if(getActive()==='Dashboard') renderDashboard(aqs||[],false);
       }catch(e){}
     },20);
@@ -82,26 +145,32 @@
     setActive(nombre);
     const t=textos[nombre]||['📌',nombre,'Apartado de AcuarioNexo.'];
     const aqs=cachedAcuarios();
-    S(topNav(nombre)+`<section class="premium-block"><h2>${t[0]} ${E(t[1])}</h2><p>${E(t[2])}</p><section class="quick-grid"><article><small>Acuarios</small><b>${aqs.length||'--'}</b><em>con datos</em></article><article><small>Vista</small><b>Global</b><em>resumen</em></article><article><small>Detalle</small><b>Ficha</b><em>dentro del acuario</em></article><article><small>Estado</small><b>IA</b><em>pendiente</em></article></section><div class="dashboard-grid"><article><h3>Resumen de ${E(nombre)}</h3><p>Aquí se verán algunos datos rápidos de todos los acuarios, sin duplicar toda la información.</p><button onclick="goSection('Acuarios')">Abrir acuario concreto</button></article><article><h3>Datos completos</h3><p>Las entradas completas se guardan dentro del acuario y dentro del apartado correspondiente.</p><button onclick="goSection('Acuarios')">Ir a Acuarios</button></article></div></section>`+bottomNav());
+
+    S(topNav(nombre)+`<section class="premium-block"><h2>${t[0]} ${E(t[1])}</h2><p>${E(t[2])}</p><div class="dashboard-utility-grid"><article><h3>Acuarios activos</h3><p>${aqs.length||0} acuarios cargados y listos para trabajar.</p><button onclick="goSection('Acuarios')">Abrir acuarios</button></article><article><h3>Vista global</h3><p>Resumen general sin duplicar toda la información interna de cada ficha.</p><button onclick="goSection('Dashboard')">Volver al Dashboard</button></article><article><h3>Datos completos</h3><p>Las fichas completas siguen dentro de cada acuario.</p><button onclick="goSection('Acuarios')">Abrir ficha</button></article></div></section>`+bottomNav());
   }
 
   const oldAcs=window.acs;
+
   async function acuarioList(){
     setActive('Acuarios');
+
     if(typeof oldAcs==='function'){
       await oldAcs();
       setTimeout(scrollActiveTab,80);
       return;
     }
+
     section('Acuarios');
   }
 
   window.menu=()=>topNav(getActive());
+
   window.goSection=function(nombre){
     if(nombre==='Dashboard') return dashboard();
     if(nombre==='Acuarios') return acuarioList();
     return section(nombre);
   };
+
   window.home=dashboard;
   window.dashboard=dashboard;
   window.acs=acuarioList;
