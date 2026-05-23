@@ -42,8 +42,17 @@
 
   function cachedAcuarios(){try{return JSON.parse(localStorage.getItem('acuarionexo_dashboard_aqs')||'[]')}catch(e){return []}}
   function saveCachedAcuarios(aqs){try{localStorage.setItem('acuarionexo_dashboard_aqs',JSON.stringify((aqs||[]).slice(0,8)))}catch(e){}}
+  function aquariumKind(a){
+    const t=String([a?.aquarium_type,a?.subtype,a?.name].join(' ')).toLowerCase();
+    if(t.includes('fresh')||t.includes('dulce')||t.includes('betta')||t.includes('beta')||t.includes('escala'))return 'fresh';
+    return 'marine';
+  }
+  function coverStyle(a){
+    if(a?.cover_url||a?.photo_url||a?.image_url){return `style="background-image:linear-gradient(180deg,rgba(4,14,26,.12),rgba(4,14,26,.70)),url('${E(a.cover_url||a.photo_url||a.image_url)}')"`}
+    return '';
+  }
   function aquariumCards(aqs){
-    return aqs&&aqs.length?aqs.map(a=>`<article class="aqua-card" onclick="openA('${a.id}')"><div class="aqua-photo">🌊</div><h3>${E(a.name)}</h3><p>${E(a.aquarium_type||'')}</p><span>${E(a.real_liters??a.liters??'-')} L</span><em>Abrir ficha</em></article>`).join(''):`<article class="aqua-card"><div class="aqua-photo">🌊</div><h3>Cargando...</h3><p>Supabase</p><span>...</span><em>Un momento</em></article>`;
+    return aqs&&aqs.length?aqs.map(a=>{const kind=aquariumKind(a);return `<article class="aqua-card aqua-${kind}" onclick="openA('${a.id}')"><div class="aqua-photo aqua-cover-${kind}" ${coverStyle(a)}><span>${kind==='fresh'?'🌿':'🪸'}</span></div><h3>${E(a.name)}</h3><p>${E(a.aquarium_type||'')}</p><span>${E(a.real_liters??a.liters??'-')} L</span><em>Tocar para abrir</em></article>`}).join(''):`<article class="aqua-card"><div class="aqua-photo aqua-cover-marine"><span>🌊</span></div><h3>Cargando...</h3><p>Supabase</p><span>...</span><em>Un momento</em></article>`;
   }
 
   function renderDashboard(aqs,loading){
@@ -62,7 +71,7 @@
     if(!window.s||!window.u||!window.u.id)return;
     setTimeout(async function(){
       try{
-        const {data:aqs=[]}=await window.s.from('aquariums').select('id,name,aquarium_type,real_liters,liters,created_at').eq('user_id',window.u.id).order('created_at',{ascending:false}).limit(8);
+        const {data:aqs=[]}=await window.s.from('aquariums').select('id,name,aquarium_type,subtype,real_liters,liters,cover_url,photo_url,image_url,created_at').eq('user_id',window.u.id).order('created_at',{ascending:false}).limit(8);
         saveCachedAcuarios(aqs||[]);
         if(getActive()==='Dashboard') renderDashboard(aqs||[],false);
       }catch(e){}
