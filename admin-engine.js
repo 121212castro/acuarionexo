@@ -1,4 +1,4 @@
-window.AcuarioNexoAdmin={version:'admin-panel-23-05-v1'};
+window.AcuarioNexoAdmin={version:'admin-panel-23-05-v2-floating'};
 (function(){
 function E(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})}
 function app(){return document.getElementById('app')}
@@ -9,6 +9,7 @@ function paint(h){if(app())app().innerHTML=top()+h+bottom();scrollTo(0,0)}
 function adminEnabled(){try{return localStorage.getItem('acuarionexo_admin_enabled')==='1'}catch(e){return false}}
 function enableAdmin(){try{localStorage.setItem('acuarionexo_admin_enabled','1')}catch(e){} adminPanel()}
 function disableAdmin(){try{localStorage.removeItem('acuarionexo_admin_enabled')}catch(e){} goSection('Dashboard')}
+function injectAdminButton(){try{if(document.getElementById('adminFloatBtn'))return;var st=document.createElement('style');st.textContent='#adminFloatBtn{position:fixed;right:14px;bottom:102px;z-index:90;border-radius:999px;padding:12px 14px;background:linear-gradient(180deg,#f59e0b,#92400e);color:white;border:1px solid rgba(255,255,255,.35);font-weight:900;box-shadow:0 8px 24px rgba(0,0,0,.35)}';document.head.appendChild(st);var b=document.createElement('button');b.id='adminFloatBtn';b.innerHTML='🛠️ Admin';b.onclick=function(){window.acuarionexoActiveNav='Admin';try{localStorage.setItem('acuarionexo_active_nav','Admin')}catch(e){} adminPanel()};document.body.appendChild(b)}catch(e){}}
 window.adminPanel=function(){
  if(!uid())return paint('<section class="premium-block"><h2>🛠️ Admin</h2><p>Inicia sesión para usar el panel admin.</p></section>');
  if(!adminEnabled())return paint('<section class="premium-block"><h2>🛠️ Activar Panel Admin</h2><p>Panel privado para preparar fichas, fotos, Gemini manual y publicación. No consume créditos IA.</p><button class="primary" onclick="AcuarioNexoAdmin.enable()">Activar admin en este dispositivo</button></section>');
@@ -25,4 +26,5 @@ window.adminUnpublish=async function(id){await window.s.from('nexoadmin_fichas')
 window.adminTesters=function(){paint('<section class="premium-block"><button onclick="adminPanel()">← Admin</button><h2>🐞 Testers</h2><p class="notice">Preparado para reportes y seguimiento. Siguiente fase: tabla de fallos y actividad.</p></section>')};
 window.AcuarioNexoAdmin.enable=enableAdmin;window.AcuarioNexoAdmin.disable=disableAdmin;
 var old=window.goSection;window.goSection=function(n){if(n==='Admin')return adminPanel();return old?old(n):null};
+setTimeout(injectAdminButton,900);setInterval(injectAdminButton,2000);
 })();
