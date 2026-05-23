@@ -1,15 +1,14 @@
-window.AcuarioNexoAdmin={version:'admin-panel-23-05-studio-gemini-clean'};
+window.AcuarioNexoAdmin={version:'admin-panel-23-05-studio-gemini-clean-no-float'};
 (function(){
 function E(v){return String(v||'').replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})}
 function app(){return document.getElementById('app')}
 function uid(){return window.u&&window.u.id?window.u.id:null}
 function top(){return window.menu?window.menu():''}
 function bottom(){return '<nav class="bottom-nav"><button onclick="goSection(\'Dashboard\')">🏠<small>Inicio</small></button><button onclick="goSection(\'Acuarios\')">🐠<small>Acuarios</small></button><button onclick="goSection(\'Inventario\')">📦<small>Inventario</small></button><button onclick="adminPanel()">🛠️<small>Admin</small></button></nav>'}
-function paint(h){if(app())app().innerHTML=top()+h+bottom();scrollTo(0,0)}
+function paint(h){var b=document.getElementById('adminFloatBtn');if(b)b.remove();if(app())app().innerHTML=top()+h+bottom();scrollTo(0,0)}
 function adminEnabled(){try{return localStorage.getItem('acuarionexo_admin_enabled')==='1'}catch(e){return false}}
 function enableAdmin(){try{localStorage.setItem('acuarionexo_admin_enabled','1')}catch(e){} adminPanel()}
 function disableAdmin(){try{localStorage.removeItem('acuarionexo_admin_enabled')}catch(e){} goSection('Dashboard')}
-function injectAdminButton(){try{if(document.getElementById('adminFloatBtn'))return;var st=document.createElement('style');st.textContent='#adminFloatBtn{position:fixed;right:10px;bottom:88px;z-index:70;border-radius:999px;padding:9px 11px;background:rgba(15,43,71,.82);color:white;border:1px solid rgba(125,211,252,.45);font-weight:800;box-shadow:0 6px 18px rgba(0,0,0,.28);font-size:13px;opacity:.72}#adminFloatBtn:hover{opacity:1}';document.head.appendChild(st);var b=document.createElement('button');b.id='adminFloatBtn';b.innerHTML='🛠️';b.title='Admin';b.onclick=function(){window.acuarionexoActiveNav='Admin';try{localStorage.setItem('acuarionexo_active_nav','Admin')}catch(e){} adminPanel()};document.body.appendChild(b)}catch(e){}}
 window.adminPanel=function(){
  if(!uid())return paint('<section class="premium-block"><h2>🛠️ Admin</h2><p>Inicia sesión para usar el panel admin.</p></section>');
  if(!adminEnabled())return paint('<section class="premium-block"><h2>🛠️ Activar Panel Admin</h2><p>Panel privado para preparar fichas IA, revisar borradores y publicar contenido.</p><button class="primary" onclick="AcuarioNexoAdmin.enable()">Activar admin en este dispositivo</button></section>');
@@ -22,6 +21,5 @@ window.adminPublish=async function(id){await window.s.from('nexoadmin_fichas').u
 window.adminUnpublish=async function(id){await window.s.from('nexoadmin_fichas').update({estado:'borrador',publicado_en_app:false,tester_visible:false,updated_at:new Date().toISOString()}).eq('id',id);adminFichas()};
 window.adminTesters=function(){paint('<section class="premium-block"><button onclick="adminPanel()">← Admin</button><h2>🐞 Testers</h2><p class="notice">Preparado para reportes y seguimiento. Siguiente fase: tabla de fallos y actividad.</p></section>')};
 window.AcuarioNexoAdmin.enable=enableAdmin;window.AcuarioNexoAdmin.disable=disableAdmin;
-var old=window.goSection;window.goSection=function(n){if(n==='Admin')return adminPanel();return old?old(n):null};
-setTimeout(injectAdminButton,900);setInterval(injectAdminButton,2000);
+var old=window.goSection;window.goSection=function(n){var b=document.getElementById('adminFloatBtn');if(b)b.remove();if(n==='Admin')return adminPanel();return old?old(n):null};
 })();
