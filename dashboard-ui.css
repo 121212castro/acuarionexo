@@ -1,0 +1,28 @@
+/* AcuarioNexo · Dashboard UI · 24/05 */
+.dashboard-hero-main{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:28px;padding:16px;margin:12px 0;background:radial-gradient(circle at 15% 0,rgba(42,157,244,.34),transparent 34%),linear-gradient(135deg,rgba(10,39,68,.98),rgba(5,22,39,.98));box-shadow:0 16px 34px rgba(0,0,0,.28)}
+.dashboard-hero-main:before{content:"";position:absolute;inset:0;background:linear-gradient(120deg,rgba(255,255,255,.08),transparent 38%,rgba(32,203,255,.08));pointer-events:none}
+.dashboard-hero-head{position:relative;display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px}
+.dashboard-hero-kicker{margin:0;color:#9fe0ff;font-weight:900;letter-spacing:.06em;text-transform:uppercase;font-size:12px}
+.dashboard-hero-head h2{font-size:32px;margin:5px 0 5px;color:#fff;letter-spacing:-.5px}
+.dashboard-hero-head span{display:block;color:#c8dff1;font-size:14px;line-height:1.35}
+.dashboard-hero-actions{display:flex;gap:8px;flex-shrink:0}
+.dashboard-hero-actions button{width:auto;white-space:nowrap;background:rgba(255,255,255,.09);border-color:rgba(170,220,255,.25);color:#eef8ff}
+.dashboard-aquarium-row{position:relative;display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-padding:0 8px;padding:6px 3px 12px;-webkit-overflow-scrolling:touch}
+.dashboard-aquarium-row::-webkit-scrollbar{display:none}
+.dashboard-aqua-card{position:relative;flex:0 0 min(82%,360px);min-height:245px;scroll-snap-align:center;border-radius:24px;background:linear-gradient(180deg,#113657,#081d33);border:1px solid rgba(151,209,255,.26);overflow:hidden;box-shadow:0 14px 28px rgba(0,0,0,.24);cursor:pointer}
+.dashboard-aqua-cover{height:132px;display:grid;place-items:center;font-size:50px;background-size:cover;background-position:center;position:relative}
+.dashboard-aqua-cover:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(3,12,23,.08),rgba(3,12,23,.62))}
+.dashboard-aqua-cover span{position:relative;z-index:2;filter:drop-shadow(0 8px 10px rgba(0,0,0,.35))}
+.dashboard-cover-marine{background:radial-gradient(circle at 28% 22%,rgba(76,201,240,.90),rgba(4,91,142,.42) 34%,transparent 55%),linear-gradient(135deg,#06365f,#0b1b31 70%)}
+.dashboard-cover-fresh{background:radial-gradient(circle at 22% 20%,rgba(132,204,22,.82),rgba(22,101,52,.40) 35%,transparent 58%),linear-gradient(135deg,#064e3b,#081d33 72%)}
+.dashboard-aqua-body{padding:13px 14px 15px}
+.dashboard-aqua-body h3{font-size:23px;margin:0 0 7px;color:#fff;line-height:1.05}
+.dashboard-aqua-meta{display:flex;flex-wrap:wrap;gap:7px;margin:0 0 11px}
+.dashboard-aqua-meta span{display:inline-flex;align-items:center;border-radius:999px;padding:6px 9px;background:rgba(255,255,255,.08);color:#d6eaff;font-size:13px;font-weight:850;border:1px solid rgba(180,220,255,.14)}
+.dashboard-aqua-open{display:inline-flex;align-items:center;border-radius:999px;padding:8px 11px;background:rgba(34,197,94,.14);color:#99f6c4;font-style:normal;font-weight:900;font-size:13px}
+.dashboard-empty{border:1px dashed rgba(160,215,255,.34);border-radius:22px;padding:18px;background:rgba(255,255,255,.045);color:#d9ecff}
+.dashboard-ai-card{border:1px solid var(--line);border-radius:24px;padding:15px;margin:14px 0;background:linear-gradient(180deg,rgba(17,50,82,.95),rgba(8,28,49,.95));box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.dashboard-ai-card h3{font-size:21px;margin-bottom:8px}.dashboard-ai-card p{color:#cbdff0;line-height:1.42;margin:0 0 12px}.dashboard-ai-pills{display:flex;flex-wrap:wrap;gap:8px}.dashboard-ai-pills span{border:1px solid rgba(170,220,255,.19);background:rgba(255,255,255,.06);color:#e8f6ff;border-radius:999px;padding:7px 10px;font-weight:850;font-size:13px}
+.dashboard-utility-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:14px 0}.dashboard-utility-grid article{border:1px solid var(--line);border-radius:22px;padding:14px;background:linear-gradient(180deg,rgba(15,43,71,.94),rgba(8,28,49,.94));box-shadow:0 8px 20px rgba(0,0,0,.16)}.dashboard-utility-grid h3{font-size:18px;margin-bottom:7px}.dashboard-utility-grid p{color:#bfd2e3;min-height:38px}.dashboard-utility-grid button{width:100%;background:rgba(20,140,255,.18);color:#d7efff}
+@media(max-width:760px){.dashboard-hero-main{border-radius:24px;padding:13px;margin-top:10px}.dashboard-hero-head{align-items:flex-start}.dashboard-hero-head h2{font-size:27px}.dashboard-hero-actions{flex-direction:column}.dashboard-hero-actions button{padding:9px 10px}.dashboard-aqua-card{flex-basis:88%;min-height:236px}.dashboard-aqua-cover{height:124px}.dashboard-utility-grid{grid-template-columns:1fr}.dashboard-utility-grid p{min-height:0}}
+@media(max-width:430px){.dashboard-hero-head{display:block}.dashboard-hero-actions{margin-top:10px;flex-direction:row}.dashboard-hero-actions button{flex:1}.dashboard-aqua-card{flex-basis:91%}.dashboard-aqua-body h3{font-size:21px}}
