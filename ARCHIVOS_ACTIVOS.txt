@@ -1,19 +1,42 @@
 ACUARIONEXO · MAPA REAL DE NUCLEO ACTIVO · 24/05
 
+FUENTE DE VERDAD
+- Rama unica de trabajo: main
+- No usar ramas de prueba para continuar
+- No crear archivos nuevos sin comprobar primero
+
 NUCLEO REAL ACTIVO
 - index.html
 - config.js
 - styles.css
-- dashboard-ui.css
 - app.js
-- navigation-engine.js
 
-MOTORES ACTIVOS REALES
+MOTORES ACTIVOS CARGADOS POR index.html
 - measurement-schema.js
 - measurement-ai.js
 - measurement-engine.js
-- parameters-engine.js
+- photo-ai.js
 - parameters-ui.js
+
+BOOTSTRAP OFICIAL
+- app.js
+
+REGLAS OBLIGATORIAS
+- app.js es el unico arranque de la app
+- index.html carga explicita y ordenada
+- no usar loaders dinamicos
+- no usar inyeccion de scripts por Date.now()
+- no usar parches visuales al final
+- no duplicar navegacion en home y bottom-nav
+- no reactivar archivos legacy sin revisar index.html
+
+NO ACTIVAR / LEGACY
+Estos archivos no deben cargarse desde index.html:
+- dashboard-ui.css
+- navigation-engine.js
+- nav-visual-fix.js
+- tank-compact-ui.js
+- parameters-engine.js
 - fichas-engine.js
 - inventario-engine.js
 - microfauna-engine.js
@@ -21,22 +44,6 @@ MOTORES ACTIVOS REALES
 - studio-gemini-engine.js
 - gemini-engine.js
 - ai-engine.js
-- photo-ai.js
-- nav-visual-fix.js
-- tank-compact-ui.js
-
-BOOTSTRAP OFICIAL
-UNICO BOOTSTRAP:
-- navigation-engine.js
-
-REGLAS OBLIGATORIAS
-- app.js NO debe arrancar la app
-- no usar loaders dinamicos
-- no usar inyeccion de scripts por Date.now()
-- un unico navigation engine
-- index.html carga explicita y ordenada
-
-EN CUARENTENA / LEGACY
 - index-clean.html
 - app-loader-clean.js
 - modules-lite.js
@@ -51,22 +58,19 @@ EN CUARENTENA / LEGACY
 - product-crop-engine.js
 - studio-visual-engine.js
 
-NO BORRAR TODAVIA
-Estos archivos quedan conservados hasta comprobar:
-1. login
-2. dashboard
-3. acuarios
-4. parametros
-5. admin
-6. studio
-7. fotos
-8. animales
+COMPROBACIONES ANTES DE SEGUIR
+1. index.html no carga archivos legacy
+2. app.js no contiene "Navegacion rapida" ni "Navegación rápida"
+3. dashboard muestra una sola navegacion inferior
+4. acuarios abre ficha sin cambiar de contexto
+5. parametros carga con window.am(), window.S(), window.q y window.s
+6. no hay ramas alternativas usadas para publicar
 
 OBJETIVO FINAL
-Reducir AcuarioNexo a:
+AcuarioNexo queda reducido a:
 - 1 index
-- 1 bootstrap
-- 1 navigation engine
-- modulos independientes limpios
+- 1 bootstrap real: app.js
+- 1 sistema visual: styles.css
+- motores separados solo cuando index.html los carga de forma explicita
 - sin parches visuales agresivos
 - sin loaders dinamicos
