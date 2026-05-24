@@ -1,9 +1,9 @@
-/* AcuarioNexo · Motor base con arranque seguro */
+/* AcuarioNexo · Motor base sin bootstrap duplicado */
 const c=window.ACUARIONEXO_CONFIG;
 const s=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_KEY);
 const A=document.getElementById('app');
 window.c=c;window.s=s;window.A=A;
-document.getElementById('version').textContent=c.APP_VERSION+' · clean';
+document.getElementById('version').textContent=(c.APP_VERSION||'AcuarioNexo')+' · core-repair';
 let q=null;
 const $=i=>document.getElementById(i);
 const v=i=>$(i)?.value?.trim()||'';
@@ -19,7 +19,6 @@ async function iniciar(){try{let{error}=await s.auth.signInWithPassword({email:v
 window.iniciar=iniciar;
 async function crear(){let{error}=await s.auth.signUp({email:v('em'),password:v('pw')});$('x').innerHTML=error?M(error.message,'error'):M('Cuenta creada.','success')}
 window.crear=crear;
-async function boot(){let r=await s.auth.getSession();window.u=r.data.session?.user||null;let out=$('logoutBtn');if(out){out.classList.toggle('hidden',!window.u);out.onclick=async()=>{await s.auth.signOut();location.replace(location.pathname+'?v='+Date.now())}}if(!window.u){login();return}setTimeout(function(){if(window.AcuarioNexoNavigation&&window.AcuarioNexoNavigation.safeGo){window.AcuarioNexoNavigation.safeGo('Dashboard')}else{S('<section class="card"><h2>AcuarioNexo</h2><p>Sesión iniciada.</p><button class="primary" onclick="location.reload()">Cargar app</button></section>')}},500)}
 window.home=function(){if(window.AcuarioNexoNavigation?.safeGo)return window.AcuarioNexoNavigation.safeGo('Dashboard')};
 window.dashboard=window.home;
 window.menu=function(){return''};
@@ -36,4 +35,4 @@ window.panel=function(){S(am()+`<section class="card"><h2>Ficha</h2><p>${E(windo
 window.anis=async function(){let{data}=await s.from('animals').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false});S(am()+`<section class="card"><h2>Animales</h2>${(data||[]).map(a=>`<div class="item"><b>${E(a.common_name)}</b></div>`).join('')||M('Sin animales')}</section>`)};
 window.fotos=function(){S(am()+`<section class="card"><h2>Fotos</h2></section>`)};
 window.hosp=function(){S(am()+`<section class="card"><h2>Hospital</h2></section>`)};
-boot();
+/* Importante: app.js NO arranca la app. El único bootstrap real es navigation-engine.js. */
