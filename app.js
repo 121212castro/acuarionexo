@@ -1,4 +1,4 @@
-/* AcuarioNexo · Motor heredado limpio */
+/* AcuarioNexo · Motor base con arranque seguro */
 const c=window.ACUARIONEXO_CONFIG;
 const s=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_KEY);
 const A=document.getElementById('app');
@@ -13,7 +13,13 @@ const M=(t,k='notice')=>`<div class="${k}">${E(t)}</div>`;
 const S=h=>{A.innerHTML=h;scrollTo(0,0)};
 window.S=S;window.E=E;window.M=M;
 document.getElementById('refreshAppBtn')?.addEventListener('click',()=>location.replace(location.pathname+'?v='+Date.now()));
-window.login=function(){};
+function login(){S(`<section class="card"><h2>Entrar</h2><label>Email</label><input id="em" type="email" autocomplete="email"><label>Contraseña</label><input id="pw" type="password" autocomplete="current-password"><button class="primary" onclick="iniciar()">Entrar</button><button onclick="crear()">Crear cuenta</button><div id="x"></div></section>`)}
+window.login=login;
+async function iniciar(){try{let{error}=await s.auth.signInWithPassword({email:v('em'),password:v('pw')});if(error)throw error;location.replace(location.pathname+'?v='+Date.now())}catch(e){$('x').innerHTML=M(e.message,'error')}}
+window.iniciar=iniciar;
+async function crear(){let{error}=await s.auth.signUp({email:v('em'),password:v('pw')});$('x').innerHTML=error?M(error.message,'error'):M('Cuenta creada.','success')}
+window.crear=crear;
+async function boot(){let r=await s.auth.getSession();window.u=r.data.session?.user||null;let out=$('logoutBtn');if(out){out.classList.toggle('hidden',!window.u);out.onclick=async()=>{await s.auth.signOut();location.replace(location.pathname+'?v='+Date.now())}}if(!window.u){login();return}setTimeout(function(){if(window.AcuarioNexoNavigation&&window.AcuarioNexoNavigation.safeGo){window.AcuarioNexoNavigation.safeGo('Dashboard')}else{S('<section class="card"><h2>AcuarioNexo</h2><p>Sesión iniciada.</p><button class="primary" onclick="location.reload()">Cargar app</button></section>')}},500)}
 window.home=function(){if(window.AcuarioNexoNavigation?.safeGo)return window.AcuarioNexoNavigation.safeGo('Dashboard')};
 window.dashboard=window.home;
 window.menu=function(){return''};
@@ -30,4 +36,4 @@ window.panel=function(){S(am()+`<section class="card"><h2>Ficha</h2><p>${E(windo
 window.anis=async function(){let{data}=await s.from('animals').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false});S(am()+`<section class="card"><h2>Animales</h2>${(data||[]).map(a=>`<div class="item"><b>${E(a.common_name)}</b></div>`).join('')||M('Sin animales')}</section>`)};
 window.fotos=function(){S(am()+`<section class="card"><h2>Fotos</h2></section>`)};
 window.hosp=function(){S(am()+`<section class="card"><h2>Hospital</h2></section>`)};
-/* IMPORTANTE: eliminado init() automático y cualquier render antiguo */
+boot();
