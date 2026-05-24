@@ -1,54 +1,72 @@
-ACUARIONEXO - MAPA DE ARCHIVOS ACTIVOS
+ACUARIONEXO · MAPA REAL DE NUCLEO ACTIVO · 24/05
 
-ACTIVOS PRINCIPALES
-index.html
-index-clean.html
-config.js
-styles.css
-manifest.webmanifest
-app-loader-clean.js
+NUCLEO REAL ACTIVO
+- index.html
+- config.js
+- styles.css
+- dashboard-ui.css
+- app.js
+- navigation-engine.js
 
-MOTORES ACTIVOS
-version-engine.js
-cache-engine.js
-state-engine.js
-navigation-engine.js
-fichas-engine.js
-ai-engine.js
-gemini-engine.js
-inventario-engine.js
-microfauna-engine.js
-parameters-engine.js
-admin-engine.js
-studio-visual-engine.js
-nav-visual-fix.js
+MOTORES ACTIVOS REALES
+- measurement-schema.js
+- measurement-ai.js
+- measurement-engine.js
+- parameters-engine.js
+- parameters-ui.js
+- fichas-engine.js
+- inventario-engine.js
+- microfauna-engine.js
+- admin-engine.js
+- studio-gemini-engine.js
+- gemini-engine.js
+- ai-engine.js
+- photo-ai.js
+- nav-visual-fix.js
+- tank-compact-ui.js
 
-RECURSOS ACTIVOS
-assets/fondos/
+BOOTSTRAP OFICIAL
+UNICO BOOTSTRAP:
+- navigation-engine.js
 
-DOCUMENTACION UTIL
-README.md
-ADMIN_PANEL_PLAN.md
-CONSOLIDACION_23_05.md
-MOTOR_LIMPIO_ESTADO.md
-NEXOADMIN_FICHAS_SCHEMA.md
-NEXOADMIN_NOTAS.md
+REGLAS OBLIGATORIAS
+- app.js NO debe arrancar la app
+- no usar loaders dinamicos
+- no usar inyeccion de scripts por Date.now()
+- un unico navigation engine
+- index.html carga explicita y ordenada
 
-EN REVISION ANTES DE ARCHIVAR
-app.js
-modules-lite.js
-photo-ai.js
-measurement-ai.js
-measurement-engine.js
-measurement-schema.js
-parameters-ui.js
-premium-ui.js
-recommendation-engine.js
-alerts-engine.js
-alerts-inbox-engine.js
-crop-visual-engine.js
-product-crop-engine.js
-performance-engine.js
+EN CUARENTENA / LEGACY
+- index-clean.html
+- app-loader-clean.js
+- modules-lite.js
+- premium-ui.js
+- dashboard-home-aquariums.js
+- param-status-simple.js
+- performance-engine.js
+- recommendation-engine.js
+- alerts-engine.js
+- alerts-inbox-engine.js
+- crop-visual-engine.js
+- product-crop-engine.js
+- studio-visual-engine.js
 
-REGLA DE LIMPIEZA
-No borrar nada critico sin comprobar primero que abre la app, carga Admin, carga Studio visual y funcionan Inventario, Parametros, Microfauna y Acuarios.
+NO BORRAR TODAVIA
+Estos archivos quedan conservados hasta comprobar:
+1. login
+2. dashboard
+3. acuarios
+4. parametros
+5. admin
+6. studio
+7. fotos
+8. animales
+
+OBJETIVO FINAL
+Reducir AcuarioNexo a:
+- 1 index
+- 1 bootstrap
+- 1 navigation engine
+- modulos independientes limpios
+- sin parches visuales agresivos
+- sin loaders dinamicos
