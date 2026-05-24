@@ -1,63 +1,164 @@
-/* AcuarioNexo · App publicada · dashboard móvil reformado */
-const c=window.ACUARIONEXO_CONFIG;
-const s=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_KEY);
-const A=document.getElementById('app');
-window.c=c;window.s=s;window.A=A;
-document.getElementById('version').textContent=(c.APP_VERSION||'AcuarioNexo')+' · app-reformada';
-let q=null;
-const $=i=>document.getElementById(i);
-const v=i=>$(i)?.value?.trim()||'';
-const N=i=>v(i)===''?null:Number(v(i));
-const E=x=>String(x??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
-const M=(t,k='notice')=>`<div class="${k}">${E(t)}</div>`;
-const S=h=>{A.innerHTML=h;scrollTo(0,0)};
-window.S=S;window.E=E;window.M=M;
-document.getElementById('refreshAppBtn')?.addEventListener('click',()=>location.replace(location.pathname+'?v='+Date.now()));
+/* AcuarioNexo · núcleo limpio */
+const c = window.ACUARIONEXO_CONFIG;
+const s = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_KEY);
+const A = document.getElementById('app');
+window.c = c; window.s = s; window.A = A;
+
+document.getElementById('version').textContent = (c.APP_VERSION || 'AcuarioNexo') + ' · núcleo limpio';
+
+const state = { user:null, aquarium:null, aquariums:[] };
+let q = null;
+window.q = q;
+window.u = null;
+
+const $ = id => document.getElementById(id);
+const val = id => ($(id)?.value || '').trim();
+const num = id => val(id) === '' ? null : Number(val(id));
+const esc = x => String(x ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
+const msg = (text, type='notice') => `<div class="${type}">${esc(text)}</div>`;
+function render(html){ A.innerHTML = html; window.scrollTo(0,0); }
+window.S = render; window.E = esc; window.M = msg;
+
+document.getElementById('refreshAppBtn')?.addEventListener('click', () => location.replace(location.pathname + '?v=' + Date.now()));
+
+function calcLiters(l,w,h){ l=+l; w=+w; h=+h; return l&&w&&h ? Math.round(l*w*h/10)/100 : null; }
+window.calc = function(){
+  const tank = calcLiters(val('l'), val('w'), val('h'));
+  const sump = calcLiters(val('sl'), val('sw'), val('sh'));
+  const total = Math.round(((tank||0)+(sump||0))*100)/100;
+  if($('cal')) $('cal').innerHTML = msg(`Urna ${tank ?? '-'} L · sump ${sump ?? '-'} L · total ${total || '-'} L`);
+};
+
+function shell(body, active='inicio'){
+  render(body + bottomNav(active));
+}
 
 function bottomNav(active='inicio'){
-  const item=(id,fn,ico,txt)=>`<button class="${active===id?'active':''}" onclick="${fn}"><span>${ico}</span><small>${txt}</small></button>`;
-  return `<nav class="bottom-nav app-bottom-nav">${item('inicio','dashboard()','⌂','Inicio')}${item('acuarios','dashboard()','▣','Acuarios')}${item('biblioteca','biblioteca()','□','Biblioteca')}${item('avisos','tareas()','♢','Avisos')}${item('microfauna','microfauna()','∞','Microfauna')}</nav>`;
+  const item = (id, label, icon, action) => `<button class="nav-item ${active===id?'active':''}" onclick="${action}"><span>${icon}</span><small>${label}</small></button>`;
+  return `<nav class="bottom-nav">${item('inicio','Inicio','⌂','dashboard()')}${item('acuarios','Acuarios','▣','dashboard()')}${item('biblioteca','Biblioteca','□','biblioteca()')}${item('avisos','Avisos','♢','tareas()')}${item('microfauna','Microfauna','∞','microfauna()')}</nav>`;
 }
-function withShell(html,active='inicio'){S(html+bottomNav(active))}
 
-function login(){S(`<section class="card"><h2>Entrar</h2><label>Email</label><input id="em" type="email" autocomplete="email"><label>Contraseña</label><input id="pw" type="password" autocomplete="current-password"><button class="primary" onclick="iniciar()">Entrar</button><button onclick="crear()">Crear cuenta</button><div id="x"></div></section>`)}
-window.login=login;
-async function iniciar(){try{let{error}=await s.auth.signInWithPassword({email:v('em'),password:v('pw')});if(error)throw error;location.replace(location.pathname+'?v='+Date.now())}catch(e){$('x').innerHTML=M(e.message,'error')}}
-window.iniciar=iniciar;
-async function crear(){let{error}=await s.auth.signUp({email:v('em'),password:v('pw')});$('x').innerHTML=error?M(error.message,'error'):M('Cuenta creada.','success')}
-window.crear=crear;
-window.home=function(){dashboard()};
-window.menu=function(){return''};
-function L(a,b,c){a=+a;b=+b;c=+c;return a&&b&&c?Math.round(a*b*c/10)/100:null}
-window.calc=function(){let r=L(v('l'),v('w'),v('h')),su=L(v('sl'),v('sw'),v('sh')),t=Math.round(((r||0)+(su||0))*100)/100;if($('cal'))$('cal').innerHTML=M(`Urna ${r??'-'} L · sump ${su??'-'} L · total ${t||'-'} L`)};
-
-function aquariumIcon(a){return a.aquarium_type==='freshwater'?'🌿':(a.aquarium_type==='hospital'?'🏥':'🐠')}
-function aquariumCard(a){return `<article class="aqua-card app-aqua-card" onclick="openA('${a.id}')"><div class="aqua-photo">${aquariumIcon(a)}</div><div class="aqua-body"><h3>${E(a.name)}</h3><p>${E(a.aquarium_type||'Acuario')}</p><span>${E(a.real_liters??a.liters??'-')} L</span></div></article>`}
-async function dashboard(){
-  if(!window.u)return login();
-  let {data,error}=await s.from('aquariums').select('*').eq('user_id',window.u.id).order('created_at',{ascending:false});
-  if(error)return S(M(error.message,'error'));
-  const list=data||[];
-  withShell(`<section class="home-hero"><div><small>Resumen</small><h2>Mis acuarios</h2><p>${list.length} acuarios</p></div><button onclick="formA()">+</button></section><section class="home-section"><div class="home-section-head"><h2>Acuarios</h2><button onclick="formA()">Nuevo</button></div><div class="aquarium-row app-aquarium-row">${list.map(aquariumCard).join('')||'<p class="small">Sin acuarios todavía.</p>'}</div></section><section class="quick-panel"><h2>Navegación rápida</h2><div class="quick-actions"><button onclick="biblioteca()"><span>□</span>Biblioteca</button><button onclick="tareas()"><span>♢</span>Avisos</button><button onclick="microfauna()"><span>∞</span>Microfauna</button></div></section>`,'inicio')
+function page(title, body, active='inicio'){
+  shell(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`, active);
 }
-window.dashboard=dashboard;
-window.acs=dashboard;
-window.formA=function(a={}){S(`<section class="card"><button onclick="dashboard()">← Volver</button><h2>${a.id?'Editar':'Nuevo'} acuario</h2><label>Nombre</label><input id="name" value="${E(a.name||'')}"><label>Tipo</label><select id="type"><option value="reef" ${a.aquarium_type==='reef'?'selected':''}>Reef</option><option value="marine" ${a.aquarium_type==='marine'?'selected':''}>Marino</option><option value="freshwater" ${a.aquarium_type==='freshwater'?'selected':''}>Dulce</option><option value="hospital" ${a.aquarium_type==='hospital'?'selected':''}>Hospital</option><option value="quarantine" ${a.aquarium_type==='quarantine'?'selected':''}>Cuarentena</option><option value="other" ${a.aquarium_type==='other'?'selected':''}>Otro</option></select><label>Subtipo</label><input id="sub" value="${E(a.subtype||'')}"><label>Descripción/problema</label><textarea id="des">${E(a.description||'')}</textarea><div class="grid4"><div><label>Largo</label><input id="l" type="number" value="${E(a.tank_length_cm||'')}" oninput="calc()"></div><div><label>Ancho</label><input id="w" type="number" value="${E(a.tank_width_cm||'')}" oninput="calc()"></div><div><label>Alto agua</label><input id="h" type="number" value="${E(a.display_water_height_cm||'')}" oninput="calc()"></div><div><label>Sump largo</label><input id="sl" type="number" value="${E(a.sump_length_cm||'')}" oninput="calc()"></div><div><label>Sump ancho</label><input id="sw" type="number" value="${E(a.sump_width_cm||'')}" oninput="calc()"></div><div><label>Sump alto agua</label><input id="sh" type="number" value="${E(a.sump_height_cm||'')}" oninput="calc()"></div></div><div id="cal">${M('Introduce medidas')}</div><button class="primary" onclick="saveA('${a.id||''}')">Guardar</button><div id="x"></div></section>`)};
-window.editA=async function(id){let{data,error}=await s.from('aquariums').select('*').eq('id',id).single();if(error)return alert(error.message);formA(data)};
-window.saveA=async function(id=''){try{let r=L(v('l'),v('w'),v('h')),su=L(v('sl'),v('sw'),v('sh')),tot=Math.round(((r||0)+(su||0))*100)/100,row={user_id:window.u.id,name:v('name'),aquarium_type:v('type'),subtype:v('sub'),status:'active',description:v('des'),tank_length_cm:N('l'),tank_width_cm:N('w'),display_water_height_cm:N('h'),sump_length_cm:N('sl'),sump_width_cm:N('sw'),sump_height_cm:N('sh'),real_liters:tot||r,liters:tot||r,ai_summary:'Pendiente IA'};let error;if(id){({error}=await s.from('aquariums').update(row).eq('id',id))}else{({error}=await s.from('aquariums').insert(row))}if(error)throw error;dashboard()}catch(e){$('x').innerHTML=M(e.message,'error')}};
-window.deleteA=async function(id){if(!confirm('¿Borrar este acuario?'))return;let{error}=await s.from('aquariums').delete().eq('id',id);if(error)return alert(error.message);dashboard()};
-window.openA=async function(id){let{data,error}=await s.from('aquariums').select('*').eq('id',id).single();if(error)return S(M(error.message,'error'));q=data;window.q=q;panel()};
-window.am=function(){if(!window.q)return'';let litros=window.q.real_liters??window.q.liters??'-';let tipo=window.q.aquarium_type||window.q.subtype||'Acuario';return`<section class="aquarium-head"><button onclick="dashboard()">←</button><div><h2>${E(window.q.name)}</h2><p>${E(litros)} L · ${E(tipo)}</p></div></section><nav class="tank-tabs"><button onclick="panel()">Resumen</button><button onclick="pars&&pars()">Parámetros</button><button onclick="anis&&anis()">Animales</button><button onclick="fotos&&fotos()">Fotos</button><button onclick="historialAcuario()">Historial</button></nav>`};
-window.panel=function(){withShell(am()+`<section class="home-section"><h2>Ficha actual</h2><p>Todo lo que se guarde desde aquí queda dentro de <b>${E(window.q?.name||'este acuario')}</b>.</p><div class="quick-actions"><button onclick="pars&&pars()"><span>🧪</span>Parámetros</button><button onclick="anis&&anis()"><span>🐟</span>Animales</button><button onclick="fotos&&fotos()"><span>📷</span>Fotos</button></div>${window.q?.description?`<p>${E(window.q.description)}</p>`:''}</section>`,'acuarios')};
-window.anis=async function(){let{data}=await s.from('animals').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false});withShell(am()+`<section class="home-section"><h2>Animales · ${E(window.q.name)}</h2>${(data||[]).map(a=>`<div class="item"><b>${E(a.common_name)}</b></div>`).join('')||M('Sin animales en este acuario')}</section>`,'acuarios')};
-window.fotos=function(){withShell(am()+`<section class="home-section"><h2>Fotos · ${E(window.q.name)}</h2><p>Fotos propias de este acuario.</p></section>`,'acuarios')};
-window.graficosAcuario=function(){withShell(am()+`<section class="home-section"><h2>Gráficos · ${E(window.q.name)}</h2><p>Los gráficos deben salir de las mediciones de este acuario.</p></section>`,'acuarios')};
-window.icpAcuario=function(){withShell(am()+`<section class="home-section"><h2>ICP · ${E(window.q.name)}</h2></section>`,'acuarios')};
-window.historialAcuario=function(){withShell(am()+`<section class="home-section"><h2>Historial · ${E(window.q.name)}</h2></section>`,'acuarios')};
-window.hosp=function(){withShell(am()+`<section class="home-section"><h2>Hospital · ${E(window.q.name)}</h2></section>`,'acuarios')};
-window.biblioteca=function(){withShell(`<section class="home-section"><h2>Biblioteca</h2><p>Fichas generales.</p></section>`,'biblioteca')};
-window.tareas=function(){withShell(`<section class="home-section"><h2>Avisos</h2><p>Tareas y recordatorios.</p></section>`,'avisos')};
-window.microfauna=function(){withShell(`<section class="home-section"><h2>Microfauna</h2><p>Cultivos y seguimiento.</p></section>`,'microfauna')};
-window.inventario=function(){withShell(`<section class="home-section"><h2>Inventario</h2></section>`,'inicio')};
-async function boot(){try{let r=await s.auth.getSession();window.u=r.data.session?.user||null;document.getElementById('logoutBtn')?.classList.toggle('hidden',!window.u);document.getElementById('logoutBtn').onclick=async()=>{await s.auth.signOut();location.replace(location.pathname+'?v='+Date.now())};window.u?dashboard():login()}catch(e){S(M(e.message,'error'))}}
-if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
+
+function login(){
+  render(`<section class="auth-card"><h2>Entrar</h2><label>Email</label><input id="em" type="email" autocomplete="email"><label>Contraseña</label><input id="pw" type="password" autocomplete="current-password"><button class="primary" onclick="iniciar()">Entrar</button><button onclick="crear()">Crear cuenta</button><div id="x"></div></section>`);
+}
+window.login = login;
+
+window.iniciar = async function(){
+  try{
+    const { error } = await s.auth.signInWithPassword({ email: val('em'), password: val('pw') });
+    if(error) throw error;
+    await boot();
+  }catch(e){ $('x').innerHTML = msg(e.message, 'error'); }
+};
+
+window.crear = async function(){
+  const { error } = await s.auth.signUp({ email: val('em'), password: val('pw') });
+  $('x').innerHTML = error ? msg(error.message,'error') : msg('Cuenta creada. Revisa el correo si Supabase pide confirmación.','success');
+};
+
+async function loadAquariums(){
+  const { data, error } = await s.from('aquariums').select('*').eq('user_id', state.user.id).order('created_at', { ascending:false });
+  if(error) throw error;
+  state.aquariums = data || [];
+  return state.aquariums;
+}
+
+function aquariumIcon(a){
+  if(a.aquarium_type === 'freshwater') return '🌿';
+  if(a.aquarium_type === 'hospital' || a.aquarium_type === 'quarantine') return '🏥';
+  return '🐠';
+}
+
+function aquariumCard(a){
+  const liters = a.real_liters ?? a.liters ?? '-';
+  return `<article class="tank-card" onclick="openA('${a.id}')"><div class="tank-art">${aquariumIcon(a)}</div><div class="tank-info"><h3>${esc(a.name)}</h3><p>${esc(a.aquarium_type || 'Acuario')}${a.subtype ? ' · '+esc(a.subtype) : ''}</p><span>${esc(liters)} L</span></div><b>›</b></article>`;
+}
+
+window.dashboard = async function(){
+  if(!state.user) return login();
+  try{
+    const list = await loadAquariums();
+    shell(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Mis acuarios</h2><p>${list.length} acuarios</p></div><button onclick="formA()">+</button></section><section class="panel"><div class="panel-head"><h2>Acuarios</h2><button onclick="formA()">Nuevo</button></div><div class="tank-list">${list.map(aquariumCard).join('') || '<p class="small">Sin acuarios todavía.</p>'}</div></section><section class="panel"><h2>Navegación rápida</h2><div class="quick-actions"><button onclick="biblioteca()"><span>□</span>Biblioteca</button><button onclick="tareas()"><span>♢</span>Avisos</button><button onclick="microfauna()"><span>∞</span>Microfauna</button></div></section>`, 'inicio');
+  }catch(e){ render(msg(e.message,'error')); }
+};
+window.acs = window.dashboard;
+window.home = window.dashboard;
+window.menu = () => '';
+
+window.formA = function(a={}){
+  render(`<section class="panel"><button onclick="dashboard()">← Volver</button><h2>${a.id?'Editar':'Nuevo'} acuario</h2><label>Nombre</label><input id="name" value="${esc(a.name||'')}"><label>Tipo</label><select id="type"><option value="reef" ${a.aquarium_type==='reef'?'selected':''}>Reef</option><option value="marine" ${a.aquarium_type==='marine'?'selected':''}>Marino</option><option value="freshwater" ${a.aquarium_type==='freshwater'?'selected':''}>Dulce</option><option value="hospital" ${a.aquarium_type==='hospital'?'selected':''}>Hospital</option><option value="quarantine" ${a.aquarium_type==='quarantine'?'selected':''}>Cuarentena</option><option value="other" ${a.aquarium_type==='other'?'selected':''}>Otro</option></select><label>Subtipo</label><input id="sub" value="${esc(a.subtype||'')}"><label>Descripción</label><textarea id="des">${esc(a.description||'')}</textarea><div class="form-grid"><div><label>Largo</label><input id="l" type="number" value="${esc(a.tank_length_cm||'')}" oninput="calc()"></div><div><label>Ancho</label><input id="w" type="number" value="${esc(a.tank_width_cm||'')}" oninput="calc()"></div><div><label>Alto agua</label><input id="h" type="number" value="${esc(a.display_water_height_cm||'')}" oninput="calc()"></div><div><label>Sump largo</label><input id="sl" type="number" value="${esc(a.sump_length_cm||'')}" oninput="calc()"></div><div><label>Sump ancho</label><input id="sw" type="number" value="${esc(a.sump_width_cm||'')}" oninput="calc()"></div><div><label>Sump alto</label><input id="sh" type="number" value="${esc(a.sump_height_cm||'')}" oninput="calc()"></div></div><div id="cal">${msg('Introduce medidas')}</div><button class="primary" onclick="saveA('${a.id||''}')">Guardar</button><div id="x"></div></section>`);
+};
+
+window.editA = async function(id){
+  const { data, error } = await s.from('aquariums').select('*').eq('id',id).single();
+  if(error) return alert(error.message);
+  formA(data);
+};
+
+window.saveA = async function(id=''){
+  try{
+    const tank = calcLiters(val('l'), val('w'), val('h'));
+    const sump = calcLiters(val('sl'), val('sw'), val('sh'));
+    const total = Math.round(((tank||0)+(sump||0))*100)/100;
+    const row = { user_id:state.user.id, name:val('name'), aquarium_type:val('type'), subtype:val('sub'), status:'active', description:val('des'), tank_length_cm:num('l'), tank_width_cm:num('w'), display_water_height_cm:num('h'), sump_length_cm:num('sl'), sump_width_cm:num('sw'), sump_height_cm:num('sh'), real_liters:total||tank, liters:total||tank, ai_summary:'Pendiente IA' };
+    let error;
+    if(id) ({error}=await s.from('aquariums').update(row).eq('id',id)); else ({error}=await s.from('aquariums').insert(row));
+    if(error) throw error;
+    dashboard();
+  }catch(e){ $('x').innerHTML = msg(e.message,'error'); }
+};
+
+window.deleteA = async function(id){
+  if(!confirm('¿Borrar este acuario?')) return;
+  const { error } = await s.from('aquariums').delete().eq('id',id);
+  if(error) return alert(error.message);
+  dashboard();
+};
+
+window.openA = async function(id){
+  const { data, error } = await s.from('aquariums').select('*').eq('id',id).single();
+  if(error) return render(msg(error.message,'error'));
+  state.aquarium = data; q = data; window.q = data;
+  panel();
+};
+
+window.am = function(){
+  if(!window.q) return '';
+  const liters = window.q.real_liters ?? window.q.liters ?? '-';
+  const type = window.q.aquarium_type || window.q.subtype || 'Acuario';
+  return `<section class="tank-head"><button onclick="dashboard()">←</button><div><h2>${esc(window.q.name)}</h2><p>${esc(liters)} L · ${esc(type)}</p></div></section><nav class="tank-tabs"><button onclick="panel()">Resumen</button><button onclick="pars&&pars()">Parámetros</button><button onclick="anis&&anis()">Animales</button><button onclick="fotos&&fotos()">Fotos</button><button onclick="historialAcuario()">Historial</button></nav>`;
+};
+
+window.panel = function(){
+  shell(am()+`<section class="panel"><h2>Ficha actual</h2><p>Todo lo que guardes aquí pertenece a <b>${esc(window.q?.name || 'este acuario')}</b>.</p><div class="quick-actions"><button onclick="pars&&pars()"><span>🧪</span>Parámetros</button><button onclick="anis&&anis()"><span>🐟</span>Animales</button><button onclick="fotos&&fotos()"><span>📷</span>Fotos</button></div>${window.q?.description ? `<p>${esc(window.q.description)}</p>` : ''}</section>`, 'acuarios');
+};
+
+window.anis = async function(){
+  const { data } = await s.from('animals').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false});
+  shell(am()+`<section class="panel"><h2>Animales</h2>${(data||[]).map(a=>`<div class="item"><b>${esc(a.common_name)}</b><p>${esc(a.status||'')}</p></div>`).join('') || msg('Sin animales en este acuario')}</section>`, 'acuarios');
+};
+window.fotos = function(){ shell(am()+`<section class="panel"><h2>Fotos</h2><p>Fotos propias de este acuario.</p></section>`, 'acuarios'); };
+window.historialAcuario = function(){ shell(am()+`<section class="panel"><h2>Historial</h2><p>Historial completo del acuario.</p></section>`, 'acuarios'); };
+window.graficosAcuario = function(){ shell(am()+`<section class="panel"><h2>Gráficos</h2><p>Gráficos desde mediciones.</p></section>`, 'acuarios'); };
+window.icpAcuario = function(){ shell(am()+`<section class="panel"><h2>ICP</h2><p>Analíticas ICP.</p></section>`, 'acuarios'); };
+window.hosp = function(){ shell(am()+`<section class="panel"><h2>Hospital</h2></section>`, 'acuarios'); };
+window.biblioteca = function(){ page('Biblioteca','<p>Fichas generales.</p>','biblioteca'); };
+window.tareas = function(){ page('Avisos','<p>Tareas y recordatorios.</p>','avisos'); };
+window.microfauna = function(){ page('Microfauna','<p>Cultivos y seguimiento.</p>','microfauna'); };
+window.inventario = function(){ page('Inventario','<p>Equipamiento y stock.</p>','inicio'); };
+
+async function boot(){
+  try{
+    const r = await s.auth.getSession();
+    state.user = r.data.session?.user || null;
+    window.u = state.user;
+    document.getElementById('logoutBtn')?.classList.toggle('hidden', !state.user);
+    document.getElementById('logoutBtn').onclick = async () => { await s.auth.signOut(); location.replace(location.pathname+'?v='+Date.now()); };
+    state.user ? dashboard() : login();
+  }catch(e){ render(msg(e.message,'error')); }
+}
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, {once:true}); else boot();
