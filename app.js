@@ -13,6 +13,7 @@ function num(id){ return val(id)==='' ? null : Number(val(id)); }
 function esc(x){ return String(x ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
 function msg(t,k='notice'){ return `<div class="${k}">${esc(t)}</div>`; }
 function render(html){ A.innerHTML = html; scrollTo(0,0); }
+function fecha(x){ if(!x) return 'Sin fecha'; const d=new Date(x); return isNaN(d)?'Sin fecha':d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
 window.S = render; window.E = esc; window.M = msg;
 
 document.getElementById('refreshAppBtn')?.addEventListener('click', () => location.reload());
@@ -95,7 +96,26 @@ window.editAnimal=async function(id){ setAqSection('animales'); const {data,erro
 window.deleteAnimal=async function(id){ if(!confirm('¿Eliminar este animal?')) return; const {error}=await s.from('animals').delete().eq('id',id); if(error) return alert(error.message); anis(); };
 
 window.fotos=function(){ setAqSection('fotos'); shell(am('fotos')+`<section class="panel"><h2>Fotos</h2><p>Fotos propias de este acuario.</p></section>`,'acuarios'); };
-window.historialAcuario=function(){ setAqSection('historial'); shell(am('historial')+`<section class="panel"><h2>Historial</h2><p>Historial completo del acuario.</p></section>`,'acuarios'); };
+window.historialAcuario=async function(){
+  setAqSection('historial');
+  shell(am('historial')+`<section class="panel"><h2>Historial</h2>${msg('Cargando historial...')}</section>`,'acuarios');
+  const items=[];
+  try{
+    const animals=await s.from('animals').select('created_at,updated_at,common_name,scientific_name,category,status,notes').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(50);
+    if(!animals.error) (animals.data||[]).forEach(a=>items.push({date:a.updated_at||a.created_at,type:'Animal',title:a.common_name||'Animal',text:[catEs(a.category),a.scientific_name,a.status,a.notes].filter(Boolean).join(' · ')}));
+    const measures=await s.from('aquarium_measurements').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(50);
+    if(!measures.error) (measures.data||[]).forEach(m=>items.push({date:m.measured_at||m.created_at,type:'Parámetro',title:m.parameter_label||m.parameter||'Medición',text:[m.display_value,m.value,m.test_method_label,m.notes].filter(Boolean).join(' · ')}));
+    const photos=await s.from('aquarium_photos').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(30);
+    if(!photos.error) (photos.data||[]).forEach(p=>items.push({date:p.created_at||p.taken_at,type:'Foto',title:p.title||p.caption||'Foto',text:p.notes||''}));
+    const tasks=await s.from('tasks').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(30);
+    if(!tasks.error) (tasks.data||[]).forEach(t=>items.push({date:t.completed_at||t.due_at||t.created_at,type:'Aviso/Tarea',title:t.title||'Tarea',text:[t.status,t.priority,t.notes].filter(Boolean).join(' · ')}));
+    const maintenance=await s.from('maintenance_events').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(30);
+    if(!maintenance.error) (maintenance.data||[]).forEach(m=>items.push({date:m.performed_at||m.created_at,type:'Mantenimiento',title:m.title||m.event_type||'Mantenimiento',text:[m.event_type,m.notes].filter(Boolean).join(' · ')}));
+    items.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
+    const html=items.length?items.map(i=>`<div class="item"><b>${esc(i.type)} · ${esc(i.title)}</b><p class="small">${esc(fecha(i.date))}</p>${i.text?`<p>${esc(i.text)}</p>`:''}</div>`).join(''):msg('Todavía no hay historial para este acuario.');
+    shell(am('historial')+`<section class="panel"><h2>Historial</h2>${html}</section>`,'acuarios');
+  }catch(e){ shell(am('historial')+`<section class="panel"><h2>Historial</h2>${msg(e.message,'error')}</section>`,'acuarios'); }
+};
 window.graficosAcuario=function(){ setAqSection('parametros'); shell(am('parametros')+`<section class="panel"><h2>Gráficos</h2><p>Gráficos desde mediciones.</p></section>`,'acuarios'); };
 window.icpAcuario=function(){ setAqSection('parametros'); shell(am('parametros')+`<section class="panel"><h2>ICP</h2><p>Analíticas ICP.</p></section>`,'acuarios'); };
 window.biblioteca=function(){ page('Biblioteca','<p>Fichas generales.</p>','biblioteca'); };
