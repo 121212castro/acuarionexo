@@ -2,7 +2,7 @@
 const c = window.ACUARIONEXO_CONFIG;
 const s = window.supabase.createClient(c.SUPABASE_URL, c.SUPABASE_KEY);
 const A = document.getElementById('app');
-const state = { user:null, aquarium:null, aquariums:[], section:'resumen' };
+const state = { user:null, aquarium:null, aquariums:[], section:'resumen', histFilter:'todo' };
 
 window.c = c; window.s = s; window.A = A; window.q = null; window.u = null; window.currentAqSection = 'resumen';
 document.getElementById('version').textContent = (c.APP_VERSION || 'AcuarioNexo') + ' · núcleo limpio';
@@ -12,8 +12,9 @@ function val(id){ return ($(id)?.value || '').trim(); }
 function num(id){ return val(id)==='' ? null : Number(val(id)); }
 function esc(x){ return String(x ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])); }
 function msg(t,k='notice'){ return `<div class="${k}">${esc(t)}</div>`; }
-function render(html){ A.innerHTML = html; scrollTo(0,0); }
 function fecha(x){ if(!x) return 'Sin fecha'; const d=new Date(x); return isNaN(d)?'Sin fecha':d.toLocaleDateString('es-ES',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function fechaDia(x){ if(!x) return 'Sin fecha'; const d=new Date(x); return isNaN(d)?'Sin fecha':d.toLocaleDateString('es-ES',{weekday:'long',day:'2-digit',month:'2-digit',year:'numeric'}); }
+function render(html){ A.innerHTML = html; scrollTo(0,0); requestAnimationFrame(()=>{ const a=document.querySelector('.tank-tabs .active'); if(a) a.scrollIntoView({block:'nearest',inline:'center'}); }); }
 window.S = render; window.E = esc; window.M = msg;
 
 document.getElementById('refreshAppBtn')?.addEventListener('click', () => location.reload());
@@ -22,7 +23,7 @@ function bottomNav(active='inicio'){
   const item=(id,label,icon,fn)=>`<button class="${active===id?'active':''}" onclick="${fn}"><span>${icon}</span><small>${label}</small></button>`;
   return `<nav class="bottom-nav">${item('inicio','Inicio','⌂','dashboard()')}${item('acuarios','Acuarios','▣','dashboard()')}${item('biblioteca','Biblioteca','□','biblioteca()')}${item('avisos','Avisos','♢','tareas()')}${item('microfauna','Microfauna','∞','microfauna()')}</nav>`;
 }
-function shell(body,active='inicio'){ render(body + bottomNav(active)); }
+function shell(body,active='inicio'){ render(body + '<div style="height:140px"></div>' + bottomNav(active)); }
 function page(title,body,active='inicio'){ shell(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`, active); }
 
 function setAqSection(section){ state.section = section; window.currentAqSection = section; }
@@ -96,24 +97,35 @@ window.editAnimal=async function(id){ setAqSection('animales'); const {data,erro
 window.deleteAnimal=async function(id){ if(!confirm('¿Eliminar este animal?')) return; const {error}=await s.from('animals').delete().eq('id',id); if(error) return alert(error.message); anis(); };
 
 window.fotos=function(){ setAqSection('fotos'); shell(am('fotos')+`<section class="panel"><h2>Fotos</h2><p>Fotos propias de este acuario.</p></section>`,'acuarios'); };
-window.historialAcuario=async function(){
+function histBtn(id,label,count){ return `<button class="${state.histFilter===id?'active':''}" onclick="historialAcuario('${id}')">${label}${count!=null?' '+count:''}</button>`; }
+function histCard(i){ return `<div class="item"><b>${esc(i.label)} · ${esc(i.title)}</b><p class="small">${esc(fecha(i.date))}</p>${i.text?`<p>${esc(i.text)}</p>`:''}</div>`; }
+function histSections(items){
+  const filtered=state.histFilter==='todo'?items:items.filter(i=>i.kind===state.histFilter);
+  if(!filtered.length) return msg('No hay entradas en esta sección.');
+  const groups={};
+  filtered.forEach(i=>{ const k=fechaDia(i.date); (groups[k]=groups[k]||[]).push(i); });
+  return Object.keys(groups).map(k=>`<section class="panel"><h3>${esc(k)}</h3>${groups[k].map(histCard).join('')}</section>`).join('');
+}
+window.historialAcuario=async function(filter){
+  if(filter) state.histFilter=filter;
   setAqSection('historial');
   shell(am('historial')+`<section class="panel"><h2>Historial</h2>${msg('Cargando historial...')}</section>`,'acuarios');
   const items=[];
   try{
-    const animals=await s.from('animals').select('created_at,updated_at,common_name,scientific_name,category,status,notes').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(50);
-    if(!animals.error) (animals.data||[]).forEach(a=>items.push({date:a.updated_at||a.created_at,type:'Animal',title:a.common_name||'Animal',text:[catEs(a.category),a.scientific_name,a.status,a.notes].filter(Boolean).join(' · ')}));
-    const measures=await s.from('aquarium_measurements').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(50);
-    if(!measures.error) (measures.data||[]).forEach(m=>items.push({date:m.measured_at||m.created_at,type:'Parámetro',title:m.parameter_label||m.parameter||'Medición',text:[m.display_value,m.value,m.test_method_label,m.notes].filter(Boolean).join(' · ')}));
-    const photos=await s.from('aquarium_photos').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(30);
-    if(!photos.error) (photos.data||[]).forEach(p=>items.push({date:p.created_at||p.taken_at,type:'Foto',title:p.title||p.caption||'Foto',text:p.notes||''}));
-    const tasks=await s.from('tasks').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(30);
-    if(!tasks.error) (tasks.data||[]).forEach(t=>items.push({date:t.completed_at||t.due_at||t.created_at,type:'Aviso/Tarea',title:t.title||'Tarea',text:[t.status,t.priority,t.notes].filter(Boolean).join(' · ')}));
-    const maintenance=await s.from('maintenance_events').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(30);
-    if(!maintenance.error) (maintenance.data||[]).forEach(m=>items.push({date:m.performed_at||m.created_at,type:'Mantenimiento',title:m.title||m.event_type||'Mantenimiento',text:[m.event_type,m.notes].filter(Boolean).join(' · ')}));
+    const animals=await s.from('animals').select('created_at,updated_at,common_name,scientific_name,category,status,notes').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(80);
+    if(!animals.error) (animals.data||[]).forEach(a=>items.push({kind:'animales',label:'Animal',date:a.updated_at||a.created_at,title:a.common_name||'Animal',text:[catEs(a.category),a.scientific_name,a.status,a.notes].filter(Boolean).join(' · ')}));
+    const measures=await s.from('aquarium_measurements').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(120);
+    if(!measures.error) (measures.data||[]).forEach(m=>items.push({kind:'mediciones',label:'Medición',date:m.measured_at||m.created_at,title:m.parameter_label||m.parameter||'Parámetro',text:[m.display_value,m.value,m.test_method_label,m.notes].filter(Boolean).join(' · ')}));
+    const photos=await s.from('aquarium_photos').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(60);
+    if(!photos.error) (photos.data||[]).forEach(p=>items.push({kind:'fotos',label:'Foto',date:p.created_at||p.taken_at,title:p.title||p.caption||'Foto',text:p.notes||''}));
+    const tasks=await s.from('tasks').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(60);
+    if(!tasks.error) (tasks.data||[]).forEach(t=>items.push({kind:'tareas',label:'Tarea/Aviso',date:t.completed_at||t.due_at||t.created_at,title:t.title||'Tarea',text:[t.status,t.priority,t.notes].filter(Boolean).join(' · ')}));
+    const maintenance=await s.from('maintenance_events').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false}).limit(60);
+    if(!maintenance.error) (maintenance.data||[]).forEach(m=>items.push({kind:'mantenimiento',label:'Mantenimiento',date:m.performed_at||m.created_at,title:m.title||m.event_type||'Mantenimiento',text:[m.event_type,m.notes].filter(Boolean).join(' · ')}));
     items.sort((a,b)=>new Date(b.date||0)-new Date(a.date||0));
-    const html=items.length?items.map(i=>`<div class="item"><b>${esc(i.type)} · ${esc(i.title)}</b><p class="small">${esc(fecha(i.date))}</p>${i.text?`<p>${esc(i.text)}</p>`:''}</div>`).join(''):msg('Todavía no hay historial para este acuario.');
-    shell(am('historial')+`<section class="panel"><h2>Historial</h2>${html}</section>`,'acuarios');
+    const counts={todo:items.length,mediciones:items.filter(i=>i.kind==='mediciones').length,animales:items.filter(i=>i.kind==='animales').length,fotos:items.filter(i=>i.kind==='fotos').length,tareas:items.filter(i=>i.kind==='tareas').length,mantenimiento:items.filter(i=>i.kind==='mantenimiento').length};
+    const tabs=`<nav class="tank-tabs">${histBtn('todo','Todo',counts.todo)}${histBtn('mediciones','Mediciones',counts.mediciones)}${histBtn('animales','Animales',counts.animales)}${histBtn('fotos','Fotos',counts.fotos)}${histBtn('tareas','Tareas',counts.tareas)}${histBtn('mantenimiento','Mantenimiento',counts.mantenimiento)}</nav>`;
+    shell(am('historial')+`<section class="panel"><h2>Historial</h2><p class="small">Filtra por tipo y revisa por fechas.</p>${tabs}</section>${histSections(items)}`,'acuarios');
   }catch(e){ shell(am('historial')+`<section class="panel"><h2>Historial</h2>${msg(e.message,'error')}</section>`,'acuarios'); }
 };
 window.graficosAcuario=function(){ setAqSection('parametros'); shell(am('parametros')+`<section class="panel"><h2>Gráficos</h2><p>Gráficos desde mediciones.</p></section>`,'acuarios'); };
