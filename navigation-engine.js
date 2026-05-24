@@ -1,9 +1,9 @@
-window.AcuarioNexoNavigation={version:'core-session-safe-24-05'};
+window.AcuarioNexoNavigation={version:'core-buttons-no-legacy-menu-24-05'};
 (function(){
 function E(x){return String(x==null?'':x).replace(/[&<>"']/g,function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]})}
 function A(){return document.getElementById('app')}
 function active(n){window.acuarionexoActiveNav=n;try{localStorage.setItem('acuarionexo_active_nav',n)}catch(e){}}
-function top(){return window.menu?window.menu():''}
+function top(){return ''}
 function bottom(){return '<nav class="bottom-nav"><button onclick="AcuarioNexoNavigation.safeGo(\'Dashboard\')">🏠<small>Inicio</small></button><button onclick="AcuarioNexoNavigation.safeGo(\'Acuarios\')">🐠<small>Acuarios</small></button><button onclick="formA&&formA()">＋<small>Añadir</small></button><button onclick="AcuarioNexoNavigation.safeGo(\'Parámetros\')">🧪<small>Parámetros</small></button><button onclick="AcuarioNexoNavigation.safeGo(\'IA\')">🧠<small>IA</small></button></nav>'}
 function render(n,h,withNav){var a=A();if(!a)return;active(n);a.innerHTML=(withNav===false?'':top())+h+(withNav===false?'':bottom());scrollTo(0,0)}
 function showLogin(msg){var b=document.getElementById('logoutBtn');if(b)b.classList.add('hidden');if(typeof window.login==='function')return window.login();render('Login','<section class="card"><h2>Entrar</h2>'+(msg?'<div class="notice">'+E(msg)+'</div>':'')+'<label>Email</label><input id="em"><label>Contraseña</label><input id="pw" type="password"><button class="primary" onclick="iniciar&&iniciar()">Entrar</button><button onclick="crear&&crear()">Crear cuenta</button><div id="x"></div></section>',false)}
