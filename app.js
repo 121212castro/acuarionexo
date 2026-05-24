@@ -3,7 +3,7 @@ const c=window.ACUARIONEXO_CONFIG;
 const s=window.supabase.createClient(c.SUPABASE_URL,c.SUPABASE_KEY);
 const A=document.getElementById('app');
 window.c=c;window.s=s;window.A=A;
-document.getElementById('version').textContent=(c.APP_VERSION||'AcuarioNexo')+' · core-repair';
+document.getElementById('version').textContent=(c.APP_VERSION||'AcuarioNexo')+' · carpeta-acuario';
 let q=null;
 const $=i=>document.getElementById(i);
 const v=i=>$(i)?.value?.trim()||'';
@@ -29,10 +29,13 @@ window.formA=function(a={}){S(`<section class="card"><button onclick="acs()">←
 window.editA=async function(id){let{data,error}=await s.from('aquariums').select('*').eq('id',id).single();if(error)return alert(error.message);formA(data)};
 window.saveA=async function(id=''){try{let r=L(v('l'),v('w'),v('h')),su=L(v('sl'),v('sw'),v('sh')),tot=Math.round(((r||0)+(su||0))*100)/100,row={user_id:window.u.id,name:v('name'),aquarium_type:v('type'),subtype:v('sub'),status:'active',description:v('des'),tank_length_cm:N('l'),tank_width_cm:N('w'),display_water_height_cm:N('h'),sump_length_cm:N('sl'),sump_width_cm:N('sw'),sump_height_cm:N('sh'),real_liters:tot||r,liters:tot||r,ai_summary:'Pendiente IA'};let error;if(id){({error}=await s.from('aquariums').update(row).eq('id',id))}else{({error}=await s.from('aquariums').insert(row))}if(error)throw error;acs()}catch(e){$('x').innerHTML=M(e.message,'error')}};
 window.deleteA=async function(id){if(!confirm('¿Borrar este acuario?'))return;let{error}=await s.from('aquariums').delete().eq('id',id);if(error)return alert(error.message);acs()};
-window.openA=async function(id){let{data,error}=await s.from('aquariums').select('*').eq('id',id).single();if(error)return S(M(error.message,'error'));q=data;window.q=q;panel()};
-window.am=function(){if(!window.q)return'';return`<section class="card"><button onclick="acs()">← Acuarios</button><h2>${E(window.q.name)}</h2><p>${E(window.q.real_liters??window.q.liters??'-')} L</p><div class="grid"><button onclick="pars&&pars()">Parámetros</button><button onclick="anis&&anis()">Animales</button><button onclick="fotos&&fotos()">Fotos</button><button onclick="hosp&&hosp()">Hospital</button></div></section>`};
-window.panel=function(){S(am()+`<section class="card"><h2>Ficha</h2><p>${E(window.q.description||'')}</p></section>`)};
-window.anis=async function(){let{data}=await s.from('animals').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false});S(am()+`<section class="card"><h2>Animales</h2>${(data||[]).map(a=>`<div class="item"><b>${E(a.common_name)}</b></div>`).join('')||M('Sin animales')}</section>`)};
-window.fotos=function(){S(am()+`<section class="card"><h2>Fotos</h2></section>`)};
-window.hosp=function(){S(am()+`<section class="card"><h2>Hospital</h2></section>`)};
+window.openA=async function(id){let{data,error}=await s.from('aquariums').select('*').eq('id',id).single();if(error)return S(M(error.message,'error'));q=data;window.q=q;try{localStorage.setItem('acuarionexo_last_aquarium_id',id)}catch(e){}panel()};
+window.am=function(){if(!window.q)return'';let litros=window.q.real_liters??window.q.liters??'-';let tipo=window.q.aquarium_type||window.q.subtype||'Acuario';return`<section class="card aquarium-folder-head"><button onclick="acs()">← Mis acuarios</button><h2>📁 ${E(window.q.name)}</h2><p>${E(litros)} L · ${E(tipo)}</p><div class="grid"><button onclick="panel()">Resumen</button><button onclick="pars&&pars()">Mediciones</button><button onclick="graficosAcuario()">Gráficos</button><button onclick="icpAcuario()">ICP</button><button onclick="anis&&anis()">Animales</button><button onclick="fotos&&fotos()">Fotos</button><button onclick="historialAcuario()">Historial</button></div></section>`};
+window.panel=function(){S(am()+`<section class="card"><h2>Carpeta del acuario</h2><p>Todo lo que se guarde desde aquí queda dentro de <b>${E(window.q?.name||'este acuario')}</b>.</p><div class="grid"><button class="primary" onclick="pars&&pars()">🧪 Mediciones</button><button onclick="graficosAcuario()">📈 Gráficos</button><button onclick="icpAcuario()">🧾 ICP</button><button onclick="anis&&anis()">🐟 Animales</button><button onclick="fotos&&fotos()">📷 Fotos</button><button onclick="historialAcuario()">📚 Historial</button></div>${window.q?.description?`<p>${E(window.q.description)}</p>`:''}</section>`)};
+window.anis=async function(){let{data}=await s.from('animals').select('*').eq('aquarium_id',window.q.id).order('created_at',{ascending:false});S(am()+`<section class="card"><h2>Animales · ${E(window.q.name)}</h2>${(data||[]).map(a=>`<div class="item"><b>${E(a.common_name)}</b></div>`).join('')||M('Sin animales en este acuario')}</section>`)};
+window.fotos=function(){S(am()+`<section class="card"><h2>Fotos · ${E(window.q.name)}</h2><p>Fotos propias de este acuario.</p></section>`)};
+window.graficosAcuario=function(){S(am()+`<section class="card"><h2>Gráficos · ${E(window.q.name)}</h2><p>Los gráficos deben salir de las mediciones de este acuario, no de datos globales.</p><button class="primary" onclick="pars&&pars()">Ver mediciones</button></section>`)};
+window.icpAcuario=function(){S(am()+`<section class="card"><h2>ICP · ${E(window.q.name)}</h2><p>Zona para analíticas ICP de este acuario.</p></section>`)};
+window.historialAcuario=function(){S(am()+`<section class="card"><h2>Historial · ${E(window.q.name)}</h2><p>Historial completo de cambios, mediciones, fotos, animales y mantenimiento de este acuario.</p></section>`)};
+window.hosp=function(){S(am()+`<section class="card"><h2>Hospital · ${E(window.q.name)}</h2></section>`)};
 /* Importante: app.js NO arranca la app. El único bootstrap real es navigation-engine.js. */
