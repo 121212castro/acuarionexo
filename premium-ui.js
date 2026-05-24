@@ -5,6 +5,7 @@
   const S=h=>{app().innerHTML=h;scrollTo(0,0);setTimeout(scrollActiveTab,60)};
   const setActive=n=>{try{localStorage.setItem('acuarionexo_active_nav',n)}catch(e){} window.acuarionexoActiveNav=n};
   const getActive=()=>window.acuarionexoActiveNav||localStorage.getItem('acuarionexo_active_nav')||'Dashboard';
+  const aquariumColumns='id,name,aquarium_type,subtype,real_liters,liters,cover_photo_url,created_at,user_id';
 
   const tabs=[
     ['🏠','Dashboard','nav-dashboard'],['🐠','Acuarios','nav-acuarios'],['🧪','Parámetros','nav-parametros'],['🐟','Animales','nav-animales'],
@@ -43,6 +44,20 @@
   function cachedAcuarios(){try{return JSON.parse(localStorage.getItem('acuarionexo_dashboard_aqs')||'[]')}catch(e){return []}}
   function saveCachedAcuarios(aqs){try{localStorage.setItem('acuarionexo_dashboard_aqs',JSON.stringify((aqs||[]).slice(0,12)))}catch(e){}}
 
+  async function fetchAquariumsSafe(limit){
+    if(!window.s) return [];
+    let query=window.s.from('aquariums').select(aquariumColumns).order('created_at',{ascending:false});
+    if(limit) query=query.limit(limit);
+    if(window.u&&window.u.id){
+      const owned=await window.s.from('aquariums').select(aquariumColumns).eq('user_id',window.u.id).order('created_at',{ascending:false});
+      if(owned.error) throw owned.error;
+      if((owned.data||[]).length) return limit?(owned.data||[]).slice(0,limit):(owned.data||[]);
+    }
+    const visible=await query;
+    if(visible.error) throw visible.error;
+    return visible.data||[];
+  }
+
   function aquariumKind(a){
     const t=String([a?.aquarium_type,a?.subtype,a?.name].join(' ')).toLowerCase();
     if(t.includes('fresh')||t.includes('dulce')||t.includes('betta')||t.includes('beta')||t.includes('escala')||t.includes('plant')) return 'fresh';
@@ -50,7 +65,7 @@
   }
 
   function coverStyle(a){
-    const url=a?.cover_url||a?.photo_url||a?.image_url||a?.main_photo_url||'';
+    const url=a?.cover_photo_url||'';
     if(url){
       return `style="background-image:linear-gradient(180deg,rgba(4,14,26,.06),rgba(4,14,26,.72)),url('${E(url)}')"`;
     }
@@ -68,7 +83,7 @@
 
   function aquariumCards(aqs){
     if(!aqs||!aqs.length){
-      return `<article class="dashboard-empty"><h3>🐠 Sin acuarios todavía</h3><p>Crea tu primer acuario para empezar a usar el Dashboard premium de AcuarioNexo.</p><button class="primary" onclick="formA()">Crear acuario</button></article>`;
+      return `<article class="dashboard-empty"><h3>🐠 Sin acuarios visibles</h3><p>No se pudieron cargar los acuarios guardados.</p><button class="primary" onclick="goSection('Dashboard')">Reintentar</button></article>`;
     }
 
     return aqs.map(a=>{
@@ -79,7 +94,7 @@
 
   function aquariumListCards(aqs){
     if(!aqs||!aqs.length){
-      return `<div class="dashboard-empty"><h3>🐠 Todavía no hay acuarios</h3><p>Pulsa “Nuevo acuario” para crear la primera ficha.</p><button class="primary" onclick="formA()">+ Nuevo acuario</button></div>`;
+      return `<div class="dashboard-empty"><h3>🐠 Todavía no hay acuarios visibles</h3><p>Pulsa “Reintentar” para volver a sincronizar.</p><button class="primary" onclick="goSection('Acuarios')">Reintentar</button></div>`;
     }
 
     return `<div class="aquarium-premium-list">${aqs.map(a=>{
@@ -107,7 +122,7 @@
 
       <section class="dashboard-ai-card">
         <h3>🧠 Resumen IA global</h3>
-        <p>${aqs&&aqs.length?`Sistema estable con ${aqs.length} acuarios cargados. Dashboard preparado para parámetros, avisos inteligentes, consumo, seguimiento visual y automatización.`:'Empieza creando acuarios para generar avisos, historial y resúmenes inteligentes.'}</p>
+        <p>${aqs&&aqs.length?`Sistema estable con ${aqs.length} acuarios cargados. Dashboard preparado para parámetros, avisos inteligentes, consumo, seguimiento visual y automatización.`:'Pulsa reintentar si no aparecen tus acuarios guardados.'}</p>
         <div class="dashboard-ai-pills"><span>Supabase conectado</span><span>Dashboard limpio</span><span>Navegación rápida</span><span>Acceso directo a ficha</span></div>
       </section>
 
@@ -122,13 +137,12 @@
     setActive('Dashboard');
     const cached=cachedAcuarios();
     renderDashboard(cached,true);
-    if(!window.s||!window.u||!window.u.id)return;
     setTimeout(async function(){
       try{
-        const {data:aqs=[]}=await window.s.from('aquariums').select('id,name,aquarium_type,subtype,real_liters,liters,cover_url,photo_url,image_url,created_at').eq('user_id',window.u.id).order('created_at',{ascending:false}).limit(12);
+        const aqs=await fetchAquariumsSafe(12);
         saveCachedAcuarios(aqs||[]);
         if(getActive()==='Dashboard') renderDashboard(aqs||[],false);
-      }catch(e){}
+      }catch(e){if(getActive()==='Dashboard') renderDashboard(cachedAcuarios(),false)}
     },20);
   }
 
@@ -136,10 +150,8 @@
     setActive('Acuarios');
     const cached=cachedAcuarios();
     renderAcuarios(cached,true);
-    if(!window.s||!window.u||!window.u.id)return;
     try{
-      const {data:aqs=[],error}=await window.s.from('aquariums').select('id,name,aquarium_type,subtype,real_liters,liters,cover_url,photo_url,image_url,created_at').eq('user_id',window.u.id).order('created_at',{ascending:false});
-      if(error) throw error;
+      const aqs=await fetchAquariumsSafe();
       saveCachedAcuarios(aqs||[]);
       if(getActive()==='Acuarios') renderAcuarios(aqs||[],false);
     }catch(e){
