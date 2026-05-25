@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>AcuarioNexo · Inventario</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="stylesheet" href="inventario.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <small>AcuarioNexo</small>
+      <h1>Inventario</h1>
+      <p>Stock local · caducidades · compras · consumibles</p>
+    </div>
+    <button onclick="exportInventory()">Exportar</button>
+  </header>
+  <main id="app"></main>
+  <nav class="bottom-nav">
+    <button onclick="screenHome()">Inicio</button>
+    <button onclick="screenNewItem()">Añadir</button>
+    <button onclick="screenInventory()">Inventario</button>
+  </nav>
+  <script src="inventario.js"></script>
+</body>
+</html>
