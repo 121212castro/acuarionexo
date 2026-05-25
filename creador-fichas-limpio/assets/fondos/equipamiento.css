@@ -1,0 +1,8 @@
+/* Fondo oficial Equipamiento */
+.ficha-equipamiento,
+.card.equipamiento,
+.cover.equipamiento{
+  background-image:url('./equipamiento.jpg');
+  background-size:cover;
+  background-position:center;
+}
