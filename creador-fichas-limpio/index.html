@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#071522">
+  <title>Creador de Fichas V4.4 limpio · AcuarioNexo</title>
+  <link rel="icon" href="../creador-fichas/logo.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="hero">
+      <img class="logo" src="../creador-fichas/logo.svg" alt="AcuarioNexo">
+      <div class="heroText">
+        <h1>Creador de Fichas V4.4 limpio</h1>
+        <p>Mini app independiente · fichas completas · foto · IA · JSON</p>
+      </div>
+      <button class="refreshBtn" type="button" data-action="refresh">↻ Actualizar</button>
+    </header>
+
+    <section id="app" class="appShell" aria-live="polite"></section>
+  </main>
+
+  <nav class="tabs" aria-label="Menú inferior del creador">
+    <button id="tab-lista" type="button" data-view="lista">📚<span>Fichas</span></button>
+    <button id="tab-foto" type="button" data-view="foto">📷<span>Foto</span></button>
+    <button id="tab-nueva" type="button" data-action="new">✍️<span>Crear</span></button>
+    <button id="tab-ia" type="button" data-view="ia">🤖<span>IA</span></button>
+    <button id="tab-json" type="button" data-view="json">⇄<span>JSON</span></button>
+  </nav>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
