@@ -21,7 +21,7 @@ document.getElementById('refreshAppBtn')?.addEventListener('click',()=>location.
 
 function bottomNav(active='acuarios'){
  const item=(id,label,icon,fn)=>`<button class="${active===id?'active':''}" onclick="${fn}"><span>${icon}</span><small>${label}</small></button>`;
- return `<nav class="bottom-nav">${item('inicio','Inicio','⌂','dashboard()')}${item('acuarios','Acuarios','▣','dashboard()')}${item('biblioteca','Biblioteca','□','biblioteca()')}${item('avisos','Avisos','♢','tareas()')}${item('microfauna','Microfauna','∞','microfauna()')}</nav>`
+ return `<nav class="bottom-nav">'${item('acuarios','Acuarios','▣','dashboard()')}${item('inventario','Inventario','▤','inventario()')}${item('biblioteca','Biblioteca','□','biblioteca()')}${item('avisos','Avisos','♢','tareas()')}${item('microfauna','Microfauna','∞','microfauna()')}</nav>`
 }
 function shell(body,active='acuarios'){render(body+'<div style="height:140px"></div>'+bottomNav(active))}
 function page(title,body,active='acuarios'){shell(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`,active)}
