@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123a5a"/>
+      <stop offset="0.55" stop-color="#071522"/>
+      <stop offset="1" stop-color="#031019"/>
+    </linearGradient>
+    <linearGradient id="aqua" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5be7ff"/>
+      <stop offset="1" stop-color="#2f8cff"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <circle cx="384" cy="112" r="70" fill="#42d3ff" opacity="0.12"/>
+  <circle cx="118" cy="410" r="92" fill="#41e28b" opacity="0.10"/>
+  <g filter="url(#shadow)">
+    <path d="M118 136c0-22 18-40 40-40h176l60 62v218c0 22-18 40-40 40H158c-22 0-40-18-40-40V136z" fill="#f4fbff"/>
+    <path d="M334 96v56c0 12 10 22 22 22h38" fill="#d8eefb"/>
+    <rect x="158" y="218" width="196" height="18" rx="9" fill="#0d2235" opacity="0.25"/>
+    <rect x="158" y="262" width="154" height="18" rx="9" fill="#0d2235" opacity="0.25"/>
+    <rect x="158" y="306" width="178" height="18" rx="9" fill="#0d2235" opacity="0.25"/>
+  </g>
+  <g transform="translate(90 236)">
+    <path d="M44 45c24-35 78-47 128-22 20 10 37 24 49 40 12-14 32-24 56-28-10 22-10 45 0 67-24-4-44-14-56-28-12 16-29 30-49 40-50 25-104 13-128-22-16 12-30 18-44 18 12-21 12-44 0-65 14 0 28 6 44 18z" fill="url(#aqua)"/>
+    <circle cx="92" cy="60" r="8" fill="#071522"/>
+    <path d="M142 42c14 10 24 24 28 42" fill="none" stroke="#071522" stroke-width="8" stroke-linecap="round" opacity="0.22"/>
+  </g>
+  <path d="M342 342l74-74c10-10 27-10 37 0l7 7c10 10 10 27 0 37l-74 74-51 14 7-58z" fill="#ffd166"/>
+  <path d="M342 342l44 44" stroke="#9b5b00" stroke-width="10" stroke-linecap="round" opacity="0.35"/>
+</svg>
