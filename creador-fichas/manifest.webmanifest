@@ -1,0 +1,19 @@
+{
+  "name": "Creador de Fichas AcuarioNexo",
+  "short_name": "Fichas",
+  "description": "Mini app externa para crear fichas e importarlas después en AcuarioNexo.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#06111c",
+  "theme_color": "#071522",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
