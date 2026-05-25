@@ -84,6 +84,5 @@ window.graficosAcuario=function(){setAqSection('parametros');shell(am('parametro
 window.icpAcuario=function(){setAqSection('parametros');shell(am('parametros')+`<section class="panel"><h2>ICP</h2><p>Analíticas ICP.</p></section>`,'acuarios')}
 window.biblioteca=function(){page('Biblioteca','<p>Fichas generales.</p>','biblioteca')}
 window.microfauna=function(){page('Microfauna','<p>Cultivos y seguimiento.</p>','microfauna')}
-window.inventario=function(){page('Inventario','<p>Equipamiento y stock.</p>','inicio')}
-async function boot(){try{const r=await s.auth.getSession();state.user=r.data.session?.user||null;window.u=state.user;document.getElementById('logoutBtn')?.classList.toggle('hidden',!state.user);document.getElementById('logoutBtn').onclick=async()=>{await s.auth.signOut();location.reload()};state.user?dashboard():login()}catch(e){render(msg(e.message,'error'))}}
+window.inventario=function(){page('Inventario','<p>Inventario global: comida, sales, tests, bacterias, medicamentos y consumibles.</p>','inventario')}async function boot(){try{const r=await s.auth.getSession();state.user=r.data.session?.user||null;window.u=state.user;document.getElementById('logoutBtn')?.classList.toggle('hidden',!state.user);document.getElementById('logoutBtn').onclick=async()=>{await s.auth.signOut();location.reload()};state.user?dashboard():login()}catch(e){render(msg(e.message,'error'))}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
