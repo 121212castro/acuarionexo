@@ -1,0 +1,1 @@
+window.AcuarioNexoOCR={async readImage(base64){if(!window.Tesseract)throw new Error('Tesseract no cargado');const r=await Tesseract.recognize(base64,'spa+eng');return r.data?.text||'';}};
