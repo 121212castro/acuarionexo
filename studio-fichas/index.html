@@ -3,20 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <title>AcuarioNexo · Studio Fichas</title>
+  <title>AcuarioNexo · Studio Fichas Offline</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg">
+  <link rel="apple-touch-icon" href="icon.svg">
   <link rel="stylesheet" href="studio.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
-  <script src="../config.js"></script>
 </head>
 <body>
   <header class="topbar">
     <div>
       <small>AcuarioNexo</small>
-      <h1>Studio Fichas IA</h1>
-      <p>Fichas técnicas gratuitas para inventario inteligente</p>
+      <h1>Studio Fichas</h1>
+      <p>Offline · OCR gratis · sin Supabase · sin API de pago</p>
     </div>
-    <button id="loginBtn">Entrar</button>
+    <button onclick="exportFichas()">Exportar</button>
   </header>
 
   <main id="app"></main>
@@ -27,6 +28,7 @@
     <button onclick="screenList()">Fichas</button>
   </nav>
 
+  <script src="ocr-helper.js"></script>
   <script src="studio.js"></script>
 </body>
 </html>
