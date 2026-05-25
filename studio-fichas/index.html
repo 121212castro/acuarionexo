@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>AcuarioNexo · Studio Fichas</title>
+  <link rel="stylesheet" href="studio.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../config.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <small>AcuarioNexo</small>
+      <h1>Studio Fichas IA</h1>
+      <p>Fichas técnicas gratuitas para inventario inteligente</p>
+    </div>
+    <button id="loginBtn">Entrar</button>
+  </header>
+
+  <main id="app"></main>
+
+  <nav class="bottom-nav">
+    <button onclick="screenHome()">Inicio</button>
+    <button onclick="screenNewFicha()">Nueva ficha</button>
+    <button onclick="screenList()">Fichas</button>
+  </nav>
+
+  <script src="studio.js"></script>
+</body>
+</html>
