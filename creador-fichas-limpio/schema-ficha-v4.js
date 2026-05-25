@@ -1,0 +1,37 @@
+export const fichaBaseV4 = {
+  schema:'acuarionexo.ficha.v4',
+  tipo:'animal_pez_marino',
+  estado:'borrador',
+  tarjeta:{
+    titulo:'',
+    subtitulo:'',
+    resumen:'',
+    portada:'',
+    chips:[]
+  },
+  identificacion:{
+    nombre_comun:'',
+    nombre_cientifico:'',
+    fabricante:'',
+    modelo:''
+  },
+  detalle:{
+    descripcion:'',
+    observaciones:''
+  },
+  parametros:{},
+  cuidados:{},
+  compatibilidad:{},
+  alimentacion:{},
+  media:{
+    foto_original:'',
+    portada_generada:''
+  },
+  ia:{
+    proveedor:'gratis',
+    prompt:'',
+    respuesta:''
+  },
+  created_at:'',
+  updated_at:''
+};
