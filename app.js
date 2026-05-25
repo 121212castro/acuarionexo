@@ -19,12 +19,12 @@ function render(html){A.innerHTML=html;scrollTo(0,0);requestAnimationFrame(()=>{
 window.S=render;window.E=esc;window.M=msg;
 document.getElementById('refreshAppBtn')?.addEventListener('click',()=>location.reload());
 
-function bottomNav(active='inicio'){
+function bottomNav(active='acuarios'){
  const item=(id,label,icon,fn)=>`<button class="${active===id?'active':''}" onclick="${fn}"><span>${icon}</span><small>${label}</small></button>`;
  return `<nav class="bottom-nav">${item('inicio','Inicio','⌂','dashboard()')}${item('acuarios','Acuarios','▣','dashboard()')}${item('biblioteca','Biblioteca','□','biblioteca()')}${item('avisos','Avisos','♢','tareas()')}${item('microfauna','Microfauna','∞','microfauna()')}</nav>`
 }
-function shell(body,active='inicio'){render(body+'<div style="height:140px"></div>'+bottomNav(active))}
-function page(title,body,active='inicio'){shell(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`,active)}
+function shell(body,active='acuarios'){render(body+'<div style="height:140px"></div>'+bottomNav(active))}
+function page(title,body,active='acuarios'){shell(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`,active)}
 function setAqSection(section){state.section=section;window.currentAqSection=section}
 function aqChip(id,label){return `<button class="${state.section===id?'active':''}" onclick="openAqSection('${id}')">${label}</button>`}
 window.am=function(section){if(section)setAqSection(section);const aq=state.aquarium||window.q;if(!aq)return'';const liters=aq.real_liters??aq.liters??'-';const type=aq.aquarium_type||aq.subtype||'Acuario';return `<section class="tank-head"><button onclick="dashboard()">←</button><div><h2>${esc(aq.name)}</h2><p>${esc(liters)} L · ${esc(type)}</p></div></section><nav class="tank-tabs">${aqChip('resumen','Resumen')}${aqChip('parametros','Parámetros')}${aqChip('animales','Animales')}${aqChip('fotos','Fotos')}${aqChip('historial','Historial')}</nav>`}
