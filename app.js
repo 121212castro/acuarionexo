@@ -123,8 +123,8 @@ window.fotos = async function() {
     if (!data || data.length === 0) { $('galeriaList').innerHTML = `<p class="small" style="grid-column: 1/-1; text-align: center;">Aún no has subido ninguna foto de este acuario.</p>`; return; }
     $('galeriaList').innerHTML = data.map(p => `
       <div class="item" style="padding: 8px; position: relative;">
-        <img src="${esc(p.image_url || p.photo_url)}" style="width:100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 4px;">
-        <b style="font-size: 12px; display: block; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(p.title || 'Sin título')}</b>
+        <img src="${esc(p.image_url || p.photo_url || p.url)}" style="width:100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 4px;">
+        <b style="font-size: 12px; display: block; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(p.title || p.caption || 'Sin título')}</b>
         <button class="danger small" onclick="deleteFoto('${p.id}')" style="position: absolute; top: 12px; right: 12px; padding: 4px 6px; font-size: 10px; background: rgba(219,68,85,0.9); border:none; color:white; border-radius:4px; cursor:pointer;">🗑️</button>
       </div>
     `).join('');
@@ -161,8 +161,18 @@ window.saveFoto = async function() {
       if (!up.error) { publicUrl = s.storage.from(b).getPublicUrl(path).data.publicUrl; break; }
     }
     if (!publicUrl) throw new Error('Error al subir la imagen. Verifica tus buckets.');
-    const row = { user_id: state.user.id, aquarium_id: window.q.id, title: val('fTitle') || 'Foto de acuario', image_url: publicUrl, notes: val('fTitle') || null };
-    const { error } = await s.from('aquarium_photos').insert([row]); if (error) throw error;
+    
+    const row = { 
+      user_id: state.user.id, 
+      aquarium_id: window.q.id, 
+      title: val('fTitle') || 'Foto de acuario', 
+      image_url: publicUrl,
+      photo_url: publicUrl,
+      notes: val('fTitle') || null 
+    };
+
+    const { error } = await s.from('aquarium_photos').insert([row]); 
+    if (error) throw error;
     window.fotos();
   } catch (e) { $('x').innerHTML = msg(e.message, 'error'); }
 };
@@ -171,6 +181,8 @@ window.deleteFoto = async function(id) {
   if (!confirm('¿Eliminar esta foto permanentemente?')) return;
   try { const { error } = await s.from('aquarium_photos').delete().eq('id', id); if (error) throw error; window.fotos(); } catch (e) { alert(e.message); }
 };
+
+   
 
 // --- BLOQUE 10: MEDIDAS Y PARÁMETROS CRÍTICOS ---
 window.pars = async function() {
