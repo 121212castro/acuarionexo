@@ -1,4 +1,4 @@
-// AcuarioNexo · Fase 1 V2: portada de acuario desde Fotos
+// AcuarioNexo · Fase 1 V3: portada de acuario desde Fotos y lista de acuarios
 (function () {
   function esc(x) {
     return String(x ?? '').replace(/[&<>"']/g, function (m) {
@@ -12,18 +12,19 @@
 
   function waitForApp(fn, tries) {
     tries = tries || 0;
-    if (window.s && typeof window.am === 'function' && typeof window.fotos === 'function') return fn();
+    if (window.s && typeof window.am === 'function' && typeof window.fotos === 'function' && typeof window.dashboard === 'function') return fn();
     if (tries > 80) return;
     setTimeout(function () { waitForApp(fn, tries + 1); }, 100);
   }
 
   function install() {
-    if (window.__ACUARIONEXO_PORTADA_FASE1_V2__) return;
-    window.__ACUARIONEXO_PORTADA_FASE1_V2__ = true;
+    if (window.__ACUARIONEXO_PORTADA_FASE1_V3__) return;
+    window.__ACUARIONEXO_PORTADA_FASE1_V3__ = true;
 
     const originalAm = window.am;
     const originalFotos = window.fotos;
     const originalSaveFoto = window.saveFoto;
+    const originalDashboard = window.dashboard;
 
     window.am = function (section) {
       const html = originalAm ? originalAm(section) : '';
@@ -32,6 +33,31 @@
       return '<div class="tank-cover" style="margin:16px 24px 8px;border-radius:22px;overflow:hidden;border:1px solid rgba(92,171,255,.35);box-shadow:0 16px 40px rgba(0,0,0,.25);">' +
         '<img src="' + esc(aq.cover_photo_url) + '" alt="Portada de ' + esc(aq.name || 'acuario') + '" style="width:100%;height:190px;object-fit:cover;display:block;">' +
         '</div>' + html;
+    };
+
+    async function patchDashboardCovers() {
+      if (!window.s || !window.u) return;
+      try {
+        const r = await window.s.from('aquariums').select('id,name,cover_photo_url').eq('user_id', window.u.id);
+        if (r.error) return;
+        const list = r.data || [];
+        list.forEach(function (a) {
+          if (!a.cover_photo_url) return;
+          document.querySelectorAll('.tank-card').forEach(function (card) {
+            const title = card.querySelector('h3')?.textContent?.trim();
+            if (title !== a.name) return;
+            const art = card.querySelector('.tank-art');
+            if (!art) return;
+            art.innerHTML = '<img src="' + esc(a.cover_photo_url) + '" alt="' + esc(a.name) + '" style="width:100%;height:100%;object-fit:cover;display:block;border-radius:inherit;">';
+          });
+        });
+      } catch (e) {}
+    }
+
+    window.dashboard = async function () {
+      if (originalDashboard) await originalDashboard();
+      setTimeout(patchDashboardCovers, 100);
+      setTimeout(patchDashboardCovers, 700);
     };
 
     async function renderGaleriaConPortada() {
@@ -105,7 +131,10 @@
 
     document.addEventListener('click', function () {
       if (document.getElementById('galeriaList')) setTimeout(renderGaleriaConPortada, 200);
+      if (document.querySelector('.tank-card')) setTimeout(patchDashboardCovers, 250);
     }, true);
+
+    setTimeout(patchDashboardCovers, 1200);
   }
 
   waitForApp(install);
