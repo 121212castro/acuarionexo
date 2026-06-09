@@ -113,40 +113,22 @@ window.saveAnimal = async function(id = '') { try { const name = val('anName'); 
 window.editAnimal = async function(id) { setAqSection('animales'); const { data, error } = await s.from('animals').select('*').eq('id', id).single(); if (error) return alert(error.message); shell(am('animales') + `<section class="panel"><button onclick="anis()">← Volver</button><h2>Editar animal</h2>${animalFields(data)}<button class="primary" onclick="saveAnimal('${id}')">Guardar cambios</button><div id="x"></div></section>`, 'acuarios'); };
 window.deleteAnimal = async function(id) { if (!confirm('¿Eliminar este animal?')) return; const { error } = await s.from('animals').delete().eq('id', id); if (error) return alert(error.message); anis(); };
 
-// --- BLOQUE 9: SECCIÓN FOTOS ---
 // --- BLOQUE 9: SECCIÓN FOTOS (GALERÍA REAL) ---
 window.fotos = async function() {
   setAqSection('fotos');
-  // Renderizamos la estructura base con el botón para añadir
   shell(am('fotos') + `<section class="panel"><div class="panel-head"><h2>Galería de Fotos 📷</h2><button class="primary" onclick="formFoto()">+ Añadir Foto</button></div><div id="galeriaList" class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 15px;">${msg('Cargando galería...')}</div></section>`, 'acuarios');
-
   try {
-    // Tomamos las últimas 24 fotos ordenadas por fecha
-    const { data, error } = await s.from('aquarium_photos')
-      .select('*')
-      .eq('aquarium_id', window.q.id)
-      .order('created_at', { ascending: false })
-      .limit(24);
-
+    const { data, error } = await s.from('aquarium_photos').select('*').eq('aquarium_id', window.q.id).order('created_at', { ascending: false }).limit(24);
     if (error) throw error;
-
-    if (!data || data.length === 0) {
-      $('galeriaList').innerHTML = `<p class="small" style="grid-column: 1/-1; text-align: center;">Aún no has subido ninguna foto de este acuario.</p>`;
-      return;
-    }
-
-    // Dibujamos las tarjetas de la galería
+    if (!data || data.length === 0) { $('galeriaList').innerHTML = `<p class="small" style="grid-column: 1/-1; text-align: center;">Aún no has subido ninguna foto de este acuario.</p>`; return; }
     $('galeriaList').innerHTML = data.map(p => `
       <div class="item" style="padding: 8px; position: relative;">
-        <img src="${esc(p.image_url || p.photo_url)}" style="width:100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; mb: 4px;">
+        <img src="${esc(p.image_url || p.photo_url)}" style="width:100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 4px;">
         <b style="font-size: 12px; display: block; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(p.title || 'Sin título')}</b>
-        <button class="danger small" onclick="deleteFoto('${p.id}')" style="position: absolute; top: 12px; right: 12px; padding: 4px 6px; font-size: 10px; background: rgba(219,68,85,0.9);">🗑️</button>
+        <button class="danger small" onclick="deleteFoto('${p.id}')" style="position: absolute; top: 12px; right: 12px; padding: 4px 6px; font-size: 10px; background: rgba(219,68,85,0.9); border:none; color:white; border-radius:4px; cursor:pointer;">🗑️</button>
       </div>
     `).join('');
-
-  } catch (e) {
-    $('galeriaList').innerHTML = msg(e.message, 'error');
-  }
+  } catch (e) { $('galeriaList').innerHTML = msg(e.message, 'error'); }
 };
 
 window.formFoto = function() {
@@ -154,16 +136,12 @@ window.formFoto = function() {
     <section class="panel">
       <button onclick="fotos()">← Volver</button>
       <h2>Subir foto al sistema</h2>
-      
       <label>Título / Nota corta</label>
       <input id="fTitle" placeholder="Ej: Vista general, Nuevos corales, Crecimiento...">
-      
       <label>Hacer foto con la cámara 📸</label>
       <input id="fCam" type="file" accept="image/*" capture="environment">
-      
       <label>Seleccionar de la galería 🖼️</label>
       <input id="fGal" type="file" accept="image/*">
-      
       <button class="primary" onclick="saveFoto()" style="margin-top: 15px;">Subir Imagen</button>
       <div id="x"></div>
     </section>
@@ -174,52 +152,24 @@ window.saveFoto = async function() {
   try {
     const file = ($('fCam')?.files?.[0]) || ($('fGal')?.files?.[0]);
     if (!file) throw new Error('Por favor, selecciona o toma una foto primero.');
-
     $('x').innerHTML = msg('Subiendo archivo a Supabase Storage...');
-
-    // Subida al Storage (reutilizando la lógica de rutas limpias de la app)
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `gallery/${state.user.id}/${window.q.id}/${Date.now()}.${ext}`;
-    
     let publicUrl = null;
-    // Intentamos en los buckets comunes que tengas creados en Supabase
     for (const b of ['aquarium-photos', 'photos', 'animal-photos']) {
       const up = await s.storage.from(b).upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
-      if (!up.error) {
-        publicUrl = s.storage.from(b).getPublicUrl(path).data.publicUrl;
-        break;
-      }
+      if (!up.error) { publicUrl = s.storage.from(b).getPublicUrl(path).data.publicUrl; break; }
     }
-
-    if (!publicUrl) throw new Error('Error al subir la imagen. Verifica que el bucket en Supabase esté creado y público.');
-
-    // Guardar registro en la tabla de la base de datos
-    const row = {
-      user_id: state.user.id,
-      aquarium_id: window.q.id,
-      title: val('fTitle') || 'Foto de acuario',
-      image_url: publicUrl,
-      notes: val('fTitle') || null
-    };
-
-    const { error } = await s.from('aquarium_photos').insert([row]);
-    if (error) throw error;
-
+    if (!publicUrl) throw new Error('Error al subir la imagen. Verifica tus buckets.');
+    const row = { user_id: state.user.id, aquarium_id: window.q.id, title: val('fTitle') || 'Foto de acuario', image_url: publicUrl, notes: val('fTitle') || null };
+    const { error } = await s.from('aquarium_photos').insert([row]); if (error) throw error;
     window.fotos();
-  } catch (e) {
-    $('x').innerHTML = msg(e.message, 'error');
-  }
+  } catch (e) { $('x').innerHTML = msg(e.message, 'error'); }
 };
 
 window.deleteFoto = async function(id) {
   if (!confirm('¿Eliminar esta foto permanentemente?')) return;
-  try {
-    const { error } = await s.from('aquarium_photos').delete().eq('id', id);
-    if (error) throw error;
-    window.fotos();
-  } catch (e) {
-    alert(e.message);
-  }
+  try { const { error } = await s.from('aquarium_photos').delete().eq('id', id); if (error) throw error; window.fotos(); } catch (e) { alert(e.message); }
 };
 
 // --- BLOQUE 10: MEDIDAS Y PARÁMETROS CRÍTICOS ---
@@ -298,7 +248,6 @@ window.inventario = function() { page('Inventario', '<p>Equipamiento, stock de r
 // --- BLOQUE 13: ARRANQUE GLOBAL (BOOT) ---
 async function boot() { try { const r = await s.auth.getSession(); state.user = r.data.session?.user || null; window.u = state.user; document.getElementById('logoutBtn')?.classList.toggle('hidden', !state.user); if (document.getElementById('logoutBtn')) document.getElementById('logoutBtn').onclick = async () => { await s.auth.signOut(); location.reload(); }; state.user ? dashboard() : login(); } catch (e) { render(msg(e.message, 'error')); } }
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
-
 
 /* ==========================================================================
    OBJETO JSON: RANGOS DE CONTROL TÉCNICO (Referencia Cruzada de Parámetros)
