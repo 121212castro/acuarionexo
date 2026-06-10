@@ -312,7 +312,83 @@ function bibliotecaNotasInventario(f) { return bibliotecaSeccionesFicha.map(([ti
 function bibliotecaCategoriaInventario(f) { const m = bibliotecaModulo(f); if (m === 'medicine') return 'Medicamento'; if (m === 'equipment') return 'Equipo'; if (m === 'product') return 'Producto'; if (m.includes('fish') || ['coral', 'invertebrate', 'plant', 'microfauna'].includes(m)) return 'Ficha biblioteca'; return 'Producto'; }
 window.guardarFichaInventario = async function(i) { const f = (window.__bibliotecaVistaActual || [])[i]; if (!f) return; try { if (!state.user) throw new Error('Debes iniciar sesión.'); const row = { user_id: state.user.id, name: f.nombre, brand: f.cientifico || null, category: bibliotecaCategoriaInventario(f), quantity: 1, unit: 'unidad', min_stock: 0, expiry_date: null, notes: bibliotecaNotasInventario(f), ai_review_status: 'biblioteca' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; const x = $('x'); if (x) x.innerHTML = `<div class="success">Ficha guardada en inventario.</div><button onclick="inventario()">Ver inventario</button>`; } catch (e) { const x = $('x'); if (x) x.innerHTML = msg(e.message, 'error'); } };
 window.verFichaBiblioteca = function(i) { const f = (window.__bibliotecaVistaActual || [])[i]; if (!f) return; shell(`<section class="panel library-detail"><button onclick="biblioteca()">← Volver</button>${f.foto ? `<img class="library-detail-photo" src="${esc(f.foto)}" alt="${esc(f.nombre)}">` : ''}<p class="small">${esc(bibliotecaModuloLabel(bibliotecaModulo(f)))}</p><h2>${esc(f.nombre)}</h2>${f.cientifico ? `<p class="scientific">${esc(f.cientifico)}</p>` : ''}<div class="quick-actions"><button onclick="guardarFichaInventario(${i})"><span>▤</span>Guardar en inventario</button>${window.q ? `<button onclick='importarAnimalBiblioteca(${JSON.stringify(f.raw).replace(/'/g, '&#039;')})'><span>＋</span>Añadir a ${esc(window.q.name || 'mi acuario')}</button>` : ''}</div><div id="x"></div>${bibliotecaSeccionesHtml(f)}</section>`, 'biblioteca'); };
-window.tareas = function() { page('Avisos', '<p>Tareas, alertas de mediciones y recordatorios periódicos.</p>', 'avisos'); };
+function aqName(id) { return (state.aquariums || []).find(a => a.id === id)?.name || (id ? 'Acuario' : 'General'); }
+function avisoAbierto(x) { return !['done', 'completed', 'archived', 'closed'].includes(String(x?.status || 'open').toLowerCase()); }
+function avisoBucket(a) {
+  if (!a.date) return 'sin_fecha';
+  const now = new Date(), d = new Date(a.date);
+  if (isNaN(d)) return 'sin_fecha';
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const day = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  if (day < today) return 'vencidos';
+  if (day === today) return 'hoy';
+  return 'proximos';
+}
+function avisoCard(a) {
+  const cls = a.bucket === 'vencidos' ? 'error' : a.bucket === 'hoy' ? 'notice' : 'item';
+  return `<div class="${cls}"><b>${esc(a.title || 'Aviso')}</b><p class="small">${esc(a.source)} · ${esc(a.aquarium)} · ${esc(fecha(a.date))}${a.priority ? ' · ' + esc(a.priority) : ''}</p>${a.notes ? `<p>${esc(a.notes)}</p>` : ''}${a.taskId ? `<button onclick="completeTask('${esc(a.taskId)}')">Marcar hecho</button>` : ''}</div>`;
+}
+function avisoGroup(title, list, emptyText) {
+  return `<section class="panel"><h3>${esc(title)}</h3>${list.length ? list.map(avisoCard).join('') : msg(emptyText)}</section>`;
+}
+function mapTaskAviso(t) { return { taskId: t.id, title: t.title || 'Tarea', source: t.task_type || 'Tarea', aquarium: aqName(t.aquarium_id), date: t.due_at || null, priority: t.priority || '', notes: t.notes || '' }; }
+function mapMaintenanceAviso(m) { return { title: m.title || m.event_type || 'Mantenimiento', source: 'Mantenimiento', aquarium: aqName(m.aquarium_id), date: m.next_due_at || null, priority: '', notes: m.notes || '' }; }
+function mapMicrofaunaAviso(m) { return { title: m.name || m.culture_type || 'Microfauna', source: 'Microfauna', aquarium: aqName(m.aquarium_id), date: m.next_action_at || null, priority: '', notes: m.notes || '' }; }
+async function readAvisosOpcional(tabla, select, dateField, mapper, warnings) {
+  try {
+    let q = s.from(tabla).select(select).eq('user_id', state.user.id).not(dateField, 'is', null).order(dateField, { ascending: true }).limit(80);
+    const r = await q;
+    if (r.error) { warnings.push(`No pude leer ${tabla}: ${r.error.message}`); return []; }
+    return (r.data || []).map(mapper);
+  } catch (e) {
+    warnings.push(`No pude leer ${tabla}: ${e.message}`);
+    return [];
+  }
+}
+window.formAviso = async function() {
+  if (!state.user) return login();
+  await loadAquariums();
+  const opts = ['<option value="">General</option>'].concat((state.aquariums || []).map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`)).join('');
+  shell(`<section class="panel"><button onclick="tareas()">← Volver</button><h2>Nuevo aviso</h2><label>Título</label><input id="avTitle" placeholder="Cambio de agua, revisar skimmer..."><label>Acuario</label><select id="avAq">${opts}</select><label>Fecha y hora</label><input id="avDue" type="datetime-local"><label>Prioridad</label><select id="avPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="baja">Baja</option></select><label>Notas</label><textarea id="avNotes" placeholder="Detalles del recordatorio"></textarea><button class="primary" onclick="saveAviso()">Guardar aviso</button><div id="x"></div></section>`, 'avisos');
+};
+window.saveAviso = async function() {
+  try {
+    if (!state.user) throw new Error('Debes iniciar sesión.');
+    if (!val('avTitle')) throw new Error('Pon un título para el aviso.');
+    const row = { user_id: state.user.id, aquarium_id: val('avAq') || null, title: val('avTitle'), task_type: 'task', due_at: val('avDue') ? new Date(val('avDue')).toISOString() : null, priority: val('avPriority') || 'normal', status: 'open', notes: val('avNotes') || null };
+    const r = await s.from('tasks').insert(row);
+    if (r.error) throw r.error;
+    window.tareas();
+  } catch (e) { if ($('x')) $('x').innerHTML = msg(e.message, 'error'); }
+};
+window.completeTask = async function(id) {
+  try {
+    const r = await s.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id);
+    if (r.error) throw r.error;
+    window.tareas();
+  } catch (e) { alert(e.message); }
+};
+window.tareas = async function() {
+  if (!state.user) return login();
+  shell(`<section class="panel"><h2>Avisos</h2><p>Tareas, alertas de mediciones y recordatorios periódicos.</p>${msg('Cargando avisos...')}</section>`, 'avisos');
+  try {
+    await loadAquariums();
+    const warnings = [];
+    const taskRes = await s.from('tasks').select('id,aquarium_id,title,task_type,due_at,priority,status,notes').eq('user_id', state.user.id).order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    if (taskRes.error) throw taskRes.error;
+    const all = (taskRes.data || []).filter(avisoAbierto).map(mapTaskAviso)
+      .concat(await readAvisosOpcional('maintenance_events', 'id,aquarium_id,title,event_type,next_due_at,notes', 'next_due_at', mapMaintenanceAviso, warnings))
+      .concat(await readAvisosOpcional('microfauna_cultures', 'id,aquarium_id,name,culture_type,next_action_at,status,notes', 'next_action_at', mapMicrofaunaAviso, warnings));
+    all.forEach(a => { a.bucket = avisoBucket(a); });
+    all.sort((a, b) => new Date(a.date || '2999-12-31') - new Date(b.date || '2999-12-31'));
+    const vencidos = all.filter(a => a.bucket === 'vencidos'), hoy = all.filter(a => a.bucket === 'hoy'), proximos = all.filter(a => a.bucket === 'proximos'), sinFecha = all.filter(a => a.bucket === 'sin_fecha');
+    const warnHtml = warnings.length ? msg('Algunos módulos aún no devuelven avisos: ' + warnings.join(' · '), 'notice') : '';
+    const emptyHtml = all.length ? '' : msg('No hay avisos pendientes ahora mismo. Si esperabas ver alguno, todavía no existe como tarea o ya está marcado como hecho.', 'success');
+    shell(`<section class="summary-card"><div><small>Avisos activos</small><h2>${all.length} pendientes</h2><p>${vencidos.length} vencidos · ${hoy.length} para hoy · ${proximos.length} próximos</p></div></section><section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas, mantenimientos y recordatorios de tus acuarios.</p></div><button class="primary" onclick="formAviso()">＋</button></div>${warnHtml}${emptyHtml}</section>${avisoGroup('Vencidos', vencidos, 'No hay avisos vencidos.')}${avisoGroup('Hoy', hoy, 'No hay avisos para hoy.')}${avisoGroup('Próximos', proximos, 'No hay próximos avisos con fecha.')}${avisoGroup('Sin fecha', sinFecha, 'No hay tareas sin fecha.')}`, 'avisos');
+  } catch (e) {
+    shell(`<section class="panel"><h2>Avisos</h2>${msg(e.message, 'error')}<button class="primary" onclick="formAviso()">Crear aviso</button></section>`, 'avisos');
+  }
+};
 window.microfauna = function() { page('Microfauna', '<p>Seguimiento y densidad de cultivos vivos (Copepodos, Rotíferos, Phyto).</p>', 'microfauna'); };
 function inventarioEstado(i) { const q = Number(i.quantity || 0), m = Number(i.min_stock || 0); const exp = i.expiry_date ? Math.ceil((new Date(i.expiry_date) - Date.now()) / 86400000) : 99999; if (exp < 0) return ['error', 'Caducado']; if (exp < 30) return ['notice', 'Caduca pronto']; if (m && q <= m) return ['notice', 'Stock bajo']; return ['success', 'OK']; }
 function inventarioCard(i) { const st = inventarioEstado(i); return `<div class="item"><span class="${st[0]}">${esc(st[1])}</span><h3>${esc(i.name)}</h3><p class="small">${esc(i.category || 'Producto')} · ${esc(i.brand || '')}</p><p><b>${esc(i.quantity ?? '-')} ${esc(i.unit || '')}</b> · mínimo ${esc(i.min_stock ?? '-')}</p><p>Caducidad: <b>${esc(i.expiry_date || 'Sin fecha')}</b></p>${i.notes ? `<details><summary>Notas</summary><p>${esc(i.notes).replaceAll('\\n', '<br>')}</p></details>` : ''}</div>`; }
