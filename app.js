@@ -1,6 +1,6 @@
-/* ==========================================================================
+/* ==================================================================================================
    AcuarioNexo · NÚCLEO LIMPIO REAL · DASHBOARD MAESTRO
-   ========================================================================== */
+   ================================================================================================== */
 
 // --- BLOQUE 1: CONFIGURACIÓN E INICIALIZACIÓN DE ESTADO ---
 const c = window.ACUARIONEXO_CONFIG;
@@ -104,7 +104,7 @@ window.openA = async function(id) { const { data, error } = await s.from('aquari
 
 window.panel = function() { setAqSection('resumen'); shell(am('resumen') + `<section class="panel"><div class="panel-head"><h2>Ficha actual</h2><button onclick="editA('${window.q?.id || ''}')">Editar</button></div><p>Todo lo que guardes aquí pertenece a <b>${esc(window.q?.name || 'este acuario')}</b>.</p><div class="quick-actions"><button onclick="editA('${window.q?.id || ''}')"><span>✎</span>Datos</button><button onclick="formEquipoAcuario()"><span>⚙️</span>Equipo</button><button onclick="openAqSection('parametros')"><span>🧪</span>Parámetros</button><button onclick="openAqSection('animales')"><span>🐟</span>Animales</button><button onclick="openAqSection('fotos')"><span>📷</span>Fotos</button><button onclick="openAqSection('tareas')"><span>♢</span>Tareas</button><button onclick="inventario()"><span>▤</span>Inventario</button></div>${window.q?.description ? `<p>${esc(window.q.description)}</p>` : ''}</section>`, 'acuarios'); };
 window.formEquipoAcuario = function() { shell(window.am('resumen') + `<section class="panel"><button onclick="panel()">← Volver</button><h2>Añadir equipo</h2><p class="small">Guarda aquí el equipo real de este acuario con datos útiles para garantía, mantenimiento y API.</p><label>Tipo</label><select id="eqType"><option>Skimmer</option><option>Luz</option><option>Bomba de subida</option><option>Bomba de movimiento</option><option>Calentador</option><option>Filtro</option><option>Reactor</option><option>Otro equipo</option></select><label>Nombre</label><input id="eqName" placeholder="Ej. Skimmer principal"><label>Marca</label><input id="eqBrand" placeholder="Ej. Bubble Magus"><label>Modelo</label><input id="eqModel" placeholder="Ej. Curve 5"><div class="form-grid"><div><label>Cantidad</label><input id="eqQty" type="number" step="1" value="1"></div><div><label>Estado</label><select id="eqStatus"><option value="en_uso">En uso</option><option value="repuesto">Repuesto</option><option value="retirado">Retirado</option></select></div><div><label>Compra</label><input id="eqPurchaseDate" type="date"></div><div><label>Garantía hasta</label><input id="eqWarranty" type="date"></div><div><label>Precio</label><input id="eqPrice" type="number" step="0.01"></div><div><label>Tienda</label><input id="eqPlace" placeholder="Tienda o web"></div></div><label>URL fabricante</label><input id="eqManufacturerUrl" placeholder="https://..."><label>Manual / PDF</label><input id="eqManualUrl" placeholder="https://..."><label>Notas</label><textarea id="eqNotes" placeholder="Potencia, litros recomendados, mantenimiento, repuestos..."></textarea><button class="primary" onclick="saveEquipoAcuario()">Guardar equipo</button><div id="x"></div></section>`, 'acuarios'); };
-window.saveEquipoAcuario = async function() { try { if (!state.user) throw new Error('Debes iniciar sesión.'); if (!window.q) throw new Error('Abre un acuario primero.'); const name = val('eqName') || val('eqType'); const notes = [`Acuario: ${window.q.name}`, `Tipo: ${val('eqType')}`, val('eqNotes')].filter(Boolean).join('\\n'); const row = { user_id: state.user.id, aquarium_id: window.q.id, name, brand: val('eqBrand') || null, model: val('eqModel') || null, category: 'Equipo', quantity: Number(val('eqQty') || 1), unit: 'unidad', min_stock: 0, expiry_date: null, purchase_date: val('eqPurchaseDate') || null, purchase_place: val('eqPlace') || null, purchase_price: num('eqPrice'), warranty_until: val('eqWarranty') || null, manufacturer_url: val('eqManufacturerUrl') || null, manual_url: val('eqManualUrl') || null, item_status: val('eqStatus') || 'en_uso', notes, ai_review_status: 'manual' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; $('x').innerHTML = `<div class="success">Equipo guardado en inventario.</div><button onclick="inventario()">Ver inventario</button>`; } catch (e) { $('x').innerHTML = msg(e.message, 'error'); } };
+window.saveEquipoAcuario = async function() { try { if (!state.user) throw new Error('Debes iniciar sesión.'); if (!window.q) throw new Error('Abre un acuario primero.'); const name = val('eqName') || val('eqType'); const notes = [`Acuario: ${window.q.name}`, `Tipo: ${val('eqType')}`, val('eqNotes')].filter(Boolean).join('\n'); const row = { user_id: state.user.id, aquarium_id: window.q.id, name, brand: val('eqBrand') || null, model: val('eqModel') || null, category: 'Equipo', quantity: Number(val('eqQty') || 1), unit: 'unidad', min_stock: 0, expiry_date: null, purchase_date: val('eqPurchaseDate') || null, purchase_place: val('eqPlace') || null, purchase_price: num('eqPrice'), warranty_until: val('eqWarranty') || null, manufacturer_url: val('eqManufacturerUrl') || null, manual_url: val('eqManualUrl') || null, item_status: val('eqStatus') || 'en_uso', notes, ai_review_status: 'manual' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; $('x').innerHTML = `<div class="success">Equipo guardado en inventario.</div><button onclick="inventario()">Ver inventario</button>`; } catch (e) { $('x').innerHTML = msg(e.message, 'error'); } };
 
 function tareaAcuarioCard(t) {
   const open = avisoAbierto(t);
@@ -239,39 +239,6 @@ window.deleteFoto = async function(id) {
 
    
 
-// --- BLOQUE 10: MEDIDAS Y PARÁMETROS CRÍTICOS ---
-window.pars = async function() {
-  setAqSection('parametros');
-  shell(am('parametros') + `<section class="panel"><div class="panel-head"><h2>Panel de Control🧪</h2><button class="primary" onclick="formMedicion()">+ Nueva Medición</button></div><div class="quick-actions" style="margin-bottom:15px;"><button onclick="graficosAcuario()">📈 Gráficos</button><button onclick="icpAcuario()">🧪 Ver ICP</button></div><div id="parsList">${msg('Cargando mediciones...')}</div></section>`, 'acuarios');
-  try {
-    const { data, error } = await s.from('aquarium_measurements').select('*').eq('aquarium_id', window.q.id).order('measured_at', { ascending: false }).limit(30);
-    if (error) throw error;
-    if (!data || data.length === 0) { $('parsList').innerHTML = msg('No hay registros de parámetros para este acuario.'); return; }
-    let html = `<table class="summary-table" style="width:100%; text-align:left; border-collapse:collapse;"><thead><tr style="border-bottom:1px solid #ccc;"><th style="padding:8px;">Fecha</th><th style="padding:8px;">Parámetro</th><th style="padding:8px;">Valor</th><th style="padding:8px;">Acción</th></tr></thead><tbody>`;
-    data.forEach(m => { html += `<tr style="border-bottom:1px solid #eee;"><td style="padding:8px; font-size:12px;">${fecha(m.measured_at || m.created_at)}</td><td style="padding:8px;"><b>${esc(m.parameter_label || m.parameter)}</b></td><td style="padding:8px;"><span class="badge">${esc(m.display_value || m.value)}</span></td><td style="padding:8px;"><button class="danger small" onclick="deleteMedicion('${m.id}')" style="padding:2px 6px; font-size:11px;">🗑️</button></td></tr>`; });
-    html += `</tbody></table>`; $('parsList').innerHTML = html;
-  } catch (e) { $('parsList').innerHTML = msg(e.message, 'error'); }
-};
-
-window.formMedicion = function() {
-  const type = window.q?.aquarium_type || 'reef';
-  const rangos = window.ACUARIONEXO_RANGOS[type] || window.ACUARIONEXO_RANGOS['reef'];
-  let options = '';
-  Object.keys(rangos).forEach(p => { options += `<option value="${p}">${p.toUpperCase()} (${rangos[p].unit})</option>`; });
-  shell(am('parametros') + `<section class="panel"><button onclick="pars()">← Volver</button><h2>Registrar Parámetro</h2><label>Tipo de Parámetro</label><select id="pKey" onchange="updateParamHint()">${options}</select><div id="paramHint" class="small" style="margin:5px 0 15px 0; color:#666;"></div><label>Valor medido</label><input id="pVal" type="number" step="0.01" placeholder="Ej: 8.2"><label>Método de test (Opcional)</label><input id="pMethod" placeholder="Ej: Hanna, Salifert, Gotas..."><label>Notas</label><textarea id="pNotes" placeholder="Observaciones..."></textarea><button class="primary" onclick="saveMedicion()">Guardar Medición</button><div id="x"></div></section>`, 'acuarios');
-  window.updateParamHint = function() { const k = val('pKey'); const r = rangos[k]; if (r) $('paramHint').innerHTML = `Rango óptimo para tu tipo: <b>${r.min} - ${r.max} ${r.unit}</b>`; };
-  window.updateParamHint();
-};
-
-window.saveMedicion = async function() {
-  try {
-    const pKey = val('pKey'); const pVal = num('pVal'); if (pVal === null) throw new Error('Introduce un valor válido.');
-    const row = { user_id: state.user.id, aquarium_id: window.q.id, parameter: pKey, parameter_label: pKey.toUpperCase(), value: pVal, display_value: String(pVal), test_method_label: val('pMethod') || null, notes: val('pNotes') || null, measured_at: new Date().toISOString() };
-    const { error } = await s.from('aquarium_measurements').insert([row]); if (error) throw error; window.pars();
-  } catch (e) { $('x').innerHTML = msg(e.message, 'error'); }
-};
-window.deleteMedicion = async function(id) { if (!confirm('¿Eliminar medición?')) return; try { const { error } = await s.from('aquarium_measurements').delete().eq('id', id); if (error) throw error; window.pars(); } catch (e) { alert(e.message); } };
-
 // --- BLOQUE 11: HISTORIAL COMPLETO ---
 function histBtn(id, label, count) { return `<button class="${state.histFilter === id ? 'active' : ''}" onclick="historialAcuario('${id}')">${label}${count != null ? ' ' + count : ''}</button>`; }
 function histCard(i) { return `<div class="item"><b>${esc(i.label)} · ${esc(i.title)}</b><p class="small">${esc(fecha(i.date))}</p>${i.text ? `<p>${esc(i.text)}</p>` : ''}</div>`; }
@@ -330,7 +297,7 @@ window.filtrarBibliotecaModulo = function(modulo) { window.renderBibliotecaLista
 window.buscarBibliotecaReal = async function() { const texto = val('bibliotecaSearch'); const cont = $('bibliotecaResultados'); if (cont) cont.innerHTML = msg('Cargando biblioteca desde Supabase...'); window.renderBibliotecaLista(await bibliotecaDatos(texto), null); };
 window.biblioteca = async function() { shell(`<section class="panel library-panel"><div class="panel-head"><div><h2>Biblioteca</h2><p class="small">Fichas reales guardadas en Supabase, separadas por módulos.</p></div></div><div class="library-search"><input id="bibliotecaSearch" placeholder="Buscar pez, coral, invertebrado, producto..."><button class="primary" onclick="buscarBibliotecaReal()">Buscar</button></div><div id="bibliotecaResultados">${msg('Cargando biblioteca desde Supabase...')}</div></section>`, 'biblioteca'); await window.buscarBibliotecaReal(); };
 function bibliotecaClave(x) { return String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ''); }
-function bibliotecaValor(v) { if (v == null || v === '') return ''; if (Array.isArray(v)) return v.map(bibliotecaValor).filter(Boolean).join('\\n'); if (typeof v === 'object') return bibliotecaValor(v.texto || v.text || v.contenido || v.content || v.valor || v.value || v.descripcion || v.description || ''); return String(v); }
+function bibliotecaValor(v) { if (v == null || v === '') return ''; if (Array.isArray(v)) return v.map(bibliotecaValor).filter(Boolean).join('\n'); if (typeof v === 'object') return bibliotecaValor(v.texto || v.text || v.contenido || v.content || v.valor || v.value || v.descripcion || v.description || ''); return String(v); }
 function bibliotecaCampoDeObjeto(obj, keys) { if (!obj || typeof obj !== 'object') return ''; const wanted = keys.map(bibliotecaClave); for (const [k, v] of Object.entries(obj)) { if (wanted.includes(bibliotecaClave(k))) { const out = bibliotecaValor(v).trim(); if (out) return out; } } return ''; }
 function bibliotecaCampoDeArray(arr, keys) { if (!Array.isArray(arr)) return ''; const wanted = keys.map(bibliotecaClave); for (const item of arr) { if (!item || typeof item !== 'object') continue; const title = item.titulo || item.title || item.nombre || item.name || item.key || item.id || item.label || item.apartado || item.modulo || item.seccion; if (!wanted.includes(bibliotecaClave(title))) continue; const out = bibliotecaValor(item).trim(); if (out) return out; } return ''; }
 function bibliotecaCampo(f, keys) { const raw = f.raw || {}; const pools = [raw, raw.apartados, raw.bloques, raw.modulos, raw.modules, raw.sections, raw.secciones, raw.data, raw.ficha, raw.ficha_normalizada, raw.fichaNormalizada].filter(Boolean); for (const p of pools) { const out = Array.isArray(p) ? bibliotecaCampoDeArray(p, keys) : bibliotecaCampoDeObjeto(p, keys); if (out) return out; } return ''; }
@@ -353,18 +320,18 @@ const bibliotecaSeccionesFicha = [
 ];
 function bibliotecaTextoDerivado(f, title) {
   const raw = f.raw || {};
-  if (title === 'Identificación') return [`Nombre común: ${f.nombre}`, f.cientifico ? `Nombre científico: ${f.cientifico}` : '', raw.category ? `Categoría: ${bibliotecaModuloLabel(bibliotecaModulo(f))}` : '', raw.care_level ? `Dificultad: ${raw.care_level}` : ''].filter(Boolean).join('\\n');
-  if (title === 'Acuario recomendado') return [raw.min_tank_liters ? `Litros mínimos: ${raw.min_tank_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\\n');
+  if (title === 'Identificación') return [`Nombre común: ${f.nombre}`, f.cientifico ? `Nombre científico: ${f.cientifico}` : '', raw.category ? `Categoría: ${bibliotecaModuloLabel(bibliotecaModulo(f))}` : '', raw.care_level ? `Dificultad: ${raw.care_level}` : ''].filter(Boolean).join('\n');
+  if (title === 'Acuario recomendado') return [raw.min_tank_liters ? `Litros mínimos: ${raw.min_tank_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\n');
   if (title === 'Parámetros') return bibliotecaValor(raw.parameters).trim();
   if (title === 'Comportamiento') return raw.temperament || '';
   if (title === 'Alimentación') return raw.feeding || raw.diet || '';
   if (title === 'Compatibilidad') return raw.compatibility || '';
   if (title === 'Reef Safe') return raw.reef_safe != null ? String(raw.reef_safe) : '';
-  if (title === 'Fuentes') return [raw.references_text, raw.source_url ? `Fuente interna: ${raw.source_url}` : ''].filter(Boolean).join('\\n');
+  if (title === 'Fuentes') return [raw.references_text, raw.source_url ? `Fuente interna: ${raw.source_url}` : ''].filter(Boolean).join('\n');
   return '';
 }
-function bibliotecaSeccionesHtml(f) { return bibliotecaSeccionesFicha.map(([title, keys], idx) => { const text = bibliotecaCampo(f, keys) || bibliotecaTextoDerivado(f, title); const body = text ? `<p>${esc(text).replaceAll('\\n', '<br>')}</p>` : `<p class="small">Pendiente de completar en la ficha original.</p>`; return `<details class="library-detail-section" ${idx === 0 ? 'open' : ''}><summary>${esc(title)}</summary>${body}</details>`; }).join(''); }
-function bibliotecaNotasInventario(f) { return bibliotecaSeccionesFicha.map(([title, keys]) => { const text = bibliotecaCampo(f, keys); return text ? `${title}: ${text}` : ''; }).filter(Boolean).join('\\n\\n') || f.descripcion || ''; }
+function bibliotecaSeccionesHtml(f) { return bibliotecaSeccionesFicha.map(([title, keys], idx) => { const text = bibliotecaCampo(f, keys) || bibliotecaTextoDerivado(f, title); const body = text ? `<p>${esc(text).replaceAll('\n', '<br>')}</p>` : `<p class="small">Pendiente de completar en la ficha original.</p>`; return `<details class="library-detail-section" ${idx === 0 ? 'open' : ''}><summary>${esc(title)}</summary>${body}</details>`; }).join(''); }
+function bibliotecaNotasInventario(f) { return bibliotecaSeccionesFicha.map(([title, keys]) => { const text = bibliotecaCampo(f, keys); return text ? `${title}: ${text}` : ''; }).filter(Boolean).join('\n\n') || f.descripcion || ''; }
 function bibliotecaCategoriaInventario(f) { const m = bibliotecaModulo(f); if (m === 'medicine') return 'Medicamento'; if (m === 'equipment') return 'Equipo'; if (m === 'product') return 'Producto'; if (m.includes('fish') || ['coral', 'invertebrate', 'plant', 'microfauna'].includes(m)) return 'Ficha biblioteca'; return 'Producto'; }
 window.guardarFichaInventario = async function(i) { const f = (window.__bibliotecaVistaActual || [])[i]; if (!f) return; try { if (!state.user) throw new Error('Debes iniciar sesión.'); const row = { user_id: state.user.id, name: f.nombre, brand: f.cientifico || null, category: bibliotecaCategoriaInventario(f), quantity: 1, unit: 'unidad', min_stock: 0, expiry_date: null, notes: bibliotecaNotasInventario(f), ai_review_status: 'biblioteca' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; const x = $('x'); if (x) x.innerHTML = `<div class="success">Ficha guardada en inventario.</div><button onclick="inventario()">Ver inventario</button>`; } catch (e) { const x = $('x'); if (x) x.innerHTML = msg(e.message, 'error'); } };
 window.verFichaBiblioteca = function(i) { const f = (window.__bibliotecaVistaActual || [])[i]; if (!f) return; shell(`<section class="panel library-detail"><button onclick="biblioteca()">← Volver</button>${f.foto ? `<img class="library-detail-photo" src="${esc(f.foto)}" alt="${esc(f.nombre)}">` : ''}<p class="small">${esc(bibliotecaModuloLabel(bibliotecaModulo(f)))}</p><h2>${esc(f.nombre)}</h2>${f.cientifico ? `<p class="scientific">${esc(f.cientifico)}</p>` : ''}<div class="quick-actions"><button onclick="guardarFichaInventario(${i})"><span>▤</span>Guardar en inventario</button>${window.q ? `<button onclick='importarAnimalBiblioteca(${JSON.stringify(f.raw).replace(/'/g, '&#039;')})'><span>＋</span>Añadir a ${esc(window.q.name || 'mi acuario')}</button>` : ''}</div><div id="x"></div>${bibliotecaSeccionesHtml(f)}</section>`, 'biblioteca'); };
@@ -396,108 +363,33 @@ async function readAvisosOpcional(tabla, select, dateField, mapper, warnings) {
     const r = await q;
     if (r.error) { warnings.push(`No pude leer ${tabla}: ${r.error.message}`); return []; }
     return (r.data || []).map(mapper);
-  } catch (e) {
-    warnings.push(`No pude leer ${tabla}: ${e.message}`);
-    return [];
-  }
+  } catch (e) { warnings.push(`No pude leer ${tabla}: ${e.message}`); return []; }
 }
-window.formAviso = async function() {
-  if (!state.user) return login();
-  await loadAquariums();
-  const opts = ['<option value="">General</option>'].concat((state.aquariums || []).map(a => `<option value="${esc(a.id)}">${esc(a.name)}</option>`)).join('');
-  shell(`<section class="panel"><button onclick="tareas()">← Volver</button><h2>Nuevo aviso</h2><label>Título</label><input id="avTitle" placeholder="Cambio de agua, revisar skimmer..."><label>Acuario</label><select id="avAq">${opts}</select><label>Fecha y hora</label><input id="avDue" type="datetime-local"><label>Prioridad</label><select id="avPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="baja">Baja</option></select><label>Notas</label><textarea id="avNotes" placeholder="Detalles del recordatorio"></textarea><button class="primary" onclick="saveAviso()">Guardar aviso</button><div id="x"></div></section>`, 'avisos');
-};
-window.saveAviso = async function() {
-  try {
-    if (!state.user) throw new Error('Debes iniciar sesión.');
-    if (!val('avTitle')) throw new Error('Pon un título para el aviso.');
-    const row = { user_id: state.user.id, aquarium_id: val('avAq') || null, title: val('avTitle'), task_type: 'task', due_at: val('avDue') ? new Date(val('avDue')).toISOString() : null, priority: val('avPriority') || 'normal', status: 'open', notes: val('avNotes') || null };
-    const r = await s.from('tasks').insert(row);
-    if (r.error) throw r.error;
-    window.tareas();
-  } catch (e) { if ($('x')) $('x').innerHTML = msg(e.message, 'error'); }
-};
-window.completeTask = async function(id) {
-  try {
-    const r = await s.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id);
-    if (r.error) throw r.error;
-    window.tareas();
-  } catch (e) { alert(e.message); }
-};
 window.tareas = async function() {
   if (!state.user) return login();
-  shell(`<section class="panel"><h2>Avisos</h2><p>Tareas, alertas de mediciones y recordatorios periódicos.</p>${msg('Cargando avisos...')}</section>`, 'avisos');
+  await loadAquariums().catch(() => {});
+  shell(`<section class="panel"><h2>Avisos</h2>${msg('Cargando avisos reales...')}</section>`, 'avisos');
+  const warnings = [];
+  const avisos = [];
   try {
-    await loadAquariums();
-    const warnings = [];
-    const taskRes = await s.from('tasks').select('id,aquarium_id,title,task_type,due_at,priority,status,notes').eq('user_id', state.user.id).order('due_at', { ascending: true, nullsFirst: false }).limit(120);
-    if (taskRes.error) throw taskRes.error;
-    const all = (taskRes.data || []).filter(avisoAbierto).map(mapTaskAviso)
-      .concat(await readAvisosOpcional('maintenance_events', 'id,aquarium_id,title,event_type,next_due_at,notes', 'next_due_at', mapMaintenanceAviso, warnings))
-      .concat(await readAvisosOpcional('microfauna_cultures', 'id,aquarium_id,name,culture_type,next_action_at,status,notes', 'next_action_at', mapMicrofaunaAviso, warnings));
-    all.forEach(a => { a.bucket = avisoBucket(a); });
-    all.sort((a, b) => new Date(a.date || '2999-12-31') - new Date(b.date || '2999-12-31'));
-    const vencidos = all.filter(a => a.bucket === 'vencidos'), hoy = all.filter(a => a.bucket === 'hoy'), proximos = all.filter(a => a.bucket === 'proximos'), sinFecha = all.filter(a => a.bucket === 'sin_fecha');
-    const warnHtml = warnings.length ? msg('Algunos módulos aún no devuelven avisos: ' + warnings.join(' · '), 'notice') : '';
-    const emptyHtml = all.length ? '' : msg('No hay avisos pendientes ahora mismo. Si esperabas ver alguno, todavía no existe como tarea o ya está marcado como hecho.', 'success');
-    shell(`<section class="summary-card"><div><small>Avisos activos</small><h2>${all.length} pendientes</h2><p>${vencidos.length} vencidos · ${hoy.length} para hoy · ${proximos.length} próximos</p></div></section><section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas, mantenimientos y recordatorios de tus acuarios.</p></div><button class="primary" onclick="formAviso()">+ Aviso</button></div>${warnHtml}${emptyHtml}</section>${avisoGroup('Vencidos', vencidos, 'No hay avisos vencidos.')}${avisoGroup('Hoy', hoy, 'No hay avisos para hoy.')}${avisoGroup('Próximos', proximos, 'No hay próximos avisos con fecha.')}${avisoGroup('Sin fecha', sinFecha, 'No hay tareas sin fecha.')}`, 'avisos');
-  } catch (e) {
-    shell(`<section class="panel"><h2>Avisos</h2>${msg(e.message, 'error')}<button class="primary" onclick="formAviso()">Crear aviso</button></section>`, 'avisos');
-  }
+    const tasksR = await s.from('tasks').select('id,title,task_type,aquarium_id,due_at,priority,status,notes').eq('user_id', state.user.id).order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    if (tasksR.error) warnings.push(`No pude leer tasks: ${tasksR.error.message}`);
+    else (tasksR.data || []).filter(avisoAbierto).map(mapTaskAviso).forEach(a => avisos.push(a));
+    (await readAvisosOpcional('maintenance_events', 'title,event_type,aquarium_id,next_due_at,notes', 'next_due_at', mapMaintenanceAviso, warnings)).forEach(a => avisos.push(a));
+    (await readAvisosOpcional('microfauna_cultures', 'name,culture_type,aquarium_id,next_action_at,notes', 'next_action_at', mapMicrofaunaAviso, warnings)).forEach(a => avisos.push(a));
+    avisos.forEach(a => a.bucket = avisoBucket(a));
+    avisos.sort((a,b) => new Date(a.date || '2999-12-31') - new Date(b.date || '2999-12-31'));
+    const vencidos = avisos.filter(a => a.bucket === 'vencidos'), hoy = avisos.filter(a => a.bucket === 'hoy'), proximos = avisos.filter(a => a.bucket === 'proximos'), sin = avisos.filter(a => a.bucket === 'sin_fecha');
+    shell(`<section class="summary-card"><div><small>Avisos reales</small><h2>${avisos.length} activos</h2><p>${vencidos.length} vencidos · ${hoy.length} hoy · ${proximos.length} próximos</p></div><button onclick="dashboard()">⌂</button></section>${warnings.length ? `<section class="panel">${warnings.map(w => msg(w,'notice')).join('')}</section>` : ''}${avisoGroup('Vencidos', vencidos, 'No hay avisos vencidos.')}${avisoGroup('Hoy', hoy, 'No hay avisos para hoy.')}${avisoGroup('Próximos', proximos, 'No hay avisos próximos.')}${avisoGroup('Sin fecha', sin, 'No hay avisos sin fecha.')}`, 'avisos');
+  } catch (e) { page('Avisos', msg(e.message, 'error'), 'avisos'); }
 };
-window.microfauna = function() { page('Microfauna', '<p>Seguimiento y densidad de cultivos vivos (Copepodos, Rotíferos, Phyto).</p>', 'microfauna'); };
-function inventarioEstado(i) { const q = Number(i.quantity || 0), m = Number(i.min_stock || 0); const exp = i.expiry_date ? Math.ceil((new Date(i.expiry_date) - Date.now()) / 86400000) : 99999; if (exp < 0) return ['error', 'Caducado']; if (exp < 30) return ['notice', 'Caduca pronto']; if (m && q <= m) return ['notice', 'Stock bajo']; return ['success', 'OK']; }
-function inventarioCard(i) { const st = inventarioEstado(i); const compra = [i.purchase_date, i.purchase_place, i.purchase_price ? `${i.purchase_price} €` : ''].filter(Boolean).join(' · '); const links = [i.manufacturer_url ? `<a href="${esc(i.manufacturer_url)}" target="_blank" rel="noopener">Fabricante</a>` : '', i.manual_url ? `<a href="${esc(i.manual_url)}" target="_blank" rel="noopener">Manual</a>` : '', i.source_url ? `<a href="${esc(i.source_url)}" target="_blank" rel="noopener">Compra</a>` : ''].filter(Boolean).join(' · '); return `<div class="item"><span class="${st[0]}">${esc(st[1])}</span><h3>${esc(i.name)}</h3><p class="small">${esc(i.category || 'Producto')} · ${esc(i.brand || '')}${i.model ? ' · ' + esc(i.model) : ''}</p><p><b>${esc(i.quantity ?? '-')} ${esc(i.unit || '')}</b> · mínimo ${esc(i.min_stock ?? '-')}</p><p>Caducidad: <b>${esc(i.expiry_date || 'Sin fecha')}</b>${i.warranty_until ? ` · Garantía: <b>${esc(i.warranty_until)}</b>` : ''}</p>${compra ? `<p class="small">Compra: ${esc(compra)}</p>` : ''}${i.item_status ? `<p class="small">Estado: ${esc(i.item_status)}</p>` : ''}${links ? `<p class="small">${links}</p>` : ''}${i.notes ? `<details><summary>Notas</summary><p>${esc(i.notes).replaceAll('\\n', '<br>')}</p></details>` : ''}</div>`; }
-const inventarioApartados = [
-  { key: 'equipo', title: 'Equipo', desc: 'Skimmer, luces, bombas, calentadores, filtros y reactores.', icon: '⚙️' },
-  { key: 'productos', title: 'Productos y sales', desc: 'Sales, aditivos, tests, alimentos y consumibles.', icon: '🧂' },
-  { key: 'medicamentos', title: 'Medicamentos', desc: 'Tratamientos, cuarentena, dosis y observaciones.', icon: '💊' },
-  { key: 'fichas', title: 'Fichas biblioteca', desc: 'Fichas guardadas desde biblioteca para consultar o comprar.', icon: '□' },
-  { key: 'otros', title: 'Otros', desc: 'Material sin clasificar o notas de almacén.', icon: '▤' }
-];
-function inventarioApartadoKey(i) {
-  const c = String(i.category || '').toLowerCase();
-  const text = `${c} ${String(i.name || '').toLowerCase()} ${String(i.notes || '').toLowerCase()}`;
-  if (c.includes('equipo') || /skimmer|bomba|luz|pantalla|calentador|filtro|reactor/.test(text)) return 'equipo';
-  if (c.includes('medic') || /medic|tratamiento|cuarentena|antibiot|parasit/.test(text)) return 'medicamentos';
-  if (c.includes('ficha') || c.includes('biblioteca')) return 'fichas';
-  if (c.includes('producto') || c.includes('sal') || c.includes('alimento') || /sal|test|aditivo|comida|alimento|resina|carbon|perlon|consumible/.test(text)) return 'productos';
-  return 'otros';
-}
-function inventarioApartadosHtml(data) {
-  return inventarioApartados.map(ap => {
-    const items = data.filter(i => inventarioApartadoKey(i) === ap.key);
-    const avisos = items.filter(i => inventarioEstado(i)[1] !== 'OK').length;
-    return `<section class="panel"><div class="panel-head"><div><h2>${esc(ap.icon)} ${esc(ap.title)}</h2><p class="small">${esc(ap.desc)}</p></div><b>${items.length}</b></div>${avisos ? msg(`${avisos} aviso${avisos === 1 ? '' : 's'} en este apartado.`, 'notice') : ''}${items.map(inventarioCard).join('') || msg(`Sin elementos en ${ap.title.toLowerCase()}.`)}</section>`;
-  }).join('');
-}
-window.formInventario = function() { shell(`<section class="panel"><button onclick="inventario()">← Volver</button><h2>Añadir al inventario</h2><p class="small">Estos campos alimentan los avisos y la API: compra, caducidad, garantía, precio, fabricante y stock.</p><label>Apartado</label><select id="invCategory"><option>Producto</option><option>Sal</option><option>Aditivo</option><option>Test</option><option>Alimento</option><option>Medicamento</option><option>Equipo</option><option>Consumible</option><option>Ficha biblioteca</option><option>Otro</option></select><label>Nombre</label><input id="invName" placeholder="Ej. Reef Salt, carbón activo, medicamento..."><label>Marca</label><input id="invBrand"><label>Modelo / formato</label><input id="invModel" placeholder="Ej. 20 kg, 500 ml, Checker HI..."><div class="form-grid"><div><label>Cantidad</label><input id="invQty" type="number" step="0.01" value="1"></div><div><label>Unidad</label><input id="invUnit" value="unidad"></div><div><label>Mínimo</label><input id="invMin" type="number" step="0.01" value="0"></div><div><label>Caducidad</label><input id="invExpiry" type="date"></div><div><label>Compra</label><input id="invPurchaseDate" type="date"></div><div><label>Precio</label><input id="invPrice" type="number" step="0.01"></div><div><label>Garantía hasta</label><input id="invWarranty" type="date"></div><div><label>Estado</label><select id="invStatus"><option value="disponible">Disponible</option><option value="en_uso">En uso</option><option value="agotado">Agotado</option><option value="retirado">Retirado</option></select></div></div><label>Tienda / proveedor</label><input id="invPlace" placeholder="Tienda local, web, particular..."><label>URL fabricante</label><input id="invManufacturerUrl" placeholder="https://..."><label>URL compra / fuente</label><input id="invSourceUrl" placeholder="https://..."><label>Manual / PDF</label><input id="invManualUrl" placeholder="https://..."><label>Notas</label><textarea id="invNotes" placeholder="Dosis, uso, compatibilidades, observaciones..."></textarea><button class="primary" onclick="saveInventarioItem()">Guardar</button><div id="x"></div></section>`, 'inicio'); };
-window.saveInventarioItem = async function() { try { if (!state.user) throw new Error('Debes iniciar sesión.'); if (!val('invName')) throw new Error('Pon un nombre.'); const row = { user_id: state.user.id, name: val('invName'), brand: val('invBrand') || null, model: val('invModel') || null, category: val('invCategory') || 'Producto', quantity: num('invQty'), unit: val('invUnit') || 'unidad', min_stock: num('invMin'), expiry_date: val('invExpiry') || null, purchase_date: val('invPurchaseDate') || null, purchase_place: val('invPlace') || null, purchase_price: num('invPrice'), warranty_until: val('invWarranty') || null, manufacturer_url: val('invManufacturerUrl') || null, source_url: val('invSourceUrl') || null, manual_url: val('invManualUrl') || null, item_status: val('invStatus') || 'disponible', notes: val('invNotes') || null, ai_review_status: 'manual' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; window.inventario(); } catch (e) { if ($('x')) $('x').innerHTML = msg(e.message, 'error'); } };
-window.inventario = async function() { if (!state.user) return login(); try { shell(`<section class="panel"><h2>Inventario</h2>${msg('Cargando inventario...')}</section>`, 'inicio'); const r = await s.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(300); if (r.error) throw r.error; const data = r.data || []; const avisos = data.filter(x => inventarioEstado(x)[1] !== 'OK').length; shell(`<section class="summary-card"><div><small>Almacén global</small><h2>Inventario</h2><p>${data.length} productos · ${avisos} avisos</p></div><button onclick="formInventario()">+</button></section><section class="panel"><div class="panel-head"><div><h2>Apartados</h2><p class="small">Stock, caducidades, equipo y fichas separados por tipo.</p></div><button class="primary" onclick="formInventario()">Añadir</button></div></section>${inventarioApartadosHtml(data)}`, 'inicio'); } catch (e) { shell(`<section class="panel"><h2>Inventario</h2>${msg(e.message, 'error')}</section>`, 'inicio'); } };
+window.completeTask = async function(id) { const r = await s.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id); if (r.error) return alert(r.error.message); tareas(); };
+window.inventario = async function() { try { const r = await s.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending:false }).limit(100); if (r.error) throw r.error; page('Inventario', `<button onclick="panel()">← Volver</button>${(r.data||[]).map(i=>`<div class="item"><b>${esc(i.name)}</b><p class="small">${esc(i.category||'')} · ${esc(i.brand||'')} ${esc(i.model||'')}</p><p>${esc(i.notes||'')}</p></div>`).join('') || msg('Inventario vacío.')}`, 'acuarios'); } catch(e){ page('Inventario', msg(e.message,'error'), 'acuarios'); } };
+window.microfauna = function(){ page('Microfauna', msg('Módulo preparado para cultivos y avisos.'), 'microfauna'); };
 
-// --- BLOQUE 13: ARRANQUE GLOBAL (BOOT) ---
-async function boot() { try { const r = await s.auth.getSession(); state.user = r.data.session?.user || null; window.u = state.user; document.getElementById('logoutBtn')?.classList.toggle('hidden', !state.user); if (document.getElementById('logoutBtn')) document.getElementById('logoutBtn').onclick = async () => { await s.auth.signOut(); location.reload(); }; state.user ? dashboard() : login(); } catch (e) { render(msg(e.message, 'error')); } }
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot, { once: true }); else boot();
-
-/* ==========================================================================
-   OBJETO JSON: RANGOS DE CONTROL TÉCNICO (Referencia Cruzada de Parámetros)
-   ========================================================================== */
-window.ACUARIONEXO_RANGOS = {
-  "reef": {
-    "salinity": { "min": 1024, "max": 1026, "unit": "sg" },
-    "temperature": { "min": 24.0, "max": 26.0, "unit": "°C" },
-    "ph": { "min": 8.1, "max": 8.4, "unit": "pH" },
-    "kh": { "min": 7.0, "max": 8.5, "unit": "dKH" },
-    "calcium": { "min": 410, "max": 440, "unit": "mg/L" },
-    "magnesium": { "min": 1280, "max": 1350, "unit": "mg/L" },
-    "phosphate": { "min": 0.02, "max": 0.08, "unit": "mg/L" },
-    "nitrate": { "min": 2.0, "max": 10.0, "unit": "mg/L" }
-  },
-  "freshwater": {
-    "temperature": { "min": 22.0, "max": 26.0, "unit": "°C" },
-    "ph": { "min": 6.5, "max": 7.5, "unit": "pH" },
-    "kh": { "min": 3.0, "max": 6.0, "unit": "dKH" },
-    "gh": { "min": 4.0, "max": 10.0, "unit": "dGH" },
-    "nitrate": { "min": 0.0, "max": 20.0, "unit": "mg/L" }
-  }
-};
+// --- BLOQUE 13: BOOT ---
+async function boot() {
+  try { const { data } = await s.auth.getUser(); state.user = data?.user || null; window.u = state.user; document.getElementById('logoutBtn')?.classList.toggle('hidden', !state.user); if (!state.user) return login(); await dashboard(); } catch (e) { render(msg(e.message, 'error')); }
+}
+document.getElementById('logoutBtn')?.addEventListener('click', async () => { await s.auth.signOut(); location.reload(); });
+boot();
