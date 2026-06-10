@@ -1,5 +1,13 @@
 window.ACUARIONEXO_CONFIG = {
   SUPABASE_URL: "https://fpykunamxygclolnjnke.supabase.co",
   SUPABASE_KEY: "sb_publishable_FICmG_EDURKDibSrG0R2EA_kRqaHNe-",
-  APP_VERSION: "AcuarioNexo Base Real V1"
+  APP_VERSION: "AcuarioNexo Base Real V1",
+  FIREBASE_CONFIG: {
+    apiKey: "AIzaSyCOSMcEEHG97qgtSeetB03fDYk8r-0420c",
+    authDomain: "acuarionexo.firebaseapp.com",
+    projectId: "acuarionexo",
+    storageBucket: "acuarionexo.firebasestorage.app",
+    messagingSenderId: "912663485955",
+    appId: "1:912663485955:web:440ef36d43cecc37d4f836"
+  }
 };
