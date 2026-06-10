@@ -436,7 +436,30 @@ window.tareas = async function() {
 window.microfauna = function() { page('Microfauna', '<p>Seguimiento y densidad de cultivos vivos (Copepodos, Rotíferos, Phyto).</p>', 'microfauna'); };
 function inventarioEstado(i) { const q = Number(i.quantity || 0), m = Number(i.min_stock || 0); const exp = i.expiry_date ? Math.ceil((new Date(i.expiry_date) - Date.now()) / 86400000) : 99999; if (exp < 0) return ['error', 'Caducado']; if (exp < 30) return ['notice', 'Caduca pronto']; if (m && q <= m) return ['notice', 'Stock bajo']; return ['success', 'OK']; }
 function inventarioCard(i) { const st = inventarioEstado(i); return `<div class="item"><span class="${st[0]}">${esc(st[1])}</span><h3>${esc(i.name)}</h3><p class="small">${esc(i.category || 'Producto')} · ${esc(i.brand || '')}</p><p><b>${esc(i.quantity ?? '-')} ${esc(i.unit || '')}</b> · mínimo ${esc(i.min_stock ?? '-')}</p><p>Caducidad: <b>${esc(i.expiry_date || 'Sin fecha')}</b></p>${i.notes ? `<details><summary>Notas</summary><p>${esc(i.notes).replaceAll('\\n', '<br>')}</p></details>` : ''}</div>`; }
-window.inventario = async function() { if (!state.user) return login(); try { shell(`<section class="panel"><h2>Inventario</h2>${msg('Cargando inventario...')}</section>`, 'inicio'); const r = await s.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(300); if (r.error) throw r.error; const data = r.data || []; const avisos = data.filter(x => inventarioEstado(x)[1] !== 'OK').length; shell(`<section class="summary-card"><div><small>Almacén global</small><h2>Inventario</h2><p>${data.length} productos · ${avisos} avisos</p></div></section><section class="panel"><h2>Stock, caducidades y fichas</h2>${data.map(inventarioCard).join('') || msg('Sin productos todavía.')}</section>`, 'inicio'); } catch (e) { shell(`<section class="panel"><h2>Inventario</h2>${msg(e.message, 'error')}</section>`, 'inicio'); } };
+const inventarioApartados = [
+  { key: 'equipo', title: 'Equipo', desc: 'Skimmer, luces, bombas, calentadores, filtros y reactores.', icon: '⚙️' },
+  { key: 'productos', title: 'Productos y sales', desc: 'Sales, aditivos, tests, alimentos y consumibles.', icon: '🧂' },
+  { key: 'medicamentos', title: 'Medicamentos', desc: 'Tratamientos, cuarentena, dosis y observaciones.', icon: '💊' },
+  { key: 'fichas', title: 'Fichas biblioteca', desc: 'Fichas guardadas desde biblioteca para consultar o comprar.', icon: '□' },
+  { key: 'otros', title: 'Otros', desc: 'Material sin clasificar o notas de almacén.', icon: '▤' }
+];
+function inventarioApartadoKey(i) {
+  const c = String(i.category || '').toLowerCase();
+  const text = `${c} ${String(i.name || '').toLowerCase()} ${String(i.notes || '').toLowerCase()}`;
+  if (c.includes('equipo') || /skimmer|bomba|luz|pantalla|calentador|filtro|reactor/.test(text)) return 'equipo';
+  if (c.includes('medic') || /medic|tratamiento|cuarentena|antibiot|parasit/.test(text)) return 'medicamentos';
+  if (c.includes('ficha') || c.includes('biblioteca')) return 'fichas';
+  if (c.includes('producto') || c.includes('sal') || c.includes('alimento') || /sal|test|aditivo|comida|alimento|resina|carbon|perlon|consumible/.test(text)) return 'productos';
+  return 'otros';
+}
+function inventarioApartadosHtml(data) {
+  return inventarioApartados.map(ap => {
+    const items = data.filter(i => inventarioApartadoKey(i) === ap.key);
+    const avisos = items.filter(i => inventarioEstado(i)[1] !== 'OK').length;
+    return `<section class="panel"><div class="panel-head"><div><h2>${esc(ap.icon)} ${esc(ap.title)}</h2><p class="small">${esc(ap.desc)}</p></div><b>${items.length}</b></div>${avisos ? msg(`${avisos} aviso${avisos === 1 ? '' : 's'} en este apartado.`, 'notice') : ''}${items.map(inventarioCard).join('') || msg(`Sin elementos en ${ap.title.toLowerCase()}.`)}</section>`;
+  }).join('');
+}
+window.inventario = async function() { if (!state.user) return login(); try { shell(`<section class="panel"><h2>Inventario</h2>${msg('Cargando inventario...')}</section>`, 'inicio'); const r = await s.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(300); if (r.error) throw r.error; const data = r.data || []; const avisos = data.filter(x => inventarioEstado(x)[1] !== 'OK').length; shell(`<section class="summary-card"><div><small>Almacén global</small><h2>Inventario</h2><p>${data.length} productos · ${avisos} avisos</p></div></section><section class="panel"><h2>Apartados</h2><p class="small">Stock, caducidades, equipo y fichas separados por tipo.</p></section>${inventarioApartadosHtml(data)}`, 'inicio'); } catch (e) { shell(`<section class="panel"><h2>Inventario</h2>${msg(e.message, 'error')}</section>`, 'inicio'); } };
 
 // --- BLOQUE 13: ARRANQUE GLOBAL (BOOT) ---
 async function boot() { try { const r = await s.auth.getSession(); state.user = r.data.session?.user || null; window.u = state.user; document.getElementById('logoutBtn')?.classList.toggle('hidden', !state.user); if (document.getElementById('logoutBtn')) document.getElementById('logoutBtn').onclick = async () => { await s.auth.signOut(); location.reload(); }; state.user ? dashboard() : login(); } catch (e) { render(msg(e.message, 'error')); } }
