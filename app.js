@@ -351,7 +351,19 @@ const bibliotecaSeccionesFicha = [
   ['Curiosidades', ['curiosidades', 'curiosities']],
   ['Fuentes', ['fuentes', 'sources', 'references_text', 'referencias']]
 ];
-function bibliotecaSeccionesHtml(f) { const html = bibliotecaSeccionesFicha.map(([title, keys]) => { const text = bibliotecaCampo(f, keys); if (!text) return ''; return `<details class="library-detail-section" open><summary>${esc(title)}</summary><p>${esc(text).replaceAll('\\n', '<br>')}</p></details>`; }).join(''); return html || (f.descripcion ? `<details class="library-detail-section" open><summary>Resumen rápido</summary><p>${esc(f.descripcion)}</p></details>` : msg('Esta ficha no tiene descripcion ampliada.')); }
+function bibliotecaTextoDerivado(f, title) {
+  const raw = f.raw || {};
+  if (title === 'Identificación') return [`Nombre común: ${f.nombre}`, f.cientifico ? `Nombre científico: ${f.cientifico}` : '', raw.category ? `Categoría: ${bibliotecaModuloLabel(bibliotecaModulo(f))}` : '', raw.care_level ? `Dificultad: ${raw.care_level}` : ''].filter(Boolean).join('\\n');
+  if (title === 'Acuario recomendado') return [raw.min_tank_liters ? `Litros mínimos: ${raw.min_tank_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\\n');
+  if (title === 'Parámetros') return bibliotecaValor(raw.parameters).trim();
+  if (title === 'Comportamiento') return raw.temperament || '';
+  if (title === 'Alimentación') return raw.feeding || raw.diet || '';
+  if (title === 'Compatibilidad') return raw.compatibility || '';
+  if (title === 'Reef Safe') return raw.reef_safe != null ? String(raw.reef_safe) : '';
+  if (title === 'Fuentes') return [raw.references_text, raw.source_url ? `Fuente interna: ${raw.source_url}` : ''].filter(Boolean).join('\\n');
+  return '';
+}
+function bibliotecaSeccionesHtml(f) { return bibliotecaSeccionesFicha.map(([title, keys], idx) => { const text = bibliotecaCampo(f, keys) || bibliotecaTextoDerivado(f, title); const body = text ? `<p>${esc(text).replaceAll('\\n', '<br>')}</p>` : `<p class="small">Pendiente de completar en la ficha original.</p>`; return `<details class="library-detail-section" ${idx === 0 ? 'open' : ''}><summary>${esc(title)}</summary>${body}</details>`; }).join(''); }
 function bibliotecaNotasInventario(f) { return bibliotecaSeccionesFicha.map(([title, keys]) => { const text = bibliotecaCampo(f, keys); return text ? `${title}: ${text}` : ''; }).filter(Boolean).join('\\n\\n') || f.descripcion || ''; }
 function bibliotecaCategoriaInventario(f) { const m = bibliotecaModulo(f); if (m === 'medicine') return 'Medicamento'; if (m === 'equipment') return 'Equipo'; if (m === 'product') return 'Producto'; if (m.includes('fish') || ['coral', 'invertebrate', 'plant', 'microfauna'].includes(m)) return 'Ficha biblioteca'; return 'Producto'; }
 window.guardarFichaInventario = async function(i) { const f = (window.__bibliotecaVistaActual || [])[i]; if (!f) return; try { if (!state.user) throw new Error('Debes iniciar sesión.'); const row = { user_id: state.user.id, name: f.nombre, brand: f.cientifico || null, category: bibliotecaCategoriaInventario(f), quantity: 1, unit: 'unidad', min_stock: 0, expiry_date: null, notes: bibliotecaNotasInventario(f), ai_review_status: 'biblioteca' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; const x = $('x'); if (x) x.innerHTML = `<div class="success">Ficha guardada en inventario.</div><button onclick="inventario()">Ver inventario</button>`; } catch (e) { const x = $('x'); if (x) x.innerHTML = msg(e.message, 'error'); } };
