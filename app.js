@@ -52,7 +52,7 @@ window.am = function(section) {
   const liters = aq.real_liters ?? aq.liters ?? '-';
   const typeMap = { reef: 'Reef Arrecife', marine: 'Marino Solo Peces', freshwater: 'Agua Dulce', hospital: '🏥 Tanque Hospital', quarantine: '🛡️ Cuarentena' };
   const labelType = typeMap[aq.aquarium_type] || aq.aquarium_type || 'Acuario';
-  return `<section class="tank-head"><button onclick="dashboard()">←</button><div><h2>${esc(aq.name)}</h2><p>${esc(liters)} L · ${esc(labelType)}</p></div></section><nav class="tank-tabs">${aqChip('resumen', 'Resumen')}${aqChip('parametros', 'Parámetros')}${aqChip('animales', 'Animales')}${aqChip('fotos', 'Fotos')}${aqChip('historial', 'Historial')}</nav>`;
+  return `<section class="tank-head"><button onclick="dashboard()">←</button><div><h2>${esc(aq.name)}</h2><p>${esc(liters)} L · ${esc(labelType)}</p></div></section><nav class="tank-tabs">${aqChip('resumen', 'Resumen')}${aqChip('parametros', 'Parámetros')}${aqChip('animales', 'Animales')}${aqChip('fotos', 'Fotos')}${aqChip('tareas', 'Tareas')}${aqChip('historial', 'Historial')}</nav>`;
 };
 
 window.openAqSection = function(section) {
@@ -61,6 +61,7 @@ window.openAqSection = function(section) {
   if (section === 'parametros') return window.pars ? window.pars() : window.panel();
   if (section === 'animales') return window.anis();
   if (section === 'fotos') return window.fotos();
+  if (section === 'tareas') return window.tareasAcuario();
   if (section === 'historial') return window.historialAcuario();
   return window.panel();
 };
@@ -101,9 +102,52 @@ window.editA = async function(id) { const { data, error } = await s.from('aquari
 window.deleteA = async function(id) { if (!confirm('¿Borrar este acuario?')) return; const { error } = await s.from('aquariums').delete().eq('id', id); if (error) return alert(error.message); dashboard(); };
 window.openA = async function(id) { const { data, error } = await s.from('aquariums').select('*').eq('id', id).single(); if (error) return render(msg(error.message, 'error')); state.aquarium = data; window.q = data; window.panel(); };
 
-window.panel = function() { setAqSection('resumen'); shell(am('resumen') + `<section class="panel"><div class="panel-head"><h2>Ficha actual</h2><button onclick="editA('${window.q?.id || ''}')">Editar</button></div><p>Todo lo que guardes aquí pertenece a <b>${esc(window.q?.name || 'este acuario')}</b>.</p><div class="quick-actions"><button onclick="editA('${window.q?.id || ''}')"><span>✎</span>Datos</button><button onclick="formEquipoAcuario()"><span>⚙️</span>Equipo</button><button onclick="openAqSection('parametros')"><span>🧪</span>Parámetros</button><button onclick="openAqSection('animales')"><span>🐟</span>Animales</button><button onclick="openAqSection('fotos')"><span>📷</span>Fotos</button><button onclick="inventario()"><span>▤</span>Inventario</button></div>${window.q?.description ? `<p>${esc(window.q.description)}</p>` : ''}</section>`, 'acuarios'); };
+window.panel = function() { setAqSection('resumen'); shell(am('resumen') + `<section class="panel"><div class="panel-head"><h2>Ficha actual</h2><button onclick="editA('${window.q?.id || ''}')">Editar</button></div><p>Todo lo que guardes aquí pertenece a <b>${esc(window.q?.name || 'este acuario')}</b>.</p><div class="quick-actions"><button onclick="editA('${window.q?.id || ''}')"><span>✎</span>Datos</button><button onclick="formEquipoAcuario()"><span>⚙️</span>Equipo</button><button onclick="openAqSection('parametros')"><span>🧪</span>Parámetros</button><button onclick="openAqSection('animales')"><span>🐟</span>Animales</button><button onclick="openAqSection('fotos')"><span>📷</span>Fotos</button><button onclick="openAqSection('tareas')"><span>♢</span>Tareas</button><button onclick="inventario()"><span>▤</span>Inventario</button></div>${window.q?.description ? `<p>${esc(window.q.description)}</p>` : ''}</section>`, 'acuarios'); };
 window.formEquipoAcuario = function() { shell(window.am('resumen') + `<section class="panel"><button onclick="panel()">← Volver</button><h2>Añadir equipo</h2><p class="small">Guarda aquí skimmer, pantalla, bomba, calentador, reactor, filtro o cualquier material de este acuario.</p><label>Tipo</label><select id="eqType"><option>Skimmer</option><option>Luz</option><option>Bomba de subida</option><option>Bomba de movimiento</option><option>Calentador</option><option>Filtro</option><option>Reactor</option><option>Otro equipo</option></select><label>Modelo / nombre</label><input id="eqName" placeholder="Ej. Bubble Magus Curve 5"><label>Marca</label><input id="eqBrand" placeholder="Ej. Bubble Magus"><label>Cantidad</label><input id="eqQty" type="number" step="1" value="1"><label>Notas</label><textarea id="eqNotes" placeholder="Potencia, litros recomendados, fecha de compra, mantenimiento..."></textarea><button class="primary" onclick="saveEquipoAcuario()">Guardar equipo</button><div id="x"></div></section>`, 'acuarios'); };
 window.saveEquipoAcuario = async function() { try { if (!state.user) throw new Error('Debes iniciar sesión.'); if (!window.q) throw new Error('Abre un acuario primero.'); const name = val('eqName') || val('eqType'); const notes = [`Acuario: ${window.q.name}`, `Tipo: ${val('eqType')}`, val('eqNotes')].filter(Boolean).join('\\n'); const row = { user_id: state.user.id, name, brand: val('eqBrand') || null, category: 'Equipo', quantity: Number(val('eqQty') || 1), unit: 'unidad', min_stock: 0, expiry_date: null, notes, ai_review_status: 'manual' }; const r = await s.from('inventory_items').insert(row); if (r.error) throw r.error; $('x').innerHTML = `<div class="success">Equipo guardado en inventario.</div><button onclick="inventario()">Ver inventario</button>`; } catch (e) { $('x').innerHTML = msg(e.message, 'error'); } };
+
+function tareaAcuarioCard(t) {
+  const open = avisoAbierto(t);
+  return `<div class="${open ? 'item' : 'success'}"><b>${esc(t.title || 'Tarea')}</b><p class="small">${esc(t.task_type || 'Tarea')} · ${esc(fecha(t.due_at))} · ${esc(t.priority || 'normal')} · ${esc(t.status || 'open')}</p>${t.notes ? `<p>${esc(t.notes)}</p>` : ''}${open ? `<button onclick="completeTaskAcuario('${esc(t.id)}')">Marcar hecho</button>` : ''}</div>`;
+}
+window.tareasAcuario = async function() {
+  if (!state.user) return login();
+  if (!window.q) return dashboard();
+  setAqSection('tareas');
+  shell(am('tareas') + `<section class="panel"><h2>Tareas</h2>${msg('Cargando tareas del acuario...')}</section>`, 'acuarios');
+  try {
+    const r = await s.from('tasks').select('id,title,task_type,due_at,priority,status,notes,created_at,completed_at').eq('user_id', state.user.id).eq('aquarium_id', window.q.id).order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    if (r.error) throw r.error;
+    const data = r.data || [];
+    const abiertas = data.filter(avisoAbierto), cerradas = data.filter(t => !avisoAbierto(t));
+    shell(am('tareas') + `<section class="panel"><div class="panel-head"><div><h2>Tareas</h2><p class="small">Las tareas abiertas de este acuario aparecen también en Avisos.</p></div><button class="primary" onclick="formTareaAcuario()">＋</button></div><div class="quick-actions"><button onclick="tareas()">Ver avisos globales</button></div></section><section class="panel"><h3>Pendientes</h3>${abiertas.map(tareaAcuarioCard).join('') || msg('No hay tareas pendientes para este acuario.', 'success')}</section><section class="panel"><h3>Hechas</h3>${cerradas.map(tareaAcuarioCard).join('') || msg('No hay tareas completadas todavía.')}</section>`, 'acuarios');
+  } catch (e) {
+    shell(am('tareas') + `<section class="panel"><h2>Tareas</h2>${msg(e.message, 'error')}<button class="primary" onclick="formTareaAcuario()">Crear tarea</button></section>`, 'acuarios');
+  }
+};
+window.formTareaAcuario = function() {
+  if (!window.q) return dashboard();
+  setAqSection('tareas');
+  shell(am('tareas') + `<section class="panel"><button onclick="tareasAcuario()">← Volver</button><h2>Nueva tarea</h2><p class="small">Se guardará en ${esc(window.q.name)} y saldrá en Avisos mientras esté pendiente.</p><label>Título</label><input id="aqTaskTitle" placeholder="Limpiar skimmer, cambiar perlón, medir NO3..."><label>Tipo</label><select id="aqTaskType"><option value="task">Tarea</option><option value="maintenance">Mantenimiento</option><option value="measurement">Medición</option><option value="shopping">Compra</option></select><label>Fecha y hora</label><input id="aqTaskDue" type="datetime-local"><label>Prioridad</label><select id="aqTaskPriority"><option value="normal">Normal</option><option value="alta">Alta</option><option value="baja">Baja</option></select><label>Notas</label><textarea id="aqTaskNotes" placeholder="Detalles, material necesario, frecuencia..."></textarea><button class="primary" onclick="saveTareaAcuario()">Guardar tarea</button><div id="x"></div></section>`, 'acuarios');
+};
+window.saveTareaAcuario = async function() {
+  try {
+    if (!state.user) throw new Error('Debes iniciar sesión.');
+    if (!window.q) throw new Error('Abre un acuario primero.');
+    if (!val('aqTaskTitle')) throw new Error('Pon un título para la tarea.');
+    const row = { user_id: state.user.id, aquarium_id: window.q.id, title: val('aqTaskTitle'), task_type: val('aqTaskType') || 'task', due_at: val('aqTaskDue') ? new Date(val('aqTaskDue')).toISOString() : null, priority: val('aqTaskPriority') || 'normal', status: 'open', notes: val('aqTaskNotes') || null };
+    const r = await s.from('tasks').insert(row);
+    if (r.error) throw r.error;
+    window.tareasAcuario();
+  } catch (e) { if ($('x')) $('x').innerHTML = msg(e.message, 'error'); }
+};
+window.completeTaskAcuario = async function(id) {
+  try {
+    const r = await s.from('tasks').update({ status: 'done', completed_at: new Date().toISOString() }).eq('id', id);
+    if (r.error) throw r.error;
+    window.tareasAcuario();
+  } catch (e) { alert(e.message); }
+};
 
 // --- BLOQUE 8: GESTIÓN DE ANIMALES Y BIBLIOTECA ---
 function catEs(c) { return ({ fish: 'Pez', coral: 'Coral', invertebrate: 'Invertebrado', crustacean: 'Crustáceo', mollusk: 'Molusco', plant: 'Planta', algae: 'Alga', other: 'Otro' }[c] || c || 'Sin tipo'); }
