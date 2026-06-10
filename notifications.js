@@ -42,7 +42,8 @@
     const permission = await Notification.requestPermission();
     if (permission !== 'granted') throw new Error('Permiso de notificaciones no concedido.');
 
-    const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const swUrl = new URL('firebase-messaging-sw.js', window.location.href).toString();
+    const registration = await navigator.serviceWorker.register(swUrl);
     const app = firebase.apps.length ? firebase.app() : firebase.initializeApp(firebaseConfig);
     const messaging = firebase.messaging(app);
     const token = await messaging.getToken({ vapidKey, serviceWorkerRegistration: registration });
