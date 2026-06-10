@@ -9,5 +9,6 @@ window.ACUARIONEXO_CONFIG = {
     storageBucket: "acuarionexo.firebasestorage.app",
     messagingSenderId: "912663485955",
     appId: "1:912663485955:web:440ef36d43cecc37d4f836"
-  }
+  },
+  FIREBASE_VAPID_KEY: "BLhWFlKYQfuG9Moxoiifhm6igFoDMSZi27qCrVpt2c3HOkxIKay4I-iLPlXZhHC2vW4NmOpSg5dqliSNMUwb6Cc"
 };
