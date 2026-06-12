@@ -12,3 +12,19 @@ window.ACUARIONEXO_CONFIG = {
   },
   FIREBASE_VAPID_KEY: "BLhWFlKYQfuG9Moxoiifhm6igFoDMSZi27qCrVpt2c3HOkxIKay4I-iLPlXZhHC2vW4NmOpSg5dqliSNMUwb6Cc"
 };
+
+(function() {
+  function loadLibraryRouter() {
+    if (window.__ACUARIONEXO_LIBRARY_ROUTER_LOADING__) return;
+    window.__ACUARIONEXO_LIBRARY_ROUTER_LOADING__ = true;
+    var script = document.createElement('script');
+    script.src = 'library-router.js?v=20260612-0215';
+    script.defer = true;
+    document.head.appendChild(script);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadLibraryRouter);
+  } else {
+    loadLibraryRouter();
+  }
+})();
