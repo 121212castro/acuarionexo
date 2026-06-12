@@ -14,17 +14,23 @@ window.ACUARIONEXO_CONFIG = {
 };
 
 (function() {
-  function loadLibraryRouter() {
-    if (window.__ACUARIONEXO_LIBRARY_ROUTER_LOADING__) return;
-    window.__ACUARIONEXO_LIBRARY_ROUTER_LOADING__ = true;
+  function loadScript(src, flag) {
+    if (window[flag]) return;
+    window[flag] = true;
     var script = document.createElement('script');
-    script.src = 'library-router.js?v=20260612-0225';
+    script.src = src;
     script.defer = true;
     document.head.appendChild(script);
   }
+
+  function loadRouters() {
+    loadScript('library-router.js?v=20260612-0225', '__ACUARIONEXO_LIBRARY_ROUTER_LOADING__');
+    loadScript('inventory-router.js?v=20260612-0235', '__ACUARIONEXO_INVENTORY_ROUTER_LOADING__');
+  }
+
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', loadLibraryRouter);
+    document.addEventListener('DOMContentLoaded', loadRouters);
   } else {
-    loadLibraryRouter();
+    loadRouters();
   }
 })();
