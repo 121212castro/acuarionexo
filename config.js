@@ -18,7 +18,7 @@ window.ACUARIONEXO_CONFIG = {
     if (window.__ACUARIONEXO_LIBRARY_ROUTER_LOADING__) return;
     window.__ACUARIONEXO_LIBRARY_ROUTER_LOADING__ = true;
     var script = document.createElement('script');
-    script.src = 'library-router.js?v=20260612-0220';
+    script.src = 'library-router.js?v=20260612-0225';
     script.defer = true;
     document.head.appendChild(script);
   }
