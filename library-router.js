@@ -1,6 +1,6 @@
 /* AcuarioNexo · Biblioteca router por modulo real */
 (function() {
-  const BUILD = 'library-router-v1';
+  const BUILD = 'library-router-v2';
   const MODULES = [
     { key: 'fish_marine', label: 'Peces marinos', desc: 'Fichas de peces marinos, comportamiento, alimentacion y compatibilidad.', icon: '🐠' },
     { key: 'fish_freshwater', label: 'Peces de agua dulce', desc: 'Fichas de dulce por especie y variedad.', icon: '🐟' },
@@ -165,7 +165,7 @@
         unit: 'unidad',
         min_stock: 0,
         notes: f.descripcion || '',
-        ai_review_status: 'biblioteca'
+        ai_review_status: 'manual'
       };
       const r = await window.s.from('inventory_items').insert(row);
       if (r.error) throw r.error;
