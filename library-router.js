@@ -1,6 +1,6 @@
 /* AcuarioNexo · Biblioteca router por modulo real */
 (function() {
-  const BUILD = 'library-router-v2';
+  const BUILD = 'library-router-v3-full-inventory-ficha';
   const MODULES = [
     { key: 'fish_marine', label: 'Peces marinos', desc: 'Fichas de peces marinos, comportamiento, alimentacion y compatibilidad.', icon: '🐠' },
     { key: 'fish_freshwater', label: 'Peces de agua dulce', desc: 'Fichas de dulce por especie y variedad.', icon: '🐟' },
@@ -99,6 +99,57 @@
     ).join('') + '</div>';
   }
 
+  function textValue(v) {
+    if (v == null || v === '') return '';
+    if (Array.isArray(v)) return v.map(textValue).filter(Boolean).join('\n');
+    if (typeof v === 'object') return textValue(v.text || v.texto || v.value || v.valor || v.description || v.descripcion || JSON.stringify(v));
+    return String(v).trim();
+  }
+
+  function fichaPayload(f) {
+    const raw = f.raw || {};
+    return {
+      library_entry_id: raw.id || f.id || null,
+      module: moduleKey(f),
+      module_label: moduleLabel(moduleKey(f)),
+      source_category: raw.source_category || f.source_category || null,
+      title: f.nombre,
+      scientific_name: f.cientifico || null,
+      category: raw.category || f.categoria || null,
+      description: f.descripcion || null,
+      care_level: raw.care_level || null,
+      compatibility: raw.compatibility || null,
+      feeding: raw.feeding || raw.diet || null,
+      parameters: raw.parameters || null,
+      source_url: raw.source_url || null,
+      photo_url: f.foto || null,
+      references_text: raw.references_text || null,
+      min_tank_liters: raw.min_tank_liters || null,
+      temperament: raw.temperament || null,
+      reef_safe: raw.reef_safe || null,
+      acquisition_notes: raw.acquisition_notes || null,
+      raw: raw
+    };
+  }
+
+  function fichaNotes(f) {
+    const p = fichaPayload(f);
+    const blocks = [
+      ['Modulo', p.module_label],
+      ['Resumen rapido', p.description],
+      ['Compatibilidad', p.compatibility],
+      ['Alimentacion / uso', p.feeding],
+      ['Parametros', textValue(p.parameters)],
+      ['Reef safe / advertencias', p.reef_safe],
+      ['Notas de adquisicion', p.acquisition_notes],
+      ['Fuentes', p.references_text || p.source_url]
+    ];
+    return blocks
+      .filter(([, body]) => textValue(body))
+      .map(([title, body]) => title + ':\n' + textValue(body))
+      .join('\n\n');
+  }
+
   function summary(f) {
     return String(f.descripcion || f.raw?.summary || f.raw?.resumen || '').trim();
   }
@@ -156,22 +207,65 @@
     try {
       if (!window.u) throw new Error('Debes iniciar sesion.');
       const key = moduleKey(f);
+      const payload = fichaPayload(f);
       const row = {
         user_id: window.u.id,
+        library_entry_id: payload.library_entry_id,
+        ficha_json: payload,
         name: f.nombre,
         brand: f.cientifico || null,
         category: key === 'medicine' ? 'Medicamento' : key === 'equipment' ? 'Equipo' : 'Producto',
         quantity: 1,
         unit: 'unidad',
         min_stock: 0,
-        notes: f.descripcion || '',
-        ai_review_status: 'manual'
+        source_url: payload.source_url,
+        photo_url: payload.photo_url,
+        detected_manufacturer: payload.raw?.manufacturer || payload.raw?.fabricante || null,
+        ai_product_summary: payload.description || fichaNotes(f),
+        notes: fichaNotes(f),
+        ai_detected: true,
+        ai_review_status: 'manual',
+        item_status: 'en_uso'
       };
       const r = await window.s.from('inventory_items').insert(row);
       if (r.error) throw r.error;
-      alert('Guardado en inventario');
+      alert('Ficha completa guardada en inventario');
     } catch (e) {
       alert(e.message);
+    }
+  };
+
+  function inventorySections(item) {
+    const p = item.ficha_json || {};
+    const sections = [
+      ['Resumen rapido', p.description || item.ai_product_summary],
+      ['Compatibilidad', p.compatibility],
+      ['Alimentacion / uso', p.feeding],
+      ['Parametros', textValue(p.parameters)],
+      ['Advertencias', p.reef_safe],
+      ['Notas', p.acquisition_notes || item.notes],
+      ['Fuentes', p.references_text || p.source_url]
+    ].filter(([, body]) => textValue(body));
+    return sections.map(([title, body], idx) =>
+      '<details class="library-detail-section" ' + (idx === 0 ? 'open' : '') + '><summary>' + esc(title) + '</summary><p>' + esc(textValue(body)).replaceAll('\n', '<br>') + '</p></details>'
+    ).join('');
+  }
+
+  window.inventario = async function() {
+    try {
+      const r = await window.s.from('inventory_items').select('*').eq('user_id', window.u.id).order('created_at', { ascending: false }).limit(100);
+      if (r.error) throw r.error;
+      const items = r.data || [];
+      render('<section class="panel"><h2>Inventario</h2><button onclick="panel()">← Volver</button>' +
+        (items.map(item =>
+          '<div class="item">' +
+          (item.photo_url ? '<img src="' + esc(item.photo_url) + '" alt="' + esc(item.name) + '" style="width:100%;max-height:220px;object-fit:contain;background:#fff;border-radius:14px;margin-bottom:10px">' : '') +
+          '<h3>' + esc(item.name) + '</h3><p class="small">' + esc(item.category || '') + (item.brand ? ' · ' + esc(item.brand) : '') + '</p>' +
+          (item.ficha_json ? inventorySections(item) : '<p>' + esc(item.notes || '') + '</p>') +
+          '</div>'
+        ).join('') || msg('Inventario vacio.')) + '</section>');
+    } catch (e) {
+      render('<section class="panel"><h2>Inventario</h2>' + msg(e.message, 'error') + '</section>');
     }
   };
 
@@ -184,7 +278,7 @@
       '<p class="small">' + esc(moduleLabel(key)) + '</p><h2>' + esc(f.nombre) + '</h2>' +
       (f.cientifico ? '<p class="scientific">' + esc(f.cientifico) + '</p>' : '') +
       '<p>' + esc(summary(f) || 'Ficha pendiente de ampliar.') + '</p>' +
-      '<div class="quick-actions">' + (!isAnimalModule(key) ? '<button onclick="guardarFichaInventario(' + i + ')"><span>▤</span>Guardar en inventario</button>' : '') + '</div>' +
+      '<div class="quick-actions">' + (!isAnimalModule(key) ? '<button onclick="guardarFichaInventario(' + i + ')"><span>▤</span>Guardar ficha completa</button>' : '') + '</div>' +
       '</section>');
   };
 
