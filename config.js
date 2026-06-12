@@ -19,15 +19,15 @@ window.ACUARIONEXO_CONFIG = {
     window[flag] = true;
     var script = document.createElement('script');
     script.src = src;
-    script.defer = true;
+    script.async = false;
     document.head.appendChild(script);
   }
 
   function loadRouters() {
-    loadScript('library-router.js?v=20260612-0240', '__ACUARIONEXO_LIBRARY_ROUTER_LOADING__');
-    loadScript('inventory-router.js?v=20260612-0235', '__ACUARIONEXO_INVENTORY_ROUTER_LOADING__');
-    loadScript('animals-router.js?v=20260612-0240', '__ACUARIONEXO_ANIMALS_ROUTER_LOADING__');
-    loadScript('library-animal-guard.js?v=20260612-0245', '__ACUARIONEXO_LIBRARY_ANIMAL_GUARD_LOADING__');
+    loadScript('library-router.js?v=20260612-0250', '__ACUARIONEXO_LIBRARY_ROUTER_LOADING__');
+    loadScript('inventory-router.js?v=20260612-0250', '__ACUARIONEXO_INVENTORY_ROUTER_LOADING__');
+    loadScript('animals-router.js?v=20260612-0250', '__ACUARIONEXO_ANIMALS_ROUTER_LOADING__');
+    loadScript('library-animal-guard.js?v=20260612-0250', '__ACUARIONEXO_LIBRARY_ANIMAL_GUARD_LOADING__');
   }
 
   if (document.readyState === 'loading') {
