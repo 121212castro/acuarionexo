@@ -1,6 +1,6 @@
 /* AcuarioNexo · Animales por acuario */
 (function() {
-  const BUILD = 'animals-router-v1-aquarium-sections';
+  const BUILD = 'animals-router-v2-aquarium-type-sections';
 
   const SECTIONS = [
     { key: 'all', label: 'Todos', icon: '□', desc: 'Todos los animales de este acuario.' },
@@ -25,6 +25,22 @@
 
   function clean(x) {
     return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function aquariumKind() {
+    const t = clean([window.q?.aquarium_type, window.q?.subtype, window.q?.description].filter(Boolean).join(' '));
+    if (/fresh|dulce/.test(t)) return 'freshwater';
+    if (/reef|arrecife|marine|marino|salado|salt/.test(t)) return 'marine';
+    if (/hospital|quarantine|cuarentena/.test(t)) return 'mixed';
+    return 'mixed';
+  }
+
+  function allowedSection(key) {
+    const kind = aquariumKind();
+    if (['all', 'quarantine', 'deceased', 'other'].includes(key)) return true;
+    if (kind === 'freshwater') return ['fish', 'invertebrate', 'plant'].includes(key);
+    if (kind === 'marine') return ['fish', 'coral', 'invertebrate', 'plant'].includes(key);
+    return ['fish', 'coral', 'invertebrate', 'plant'].includes(key);
   }
 
   function catEs(c) {
@@ -57,13 +73,13 @@
   }
 
   function counts(items) {
-    return Object.fromEntries(SECTIONS.map(s => [s.key, items.filter(a => inSection(a, s.key)).length]));
+    return Object.fromEntries(SECTIONS.map(s => [s.key, allowedSection(s.key) ? items.filter(a => inSection(a, s.key)).length : 0]));
   }
 
   function sectionsHtml(items, active) {
     const n = counts(items);
     return '<div class="library-modules animal-classes">' + SECTIONS
-      .filter(s => s.key === 'all' || n[s.key] > 0)
+      .filter(s => allowedSection(s.key) && (s.key === 'all' || n[s.key] > 0 || ['fish', 'coral', 'invertebrate', 'plant'].includes(s.key)))
       .map(s => '<button class="' + (active === s.key ? 'active' : '') + '" onclick="filtrarAnimalesClase(\'' + esc(s.key) + '\')"><b>' + esc(s.icon) + ' ' + n[s.key] + '</b><span>' + esc(s.label) + '</span><small>' + esc(s.desc) + '</small></button>')
       .join('') + '</div>';
   }
@@ -99,6 +115,7 @@
   }
 
   window.filtrarAnimalesClase = function(key) {
+    if (!allowedSection(key)) key = 'all';
     const items = window.__animalesAcuarioActual || [];
     const filtered = items.filter(a => inSection(a, key));
     const target = document.getElementById('animalesResultados');
@@ -117,7 +134,8 @@
       const r = await window.s.from('animals').select('*').eq('aquarium_id', window.q.id).order('created_at', { ascending: false }).limit(300);
       if (r.error) throw r.error;
       window.__animalesAcuarioActual = r.data || [];
-      const html = head + '<section class="panel animal-panel"><div class="panel-head"><div><h2>Animales</h2><p class="small">Solo animales de ' + esc(window.q.name || 'este acuario') + '. No van al inventario.</p></div><button onclick="animalMenu()">Añadir</button></div><div id="animalesResultados">' + msg('Cargando animales...') + '</div></section>';
+      const typeText = aquariumKind() === 'freshwater' ? 'agua dulce' : aquariumKind() === 'marine' ? 'marino/reef' : 'mixto';
+      const html = head + '<section class="panel animal-panel"><div class="panel-head"><div><h2>Animales</h2><p class="small">Solo animales de ' + esc(window.q.name || 'este acuario') + ' · Tipo ' + esc(typeText) + '. No van al inventario.</p></div><button onclick="animalMenu()">Añadir</button></div><div id="animalesResultados">' + msg('Cargando animales...') + '</div></section>';
       if (window.S) window.S(html + '<div style="height:140px"></div>' + nav('acuarios'));
       window.filtrarAnimalesClase('all');
     } catch (e) {
