@@ -24,14 +24,14 @@ window.ACUARIONEXO_CONFIG = {
   }
 
   function loadRouters() {
-    loadScript('library-router.js?v=20260612-0410', '__ACUARIONEXO_LIBRARY_ROUTER_LOADING__');
-    loadScript('library-photo-roles.js?v=20260612-0410', '__ACUARIONEXO_LIBRARY_PHOTO_ROLES_LOADING__');
-    loadScript('inventory-router.js?v=20260612-0410', '__ACUARIONEXO_INVENTORY_ROUTER_LOADING__');
-    loadScript('animals-router.js?v=20260612-0410', '__ACUARIONEXO_ANIMALS_ROUTER_LOADING__');
-    loadScript('library-animal-guard.js?v=20260612-0410', '__ACUARIONEXO_LIBRARY_ANIMAL_GUARD_LOADING__');
-    loadScript('animal-import-full.js?v=20260612-0410', '__ACUARIONEXO_ANIMAL_IMPORT_FULL_LOADING__');
-    loadScript('library-animal-species-photo.js?v=20260612-0410', '__ACUARIONEXO_LIBRARY_ANIMAL_SPECIES_PHOTO_LOADING__');
-    loadScript('library-admin-delete.js?v=20260612-0410', '__ACUARIONEXO_LIBRARY_ADMIN_DELETE_LOADING__');
+    loadScript('library-router.js?v=20260612-0420', '__ACUARIONEXO_LIBRARY_ROUTER_LOADING__');
+    loadScript('library-photo-roles.js?v=20260612-0420', '__ACUARIONEXO_LIBRARY_PHOTO_ROLES_LOADING__');
+    loadScript('inventory-router.js?v=20260612-0420', '__ACUARIONEXO_INVENTORY_ROUTER_LOADING__');
+    loadScript('animals-router.js?v=20260612-0420', '__ACUARIONEXO_ANIMALS_ROUTER_LOADING__');
+    loadScript('library-animal-guard.js?v=20260612-0420', '__ACUARIONEXO_LIBRARY_ANIMAL_GUARD_LOADING__');
+    loadScript('animal-import-full.js?v=20260612-0420', '__ACUARIONEXO_ANIMAL_IMPORT_FULL_LOADING__');
+    loadScript('library-animal-species-photo.js?v=20260612-0420', '__ACUARIONEXO_LIBRARY_ANIMAL_SPECIES_PHOTO_LOADING__');
+    loadScript('library-admin-delete.js?v=20260612-0420', '__ACUARIONEXO_LIBRARY_ADMIN_DELETE_LOADING__');
   }
 
   if (document.readyState === 'loading') {
