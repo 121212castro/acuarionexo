@@ -1,6 +1,6 @@
 /* AcuarioNexo · Roles de foto en Biblioteca */
 (function() {
-  const BUILD = 'library-photo-roles-v1';
+  const BUILD = 'library-photo-roles-v2-cover-only-list';
   const MODULES = [
     { key: 'fish_marine', label: 'Peces marinos', icon: '🐠' },
     { key: 'fish_freshwater', label: 'Peces de agua dulce', icon: '🐟' },
@@ -25,6 +25,20 @@
 
   function clean(x) {
     return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function installStyles() {
+    if (document.getElementById('libraryPhotoRolesStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'libraryPhotoRolesStyles';
+    style.textContent = '' +
+      '.library-grid{display:grid;grid-template-columns:1fr;gap:18px}' +
+      '.library-card.library-cover-card{position:relative;display:block;padding:0;overflow:hidden;border-radius:22px;background:rgba(5,20,34,.55);border:1px solid rgba(137,190,215,.25)}' +
+      '.library-card.library-cover-card img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;object-position:center;border-radius:22px}' +
+      '.library-card.library-cover-card .library-no-photo{min-height:220px;display:grid;place-items:center;font-size:48px}' +
+      '.library-card.library-cover-card .library-cover-title{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}' +
+      '.library-card.library-cover-card button[data-admin-delete-library]{position:absolute;right:14px;bottom:14px;width:auto;min-width:0;margin:0;padding:10px 14px;border-radius:16px;background:rgba(74,38,54,.92);box-shadow:0 10px 24px rgba(0,0,0,.35)}';
+    document.head.appendChild(style);
   }
 
   function moduleKey(f) {
@@ -76,22 +90,14 @@
   function card(f, i) {
     const key = moduleKey(f);
     const photo = coverPhoto(f);
-    const addAnimal = window.q && isAnimalModule(key)
-      ? '<button onclick="event.stopPropagation();importarAnimalBiblioteca(window.__bibliotecaVistaActual[' + i + '].raw)">Añadir a ' + esc(window.q.name || 'mi acuario') + '</button>'
-      : '';
-    const inv = !isAnimalModule(key)
-      ? '<button onclick="event.stopPropagation();guardarFichaInventario(' + i + ')">Guardar en inventario</button>'
-      : '';
-    const text = summary(f);
-    return '<article class="library-card" onclick="verFichaBiblioteca(' + i + ')">' +
+    return '<article class="library-card library-cover-card" onclick="verFichaBiblioteca(' + i + ')" aria-label="Abrir ' + esc(f.nombre) + '">' +
       (photo ? '<img src="' + esc(photo) + '" alt="' + esc(f.nombre) + '" loading="lazy">' : '<div class="library-no-photo">' + esc(MODULES.find(m => m.key === key)?.icon || '□') + '</div>') +
-      '<div class="library-card-body"><small>' + esc(moduleLabel(key)) + '</small><h3>' + esc(f.nombre) + '</h3>' +
-      (f.cientifico ? '<p class="scientific">' + esc(f.cientifico) + '</p>' : '') +
-      (text ? '<p>' + esc(text).slice(0, 180) + (text.length > 180 ? '…' : '') + '</p>' : '') +
-      addAnimal + inv + '</div></article>';
+      '<span class="library-cover-title">' + esc(moduleLabel(key)) + ' · ' + esc(f.nombre) + '</span>' +
+      '</article>';
   }
 
   window.renderBibliotecaLista = function(list, modulo) {
+    installStyles();
     const cont = document.getElementById('bibliotecaResultados');
     if (!cont) return;
     const filtered = modulo ? list.filter(f => moduleKey(f) === modulo) : list;
