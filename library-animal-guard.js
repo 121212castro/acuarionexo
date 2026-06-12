@@ -1,6 +1,6 @@
 /* AcuarioNexo · Seguro animales biblioteca */
 (function() {
-  const BUILD = 'library-animal-guard-v2-aquarium-type';
+  const BUILD = 'library-animal-guard-v3-detail-format';
 
   function esc(x) {
     return (window.E ? window.E(x) : String(x ?? '').replace(/[&<>"']/g, function(m) {
@@ -14,6 +14,32 @@
 
   function clean(x) {
     return String(x || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function textValue(v) {
+    if (v == null || v === '') return '';
+    if (Array.isArray(v)) return v.map(textValue).filter(Boolean).join('\n');
+    if (typeof v === 'object') {
+      if (v.text || v.texto || v.value || v.valor || v.description || v.descripcion) {
+        return textValue(v.text || v.texto || v.value || v.valor || v.description || v.descripcion);
+      }
+      return Object.entries(v).map(function(entry) {
+        return entry[0] + ': ' + textValue(entry[1]);
+      }).filter(Boolean).join('\n');
+    }
+    return String(v).trim();
+  }
+
+  function reefSafeText(v) {
+    if (v === true) return 'Si, generalmente seguro para arrecife.';
+    if (v === false) return 'No seguro para arrecife.';
+    const x = clean(v);
+    if (!x) return '';
+    if (['true', 'si', 'sí', 'yes', 'reef safe', 'seguro'].includes(x)) return 'Si, generalmente seguro para arrecife.';
+    if (['false', 'no'].includes(x)) return 'No seguro para arrecife.';
+    if (/caution|precaucion|precaución|depende|with caution/.test(x)) return 'Con precaucion.';
+    if (x === 'unknown' || x === 'desconocido') return 'Desconocido.';
+    return String(v).trim();
   }
 
   function nav(active) {
@@ -38,14 +64,19 @@
       nombre: row?.nombre || raw.title || raw.nombre || raw.nombre_comun || raw.common_name || raw.scientific_name || 'Ficha sin nombre',
       cientifico: row?.cientifico || raw.scientific_name || raw.nombre_cientifico || '',
       categoria: row?.categoria || raw.category || raw.source_category || raw.tipo || raw.tipo_ficha || 'other',
-      foto: row?.foto || raw.photo_url || raw.foto_url || raw.foto || raw.imagen || raw.image_url || '',
+      foto: row?.species_photo_url || raw.species_photo_url || row?.foto || raw.photo_url || raw.foto_url || raw.foto || raw.imagen || raw.image_url || '',
       descripcion: row?.descripcion || raw.description || raw.descripcion || raw.resumen || raw.notes || ''
     };
   }
 
+  function categoryText(f) {
+    const x = normalizeFicha(f);
+    return clean([x.categoria, x.raw?.category, x.raw?.source_category, x.raw?.tipo, x.raw?.tipo_ficha].filter(Boolean).join(' '));
+  }
+
   function fichaText(f) {
     const x = normalizeFicha(f);
-    return clean([x.categoria, x.raw?.source_category, x.nombre, x.cientifico, x.descripcion].filter(Boolean).join(' '));
+    return clean([categoryText(f), x.nombre, x.cientifico, x.descripcion].filter(Boolean).join(' '));
   }
 
   function isAnimalFicha(f) {
@@ -55,14 +86,21 @@
   }
 
   function fichaAnimalType(f) {
+    const cat = categoryText(f);
     const text = fichaText(f);
-    if (/coral|sps|lps|euphyllia|zoanthus|acropora|montipora/.test(text)) return 'coral';
+    if (/fresh|dulce|fish_freshwater|pez_dulce/.test(cat)) return 'fish_freshwater';
+    if (/fish_marine|pez_marino|fish|pez|peces|marino|marine/.test(cat) && !/coral/.test(cat)) return 'fish_marine';
+    if (/coral/.test(cat)) return 'coral';
+    if (/invert|gamba|camaron|caracol|cangrejo|crust|molus/.test(cat)) return 'invertebrate';
+    if (/planta|plant|alga|macroalga/.test(cat)) return 'plant';
+    if (/microfauna|copep|rotifer|artemia/.test(cat)) return 'microfauna';
+    if (/pez payaso|amphiprion|ocellaris|fish|pez|peces/.test(text)) return /fresh|dulce|agua dulce/.test(text) ? 'fish_freshwater' : 'fish_marine';
     if (/fresh|dulce|agua dulce/.test(text)) return 'fish_freshwater';
     if (/marino|marine|reef|arrecife|salado|saltwater/.test(text)) return 'fish_marine';
+    if (/coral|sps|lps|euphyllia|zoanthus|acropora|montipora/.test(text)) return 'coral';
     if (/invert|gamba|camaron|caracol|cangrejo|crust|molus|erizo|estrella/.test(text)) return 'invertebrate';
     if (/planta|plant|alga|macroalga/.test(text)) return 'plant';
     if (/microfauna|copep|rotifer|artemia/.test(text)) return 'microfauna';
-    if (/fish|pez|peces/.test(text)) return 'fish_unknown';
     return 'animal';
   }
 
@@ -99,8 +137,8 @@
       ['Resumen rapido', x.descripcion],
       ['Compatibilidad', x.raw?.compatibility],
       ['Alimentacion', x.raw?.feeding || x.raw?.diet],
-      ['Parametros', typeof x.raw?.parameters === 'object' ? JSON.stringify(x.raw.parameters) : x.raw?.parameters],
-      ['Reef safe', x.raw?.reef_safe],
+      ['Parametros', textValue(x.raw?.parameters)],
+      ['Reef safe', reefSafeText(x.raw?.reef_safe)],
       ['Fuentes', x.raw?.references_text || x.raw?.source_url]
     ].filter(([, body]) => String(body || '').trim());
     return fields.map(([title, body], idx) => '<details class="library-detail-section" ' + (idx === 0 ? 'open' : '') + '><summary>' + esc(title) + '</summary><p>' + esc(body).replaceAll('\n', '<br>') + '</p></details>').join('');
