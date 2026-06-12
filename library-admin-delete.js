@@ -1,18 +1,9 @@
 /* AcuarioNexo · Borrado admin de fichas de biblioteca */
 (function() {
-  const BUILD = 'library-admin-delete-v1';
+  const BUILD = 'library-admin-delete-v2-detail-only-admin-mode';
   const ADMIN_EMAILS = ['12castro@hotmail.es'];
-
-  function esc(x) {
-    return (window.E ? window.E(x) : String(x ?? '').replace(/[&<>"']/g, function(m) {
-      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-    }));
-  }
-
-  function adminButtonVisible() {
-    const btn = document.getElementById('adminBtn');
-    return !!btn && !btn.classList.contains('hidden');
-  }
+  let adminLibraryMode = false;
+  let openingFromAdmin = false;
 
   async function requireLibraryAdmin() {
     const userResult = await window.s.auth.getUser();
@@ -38,13 +29,15 @@
     return { row, raw, id, name };
   }
 
-  function ensureButton(index, root) {
-    if (!adminButtonVisible()) return;
+  function buildDeleteBlock(index) {
     const item = entryAt(index);
-    if (!item.id || root.querySelector('[data-admin-delete-library]')) return;
+    if (!item.id) return null;
+    const wrap = document.createElement('div');
+    wrap.className = 'library-admin-delete-block';
+    wrap.dataset.adminDeleteLibrary = String(index);
+    wrap.innerHTML = '<p class="small">Accion de administrador</p>';
     const button = document.createElement('button');
     button.type = 'button';
-    button.dataset.adminDeleteLibrary = String(index);
     button.className = 'danger';
     button.innerHTML = '<span>⌫</span>Borrar ficha';
     button.addEventListener('click', function(event) {
@@ -52,27 +45,53 @@
       event.stopPropagation();
       window.borrarFichaBiblioteca(index);
     });
-    root.appendChild(button);
-  }
-
-  function injectListButtons() {
-    if (!adminButtonVisible()) return;
-    document.querySelectorAll('.library-card').forEach(function(card, index) {
-      const body = card.querySelector('.library-card-body') || card;
-      ensureButton(index, body);
-    });
+    wrap.appendChild(button);
+    return wrap;
   }
 
   function injectDetailButton(index) {
-    if (!adminButtonVisible()) return;
+    if (!adminLibraryMode) return;
     const panel = document.querySelector('.library-detail');
-    if (!panel) return;
-    const target = panel.querySelector('.quick-actions') || panel;
-    ensureButton(index, target);
+    if (!panel || panel.querySelector('[data-admin-delete-library]')) return;
+    const block = buildDeleteBlock(index);
+    if (block) panel.appendChild(block);
   }
+
+  function installStyles() {
+    if (document.getElementById('libraryAdminDeleteStyles')) return;
+    const style = document.createElement('style');
+    style.id = 'libraryAdminDeleteStyles';
+    style.textContent = '' +
+      '.library-admin-delete-block{margin-top:22px;padding-top:18px;border-top:1px solid rgba(137,190,215,.22)}' +
+      '.library-admin-delete-block .danger{width:100%;margin-top:8px;background:rgba(74,38,54,.92)}';
+    document.head.appendChild(style);
+  }
+
+  function patchAdminPanelLinks() {
+    document.querySelectorAll('button').forEach(function(button) {
+      const attr = button.getAttribute('onclick') || '';
+      if (attr.trim() === 'biblioteca()' && /Biblioteca/i.test(button.textContent || '')) {
+        button.setAttribute('onclick', 'adminBiblioteca()');
+      }
+    });
+  }
+
+  window.adminBiblioteca = async function() {
+    try {
+      await requireLibraryAdmin();
+      adminLibraryMode = true;
+      openingFromAdmin = true;
+      const result = window.biblioteca ? window.biblioteca() : undefined;
+      setTimeout(function() { openingFromAdmin = false; }, 0);
+      return result;
+    } catch (error) {
+      alert(error.message || String(error));
+    }
+  };
 
   window.borrarFichaBiblioteca = async function(index) {
     try {
+      if (!adminLibraryMode) throw new Error('Abre la Biblioteca desde el panel Admin para borrar fichas.');
       await requireLibraryAdmin();
       const item = entryAt(index);
       if (!item.id) throw new Error('No encuentro el ID de esta ficha para poder borrarla.');
@@ -80,17 +99,26 @@
       const result = await window.s.from('library_entries').delete().eq('id', item.id);
       if (result.error) throw result.error;
       alert('Ficha borrada de Biblioteca.');
-      if (window.biblioteca) await window.biblioteca();
+      if (window.adminBiblioteca) await window.adminBiblioteca();
     } catch (error) {
       alert(error.message || String(error));
     }
   };
 
-  const previousRenderList = window.renderBibliotecaLista;
-  if (previousRenderList) {
-    window.renderBibliotecaLista = function(list, modulo) {
-      const result = previousRenderList(list, modulo);
-      setTimeout(injectListButtons, 0);
+  const previousBiblioteca = window.biblioteca;
+  if (previousBiblioteca) {
+    window.biblioteca = function() {
+      if (!openingFromAdmin) adminLibraryMode = false;
+      return previousBiblioteca.apply(this, arguments);
+    };
+  }
+
+  const previousAdminPanel = window.adminPanel;
+  if (previousAdminPanel) {
+    window.adminPanel = async function() {
+      adminLibraryMode = false;
+      const result = await previousAdminPanel.apply(this, arguments);
+      setTimeout(patchAdminPanelLinks, 0);
       return result;
     };
   }
@@ -104,5 +132,6 @@
     };
   }
 
+  installStyles();
   window.__ACUARIONEXO_LIBRARY_ADMIN_DELETE__ = BUILD;
 })();
