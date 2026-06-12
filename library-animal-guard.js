@@ -1,6 +1,49 @@
 /* AcuarioNexo · Seguro animales biblioteca */
 (function() {
-  const BUILD = 'library-animal-guard-v3-detail-format';
+  const BUILD = 'library-animal-guard-v4-full-creator-sections';
+  const SECTION_LABELS = {
+    summary: 'Resumen rapido',
+    identity: 'Identificacion',
+    habitat: 'Habitat natural',
+    aquarium: 'Acuario recomendado',
+    parameters: 'Parametros',
+    behavior: 'Comportamiento',
+    feeding: 'Alimentacion',
+    compatibility: 'Compatibilidad',
+    reef_safe: 'Reef safe',
+    health: 'Salud y enfermedades',
+    purchase: 'Antes de comprar',
+    mistakes: 'Errores frecuentes',
+    curiosities: 'Curiosidades',
+    sources: 'Fuentes',
+    breeding: 'Reproduccion',
+    lighting: 'Iluminacion',
+    flow: 'Flujo',
+    placement: 'Ubicacion',
+    co2: 'CO2 y nutrientes',
+    maintenance: 'Mantenimiento',
+    culture: 'Cultivo',
+    use: 'Uso recomendado',
+    problems: 'Problemas frecuentes',
+    uses: 'Usos indicados',
+    dose: 'Dosis',
+    remove: 'Retirar durante tratamiento',
+    risks: 'Riesgos y advertencias',
+    aftercare: 'Despues del tratamiento',
+    inventory_logic: 'Logica AcuarioNexo',
+    mixing: 'Preparacion',
+    nutrition: 'Composicion',
+    acuarionexo_plan: 'Plan AcuarioNexo',
+    specs: 'Especificaciones',
+    installation: 'Instalacion'
+  };
+
+  const SECTION_ORDER = [
+    'summary', 'identity', 'habitat', 'aquarium', 'parameters', 'behavior', 'feeding', 'compatibility',
+    'reef_safe', 'health', 'purchase', 'mistakes', 'curiosities', 'sources', 'breeding', 'lighting', 'flow',
+    'placement', 'co2', 'maintenance', 'culture', 'use', 'problems', 'uses', 'dose', 'remove', 'risks',
+    'aftercare', 'inventory_logic', 'mixing', 'nutrition', 'acuarionexo_plan', 'specs', 'installation'
+  ];
 
   function esc(x) {
     return (window.E ? window.E(x) : String(x ?? '').replace(/[&<>"']/g, function(m) {
@@ -59,19 +102,21 @@
 
   function normalizeFicha(row) {
     const raw = row?.raw || row || {};
+    const ficha = raw.ficha_json || row?.ficha_json || {};
     return {
       raw,
-      nombre: row?.nombre || raw.title || raw.nombre || raw.nombre_comun || raw.common_name || raw.scientific_name || 'Ficha sin nombre',
-      cientifico: row?.cientifico || raw.scientific_name || raw.nombre_cientifico || '',
-      categoria: row?.categoria || raw.category || raw.source_category || raw.tipo || raw.tipo_ficha || 'other',
-      foto: row?.species_photo_url || raw.species_photo_url || row?.foto || raw.photo_url || raw.foto_url || raw.foto || raw.imagen || raw.image_url || '',
-      descripcion: row?.descripcion || raw.description || raw.descripcion || raw.resumen || raw.notes || ''
+      ficha,
+      nombre: row?.nombre || raw.title || ficha.title || ficha.common_name || raw.nombre || raw.nombre_comun || raw.common_name || raw.scientific_name || 'Ficha sin nombre',
+      cientifico: row?.cientifico || raw.scientific_name || ficha.scientific_name || raw.nombre_cientifico || '',
+      categoria: row?.categoria || raw.category || raw.source_category || ficha.category || ficha.source_category || raw.tipo || raw.tipo_ficha || 'other',
+      foto: row?.species_photo_url || raw.species_photo_url || ficha.species_photo_url || ficha.species_photo || row?.foto || raw.photo_url || raw.foto_url || raw.foto || raw.imagen || raw.image_url || '',
+      descripcion: row?.descripcion || raw.description || ficha.sections?.summary || raw.descripcion || raw.resumen || raw.notes || ''
     };
   }
 
   function categoryText(f) {
     const x = normalizeFicha(f);
-    return clean([x.categoria, x.raw?.category, x.raw?.source_category, x.raw?.tipo, x.raw?.tipo_ficha].filter(Boolean).join(' '));
+    return clean([x.categoria, x.raw?.category, x.raw?.source_category, x.ficha?.category, x.ficha?.source_category, x.raw?.tipo, x.raw?.tipo_ficha].filter(Boolean).join(' '));
   }
 
   function fichaText(f) {
@@ -131,9 +176,24 @@
     return 'Peces marinos';
   }
 
-  function sectionBody(f) {
+  function creatorSectionEntries(f) {
     const x = normalizeFicha(f);
-    const fields = [
+    const sections = x.ficha?.sections || x.raw?.ficha_json?.sections || null;
+    if (!sections || typeof sections !== 'object') return [];
+    const keys = SECTION_ORDER.concat(Object.keys(sections).filter(k => !SECTION_ORDER.includes(k)));
+    const seen = new Set();
+    return keys.filter(function(key) {
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return textValue(sections[key]);
+    }).map(function(key) {
+      return [SECTION_LABELS[key] || key, textValue(sections[key])];
+    });
+  }
+
+  function fallbackSectionEntries(f) {
+    const x = normalizeFicha(f);
+    return [
       ['Resumen rapido', x.descripcion],
       ['Compatibilidad', x.raw?.compatibility],
       ['Alimentacion', x.raw?.feeding || x.raw?.diet],
@@ -141,6 +201,10 @@
       ['Reef safe', reefSafeText(x.raw?.reef_safe)],
       ['Fuentes', x.raw?.references_text || x.raw?.source_url]
     ].filter(([, body]) => String(body || '').trim());
+  }
+
+  function sectionBody(f) {
+    const fields = creatorSectionEntries(f).length ? creatorSectionEntries(f) : fallbackSectionEntries(f);
     return fields.map(([title, body], idx) => '<details class="library-detail-section" ' + (idx === 0 ? 'open' : '') + '><summary>' + esc(title) + '</summary><p>' + esc(body).replaceAll('\n', '<br>') + '</p></details>').join('');
   }
 
