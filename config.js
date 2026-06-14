@@ -1,7 +1,7 @@
 window.ACUARIONEXO_CONFIG = {
   SUPABASE_URL: "https://fpykunamxygclolnjnke.supabase.co",
   SUPABASE_KEY: "sb_publishable_FICmG_EDURKDibSrG0R2EA_kRqaHNe-",
-  APP_VERSION: "AcuarioNexo Base Real V2 · base limpia",
+  APP_VERSION: "AcuarioNexo Base Real V2 · fichas visibles",
   FIREBASE_CONFIG: {
     apiKey: "AIzaSyCOSMcEEHG97qgtSeetB03fDYk8r-0420c",
     authDomain: "acuarionexo.firebaseapp.com",
