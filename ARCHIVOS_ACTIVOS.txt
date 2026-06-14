@@ -74,3 +74,10 @@ AcuarioNexo queda reducido a:
 - motores separados solo cuando index.html los carga de forma explicita
 - sin parches visuales agresivos
 - sin loaders dinamicos
+
+
+CONTENEDOR NATIVO PARA TESTERS
+- mobile-wrapper/ contiene la app real para Android/iOS mediante Capacitor.
+- No forma parte del arranque web de AcuarioNexo.
+- Debe cargar siempre la URL oficial de GitHub Pages, no una copia congelada del HTML.
+- Cambios normales: publicar web en main. Cambios de permisos/icono/firma: nueva build nativa.
