@@ -1,83 +1,63 @@
-ACUARIONEXO · MAPA REAL DE NUCLEO ACTIVO · 24/05
+ACUARIONEXO · BASE OFICIAL LIMPIA · 14/06/2026
 
 FUENTE DE VERDAD
-- Rama unica de trabajo: main
-- No usar ramas de prueba para continuar
-- No crear archivos nuevos sin comprobar primero
+- Rama unica de trabajo: main.
+- URL unica de app: https://121212castro.github.io/acuarionexo/
+- No crear enlaces alternativos para cambios normales.
+- No reactivar archivos legacy.
 
-NUCLEO REAL ACTIVO
+NUCLEO WEB ACTIVO
 - index.html
 - config.js
 - styles.css
 - app.js
+- manifest.webmanifest
+- app-version.json
+- update-manager.js
 
 MOTORES ACTIVOS CARGADOS POR index.html
 - measurement-schema.js
 - measurement-ai.js
 - measurement-engine.js
+- acuarionexo-api.js
 - photo-ai.js
 - parameters-ui.js
-
-BOOTSTRAP OFICIAL
-- app.js
+- aquarium-map.css
+- aquarium-map.js
 
 REGLAS OBLIGATORIAS
-- app.js es el unico arranque de la app
-- index.html carga explicita y ordenada
-- no usar loaders dinamicos
-- no usar inyeccion de scripts por Date.now()
-- no usar parches visuales al final
-- no duplicar navegacion en home y bottom-nav
-- no reactivar archivos legacy sin revisar index.html
+- app.js es el unico bootstrap funcional de la app.
+- index.html carga scripts de forma explicita y ordenada.
+- config.js solo guarda configuracion, no carga otros scripts.
+- No usar routers dinamicos.
+- No usar parches que sobrescriban window.biblioteca, window.dashboard, window.fotos o similares.
+- Si una funcionalidad hace falta, se integra en app.js o en un motor activo cargado por index.html.
+- El contenedor mobile-wrapper/ no debe duplicar HTML de produccion: carga la URL oficial.
 
-NO ACTIVAR / LEGACY
-Estos archivos no deben cargarse desde index.html:
-- dashboard-ui.css
-- navigation-engine.js
-- nav-visual-fix.js
-- tank-compact-ui.js
-- parameters-engine.js
-- fichas-engine.js
-- inventario-engine.js
-- microfauna-engine.js
-- admin-engine.js
-- studio-gemini-engine.js
-- gemini-engine.js
-- ai-engine.js
-- index-clean.html
-- app-loader-clean.js
-- modules-lite.js
-- premium-ui.js
-- dashboard-home-aquariums.js
-- param-status-simple.js
-- performance-engine.js
-- recommendation-engine.js
-- alerts-engine.js
-- alerts-inbox-engine.js
-- crop-visual-engine.js
-- product-crop-engine.js
-- studio-visual-engine.js
+ARCHIVOS LEGACY ELIMINADOS
+- library-router.js
+- library-photo-roles.js
+- library-admin-delete.js
+- library-animal-guard.js
+- library-animal-species-photo.js
+- animal-import-full.js
+- animal-cover-cards.js
+- animals-router.js
+- inventory-router.js
+- fase1-portada-acuario.js
+- auth-recovery.js
+- notifications.js
+- firebase-messaging-sw.js
 
-COMPROBACIONES ANTES DE SEGUIR
-1. index.html no carga archivos legacy
-2. app.js no contiene "Navegacion rapida" ni "Navegación rápida"
-3. dashboard muestra una sola navegacion inferior
-4. acuarios abre ficha sin cambiar de contexto
-5. parametros carga con window.am(), window.S(), window.q y window.s
-6. no hay ramas alternativas usadas para publicar
-
-OBJETIVO FINAL
-AcuarioNexo queda reducido a:
-- 1 index
-- 1 bootstrap real: app.js
-- 1 sistema visual: styles.css
-- motores separados solo cuando index.html los carga de forma explicita
-- sin parches visuales agresivos
-- sin loaders dinamicos
-
+COMPROBACIONES ANTES DE PUBLICAR
+1. index.html no carga archivos legacy.
+2. config.js no contiene loadScript ni loadRouters.
+3. app.js contiene los 11 apartados de Biblioteca.
+4. No existe etiqueta vieja que agrupe Tests dentro de Productos y sales en Biblioteca.
+5. git status debe quedar limpio despues del commit.
 
 CONTENEDOR NATIVO PARA TESTERS
 - mobile-wrapper/ contiene la app real para Android/iOS mediante Capacitor.
 - No forma parte del arranque web de AcuarioNexo.
-- Debe cargar siempre la URL oficial de GitHub Pages, no una copia congelada del HTML.
+- Debe cargar siempre la URL oficial de GitHub Pages.
 - Cambios normales: publicar web en main. Cambios de permisos/icono/firma: nueva build nativa.
