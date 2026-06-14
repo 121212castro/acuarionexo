@@ -111,6 +111,75 @@
     };
   }
 
+  function fallbackAquariumType(aquarium){
+    const raw = String(aquarium?.aquarium_type || aquarium?.subtype || '').toLowerCase();
+    if(raw.includes('reef')) return 'reef';
+    if(raw.includes('marine') || raw.includes('marino')) return 'marine';
+    if(raw.includes('planted') || raw.includes('plantado')) return 'planted';
+    if(raw.includes('betta')) return 'betta';
+    if(raw.includes('angelfish') || raw.includes('escalar')) return 'angelfish';
+    if(raw.includes('breeding') || raw.includes('cría') || raw.includes('cria')) return 'breeding';
+    if(raw.includes('hospital')) return 'hospital';
+    if(raw.includes('quarantine') || raw.includes('cuarentena')) return 'quarantine';
+    if(raw.includes('freshwater') || raw.includes('dulce')) return 'freshwater';
+    return 'reef';
+  }
+
+  function fallbackAdvice(measurement, aquarium){
+    const schema = window.MeasurementSchema?.parameters?.[measurement.parameter_key] || {};
+    const type = fallbackAquariumType(aquarium);
+    const range = schema.ranges?.[type] || schema.ranges?.reef || schema.ranges?.marine || schema.ranges?.freshwater;
+    const value = Number(measurement.normalized_value);
+    if(!range || !Number.isFinite(value)){
+      return {
+        status:'unknown',
+        color:'gray',
+        risk_level:'low',
+        ai_title:'Lectura guardada',
+        ai_summary:`${measurement.parameter_label}: lectura registrada.`,
+        ai_recommendation:'Revisar el resultado con el historial del acuario.',
+        ai_next_action:'Comparar con la medición anterior.',
+        ai_reasoning:'No hay rango automático suficiente para esta lectura.'
+      };
+    }
+    const okMin = Number(range[0]);
+    const okMax = Number(range[1]);
+    const warnMin = Number(range[2]);
+    const warnMax = Number(range[3]);
+    let status = 'ok';
+    let color = 'green';
+    let risk = 'low';
+    let title = 'Dentro de rango';
+    if(value < warnMin || value > warnMax){
+      status = 'critical';
+      color = 'red';
+      risk = 'critical';
+      title = 'Fuera de rango seguro';
+    }else if(value < okMin || value > okMax){
+      status = 'review';
+      color = 'yellow';
+      risk = 'medium';
+      title = 'Revisar tendencia';
+    }
+    return {
+      status,
+      color,
+      risk_level:risk,
+      ai_title:title,
+      ai_summary:`${measurement.parameter_label}: ${measurement.display_value || value}.`,
+      ai_recommendation:status === 'ok' ? 'Mantener rutina y registrar evolución.' : 'Confirmar la medición antes de corregir.',
+      ai_next_action:status === 'critical' ? 'Repetir test y revisar causas antes de actuar.' : 'Registrar próxima medición para comparar.',
+      ai_reasoning:`Rango usado: óptimo ${okMin}-${okMax}; vigilancia ${warnMin}-${warnMax}.`
+    };
+  }
+
+  function measurementAI(){
+    return window.AcuarioNexoMeasurementAI || {
+      detectAquariumType:fallbackAquariumType,
+      advice:fallbackAdvice
+    };
+  }
+
   function buildMeasurement(input, aquarium){
     let parameterKey = input.parameter_key;
     let schema = window.MeasurementSchema?.parameters?.[parameterKey] || {};
@@ -148,7 +217,7 @@
       normalized_unit:normalizedUnit,
       display_original:shown.displayOriginal,
       display_value:shown.displayValue,
-      aquarium_type:window.AcuarioNexoMeasurementAI.detectAquariumType(aquarium),
+      aquarium_type:measurementAI().detectAquariumType(aquarium),
       aquarium_liters:aquarium?.real_liters || aquarium?.liters || null,
       notes:input.notes || '',
       source:'acuarionexo-github-pages',
@@ -160,7 +229,7 @@
       }
     };
 
-    const ai = window.AcuarioNexoMeasurementAI.advice(base, aquarium);
+    const ai = measurementAI().advice(base, aquarium);
 
     return {
       ...base,

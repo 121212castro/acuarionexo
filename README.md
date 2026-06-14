@@ -1,6 +1,11 @@
-# AcuarioNexo Base Real V1
+# AcuarioNexo Base Real V2
 
 Base limpia conectada a Supabase.
+
+Build actual:
+- oficial-v1-biblioteca-test-v2-20260614
+- Biblioteca con Tests separados de Productos y sales.
+- Inventario con apartado Tests separado.
 
 Destino:
 - GitHub Pages para servir la app.
