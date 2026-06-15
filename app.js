@@ -176,24 +176,74 @@ window.editAnimal = async function(id) { setAqSection('animales'); const { data,
 window.deleteAnimal = async function(id) { if (!confirm('¿Eliminar este animal?')) return; const { error } = await s.from('animals').delete().eq('id', id); if (error) return alert(error.message); anis(); };
 
 // --- BLOQUE 9: SECCIÓN FOTOS (GALERÍA REAL) ---
+function fotoUrl(p) { return p.image_url || p.photo_url || p.public_url || p.url || ''; }
+function fotoEsReferenciaIA(p) {
+  const text = `${p.title || ''} ${p.caption || ''} ${p.notes || ''}`.toLowerCase();
+  return text.includes('referencia ia') || text.includes('foto base ia') || text.includes('base para ia');
+}
+function fotoCard(p) {
+  const url = fotoUrl(p);
+  const isAi = fotoEsReferenciaIA(p);
+  return `<div class="item gallery-card ${isAi ? 'ai-reference' : ''}">
+    ${url ? `<img src="${esc(url)}" alt="${esc(p.title || p.caption || 'Foto del acuario')}" loading="lazy">` : ''}
+    ${isAi ? '<span class="photo-badge">Base IA</span>' : ''}
+    <b>${esc(p.title || p.caption || 'Sin título')}</b>
+    <button class="danger small gallery-delete" onclick="deleteFoto('${p.id}')">🗑️</button>
+  </div>`;
+}
+
 window.fotos = async function() {
   setAqSection('fotos');
-  shell(am('fotos') + `<section class="panel"><div class="panel-head"><h2>Galería de Fotos 📷</h2><button class="primary" onclick="formFoto()">+ Añadir Foto</button></div><div id="galeriaList" class="form-grid" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-top: 15px;">${msg('Cargando galería...')}</div></section>`, 'acuarios');
+  shell(am('fotos') + `<section class="panel"><div class="panel-head"><div><h2>Galería de Fotos 📷</h2><p class="small">Sube una foto real del acuario para usarla como referencia visual.</p></div></div><div class="quick-actions"><button class="primary" onclick="formFotoBaseIA()"><span>▣</span>Foto base IA</button><button onclick="formFoto()"><span>＋</span>Añadir foto</button></div><div id="galeriaList" class="gallery-grid">${msg('Cargando galería...')}</div></section>`, 'acuarios');
   try {
     const { data, error } = await s.from('aquarium_photos').select('*').eq('aquarium_id', window.q.id).order('created_at', { ascending: false }).limit(24);
     if (error) throw error;
     if (!data || data.length === 0) { $('galeriaList').innerHTML = `<p class="small" style="grid-column: 1/-1; text-align: center;">Aún no has subido ninguna foto de este acuario.</p>`; return; }
-    $('galeriaList').innerHTML = data.map(p => `
-      <div class="item" style="padding: 8px; position: relative;">
-        <img src="${esc(p.image_url || p.photo_url || p.url)}" style="width:100%; aspect-ratio: 1; object-fit: cover; border-radius: 8px; margin-bottom: 4px;">
-        <b style="font-size: 12px; display: block; margin-top: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${esc(p.title || p.caption || 'Sin título')}</b>
-        <button class="danger small" onclick="deleteFoto('${p.id}')" style="position: absolute; top: 12px; right: 12px; padding: 4px 6px; font-size: 10px; background: rgba(219,68,85,0.9); border:none; color:white; border-radius:4px; cursor:pointer;">🗑️</button>
-      </div>
-    `).join('');
+    $('galeriaList').innerHTML = data.map(fotoCard).join('');
   } catch (e) { $('galeriaList').innerHTML = msg(e.message, 'error'); }
 };
 
+function fotoFormHtml({ aiBase = false } = {}) {
+  const title = aiBase ? 'Subir foto real del acuario' : 'Subir foto al sistema';
+  const note = aiBase ? '<div class="notice"><b>Foto base IA</b><p>Esta imagen será la referencia para colocar corales, plantas o decoración respetando la perspectiva real del acuario.</p></div>' : '';
+  const defaultTitle = aiBase ? 'Foto base IA para colocar corales y plantas' : '';
+  return `
+    <section class="panel">
+      <button onclick="fotos()">← Volver</button>
+      <h2>${title}</h2>
+      ${note}
+      <label>Título / Nota corta</label>
+      <input id="fTitle" value="${esc(defaultTitle)}" placeholder="Ej: Vista frontal completa del acuario">
+      <label>Qué debe tener en cuenta la IA</label>
+      <textarea id="fNotes" placeholder="Ej: dejar libre la zona central, colocar corales sobre las rocas, plantas al fondo..."></textarea>
+      <label>Hacer foto con la cámara 📸</label>
+      <input id="fCam" type="file" accept="image/*" capture="environment" onchange="previewFoto()">
+      <label>Seleccionar de la galería 🖼️</label>
+      <input id="fGal" type="file" accept="image/*" onchange="previewFoto()">
+      <div id="fotoPreview"></div>
+      <button class="primary" onclick="saveFoto(${aiBase ? 'true' : 'false'})" style="margin-top: 15px;">${aiBase ? 'Guardar como foto base IA' : 'Subir imagen'}</button>
+      <div id="x"></div>
+    </section>
+  `;
+}
+
 window.formFoto = function() {
+  shell(am('fotos') + fotoFormHtml(), 'acuarios');
+};
+
+window.formFotoBaseIA = function() {
+  shell(am('fotos') + fotoFormHtml({ aiBase: true }), 'acuarios');
+};
+
+window.previewFoto = function() {
+  const file = ($('fCam')?.files?.[0]) || ($('fGal')?.files?.[0]);
+  const box = $('fotoPreview');
+  if (!file || !box) return;
+  const url = URL.createObjectURL(file);
+  box.innerHTML = `<div class="photo-preview"><img src="${url}" alt="Previsualización"><p class="small">Esta es la imagen que se guardará para este acuario.</p></div>`;
+};
+
+window.formFotoLegacy = function() {
   shell(am('fotos') + `
     <section class="panel">
       <button onclick="fotos()">← Volver</button>
@@ -210,7 +260,7 @@ window.formFoto = function() {
   `, 'acuarios');
 };
 
-window.saveFoto = async function() {
+window.saveFoto = async function(aiBase = false) {
   try {
     const file = ($('fCam')?.files?.[0]) || ($('fGal')?.files?.[0]);
     if (!file) throw new Error('Por favor, selecciona o toma una foto primero.');
@@ -227,10 +277,10 @@ window.saveFoto = async function() {
     const row = { 
       user_id: state.user.id, 
       aquarium_id: window.q.id, 
-      title: val('fTitle') || 'Foto de acuario', 
+      title: val('fTitle') || (aiBase ? 'Foto base IA' : 'Foto de acuario'), 
       image_url: publicUrl,
       photo_url: publicUrl,
-      notes: val('fTitle') || null 
+      notes: [aiBase ? 'Referencia IA: foto base para colocar corales, plantas o decoración sobre el acuario real.' : '', val('fNotes') || val('fTitle') || ''].filter(Boolean).join('\n')
     };
 
     const { error } = await s.from('aquarium_photos').insert([row]); 
