@@ -1545,6 +1545,7 @@
   const aiParameterLabels = {
     temperature_c: 'Temperatura',
     salinity_ppt: 'Salinidad',
+    salinity_sg: 'Salinidad',
     ph: 'pH',
     kh_dkh: 'KH',
     nitrate_no3: 'NO3',
@@ -1562,10 +1563,30 @@
     return 'marine';
   }
 
+  function normalizeMeasurementKey(row) {
+    const raw = String(row?.parameter_key || row?.parameter || row?.parameter_label || '').toLowerCase();
+    const key = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+    if (['temperatura', 'temp', 'temperature', 'temperature_c'].includes(key)) return 'temperature_c';
+    if (['salinidad', 'sg', 'densidad', 'specific_gravity', 'salinity_sg'].includes(key)) return 'salinity_sg';
+    if (['kh', 'alcalinidad', 'alkalinity', 'kh_dkh'].includes(key)) return 'kh_dkh';
+    if (['no3', 'nitrato', 'nitratos', 'nitrate', 'nitrate_no3'].includes(key)) return 'nitrate_no3';
+    if (['po4', 'fosfato', 'fosfatos', 'phosphate', 'phosphate_po4'].includes(key)) return 'phosphate_po4';
+    if (['calcio', 'ca', 'calcium', 'calcium_ca'].includes(key)) return 'calcium_ca';
+    if (['magnesio', 'mg', 'magnesium', 'magnesium_mg'].includes(key)) return 'magnesium_mg';
+    if (key === 'ph') return 'ph';
+    return key;
+  }
+
+  function measurementNumber(row) {
+    const source = row?.display_value ?? row?.raw_text ?? row?.value ?? row?.raw_value ?? row?.normalized_value ?? '';
+    const match = String(source).replace(',', '.').match(/-?\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : null;
+  }
+
   function aiLatestMeasurements(rows) {
     const out = {};
     (rows || []).forEach(function (r) {
-      const key = r.parameter_key || r.parameter || String(r.parameter_label || '').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+      const key = normalizeMeasurementKey(r);
       if (key && !out[key]) out[key] = r;
     });
     return out;
@@ -1599,6 +1620,90 @@
     }
     return null;
   }
+
+  function reefRangeState(key, value) {
+    if (!Number.isFinite(value)) return null;
+    if (key === 'temperature_c') {
+      if (value < 23) return { state: 'crítico bajo', priority: 'high' };
+      if (value < 24) return { state: 'bajo', priority: 'normal' };
+      if (value <= 27) return null;
+      if (value > 28) return { state: 'crítico alto', priority: 'high' };
+      return { state: 'alto', priority: 'normal' };
+    }
+    if (key === 'salinity_sg') {
+      if (value > 2) return null;
+      if (value < 1.022) return { state: 'crítico bajo', priority: 'high' };
+      if (value < 1.024) return { state: 'bajo', priority: 'normal' };
+      if (value >= 1.025 && value <= 1.026) return null;
+      if (value > 1.028) return { state: 'crítico alto', priority: 'high' };
+      return { state: 'alto', priority: 'normal' };
+    }
+    if (key === 'ph') {
+      if (value < 7.8) return { state: 'crítico bajo', priority: 'high' };
+      if (value < 8.0) return { state: 'bajo', priority: 'normal' };
+      if (value <= 8.4) return null;
+      if (value > 8.5) return { state: 'crítico alto', priority: 'high' };
+      return { state: 'alto', priority: 'normal' };
+    }
+    if (key === 'kh_dkh') {
+      if (value < 6) return { state: 'crítico bajo', priority: 'high' };
+      if (value < 7) return { state: 'bajo', priority: 'normal' };
+      if (value <= 9) return null;
+      if (value > 12) return { state: 'crítico alto', priority: 'high' };
+      return { state: 'alto', priority: 'normal' };
+    }
+    if (key === 'calcium_ca') {
+      if (value < 350) return { state: 'crítico bajo', priority: 'high' };
+      if (value < 400) return { state: 'bajo', priority: 'normal' };
+      if (value <= 450) return null;
+      if (value > 500) return { state: 'crítico alto', priority: 'high' };
+      return { state: 'alto', priority: 'normal' };
+    }
+    if (key === 'magnesium_mg') {
+      if (value < 1150) return { state: 'crítico bajo', priority: 'high' };
+      if (value < 1250) return { state: 'bajo', priority: 'normal' };
+      if (value <= 1400) return null;
+      if (value > 1500) return { state: 'crítico alto', priority: 'high' };
+      return { state: 'alto', priority: 'normal' };
+    }
+    if (key === 'nitrate_no3') {
+      if (value < 1) return { state: 'muy bajo', priority: 'normal' };
+      if (value <= 10) return null;
+      if (value > 50) return { state: 'crítico alto', priority: 'high' };
+      if (value > 25) return { state: 'alto', priority: 'normal' };
+      return null;
+    }
+    if (key === 'phosphate_po4') {
+      if (value < 0.02) return { state: 'muy bajo', priority: 'normal' };
+      if (value <= 0.08) return null;
+      if (value > 0.20) return { state: 'crítico alto', priority: 'high' };
+      if (value > 0.10) return { state: 'alto', priority: 'normal' };
+      return null;
+    }
+    return null;
+  }
+
+  function interpretMeasurementValue(aq, measurementRow) {
+    if (!measurementRow || aiAquariumMode(aq) !== 'marine') return null;
+    const value = measurementNumber(measurementRow);
+    let key = normalizeMeasurementKey(measurementRow);
+    if (key === 'salinity_ppt' && value !== null && value < 2) key = 'salinity_sg';
+    const range = reefRangeState(key, value);
+    if (!range) return null;
+    const label = aiParameterLabels[key] || key;
+    const aqName = aq.name || 'Acuario';
+    return {
+      type: 'chemistry',
+      priority: range.priority,
+      aquarium_id: aq.id,
+      aquarium_name: aqName,
+      title: `${label} ${range.state} · ${aqName}`,
+      due_at: new Date().toISOString(),
+      notes: `${label}: ${value}. Estado: ${range.state}. Revisar la medición, confirmar con test fiable y actuar según el acuario antes de dosificar.`
+    };
+  }
+
+  window.interpretMeasurementValue = interpretMeasurementValue;
 
   function aiInventorySuggestions(items) {
     const suggestions = [];
@@ -1660,8 +1765,13 @@
       const latest = aiLatestMeasurements(measurements.data || []);
       const plan = aiMeasurementPlans[aiAquariumMode(aq)] || aiMeasurementPlans.marine;
       Object.keys(plan).forEach(function (key) {
-        const suggestion = aiDueSuggestion(aq, key, plan[key], latest[key]);
+        const row = latest[key] || (key === 'salinity_ppt' ? latest.salinity_sg : null);
+        const suggestion = aiDueSuggestion(aq, key, plan[key], row);
         if (suggestion) suggestions.push(suggestion);
+      });
+      Object.values(latest).forEach(function (row) {
+        const chemical = interpretMeasurementValue(aq, row);
+        if (chemical) suggestions.push(chemical);
       });
     }
     const openTitles = new Set((tasks.data || []).map(t => String(t.title || '').toLowerCase()));
