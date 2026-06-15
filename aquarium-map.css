@@ -206,6 +206,19 @@
   font-size: 44px;
 }
 
+.ai-suggestion {
+  border-color: rgba(125, 211, 252, 0.34);
+}
+
+.ai-suggestion.high {
+  border-color: rgba(239, 68, 68, 0.46);
+  background: linear-gradient(180deg, rgba(127, 29, 29, 0.22), rgba(8, 28, 48, 0.92));
+}
+
+.ai-suggestion.high b {
+  color: #fecaca;
+}
+
 .map-3d-wrap {
   display: grid;
   gap: 10px;
