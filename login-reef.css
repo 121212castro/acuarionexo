@@ -3,3 +3,6 @@ body{background-position:center 38%!important;}
 #refreshAppBtn.compact-refresh{min-width:42px!important;width:42px!important;height:42px!important;padding:0!important;border-radius:15px!important;font-size:20px!important}
 #refreshAppBtn.compact-refresh small{display:none!important}
 .auth-card button:not(.primary){display:block!important;width:100%!important;margin:10px 0 0!important;padding:4px 0!important;border:0!important;background:transparent!important;box-shadow:none!important;color:#85ccff!important;text-align:center!important;font-weight:850!important;font-size:15px!important}
+.summary-card{align-items:flex-start!important;gap:12px!important}
+.summary-card button{width:auto!important;height:auto!important;min-height:40px!important;border-radius:999px!important;padding:9px 13px!important;font-size:0!important;white-space:nowrap!important;background:rgba(14,142,255,.16)!important;color:#8fd1ff!important;border-color:rgba(143,209,255,.35)!important;box-shadow:none!important}
+.summary-card button::after{content:'＋ Nuevo acuario';font-size:14px!important;font-weight:900!important;letter-spacing:-.1px!important}
