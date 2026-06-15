@@ -1,63 +1,45 @@
-ACUARIONEXO · BASE OFICIAL LIMPIA · 14/06/2026
+ACUARIONEXO · CLEAN CORE · 15/06/2026
 
 FUENTE DE VERDAD
 - Rama unica de trabajo: main.
 - URL unica de app: https://121212castro.github.io/acuarionexo/
 - No crear enlaces alternativos para cambios normales.
-- No reactivar archivos legacy.
+- No reactivar archivos legacy ni motores que sobreescriban pantallas.
 
 NUCLEO WEB ACTIVO
 - index.html
 - config.js
 - styles.css
 - app.js
-- manifest.webmanifest
-- app-version.json
 - update-manager.js
+- app-version.json
+- manifest.webmanifest
 
-MOTORES ACTIVOS CARGADOS POR index.html
+REGLAS OBLIGATORIAS
+- app.js es el unico arranque funcional de la app.
+- index.html solo carga Supabase, config.js, app.js y update-manager.js.
+- Ningun archivo externo debe redefinir window.dashboard, window.biblioteca, window.fotos, window.pars, window.panel, window.microfauna o rutas principales.
+- Si una funcionalidad hace falta, se integra primero en app.js con una unica fuente de estado.
+- No usar routers dinamicos.
+- No usar bloques inline grandes dentro de index.html.
+- app-version.json debe tener el mismo build que window.ACUARIONEXO_BUILD.
+- El contenedor mobile-wrapper/ no debe duplicar HTML de produccion: carga la URL oficial.
+
+ARCHIVOS QUE NO DEBEN CARGARSE EN PRODUCCION SIN REINTEGRACION LIMPIA
+- parameters-ui.js
+- photo-ai.js
+- aquarium-map.js
+- aquarium-map.css
 - measurement-schema.js
 - measurement-ai.js
 - measurement-engine.js
 - acuarionexo-api.js
-- photo-ai.js
-- parameters-ui.js
-- aquarium-map.css
-- aquarium-map.js
 
-REGLAS OBLIGATORIAS
-- app.js es el unico bootstrap funcional de la app.
-- index.html carga scripts de forma explicita y ordenada.
-- config.js solo guarda configuracion, no carga otros scripts.
-- No usar routers dinamicos.
-- No usar parches que sobrescriban window.biblioteca, window.dashboard, window.fotos o similares.
-- Si una funcionalidad hace falta, se integra en app.js o en un motor activo cargado por index.html.
-- El contenedor mobile-wrapper/ no debe duplicar HTML de produccion: carga la URL oficial.
-
-ARCHIVOS LEGACY ELIMINADOS
-- library-router.js
-- library-photo-roles.js
-- library-admin-delete.js
-- library-animal-guard.js
-- library-animal-species-photo.js
-- animal-import-full.js
-- animal-cover-cards.js
-- animals-router.js
-- inventory-router.js
-- fase1-portada-acuario.js
-- auth-recovery.js
-- notifications.js
-- firebase-messaging-sw.js
+Estos archivos pueden conservarse como referencia tecnica, pero no deben cargarse desde index.html hasta que se revisen y se integren sin sobreescrituras globales.
 
 COMPROBACIONES ANTES DE PUBLICAR
-1. index.html no carga archivos legacy.
-2. config.js no contiene loadScript ni loadRouters.
-3. app.js contiene los 11 apartados de Biblioteca.
-4. No existe etiqueta vieja que agrupe Tests dentro de Productos y sales en Biblioteca.
-5. git status debe quedar limpio despues del commit.
-
-CONTENEDOR NATIVO PARA TESTERS
-- mobile-wrapper/ contiene la app real para Android/iOS mediante Capacitor.
-- No forma parte del arranque web de AcuarioNexo.
-- Debe cargar siempre la URL oficial de GitHub Pages.
-- Cambios normales: publicar web en main. Cambios de permisos/icono/firma: nueva build nativa.
+1. index.html carga solo el nucleo web activo.
+2. app-version.json coincide con window.ACUARIONEXO_BUILD.
+3. node --check app.js pasa sin errores.
+4. La app local abre sin errores de consola.
+5. git status queda limpio despues del commit.
