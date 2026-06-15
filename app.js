@@ -174,7 +174,13 @@
     if (error) throw error;
     const list = data || [];
     try {
-      const photos = await supabase.from('aquarium_photos').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(200);
+      const ids = list.map(function (aq) { return aq.id; }).filter(Boolean);
+      const photos = ids.length ? await supabase.from('aquarium_photos')
+        .select('aquarium_id,image_url,photo_url,created_at')
+        .eq('user_id', state.user.id)
+        .in('aquarium_id', ids)
+        .order('created_at', { ascending: false })
+        .limit(120) : { data: [] };
       if (!photos.error) {
         const coverByAq = {};
         (photos.data || []).forEach(function (p) {
