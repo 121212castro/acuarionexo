@@ -54,6 +54,9 @@
 .inventory-card {
   display: grid;
   gap: 8px;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
 }
 
 .inventory-card-head {
@@ -83,6 +86,76 @@
 .inventory-card p:not(.small) {
   line-height: 1.32;
   color: #e8f4ff;
+}
+
+.inventory-expiry {
+  font-weight: 900;
+}
+
+.inventory-expiry.caducado {
+  color: #fecaca;
+}
+
+.inventory-expiry.caduca {
+  color: #fde68a;
+}
+
+.inventory-detail-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.inventory-detail-head small {
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.inventory-detail-head span {
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 12px;
+  font-weight: 950;
+  background: rgba(34, 197, 94, 0.15);
+  color: #bbf7d0;
+}
+
+.inventory-detail-head span.caducado {
+  background: rgba(239, 68, 68, 0.18);
+  color: #fecaca;
+}
+
+.inventory-detail-head span.caduca {
+  background: rgba(245, 158, 11, 0.18);
+  color: #fde68a;
+}
+
+.inventory-fields {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.inventory-fields div {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.inventory-fields small {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 900;
+  margin-bottom: 4px;
+}
+
+.inventory-fields b {
+  font-size: 15px;
 }
 
 .map-3d-wrap {
@@ -252,6 +325,10 @@
   }
 
   .inventory-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-fields {
     grid-template-columns: 1fr;
   }
 }
