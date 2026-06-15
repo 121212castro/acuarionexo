@@ -12,6 +12,7 @@
   <link rel="icon" href="icon-512.png">
   <link rel="stylesheet" href="styles.css?v=password-reset-v1-20260615">
   <link rel="stylesheet" href="aquarium-map.css?v=password-reset-v1-20260615">
+  <link rel="stylesheet" href="login-reef.css?v=login-reef-v2-20260615">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.min.js"></script>
   <script src="config.js?v=password-reset-v1-20260615"></script>
@@ -23,11 +24,10 @@
       <div>
         <h1>Acuario<span>Nexo</span></h1>
         <p id="version"></p>
-        <p class="connection-pill"><i></i><span id="connectionText">Sin sesión</span></p>
       </div>
     </div>
     <div class="top-actions">
-      <button id="refreshAppBtn" class="ghost">↻<small>Refrescar</small></button>
+      <button id="refreshAppBtn" class="ghost compact-refresh" aria-label="Refrescar app">↻</button>
       <button id="logoutBtn" class="ghost hidden">Salir</button>
     </div>
   </header>
@@ -38,5 +38,6 @@
   <script src="app.js?v=password-reset-v1-20260615"></script>
   <script src="update-manager.js?v=password-reset-v1-20260615"></script>
   <script src="notifications.js?v=20260615"></script>
+  <script src="login-reef.js?v=login-reef-v2-20260615"></script>
 </body>
 </html>
