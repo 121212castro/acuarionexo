@@ -131,7 +131,8 @@
           type: String(m.type || 'coral'),
           note: String(m.note || ''),
           x: Math.max(0, Math.min(100, Number(m.x) || 50)),
-          y: Math.max(0, Math.min(100, Number(m.y) || 50))
+          y: Math.max(0, Math.min(100, Number(m.y) || 50)),
+          z: Math.max(0, Math.min(100, Number(m.z) || 50))
         };
       })
     };
@@ -925,7 +926,7 @@
 
   function mapMarkerHtml(marker) {
     const selected = window.__aqMap?.selected_id === marker.id ? ' selected' : '';
-    return `<button class="map-pin ${esc(marker.type)}${selected}" style="left:${esc(marker.x)}%;top:${esc(marker.y)}%" onclick="selectMapMarker(event,'${esc(marker.id)}')" title="${esc(marker.label)}">
+    return `<button class="map-pin ${esc(marker.type)}${selected}" style="left:${esc(marker.x)}%;top:${esc(marker.y)}%" onclick="selectMapMarker(event,'${esc(marker.id)}')" title="${esc(marker.label)} · profundidad ${esc(marker.z)}%">
       <span>${esc(marker.label.slice(0, 2).toUpperCase())}</span>
     </button>`;
   }
@@ -958,6 +959,9 @@
         <option value="other" ${selected?.type === 'other' ? 'selected' : ''}>Otro</option>
       </select>
       <label>Nota IA</label><textarea id="mapMarkerNote" placeholder="Luz media, flujo suave, dejar separación...">${esc(selected?.note || '')}</textarea>
+      <label>Izquierda / derecha</label><input id="mapMarkerX" type="range" min="0" max="100" value="${esc(selected?.x ?? 50)}" oninput="previewMapMarkerPosition()">
+      <label>Altura</label><input id="mapMarkerY" type="range" min="0" max="100" value="${esc(selected?.y ?? 50)}" oninput="previewMapMarkerPosition()">
+      <label>Profundidad</label><input id="mapMarkerZ" type="range" min="0" max="100" value="${esc(selected?.z ?? 50)}" oninput="previewMapMarkerPosition()">
       <div class="map-actions">
         <button class="primary" onclick="updateMapMarker()">Actualizar punto</button>
         <button onclick="newMapMarker()">Nuevo punto</button>
@@ -972,12 +976,20 @@
     if (!map.photo_url) {
       return `<div class="map-empty-photo">
         <b>Falta foto del acuario</b>
-        <p class="small">Sube una foto frontal del acuario para colocar encima corales, plantas, rocas o zonas.</p>
+        <p class="small">Sube una foto frontal del acuario. La IA 3D la usa como fondo para montar la urna y colocar puntos con profundidad.</p>
       </div>`;
     }
-    return `<div id="mapStage" class="map-photo-stage" onclick="placeMapMarker(event)">
-      <img src="${esc(map.photo_url)}" alt="Foto del acuario para mapa IA">
-      ${map.markers.map(mapMarkerHtml).join('')}
+    return `<div class="map-3d-wrap">
+      <div class="map-3d-toolbar">
+        <button onclick="rotateMap3D(-18)">Girar izquierda</button>
+        <button onclick="rotateMap3D(18)">Girar derecha</button>
+        <button onclick="resetMap3D()">Frontal</button>
+      </div>
+      <div id="map3dStage" class="map-3d-stage"></div>
+      <div id="mapStage" class="map-photo-stage map-photo-reference" onclick="placeMapMarker(event)">
+        <img src="${esc(map.photo_url)}" alt="Foto del acuario para mapa IA">
+        ${map.markers.map(mapMarkerHtml).join('')}
+      </div>
     </div>`;
   }
 
@@ -993,6 +1005,7 @@
       <button class="primary" onclick="saveMapPhoto()">Usar esta foto en el mapa</button>
       <div id="x"></div>
     </section>${mapEditorHtml(clean)}`, 'acuarios');
+    requestAnimationFrame(function () { renderMap3D(clean); });
   }
 
   function mapaIA() {
@@ -1049,11 +1062,210 @@
       renderMapIA(map);
       return;
     }
-    const marker = { id: `mk-${Date.now()}`, label, type, note, x, y };
+    const marker = { id: `mk-${Date.now()}`, label, type, note, x, y, z: Number(val('mapMarkerZ')) || 50 };
     map.markers.push(marker);
     map.selected_id = marker.id;
     writeMapLocal(aq, map);
     renderMapIA(map);
+  };
+
+  function markerColor(type) {
+    return {
+      coral: 0xf472b6,
+      plant: 0x22c55e,
+      rock: 0xa3a3a3,
+      fish: 0x0e8eff,
+      equipment: 0xf59e0b,
+      other: 0xe2e8f0
+    }[type] || 0xe2e8f0;
+  }
+
+  function marker3DPosition(marker) {
+    return {
+      x: (Number(marker.x) - 50) * 1.2,
+      y: (100 - Number(marker.y)) * 0.68 + 2,
+      z: (Number(marker.z) - 50) * 0.7
+    };
+  }
+
+  function renderMap3DFallback(map) {
+    const stage = byId('map3dStage');
+    if (!stage) return;
+    stage.innerHTML = '';
+    const width = Math.max(320, stage.clientWidth || 640);
+    const height = Math.max(260, Math.round(width * 0.58));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(width * Math.min(window.devicePixelRatio || 1, 2));
+    canvas.height = Math.round(height * Math.min(window.devicePixelRatio || 1, 2));
+    canvas.style.width = `${width}px`;
+    canvas.style.height = `${height}px`;
+    stage.appendChild(canvas);
+    const ctx = canvas.getContext('2d');
+    const scale = canvas.width / width;
+    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+
+    function drawBase(photo) {
+      const pad = 28;
+      const front = { x: pad, y: pad + 22, w: width - pad * 2 - 42, h: height - pad * 2 - 34 };
+      const depth = 42;
+      ctx.clearRect(0, 0, width, height);
+      const bg = ctx.createLinearGradient(0, 0, 0, height);
+      bg.addColorStop(0, '#03101d');
+      bg.addColorStop(1, '#06243a');
+      ctx.fillStyle = bg;
+      ctx.fillRect(0, 0, width, height);
+
+      if (photo) {
+        ctx.save();
+        ctx.globalAlpha = 0.58;
+        ctx.drawImage(photo, front.x, front.y, front.w, front.h);
+        ctx.restore();
+      }
+
+      ctx.strokeStyle = 'rgba(125, 211, 252, .75)';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(front.x, front.y, front.w, front.h);
+      ctx.beginPath();
+      ctx.moveTo(front.x, front.y);
+      ctx.lineTo(front.x + depth, front.y - depth);
+      ctx.lineTo(front.x + front.w + depth, front.y - depth);
+      ctx.lineTo(front.x + front.w, front.y);
+      ctx.moveTo(front.x + front.w, front.y + front.h);
+      ctx.lineTo(front.x + front.w + depth, front.y + front.h - depth);
+      ctx.lineTo(front.x + front.w + depth, front.y - depth);
+      ctx.moveTo(front.x + depth, front.y - depth);
+      ctx.lineTo(front.x + depth, front.y + front.h - depth);
+      ctx.lineTo(front.x, front.y + front.h);
+      ctx.stroke();
+
+      ctx.fillStyle = 'rgba(201, 179, 106, .72)';
+      ctx.fillRect(front.x + 2, front.y + front.h - 22, front.w - 4, 20);
+
+      map.markers.forEach(function (marker) {
+        const x = front.x + (Number(marker.x) / 100) * front.w + ((Number(marker.z) - 50) / 100) * depth;
+        const y = front.y + (Number(marker.y) / 100) * front.h - ((Number(marker.z) - 50) / 100) * depth;
+        const selected = map.selected_id === marker.id;
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(226, 232, 240, .8)';
+        ctx.moveTo(x, y);
+        ctx.lineTo(x, front.y + front.h - 22);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.fillStyle = `#${markerColor(marker.type).toString(16).padStart(6, '0')}`;
+        ctx.arc(x, y, selected ? 9 : 7, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = selected ? 4 : 2;
+        ctx.strokeStyle = selected ? '#ffffff' : 'rgba(255,255,255,.72)';
+        ctx.stroke();
+      });
+    }
+
+    if (map.photo_url) {
+      const photo = new Image();
+      photo.crossOrigin = 'anonymous';
+      photo.onload = function () { drawBase(photo); };
+      photo.onerror = function () { drawBase(null); };
+      photo.src = map.photo_url;
+    } else {
+      drawBase(null);
+    }
+  }
+
+  function renderMap3D(map) {
+    const stage = byId('map3dStage');
+    if (!stage) return;
+    if (!window.THREE) {
+      renderMap3DFallback(map);
+      return;
+    }
+    stage.innerHTML = '';
+    const width = Math.max(320, stage.clientWidth || 640);
+    const height = Math.max(260, Math.round(width * 0.58));
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x03101d);
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+    const rotation = window.__aqMapRotation || 0;
+    const radians = rotation * Math.PI / 180;
+    camera.position.set(Math.sin(radians) * 160, 70, Math.cos(radians) * 160);
+    camera.lookAt(0, 34, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    stage.appendChild(renderer.domElement);
+
+    scene.add(new THREE.HemisphereLight(0xcff7ff, 0x0a1622, 2.2));
+    const light = new THREE.DirectionalLight(0xffffff, 1.4);
+    light.position.set(30, 90, 80);
+    scene.add(light);
+
+    const tank = new THREE.BoxGeometry(120, 72, 72);
+    const edges = new THREE.EdgesGeometry(tank);
+    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.65 }));
+    line.position.y = 36;
+    scene.add(line);
+
+    const sand = new THREE.Mesh(
+      new THREE.BoxGeometry(120, 2, 72),
+      new THREE.MeshStandardMaterial({ color: 0xc9b36a, roughness: 0.9 })
+    );
+    sand.position.y = 1;
+    scene.add(sand);
+
+    if (map.photo_url) {
+      const texture = new THREE.TextureLoader().load(map.photo_url, function () {
+        renderer.render(scene, camera);
+      });
+      texture.colorSpace = THREE.SRGBColorSpace;
+      const back = new THREE.Mesh(
+        new THREE.PlaneGeometry(120, 72),
+        new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.82 })
+      );
+      back.position.set(0, 36, -36.2);
+      scene.add(back);
+    }
+
+    map.markers.forEach(function (marker) {
+      const pos = marker3DPosition(marker);
+      const group = new THREE.Group();
+      const selected = map.selected_id === marker.id;
+      const sphere = new THREE.Mesh(
+        new THREE.SphereGeometry(selected ? 3.8 : 3, 24, 16),
+        new THREE.MeshStandardMaterial({ color: markerColor(marker.type), roughness: 0.35, metalness: 0.05 })
+      );
+      group.add(sphere);
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.45, 0.45, Math.max(4, pos.y), 12),
+        new THREE.MeshStandardMaterial({ color: 0xdbeafe, transparent: true, opacity: 0.7 })
+      );
+      stem.position.y = -Math.max(4, pos.y) / 2;
+      group.add(stem);
+      group.position.set(pos.x, pos.y, pos.z);
+      scene.add(group);
+    });
+
+    renderer.render(scene, camera);
+  }
+
+  window.rotateMap3D = function (delta) {
+    window.__aqMapRotation = (window.__aqMapRotation || 0) + delta;
+    renderMap3D(window.__aqMap || readMap(currentAquarium()));
+  };
+
+  window.resetMap3D = function () {
+    window.__aqMapRotation = 0;
+    renderMap3D(window.__aqMap || readMap(currentAquarium()));
+  };
+
+  window.previewMapMarkerPosition = function () {
+    const aq = currentAquarium();
+    const map = window.__aqMap || readMap(aq);
+    const marker = selectedMapMarker(map);
+    if (!marker) return;
+    marker.x = Number(val('mapMarkerX')) || marker.x;
+    marker.y = Number(val('mapMarkerY')) || marker.y;
+    marker.z = Number(val('mapMarkerZ')) || marker.z;
+    renderMap3D(map);
   };
 
   window.selectMapMarker = function (event, id) {
@@ -1070,13 +1282,16 @@
     const map = window.__aqMap || readMap(aq);
     let marker = selectedMapMarker(map);
     if (!marker) {
-      marker = { id: `mk-${Date.now()}`, x: 50, y: 50, label: val('mapMarkerLabel') || 'Punto', type: val('mapMarkerType') || 'coral', note: val('mapMarkerNote') || '' };
+      marker = { id: `mk-${Date.now()}`, x: Number(val('mapMarkerX')) || 50, y: Number(val('mapMarkerY')) || 50, z: Number(val('mapMarkerZ')) || 50, label: val('mapMarkerLabel') || 'Punto', type: val('mapMarkerType') || 'coral', note: val('mapMarkerNote') || '' };
       map.markers.push(marker);
       map.selected_id = marker.id;
     } else {
       marker.label = val('mapMarkerLabel') || marker.label;
       marker.type = val('mapMarkerType') || marker.type;
       marker.note = val('mapMarkerNote') || '';
+      marker.x = Number(val('mapMarkerX')) || marker.x;
+      marker.y = Number(val('mapMarkerY')) || marker.y;
+      marker.z = Number(val('mapMarkerZ')) || marker.z;
     }
     writeMapLocal(aq, map);
     renderMapIA(map);

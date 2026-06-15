@@ -2,6 +2,37 @@
   overflow: hidden;
 }
 
+.map-3d-wrap {
+  display: grid;
+  gap: 10px;
+}
+
+.map-3d-toolbar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.map-3d-toolbar button {
+  min-height: 42px;
+  padding: 8px;
+}
+
+.map-3d-stage {
+  width: 100%;
+  min-height: 280px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: #03101d;
+}
+
+.map-3d-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
 .map-photo-stage {
   position: relative;
   width: 100%;
@@ -10,6 +41,11 @@
   border-radius: 18px;
   background: #03101d;
   cursor: crosshair;
+}
+
+.map-photo-reference {
+  max-height: 220px;
+  opacity: 0.9;
 }
 
 .map-photo-stage img {
@@ -86,7 +122,7 @@
 
 .map-actions {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr 1fr;
   gap: 8px;
 }
 
@@ -121,6 +157,10 @@
   }
 
   .map-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .map-3d-toolbar {
     grid-template-columns: 1fr;
   }
 }
