@@ -50,10 +50,10 @@
     </nav>`;
   }
 
-  function render(html, active = 'inicio') {
+  function render(html, active = 'inicio', showNav = true) {
     document.querySelector('.bottom-nav')?.remove();
-    app.innerHTML = html + '<div style="height:140px"></div>';
-    document.body.insertAdjacentHTML('beforeend', bottomNav(active));
+    app.innerHTML = html + (showNav ? '<div style="height:140px"></div>' : '');
+    if (showNav) document.body.insertAdjacentHTML('beforeend', bottomNav(active));
     window.scrollTo(0, 0);
     requestAnimationFrame(function () {
       const el = document.querySelector('.tank-tabs .active');
@@ -2212,7 +2212,7 @@
       <button class="primary" onclick="iniciar()">Entrar</button>
       <button onclick="crear()">Crear cuenta</button>
       <div id="x"></div>
-    </section>`, 'inicio');
+    </section>`, 'inicio', false);
   }
   window.login = login;
 
@@ -2241,20 +2241,27 @@
       const session = await supabase.auth.getSession();
       state.user = session.data.session?.user || null;
       window.u = state.user;
-      byId('logoutBtn')?.classList.toggle('hidden', !state.user);
+      updateSessionHeader();
       if (byId('logoutBtn')) {
         byId('logoutBtn').onclick = async function () {
           await supabase.auth.signOut();
           state.user = null;
           state.aquarium = null;
           window.q = null;
+          updateSessionHeader();
           login();
         };
       }
       state.user ? dashboard() : login();
     } catch (e) {
-      render(msg(e.message, 'error'), 'inicio');
+      render(msg(e.message, 'error'), 'inicio', false);
     }
+  }
+
+  function updateSessionHeader() {
+    byId('logoutBtn')?.classList.toggle('hidden', !state.user);
+    const text = byId('connectionText');
+    if (text) text.textContent = state.user ? 'Conectado a Supabase' : 'Sin sesión';
   }
 
   byId('version').textContent = config.APP_VERSION || 'AcuarioNexo';
@@ -2265,7 +2272,7 @@
   supabase.auth.onAuthStateChange(function (_event, session) {
     state.user = session?.user || null;
     window.u = state.user;
-    byId('logoutBtn')?.classList.toggle('hidden', !state.user);
+    updateSessionHeader();
   });
 
   boot();
