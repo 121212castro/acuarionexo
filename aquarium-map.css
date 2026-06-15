@@ -219,6 +219,100 @@
   color: #fecaca;
 }
 
+.panel-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.param-latest-grid {
+  margin-top: 10px;
+}
+
+.param-latest {
+  width: 100%;
+  text-align: left;
+}
+
+.param-latest strong {
+  display: block;
+  margin: 3px 0;
+}
+
+.param-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.param-legend span {
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 900;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.param-legend .ok {
+  color: #bbf7d0;
+}
+
+.param-legend .warn {
+  color: #bae6fd;
+}
+
+.param-legend .alert {
+  color: #fde68a;
+}
+
+.param-legend .risk {
+  color: #fecaca;
+}
+
+.p-caution:before {
+  background: #38bdf8;
+}
+
+.p-alert:before {
+  background: #f59e0b;
+}
+
+.p-risk:before {
+  background: #ef4444;
+}
+
+.p-caution {
+  border-color: rgba(56, 189, 248, 0.34);
+}
+
+.p-alert {
+  border-color: rgba(245, 158, 11, 0.42);
+}
+
+.p-risk {
+  border-color: rgba(239, 68, 68, 0.48);
+}
+
+.p-caution .status-pill {
+  color: #bae6fd;
+  background: rgba(56, 189, 248, 0.12);
+}
+
+.p-alert .status-pill {
+  color: #fde68a;
+  background: rgba(245, 158, 11, 0.14);
+}
+
+.p-risk .status-pill {
+  color: #fecaca;
+  background: rgba(239, 68, 68, 0.16);
+}
+
+.param-history-row {
+  margin-top: 8px;
+}
+
 .map-3d-wrap {
   display: grid;
   gap: 10px;
