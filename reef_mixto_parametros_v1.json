@@ -1,0 +1,12 @@
+{
+  "perfil":"reef_mixto",
+  "version":"1.0",
+  "temperatura":{"critical_low":23,"low":24,"ok_min":24,"ok_max":27,"high":28,"critical_high":28},
+  "salinidad_sg":{"critical_low":1.022,"low":1.024,"ok_min":1.025,"ok_max":1.026,"high":1.028,"critical_high":1.028},
+  "ph":{"critical_low":7.8,"low":8.0,"ok_min":8.0,"ok_max":8.4,"high":8.5,"critical_high":8.5},
+  "kh":{"critical_low":6,"low":7,"ok_min":7,"ok_max":9,"high":12,"critical_high":12},
+  "calcio":{"critical_low":350,"low":400,"ok_min":400,"ok_max":450,"high":500,"critical_high":500},
+  "magnesio":{"critical_low":1150,"low":1250,"ok_min":1250,"ok_max":1400,"high":1500,"critical_high":1500},
+  "no3":{"very_low":1,"ok_min":1,"ok_max":10,"warning":25,"high":50},
+  "po4":{"very_low":0.02,"ok_min":0.02,"ok_max":0.08,"warning":0.10,"high":0.20}
+}
