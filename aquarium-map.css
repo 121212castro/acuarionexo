@@ -2,6 +2,36 @@
   overflow: hidden;
 }
 
+/* Stable image fitting across aquarium screens. */
+.tank-art img,
+.gallery-card img,
+.library-cover-card .library-card-cover {
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+.aq-cover-photo {
+  width: 100% !important;
+  aspect-ratio: 16 / 9;
+  max-height: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  background: #03101d;
+}
+
+.photo-preview img,
+.library-detail-photo {
+  width: 100% !important;
+  max-height: min(62vh, 520px) !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  background: #03101d;
+}
+
+.gallery-card img {
+  aspect-ratio: 1 / 1;
+}
+
 .map-3d-wrap {
   display: grid;
   gap: 10px;
@@ -20,17 +50,20 @@
 
 .map-3d-stage {
   width: 100%;
+  aspect-ratio: 16 / 9;
   min-height: 280px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 18px;
-  background: #03101d;
+  background:
+    linear-gradient(180deg, rgba(111, 226, 255, 0.12), rgba(3, 16, 29, 0.98)),
+    #03101d;
 }
 
 .map-3d-stage canvas {
   display: block;
   width: 100% !important;
-  height: auto !important;
+  height: 100% !important;
 }
 
 .map-photo-stage {
@@ -44,15 +77,16 @@
 }
 
 .map-photo-reference {
-  max-height: 220px;
+  aspect-ratio: 16 / 9;
+  max-height: 240px;
   opacity: 0.9;
 }
 
 .map-photo-stage img {
   display: block;
   width: 100%;
-  max-height: 520px;
   object-fit: contain;
+  aspect-ratio: 16 / 9;
   background: #03101d;
 }
 

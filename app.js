@@ -1088,6 +1088,18 @@
     };
   }
 
+  function containRect(srcW, srcH, boxW, boxH) {
+    const ratio = Math.min(boxW / Math.max(1, srcW), boxH / Math.max(1, srcH));
+    const w = srcW * ratio;
+    const h = srcH * ratio;
+    return { x: (boxW - w) / 2, y: (boxH - h) / 2, w, h };
+  }
+
+  function tankPhotoPlaneSize(image) {
+    const rect = containRect(image?.width || 16, image?.height || 9, 120, 72);
+    return { w: rect.w, h: rect.h, y: 36 + (36 - rect.y - rect.h / 2) };
+  }
+
   function renderMap3DFallback(map) {
     const stage = byId('map3dStage');
     if (!stage) return;
@@ -1116,11 +1128,22 @@
       ctx.fillRect(0, 0, width, height);
 
       if (photo) {
+        const fit = containRect(photo.naturalWidth || photo.width, photo.naturalHeight || photo.height, front.w, front.h);
         ctx.save();
-        ctx.globalAlpha = 0.58;
-        ctx.drawImage(photo, front.x, front.y, front.w, front.h);
+        ctx.globalAlpha = 0.68;
+        ctx.drawImage(photo, front.x + fit.x, front.y + fit.y, fit.w, fit.h);
         ctx.restore();
       }
+
+      const water = ctx.createLinearGradient(front.x, front.y, front.x, front.y + front.h);
+      water.addColorStop(0, 'rgba(66, 211, 255, .18)');
+      water.addColorStop(0.45, 'rgba(20, 125, 160, .12)');
+      water.addColorStop(1, 'rgba(5, 25, 38, .28)');
+      ctx.fillStyle = water;
+      ctx.fillRect(front.x, front.y, front.w, front.h);
+
+      ctx.fillStyle = 'rgba(160, 230, 255, .18)';
+      ctx.fillRect(front.x + 2, front.y + 10, front.w - 4, 4);
 
       ctx.strokeStyle = 'rgba(125, 211, 252, .75)';
       ctx.lineWidth = 2;
@@ -1139,7 +1162,11 @@
       ctx.stroke();
 
       ctx.fillStyle = 'rgba(201, 179, 106, .72)';
-      ctx.fillRect(front.x + 2, front.y + front.h - 22, front.w - 4, 20);
+      ctx.fillRect(front.x + 2, front.y + front.h - 28, front.w - 4, 26);
+
+      ctx.fillStyle = 'rgba(255, 255, 255, .12)';
+      ctx.fillRect(front.x + 10, front.y + 10, 2, front.h - 30);
+      ctx.fillRect(front.x + front.w - 14, front.y + 10, 2, front.h - 30);
 
       map.markers.forEach(function (marker) {
         const x = front.x + (Number(marker.x) / 100) * front.w + ((Number(marker.z) - 50) / 100) * depth;
@@ -1148,7 +1175,7 @@
         ctx.beginPath();
         ctx.strokeStyle = 'rgba(226, 232, 240, .8)';
         ctx.moveTo(x, y);
-        ctx.lineTo(x, front.y + front.h - 22);
+        ctx.lineTo(x, front.y + front.h - 28);
         ctx.stroke();
         ctx.beginPath();
         ctx.fillStyle = `#${markerColor(marker.type).toString(16).padStart(6, '0')}`;
@@ -1194,32 +1221,79 @@
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     stage.appendChild(renderer.domElement);
 
-    scene.add(new THREE.HemisphereLight(0xcff7ff, 0x0a1622, 2.2));
+    scene.add(new THREE.HemisphereLight(0xdffaff, 0x082033, 2.6));
     const light = new THREE.DirectionalLight(0xffffff, 1.4);
     light.position.set(30, 90, 80);
     scene.add(light);
 
     const tank = new THREE.BoxGeometry(120, 72, 72);
     const edges = new THREE.EdgesGeometry(tank);
-    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.65 }));
+    const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.78 }));
     line.position.y = 36;
     scene.add(line);
 
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
+      color: 0xbdefff,
+      transparent: true,
+      opacity: 0.13,
+      roughness: 0.08,
+      metalness: 0,
+      transmission: 0.45,
+      depthWrite: false
+    });
+    const frontGlass = new THREE.Mesh(new THREE.PlaneGeometry(120, 72), glassMaterial);
+    frontGlass.position.set(0, 36, 36.05);
+    scene.add(frontGlass);
+    const leftGlass = new THREE.Mesh(new THREE.PlaneGeometry(72, 72), glassMaterial);
+    leftGlass.rotation.y = Math.PI / 2;
+    leftGlass.position.set(-60.05, 36, 0);
+    scene.add(leftGlass);
+    const rightGlass = leftGlass.clone();
+    rightGlass.position.x = 60.05;
+    scene.add(rightGlass);
+
+    const water = new THREE.Mesh(
+      new THREE.BoxGeometry(118, 64, 70),
+      new THREE.MeshPhysicalMaterial({
+        color: 0x1ba8d6,
+        transparent: true,
+        opacity: 0.18,
+        roughness: 0.25,
+        metalness: 0,
+        transmission: 0.18,
+        depthWrite: false
+      })
+    );
+    water.position.y = 34;
+    scene.add(water);
+
+    const surface = new THREE.Mesh(
+      new THREE.PlaneGeometry(118, 70),
+      new THREE.MeshBasicMaterial({ color: 0x70e0ff, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
+    );
+    surface.rotation.x = -Math.PI / 2;
+    surface.position.y = 66.4;
+    scene.add(surface);
+
     const sand = new THREE.Mesh(
-      new THREE.BoxGeometry(120, 2, 72),
+      new THREE.BoxGeometry(120, 5, 72),
       new THREE.MeshStandardMaterial({ color: 0xc9b36a, roughness: 0.9 })
     );
-    sand.position.y = 1;
+    sand.position.y = 2.5;
     scene.add(sand);
 
     if (map.photo_url) {
-      const texture = new THREE.TextureLoader().load(map.photo_url, function () {
+      const texture = new THREE.TextureLoader().load(map.photo_url, function (loaded) {
+        const plane = tankPhotoPlaneSize(loaded.image);
+        back.geometry.dispose();
+        back.geometry = new THREE.PlaneGeometry(plane.w, plane.h);
+        back.position.y = plane.y;
         renderer.render(scene, camera);
       });
       texture.colorSpace = THREE.SRGBColorSpace;
       const back = new THREE.Mesh(
         new THREE.PlaneGeometry(120, 72),
-        new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.82 })
+        new THREE.MeshBasicMaterial({ map: texture, transparent: true, opacity: 0.9, side: THREE.DoubleSide })
       );
       back.position.set(0, 36, -36.2);
       scene.add(back);
