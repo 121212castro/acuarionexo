@@ -57,6 +57,39 @@
   width: 100%;
   text-align: left;
   cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+}
+
+.inventory-ficha-card {
+  grid-template-rows: auto 1fr;
+}
+
+.inventory-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 35% 25%, rgba(14, 142, 255, 0.28), transparent 42%),
+    #03101d;
+  color: rgba(226, 242, 255, 0.72);
+  font-size: 34px;
+}
+
+.inventory-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+.inventory-card-body {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
 }
 
 .inventory-card-head {
@@ -156,6 +189,21 @@
 
 .inventory-fields b {
   font-size: 15px;
+}
+
+.inventory-detail-cover {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center center;
+  border-radius: 18px;
+  border: 1px solid var(--line);
+  background: #03101d;
+  margin: 10px 0 12px;
+  display: grid;
+  place-items: center;
+  color: rgba(226, 242, 255, 0.72);
+  font-size: 44px;
 }
 
 .map-3d-wrap {

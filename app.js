@@ -1604,6 +1604,11 @@
     return `${prefix}${clean}`.trim() || null;
   }
 
+  function inventoryCover(item) {
+    const meta = inventoryMeta(item);
+    return item.cover_url || item.image_url || item.photo_url || item.public_url || meta.cover_url || meta.image_url || '';
+  }
+
   function inventoryExpiryStatus(item) {
     const exp = inventoryMeta(item).expires_at || item.expires_at || item.expiry_date || '';
     if (!exp) return '';
@@ -1631,13 +1636,17 @@
     const meta = inventoryMeta(item);
     const expiry = meta.expires_at || item.expires_at || item.expiry_date || '';
     const expiryStatus = inventoryExpiryStatus(item);
-    return `<button class="item inventory-card" onclick="verInventario('${esc(item.id)}')">
-      <div class="inventory-card-head">
-        <div><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}</p></div>
-        <span>${esc(scope)}</span>
+    const cover = inventoryCover(item);
+    return `<button class="item inventory-card inventory-ficha-card" onclick="verInventario('${esc(item.id)}')">
+      <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(item.name || 'Inventario')}" loading="lazy">` : '<span>▤</span>'}</div>
+      <div class="inventory-card-body">
+        <div class="inventory-card-head">
+          <div><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}</p></div>
+          <span>${esc(scope)}</span>
+        </div>
+        ${expiry ? `<p class="small inventory-expiry ${esc(expiryStatus)}">Caducidad: ${esc(expiry)}${expiryStatus ? ` · ${esc(expiryStatus)}` : ''}</p>` : ''}
+        ${shortNotes ? `<p>${esc(shortNotes)}</p>` : ''}
       </div>
-      ${expiry ? `<p class="small inventory-expiry ${esc(expiryStatus)}">Caducidad: ${esc(expiry)}${expiryStatus ? ` · ${esc(expiryStatus)}` : ''}</p>` : ''}
-      ${shortNotes ? `<p>${esc(shortNotes)}</p>` : ''}
     </button>`;
   }
 
@@ -1709,6 +1718,7 @@
       <label>Cantidad</label><input id="invQty" type="number" step="0.1" value="1">
       <label>Unidad</label><input id="invUnit" value="unidad" placeholder="unidad, ml, g, bote...">
       <label>Caducidad</label><input id="invExpiry" type="date">
+      <label>Portada</label><input id="invCover" placeholder="URL de imagen o portada">
       <input id="invScope" type="hidden" value="${isAq ? 'aquarium' : 'general'}">
       <label>Notas</label><textarea id="invNotes"></textarea>
       <button class="primary" onclick="saveInventario()">Guardar</button><div id="x"></div></section>`, active);
@@ -1725,7 +1735,7 @@
         category: val('invCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
         quantity: num('invQty') ?? 1,
         unit: val('invUnit') || 'unidad',
-        notes: inventoryNotesWithMeta(val('invNotes'), { expires_at: val('invExpiry') })
+        notes: inventoryNotesWithMeta(val('invNotes'), { expires_at: val('invExpiry'), cover_url: val('invCover') })
       };
       if (scope === 'aquarium') {
         if (!aq) throw new Error('Abre un acuario para guardar inventario del acuario.');
@@ -1755,8 +1765,10 @@
       const cleanNotes = inventoryNoteText(data);
       const expiry = meta.expires_at || data.expires_at || data.expiry_date || '';
       const status = inventoryExpiryStatus(data);
+      const cover = inventoryCover(data);
       render(head + `<section class="panel inventory-detail">
         <button onclick="${isAq && aq ? "openAqSection('inventario')" : "inventario('general')"}">← Volver</button>
+        ${cover ? `<img class="inventory-detail-cover" src="${esc(cover)}" alt="${esc(data.name || 'Inventario')}">` : '<div class="inventory-detail-cover empty">▤</div>'}
         <div class="inventory-detail-head">
           <div><small>${esc(data.category || 'Inventario')}</small><h2>${esc(data.name || 'Item')}</h2></div>
           ${status ? `<span class="${esc(status)}">${esc(status)}</span>` : ''}
@@ -1797,6 +1809,7 @@
         <label>Cantidad</label><input id="invEditQty" type="number" step="0.1" value="${esc(data.quantity ?? 1)}">
         <label>Unidad</label><input id="invEditUnit" value="${esc(data.unit || 'unidad')}">
         <label>Caducidad</label><input id="invEditExpiry" type="date" value="${esc(meta.expires_at || data.expires_at || data.expiry_date || '')}">
+        <label>Portada</label><input id="invEditCover" value="${esc(inventoryCover(data))}" placeholder="URL de imagen o portada">
         <label>Notas</label><textarea id="invEditNotes">${esc(inventoryNoteText(data))}</textarea>
         <button class="primary" onclick="guardarInventarioEditado('${esc(data.id)}','${isAq ? 'aquarium' : 'general'}')">Guardar cambios</button>
         <div id="x"></div>
@@ -1814,7 +1827,7 @@
         category: val('invEditCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
         quantity: num('invEditQty') ?? 1,
         unit: val('invEditUnit') || 'unidad',
-        notes: inventoryNotesWithMeta(val('invEditNotes'), { expires_at: val('invEditExpiry') })
+        notes: inventoryNotesWithMeta(val('invEditNotes'), { expires_at: val('invEditExpiry'), cover_url: val('invEditCover') })
       };
       if (scope === 'aquarium' && aq) row.aquarium_id = aq.id;
       const { error } = await updateInventoryRow(id, row);
