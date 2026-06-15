@@ -32,6 +32,59 @@
   aspect-ratio: 1 / 1;
 }
 
+.inventory-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 8px 0 10px;
+}
+
+.inventory-tabs button {
+  min-height: 42px;
+}
+
+.inventory-tabs button:disabled {
+  opacity: 0.45;
+}
+
+.inventory-hint {
+  margin: 6px 0 10px;
+}
+
+.inventory-card {
+  display: grid;
+  gap: 8px;
+}
+
+.inventory-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.inventory-card-head b {
+  display: block;
+  font-size: 17px;
+  line-height: 1.15;
+}
+
+.inventory-card-head span {
+  flex: 0 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #dff3ff;
+  background: rgba(14, 142, 255, 0.12);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.inventory-card p:not(.small) {
+  line-height: 1.32;
+  color: #e8f4ff;
+}
+
 .map-3d-wrap {
   display: grid;
   gap: 10px;
@@ -195,6 +248,10 @@
   }
 
   .map-3d-toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .inventory-tabs {
     grid-template-columns: 1fr;
   }
 }

@@ -85,6 +85,7 @@
       ${tabButton('animales', 'Animales')}
       ${tabButton('mapa', 'Mapa IA')}
       ${tabButton('fotos', 'Fotos')}
+      ${tabButton('inventario', 'Inventario')}
       ${tabButton('parametros', 'Parámetros')}
       ${tabButton('tareas', 'Tareas')}
     </nav>`;
@@ -291,9 +292,9 @@
         <button onclick="openAqSection('animales')"><span>🐟</span>Animales</button>
         <button onclick="openAqSection('mapa')"><span>⌖</span>Mapa IA</button>
         <button onclick="openAqSection('fotos')"><span>📷</span>Fotos</button>
+        <button onclick="openAqSection('inventario')"><span>▤</span>Inventario</button>
         <button onclick="openAqSection('parametros')"><span>🧪</span>Parámetros</button>
         <button onclick="openAqSection('tareas')"><span>♢</span>Tareas</button>
-        <button onclick="inventario()"><span>▤</span>Inventario</button>
       </div>
     </section>`, 'acuarios');
   }
@@ -307,6 +308,7 @@
     if (section === 'animales') return animales();
     if (section === 'mapa') return mapaIA();
     if (section === 'fotos') return fotos();
+    if (section === 'inventario') return inventario('aquarium');
     if (section === 'parametros') return parametros();
     if (section === 'tareas') return tareasAcuario();
     return panelAcuario();
@@ -1574,37 +1576,114 @@
     }
   };
 
-  window.inventario = async function () {
+  const INVENTORY_AQ_PREFIX = 'AcuarioNexoAcuario:';
+  const generalInventoryCategories = ['Medicamento', 'Test', 'Comida', 'Material general'];
+  const aquariumInventoryCategories = ['Pez', 'Planta', 'Invertebrado', 'Coral', 'Equipo'];
+
+  function inventoryNoteText(item) {
+    return String(item.notes || '').replace(/^AcuarioNexoAcuario:[^|\n]+[|\n]\s*/i, '').trim();
+  }
+
+  function inventoryAqId(item) {
+    if (item.aquarium_id) return String(item.aquarium_id);
+    const note = String(item.notes || '');
+    const match = note.match(/^AcuarioNexoAcuario:([^|\n]+)/i);
+    return match ? match[1] : '';
+  }
+
+  function inventoryItemHtml(item, aqName) {
+    const cleanNotes = inventoryNoteText(item);
+    const shortNotes = cleanNotes.length > 180 ? `${cleanNotes.slice(0, 180)}...` : cleanNotes;
+    const scope = inventoryAqId(item) ? (aqName || 'Acuario') : 'General';
+    return `<div class="item inventory-card">
+      <div class="inventory-card-head">
+        <div><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}</p></div>
+        <span>${esc(scope)}</span>
+      </div>
+      ${shortNotes ? `<p>${esc(shortNotes)}</p>` : ''}
+    </div>`;
+  }
+
+  async function insertInventoryRow(row) {
+    const first = await supabase.from('inventory_items').insert(row);
+    if (!first.error) return first;
+    if (!Object.prototype.hasOwnProperty.call(row, 'aquarium_id')) return first;
+    if (!/aquarium_id|schema cache|column/i.test(first.error.message || '')) return first;
+    const fallback = { ...row };
+    const aqId = fallback.aquarium_id;
+    delete fallback.aquarium_id;
+    fallback.notes = `${INVENTORY_AQ_PREFIX}${aqId}| ${fallback.notes || ''}`.trim();
+    return supabase.from('inventory_items').insert(fallback);
+  }
+
+  window.inventario = async function (scope = 'general') {
     if (!state.user) return login();
     const t = token();
-    render(`<section class="panel"><div class="panel-head"><h2>Inventario</h2><button class="primary" onclick="formInventario()">Añadir</button></div>${msg('Cargando inventario...')}</section>`, 'inventario');
+    const aq = currentAquarium();
+    const isAq = scope === 'aquarium' && aq;
+    const active = isAq ? 'acuarios' : 'inventario';
+    const head = isAq ? aqHeader('inventario') : '';
+    const title = isAq ? `Inventario de ${aq.name || 'acuario'}` : 'Inventario general';
+    render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir</button></div>${msg('Cargando inventario...')}</section>`, active);
     try {
       const { data, error } = await supabase.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(120);
       if (error) throw error;
       if (!isCurrent(t)) return;
-      const html = (data || []).map(item => `<div class="item"><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}</p>${item.notes ? `<p>${esc(item.notes)}</p>` : ''}</div>`).join('');
-      render(`<section class="panel"><div class="panel-head"><h2>Inventario</h2><button class="primary" onclick="formInventario()">Añadir</button></div>${html || msg('Sin inventario todavía.')}</section>`, 'inventario');
+      const rows = data || [];
+      const filtered = isAq
+        ? rows.filter(item => inventoryAqId(item) === String(aq.id))
+        : rows.filter(item => !inventoryAqId(item));
+      const html = filtered.map(item => inventoryItemHtml(item, isAq ? aq.name : '')).join('');
+      const tabs = `<div class="inventory-tabs">
+        <button class="${isAq ? 'active' : ''}" ${aq ? `onclick="openAqSection('inventario')"` : 'disabled'}>Este acuario</button>
+        <button class="${!isAq ? 'active' : ''}" onclick="inventario('general')">General compartido</button>
+      </div>`;
+      const hint = isAq
+        ? '<p class="small inventory-hint">Aqui van habitantes, plantas, invertebrados, corales y equipo que pertenecen solo a este acuario.</p>'
+        : '<p class="small inventory-hint">Aqui van medicamentos, tests, comida y material que pueden servir para varios acuarios.</p>';
+      render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir</button></div>${tabs}${hint}${html || msg('Sin inventario todavía.')}</section>`, active);
     } catch (e) {
-      if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
+      if (isCurrent(t)) render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
     }
   };
 
-  window.formInventario = function () {
-    render(`<section class="panel"><button onclick="inventario()">← Volver</button><h2>Nuevo item</h2>
+  window.formInventario = function (scope = 'general') {
+    const aq = currentAquarium();
+    const isAq = scope === 'aquarium' && aq;
+    const active = isAq ? 'acuarios' : 'inventario';
+    const head = isAq ? aqHeader('inventario') : '';
+    const categories = isAq ? aquariumInventoryCategories : generalInventoryCategories;
+    const categoryOptions = categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    render(head + `<section class="panel"><button onclick="${isAq ? "openAqSection('inventario')" : "inventario('general')"}">← Volver</button><h2>${isAq ? 'Nuevo item del acuario' : 'Nuevo item general'}</h2>
       <label>Nombre</label><input id="invName">
-      <label>Categoría</label><input id="invCategory" placeholder="Equipo, test, comida...">
+      <label>Categoría</label><select id="invCategory">${categoryOptions}</select>
       <label>Cantidad</label><input id="invQty" type="number" step="0.1" value="1">
+      <label>Unidad</label><input id="invUnit" value="unidad" placeholder="unidad, ml, g, bote...">
+      <input id="invScope" type="hidden" value="${isAq ? 'aquarium' : 'general'}">
       <label>Notas</label><textarea id="invNotes"></textarea>
-      <button class="primary" onclick="saveInventario()">Guardar</button><div id="x"></div></section>`, 'inventario');
+      <button class="primary" onclick="saveInventario()">Guardar</button><div id="x"></div></section>`, active);
   };
 
   window.saveInventario = async function () {
     try {
       if (!val('invName')) throw new Error('Pon un nombre.');
-      const row = { user_id: state.user.id, name: val('invName'), category: val('invCategory') || 'General', quantity: num('invQty') ?? 1, unit: 'unidad', notes: val('invNotes') || null };
-      const { error } = await supabase.from('inventory_items').insert(row);
+      const aq = currentAquarium();
+      const scope = val('invScope') || 'general';
+      const row = {
+        user_id: state.user.id,
+        name: val('invName'),
+        category: val('invCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
+        quantity: num('invQty') ?? 1,
+        unit: val('invUnit') || 'unidad',
+        notes: val('invNotes') || null
+      };
+      if (scope === 'aquarium') {
+        if (!aq) throw new Error('Abre un acuario para guardar inventario del acuario.');
+        row.aquarium_id = aq.id;
+      }
+      const { error } = await insertInventoryRow(row);
       if (error) throw error;
-      inventario();
+      scope === 'aquarium' ? inventario('aquarium') : inventario('general');
     } catch (e) {
       if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
     }
