@@ -627,16 +627,9 @@
   }
 
   function fichaCard(f, index, inAq) {
-    const resumen = fichaResumen(f);
     const cover = f.cover || f.foto;
     return `<article class="library-card library-cover-card" onclick="${inAq ? 'verFichaAcuario' : 'verFichaBiblioteca'}(${index})">
       ${cover ? `<img class="library-card-cover" src="${esc(cover)}" alt="${esc(f.nombre)}" loading="lazy">` : '<div class="library-card-cover library-no-photo">□</div>'}
-      <div class="library-card-body">
-        <small>${esc(fichaModuleLabel(f))}</small>
-        <h3>${esc(f.nombre)}</h3>
-        ${f.cientifico ? `<p class="scientific">${esc(f.cientifico)}</p>` : ''}
-        ${resumen ? `<p>${esc(resumen).slice(0, 180)}${resumen.length > 180 ? '…' : ''}</p>` : ''}
-      </div>
     </article>`;
   }
 
