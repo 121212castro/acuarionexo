@@ -259,8 +259,8 @@
     ['Resumen rápido', ['resumen_rapido', 'resumenRapido', 'resumen', 'summary', 'description', 'descripcion', 'descripcion_detallada']],
     ['Identificación', ['identificacion', 'identification', 'taxonomia', 'taxonomy']],
     ['Hábitat natural', ['habitat_natural', 'habitatNatural', 'habitat', 'natural_habitat', 'origen', 'distribucion', 'distribution']],
-    ['Acuario recomendado', ['acuario_recomendado', 'acuarioRecomendado', 'aquarium_recommended', 'tank', 'acuario', 'tamano_acuario', 'litros_minimos', 'min_tank_liters', 'ubicacion']],
-    ['Parámetros', ['parametros', 'parameters', 'parametros_agua', 'water_parameters', 'water', 'agua']],
+    ['Acuario recomendado', ['acuario_recomendado', 'acuarioRecomendado', 'aquarium_recommended', 'recommended_aquarium', 'requisitos_acuario', 'tank', 'tank_size', 'minimum_tank_size', 'min_tank_size', 'acuario', 'tamano_acuario', 'tamano_minimo', 'litros_minimos', 'litros_recomendados', 'min_tank_liters', 'minimum_liters', 'ubicacion', 'aquarium_zone']],
+    ['Parámetros', ['parametros', 'parameters', 'parametros_agua', 'water_parameters', 'water', 'agua', 'rango_parametros', 'rangos', 'ranges']],
     ['Comportamiento', ['comportamiento', 'behavior', 'temperamento', 'temperament']],
     ['Alimentación', ['alimentacion', 'feeding', 'diet', 'dieta']],
     ['Compatibilidad', ['compatibilidad', 'compatibility']],
@@ -280,15 +280,96 @@
     return words.some(word => text.includes(word));
   }
 
+  function isImageUrl(value) {
+    const text = String(value || '').trim();
+    return /^https?:\/\//i.test(text) && (/\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(text) || /supabase|storage|images|photo|foto|cover|portada/i.test(text));
+  }
+
+  function humanLabel(key) {
+    return String(key || '')
+      .replace(/[_-]+/g, ' ')
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .trim()
+      .replace(/^./, c => c.toUpperCase());
+  }
+
+  function findFirstDeep(root, keys) {
+    const wanted = keys.map(fieldKey);
+    const seen = new Set();
+    function walk(value) {
+      if (!value || typeof value !== 'object' || seen.has(value)) return '';
+      seen.add(value);
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const out = walk(item);
+          if (out) return out;
+        }
+        return '';
+      }
+      for (const [key, child] of Object.entries(value)) {
+        if (wanted.includes(fieldKey(key))) {
+          const out = fieldValue(child).trim();
+          if (out) return out;
+        }
+      }
+      for (const child of Object.values(value)) {
+        const out = walk(child);
+        if (out) return out;
+      }
+      return '';
+    }
+    return walk(root);
+  }
+
+  function findImageDeep(root) {
+    const priority = ['photo_url', 'image_url', 'cover_url', 'portada_url', 'foto_url', 'imagen_url', 'url_foto', 'main_image', 'cover_image', 'featured_image', 'portada', 'foto', 'imagen', 'image', 'photo', 'cover', 'thumbnail', 'media', 'imagenes', 'images', 'photos', 'gallery', 'url', 'src'];
+    const seen = new Set();
+    function candidate(value) {
+      if (typeof value === 'string' && isImageUrl(value)) return value.trim();
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const out = candidate(item) || walk(item);
+          if (out) return out;
+        }
+      }
+      if (value && typeof value === 'object') return walk(value);
+      return '';
+    }
+    function walk(value) {
+      if (!value || typeof value !== 'object' || seen.has(value)) return '';
+      seen.add(value);
+      if (Array.isArray(value)) return candidate(value);
+      for (const key of priority) {
+        if (Object.prototype.hasOwnProperty.call(value, key)) {
+          const out = candidate(value[key]);
+          if (out) return out;
+        }
+      }
+      for (const [key, child] of Object.entries(value)) {
+        if (/foto|photo|imagen|image|cover|portada|media|thumbnail|gallery/i.test(key)) {
+          const out = candidate(child);
+          if (out) return out;
+        }
+      }
+      for (const child of Object.values(value)) {
+        const out = walk(child);
+        if (out) return out;
+      }
+      return '';
+    }
+    return walk(root);
+  }
+
   function normalizeFicha(row) {
     const raw = row || {};
     const nested = raw.ficha || raw.ficha_normalizada || raw.fichaNormalizada || raw.data || {};
+    const foto = findImageDeep(raw);
     return {
       id: raw.id || raw.uuid || raw.slug || '',
       nombre: raw.title || raw.nombre || raw.nombre_comun || raw.common_name || nested.title || nested.nombre || raw.scientific_name || 'Ficha',
       cientifico: raw.scientific_name || raw.nombre_cientifico || raw.scientific || nested.scientific_name || nested.nombre_cientifico || '',
       categoria: nested.category || raw.category || raw.creator_category || raw.tipo || raw.tipo_ficha || raw.grupo || raw.seccion || 'general',
-      foto: raw.photo_url || raw.image_url || raw.cover_url || raw.foto_url || raw.foto || raw.imagen || raw.url_foto || nested.photo_url || nested.image_url || nested.foto || '',
+      foto,
       descripcion: raw.resumen_rapido || raw.resumen || raw.description || raw.descripcion || raw.descripcion_detallada || raw.notes || nested.resumen || nested.description || nested.descripcion || '',
       raw
     };
@@ -331,7 +412,14 @@
     if (value == null || value === '') return '';
     if (Array.isArray(value)) return value.map(fieldValue).filter(Boolean).join('\n');
     if (typeof value === 'object') {
-      return fieldValue(value.texto || value.text || value.contenido || value.content || value.valor || value.value || value.descripcion || value.description || '');
+      const direct = fieldValue(value.texto || value.text || value.contenido || value.content || value.valor || value.value || value.descripcion || value.description || '');
+      if (direct) return direct;
+      return Object.entries(value).map(function ([key, child]) {
+        if (child == null || child === '') return '';
+        if (/^id$|uuid|created|updated|user_id|raw|payload/i.test(key)) return '';
+        const out = fieldValue(child).trim();
+        return out ? `${humanLabel(key)}: ${out}` : '';
+      }).filter(Boolean).join('\n');
     }
     return String(value);
   }
@@ -383,13 +471,17 @@
     if (title === 'Identificación') {
       return [`Nombre comun: ${f.nombre}`, f.cientifico ? `Nombre cientifico: ${f.cientifico}` : '', `Apartado: ${fichaModuleLabel(f)}`, raw.care_level ? `Dificultad: ${raw.care_level}` : ''].filter(Boolean).join('\n');
     }
-    if (title === 'Acuario recomendado') return [raw.min_tank_liters ? `Litros minimos: ${raw.min_tank_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\n');
-    if (title === 'Parámetros') return fieldValue(raw.parameters).trim();
-    if (title === 'Comportamiento') return raw.temperament || '';
-    if (title === 'Alimentación') return raw.feeding || raw.diet || '';
-    if (title === 'Compatibilidad') return raw.compatibility || '';
-    if (title === 'Reef Safe') return raw.reef_safe != null ? String(raw.reef_safe) : '';
-    if (title === 'Fuentes') return [raw.references_text, raw.source_url ? `Fuente interna: ${raw.source_url}` : ''].filter(Boolean).join('\n');
+    if (title === 'Acuario recomendado') {
+      const deep = findFirstDeep(raw, ['acuario_recomendado', 'aquarium_recommended', 'recommended_aquarium', 'requisitos_acuario', 'tank_size', 'minimum_tank_size', 'min_tank_liters', 'minimum_liters', 'litros_minimos', 'litros_recomendados', 'aquarium_zone', 'ubicacion']);
+      if (deep) return deep;
+      return [raw.min_tank_liters ? `Litros minimos: ${raw.min_tank_liters} L` : '', raw.minimum_liters ? `Litros minimos: ${raw.minimum_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\n');
+    }
+    if (title === 'Parámetros') return findFirstDeep(raw, ['parametros', 'parameters', 'water_parameters', 'rango_parametros', 'rangos', 'ranges']) || fieldValue(raw.parameters).trim();
+    if (title === 'Comportamiento') return findFirstDeep(raw, ['comportamiento', 'behavior', 'temperamento', 'temperament']) || raw.temperament || '';
+    if (title === 'Alimentación') return findFirstDeep(raw, ['alimentacion', 'feeding', 'diet', 'dieta']) || raw.feeding || raw.diet || '';
+    if (title === 'Compatibilidad') return findFirstDeep(raw, ['compatibilidad', 'compatibility']) || raw.compatibility || '';
+    if (title === 'Reef Safe') return findFirstDeep(raw, ['reef_safe', 'reefSafe', 'reef']) || (raw.reef_safe != null ? String(raw.reef_safe) : '');
+    if (title === 'Fuentes') return findFirstDeep(raw, ['fuentes', 'sources', 'references_text', 'referencias']) || [raw.references_text, raw.source_url ? `Fuente interna: ${raw.source_url}` : ''].filter(Boolean).join('\n');
     return '';
   }
 
