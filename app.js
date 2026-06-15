@@ -255,22 +255,100 @@
     { key: 'equipamiento', label: 'Equipamiento', desc: 'Bombas, luces, filtros, skimmer y material tecnico.', icon: '⚙️' }
   ];
 
-  const librarySections = [
-    ['Resumen rápido', ['resumen_rapido', 'resumenRapido', 'resumen', 'summary', 'description', 'descripcion', 'descripcion_detallada']],
-    ['Identificación', ['identificacion', 'identification', 'taxonomia', 'taxonomy']],
-    ['Hábitat natural', ['habitat_natural', 'habitatNatural', 'habitat', 'natural_habitat', 'origen', 'distribucion', 'distribution']],
-    ['Acuario recomendado', ['acuario_recomendado', 'acuarioRecomendado', 'aquarium_recommended', 'recommended_aquarium', 'requisitos_acuario', 'tank', 'tank_size', 'minimum_tank_size', 'min_tank_size', 'acuario', 'tamano_acuario', 'tamano_minimo', 'litros_minimos', 'litros_recomendados', 'min_tank_liters', 'minimum_liters', 'ubicacion', 'aquarium_zone']],
-    ['Parámetros', ['parametros', 'parameters', 'parametros_agua', 'water_parameters', 'water', 'agua', 'rango_parametros', 'rangos', 'ranges']],
-    ['Comportamiento', ['comportamiento', 'behavior', 'temperamento', 'temperament']],
-    ['Alimentación', ['alimentacion', 'feeding', 'diet', 'dieta']],
-    ['Compatibilidad', ['compatibilidad', 'compatibility']],
-    ['Reef Safe', ['reef_safe', 'reefSafe', 'reef']],
-    ['Salud y enfermedades', ['salud_enfermedades', 'saludYEnfermedades', 'salud', 'enfermedades', 'health']],
-    ['Antes de comprar', ['antes_comprar', 'antesDeComprar', 'before_buying', 'compra']],
-    ['Errores frecuentes', ['errores_frecuentes', 'erroresFrecuentes', 'common_mistakes', 'errores']],
-    ['Curiosidades', ['curiosidades', 'curiosities']],
-    ['Fuentes', ['fuentes', 'sources', 'references_text', 'referencias']]
-  ];
+  const sectionLabels = {
+    summary: 'Resumen rápido',
+    identity: 'Identificación',
+    habitat: 'Hábitat natural',
+    aquarium: 'Acuario recomendado',
+    parameters: 'Parámetros',
+    behavior: 'Comportamiento',
+    feeding: 'Alimentación',
+    compatibility: 'Compatibilidad',
+    reef_safe: 'Reef Safe',
+    health: 'Salud y enfermedades',
+    purchase: 'Antes de comprar',
+    mistakes: 'Errores frecuentes',
+    curiosities: 'Curiosidades',
+    sources: 'Fuentes',
+    breeding: 'Reproducción',
+    lighting: 'Iluminación',
+    flow: 'Flujo',
+    placement: 'Ubicación',
+    co2: 'CO2 y nutrientes',
+    maintenance: 'Mantenimiento',
+    culture: 'Cultivo',
+    use: 'Uso recomendado',
+    problems: 'Problemas frecuentes',
+    uses: 'Usos indicados',
+    dose: 'Dosis',
+    remove: 'Retirar durante tratamiento',
+    risks: 'Riesgos y advertencias',
+    aftercare: 'Después del tratamiento',
+    inventory_logic: 'Lógica AcuarioNexo',
+    mixing: 'Preparación',
+    nutrition: 'Composición',
+    acuarionexo_plan: 'Plan AcuarioNexo',
+    specs: 'Especificaciones',
+    installation: 'Instalación',
+    reading: 'Lectura',
+    range: 'Rangos',
+    storage: 'Conservación'
+  };
+
+  const categorySections = {
+    pez_marino: ['summary', 'identity', 'habitat', 'aquarium', 'parameters', 'behavior', 'feeding', 'compatibility', 'reef_safe', 'health', 'purchase', 'mistakes', 'curiosities', 'sources'],
+    pez_dulce: ['summary', 'identity', 'habitat', 'aquarium', 'parameters', 'behavior', 'feeding', 'compatibility', 'breeding', 'health', 'purchase', 'mistakes', 'curiosities', 'sources'],
+    coral: ['summary', 'identity', 'habitat', 'aquarium', 'parameters', 'lighting', 'flow', 'placement', 'feeding', 'compatibility', 'reef_safe', 'health', 'purchase', 'mistakes', 'curiosities', 'sources'],
+    invertebrado: ['summary', 'identity', 'habitat', 'aquarium', 'parameters', 'behavior', 'feeding', 'compatibility', 'reef_safe', 'health', 'purchase', 'mistakes', 'curiosities', 'sources'],
+    planta: ['summary', 'identity', 'habitat', 'aquarium', 'parameters', 'lighting', 'co2', 'maintenance', 'compatibility', 'health', 'purchase', 'mistakes', 'curiosities', 'sources'],
+    microfauna: ['summary', 'identity', 'culture', 'parameters', 'feeding', 'maintenance', 'use', 'problems', 'mistakes', 'sources'],
+    medicamento: ['summary', 'identity', 'uses', 'dose', 'compatibility', 'remove', 'risks', 'aftercare', 'inventory_logic', 'sources'],
+    sal: ['summary', 'identity', 'parameters', 'mixing', 'use', 'risks', 'sources'],
+    alimento: ['summary', 'identity', 'nutrition', 'use', 'compatibility', 'risks', 'acuarionexo_plan', 'sources'],
+    equipamiento: ['summary', 'identity', 'specs', 'installation', 'maintenance', 'compatibility', 'risks', 'sources'],
+    test: ['summary', 'identity', 'parameters', 'reading', 'range', 'use', 'risks', 'storage', 'sources'],
+    general: ['summary', 'identity', 'aquarium', 'parameters', 'feeding', 'compatibility', 'risks', 'sources']
+  };
+
+  const sectionAliases = {
+    summary: ['resumen_rapido', 'resumenRapido', 'resumen', 'summary', 'description', 'descripcion', 'descripcion_detallada'],
+    identity: ['identificacion', 'identification', 'identity', 'taxonomia', 'taxonomy'],
+    habitat: ['habitat_natural', 'habitatNatural', 'habitat', 'natural_habitat', 'origen', 'distribucion', 'distribution'],
+    aquarium: ['acuario_recomendado', 'acuarioRecomendado', 'aquarium', 'aquarium_recommended', 'recommended_aquarium', 'requisitos_acuario', 'tank', 'tank_size', 'minimum_tank_size', 'min_tank_size', 'acuario', 'tamano_acuario', 'tamano_minimo', 'litros_minimos', 'litros_recomendados', 'min_tank_liters', 'minimum_liters', 'ubicacion', 'aquarium_zone'],
+    parameters: ['parametros', 'parameters', 'parametros_agua', 'water_parameters', 'water', 'agua', 'rango_parametros', 'rangos', 'ranges'],
+    behavior: ['comportamiento', 'behavior', 'temperamento', 'temperament'],
+    feeding: ['alimentacion', 'feeding', 'diet', 'dieta'],
+    compatibility: ['compatibilidad', 'compatibility'],
+    reef_safe: ['reef_safe', 'reefSafe', 'reef', 'riesgo_reef'],
+    health: ['salud_enfermedades', 'saludYEnfermedades', 'salud', 'enfermedades', 'health', 'problemas'],
+    purchase: ['antes_comprar', 'antesDeComprar', 'before_buying', 'buying', 'purchase', 'compra'],
+    mistakes: ['errores_frecuentes', 'erroresFrecuentes', 'common_mistakes', 'mistakes', 'errores'],
+    curiosities: ['curiosidades', 'curiosities'],
+    sources: ['fuentes', 'sources', 'references_text', 'referencias'],
+    breeding: ['reproduccion', 'breeding'],
+    lighting: ['iluminacion', 'lighting', 'light', 'luz'],
+    flow: ['flujo', 'flow', 'corriente'],
+    placement: ['ubicacion', 'placement', 'colocacion'],
+    co2: ['co2', 'co2_nutrientes', 'nutrientes', 'nutrients'],
+    maintenance: ['mantenimiento', 'maintenance', 'poda'],
+    culture: ['cultivo', 'culture'],
+    use: ['uso', 'use', 'uso_recomendado', 'uso_acuario'],
+    problems: ['problemas', 'problems', 'problemas_frecuentes'],
+    uses: ['usos', 'uses', 'usos_indicados'],
+    dose: ['dosis', 'dose'],
+    remove: ['retirar', 'remove', 'retirar_durante_tratamiento'],
+    risks: ['riesgos', 'risks', 'riesgos_advertencias', 'advertencias'],
+    aftercare: ['despues_tratamiento', 'aftercare', 'seguimiento'],
+    inventory_logic: ['logica_acuarionexo', 'inventory_logic'],
+    mixing: ['preparacion', 'mixing'],
+    nutrition: ['composicion', 'nutrition'],
+    acuarionexo_plan: ['plan_acuarionexo', 'acuarionexo_plan'],
+    specs: ['especificaciones', 'specs', 'technical_specs'],
+    installation: ['instalacion', 'installation'],
+    reading: ['lectura', 'reading', 'interpretacion'],
+    range: ['rango', 'range', 'rangos'],
+    storage: ['conservacion', 'storage', 'almacenamiento']
+  };
 
   function normText(value) {
     return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
@@ -283,6 +361,35 @@
   function isImageUrl(value) {
     const text = String(value || '').trim();
     return /^https?:\/\//i.test(text) && (/\.(png|jpe?g|webp|gif|avif)(\?|#|$)/i.test(text) || /supabase|storage|images|photo|foto|cover|portada/i.test(text));
+  }
+
+  function firstImageFromKeys(root, keys) {
+    const wanted = keys.map(fieldKey);
+    const seen = new Set();
+    function scan(value) {
+      if (typeof value === 'string') return isImageUrl(value) ? value.trim() : '';
+      if (!value || typeof value !== 'object' || seen.has(value)) return '';
+      seen.add(value);
+      if (Array.isArray(value)) {
+        for (const item of value) {
+          const out = scan(item);
+          if (out) return out;
+        }
+        return '';
+      }
+      for (const [key, child] of Object.entries(value)) {
+        if (wanted.includes(fieldKey(key))) {
+          const out = scan(child);
+          if (out) return out;
+        }
+      }
+      for (const child of Object.values(value)) {
+        const out = scan(child);
+        if (out) return out;
+      }
+      return '';
+    }
+    return scan(root);
   }
 
   function humanLabel(key) {
@@ -322,7 +429,7 @@
   }
 
   function findImageDeep(root) {
-    const priority = ['photo_url', 'image_url', 'cover_url', 'portada_url', 'foto_url', 'imagen_url', 'url_foto', 'main_image', 'cover_image', 'featured_image', 'portada', 'foto', 'imagen', 'image', 'photo', 'cover', 'thumbnail', 'media', 'imagenes', 'images', 'photos', 'gallery', 'url', 'src'];
+    const priority = ['cover_photo_url', 'cover_image', 'cover_url', 'portada_url', 'coverPhoto', 'coverImage', 'main_image', 'featured_image', 'portada', 'cover', 'species_photo_url', 'species_photo', 'speciesPhoto', 'real_photo', 'photo_url', 'image_url', 'foto_url', 'imagen_url', 'url_foto', 'foto', 'imagen', 'image', 'photo', 'thumbnail', 'media', 'imagenes', 'images', 'photos', 'gallery', 'url', 'src'];
     const seen = new Set();
     function candidate(value) {
       if (typeof value === 'string' && isImageUrl(value)) return value.trim();
@@ -362,26 +469,36 @@
 
   function normalizeFicha(row) {
     const raw = row || {};
-    const nested = raw.ficha || raw.ficha_normalizada || raw.fichaNormalizada || raw.data || {};
-    const foto = findImageDeep(raw);
+    const fichaJson = raw.ficha_json || raw.fichaJson || raw.ficha || raw.ficha_normalizada || raw.fichaNormalizada || raw.data || {};
+    const sections = fichaJson.sections || raw.sections || raw.secciones || {};
+    const cover = raw.cover_photo_url || raw.cover_image || raw.cover_url ||
+      fichaJson.cover_photo_url || fichaJson.cover_image || fichaJson.coverPhoto || fichaJson.cover ||
+      firstImageFromKeys(raw, ['cover_photo_url', 'cover_image', 'cover_url', 'portada_url', 'coverPhoto', 'coverImage', 'portada', 'cover']);
+    const speciesPhoto = raw.species_photo_url || raw.species_photo || raw.photo_url ||
+      fichaJson.species_photo_url || fichaJson.species_photo || fichaJson.speciesPhoto || fichaJson.real_photo || fichaJson.photo_url ||
+      firstImageFromKeys(raw, ['species_photo_url', 'species_photo', 'speciesPhoto', 'real_photo', 'photo_url', 'image_url', 'foto_url']);
+    const foto = cover || speciesPhoto || findImageDeep(raw);
     return {
       id: raw.id || raw.uuid || raw.slug || '',
-      nombre: raw.title || raw.nombre || raw.nombre_comun || raw.common_name || nested.title || nested.nombre || raw.scientific_name || 'Ficha',
-      cientifico: raw.scientific_name || raw.nombre_cientifico || raw.scientific || nested.scientific_name || nested.nombre_cientifico || '',
-      categoria: nested.category || raw.category || raw.creator_category || raw.tipo || raw.tipo_ficha || raw.grupo || raw.seccion || 'general',
+      nombre: raw.title || raw.nombre || raw.nombre_comun || raw.common_name || fichaJson.title || fichaJson.common_name || fichaJson.commonName || fichaJson.nombre || raw.scientific_name || 'Ficha',
+      cientifico: raw.scientific_name || raw.nombre_cientifico || raw.scientific || fichaJson.scientific_name || fichaJson.scientificName || fichaJson.nombre_cientifico || '',
+      categoria: fichaJson.category || raw.source_category || raw.category || raw.creator_category || raw.tipo || raw.tipo_ficha || raw.grupo || raw.seccion || 'general',
       foto,
-      descripcion: raw.resumen_rapido || raw.resumen || raw.description || raw.descripcion || raw.descripcion_detallada || raw.notes || nested.resumen || nested.description || nested.descripcion || '',
+      cover,
+      speciesPhoto,
+      descripcion: raw.description || raw.resumen_rapido || raw.resumen || raw.descripcion || raw.descripcion_detallada || raw.notes || sections.summary || fichaJson.summary || fichaJson.description || fichaJson.descripcion || '',
       raw
     };
   }
 
   function fichaModulo(f) {
     const raw = f?.raw || {};
-    const category = normText(raw?.ficha?.category || raw?.ficha_normalizada?.category || raw?.creator_category || raw?.tipo_ficha || raw?.tipo || raw?.category || f?.categoria || '');
+    const fj = raw.ficha_json || raw.fichaJson || {};
+    const category = normText(fj.category || raw?.ficha?.category || raw?.ficha_normalizada?.category || raw?.source_category || raw?.creator_category || raw?.tipo_ficha || raw?.tipo || raw?.category || f?.categoria || '');
     const name = normText([f?.nombre, f?.cientifico].filter(Boolean).join(' '));
     const all = normText([f?.nombre, f?.cientifico, f?.descripcion, category].filter(Boolean).join(' '));
-    if (hasAny(category, ['pez_marino', 'marine_fish', 'fish_marine', 'marino'])) return 'pez_marino';
-    if (hasAny(category, ['pez_dulce', 'freshwater_fish', 'fish_freshwater', 'dulce'])) return 'pez_dulce';
+    if (hasAny(category, ['pez_marino', 'pezmarino', 'fish_marine', 'fishmarine', 'marine_fish', 'marinefish', 'marino'])) return 'pez_marino';
+    if (hasAny(category, ['pez_dulce', 'pezdulce', 'fish_freshwater', 'fishfreshwater', 'freshwater_fish', 'freshwaterfish', 'dulce'])) return 'pez_dulce';
     if (hasAny(category, ['invertebrado', 'invertebrate', 'crust', 'molus'])) return 'invertebrado';
     if (hasAny(category, ['planta', 'plant', 'alga'])) return 'planta';
     if (hasAny(category, ['medicamento', 'medicine', 'medic'])) return 'medicamento';
@@ -454,7 +571,8 @@
 
   function fichaField(f, keys) {
     const raw = f.raw || {};
-    const pools = [raw, raw.apartados, raw.bloques, raw.modulos, raw.modules, raw.sections, raw.secciones, raw.data, raw.ficha, raw.ficha_normalizada, raw.fichaNormalizada, raw.ficha_tecnica, raw.fichaTecnica, raw.ai_result, raw.ai, raw.generated, raw.internet].filter(Boolean);
+    const fj = raw.ficha_json || raw.fichaJson || {};
+    const pools = [fj.sections, raw.sections, raw.secciones, fj, raw, raw.apartados, raw.bloques, raw.modulos, raw.modules, raw.data, raw.ficha, raw.ficha_normalizada, raw.fichaNormalizada, raw.ficha_tecnica, raw.fichaTecnica, raw.ai_result, raw.ai, raw.generated, raw.internet].filter(Boolean);
     for (const pool of pools) {
       const out = fieldFromObject(pool, keys);
       if (out) return out;
@@ -468,13 +586,15 @@
 
   function derivedSectionText(f, title) {
     const raw = f.raw || {};
+    const fj = raw.ficha_json || raw.fichaJson || {};
+    const sections = fj.sections || raw.sections || {};
     if (title === 'Identificación') {
-      return [`Nombre comun: ${f.nombre}`, f.cientifico ? `Nombre cientifico: ${f.cientifico}` : '', `Apartado: ${fichaModuleLabel(f)}`, raw.care_level ? `Dificultad: ${raw.care_level}` : ''].filter(Boolean).join('\n');
+      return [`Nombre comun: ${f.nombre}`, f.cientifico ? `Nombre cientifico: ${f.cientifico}` : '', `Apartado: ${fichaModuleLabel(f)}`, raw.care_level || fj.care_level ? `Dificultad: ${raw.care_level || fj.care_level}` : ''].filter(Boolean).join('\n');
     }
     if (title === 'Acuario recomendado') {
-      const deep = findFirstDeep(raw, ['acuario_recomendado', 'aquarium_recommended', 'recommended_aquarium', 'requisitos_acuario', 'tank_size', 'minimum_tank_size', 'min_tank_liters', 'minimum_liters', 'litros_minimos', 'litros_recomendados', 'aquarium_zone', 'ubicacion']);
+      const deep = sections.aquarium || findFirstDeep(raw, ['acuario_recomendado', 'aquarium', 'aquarium_recommended', 'recommended_aquarium', 'requisitos_acuario', 'tank_size', 'minimum_tank_size', 'min_tank_liters', 'minimum_liters', 'litros_minimos', 'litros_recomendados', 'aquarium_zone', 'ubicacion']);
       if (deep) return deep;
-      return [raw.min_tank_liters ? `Litros minimos: ${raw.min_tank_liters} L` : '', raw.minimum_liters ? `Litros minimos: ${raw.minimum_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\n');
+      return [raw.min_tank_liters || fj.min_tank_liters ? `Litros minimos: ${raw.min_tank_liters || fj.min_tank_liters} L` : '', raw.minimum_liters || fj.minimum_liters ? `Litros minimos: ${raw.minimum_liters || fj.minimum_liters} L` : '', raw.aquarium_zone || fj.aquarium_zone ? `Zona: ${raw.aquarium_zone || fj.aquarium_zone}` : ''].filter(Boolean).join('\n');
     }
     if (title === 'Parámetros') return findFirstDeep(raw, ['parametros', 'parameters', 'water_parameters', 'rango_parametros', 'rangos', 'ranges']) || fieldValue(raw.parameters).trim();
     if (title === 'Comportamiento') return findFirstDeep(raw, ['comportamiento', 'behavior', 'temperamento', 'temperament']) || raw.temperament || '';
@@ -486,8 +606,12 @@
   }
 
   function fichaSectionsHtml(f) {
-    return librarySections.map(function ([title, keys], index) {
-      const text = fichaField(f, keys) || derivedSectionText(f, title);
+    const module = fichaModulo(f);
+    const keys = categorySections[module] || categorySections.general;
+    return keys.map(function (sectionKey, index) {
+      const title = sectionLabels[sectionKey] || humanLabel(sectionKey);
+      const aliases = [sectionKey].concat(sectionAliases[sectionKey] || []);
+      const text = fichaField(f, aliases) || derivedSectionText(f, title);
       const open = index < 3 ? ' open' : '';
       const body = text ? `<p>${esc(text).replaceAll('\n', '<br>')}</p>` : `<p class="small">Pendiente de completar en la ficha original.</p>`;
       return `<details class="library-detail-section"${open}><summary>${esc(title)}</summary>${body}</details>`;
@@ -504,8 +628,9 @@
 
   function fichaCard(f, index, inAq) {
     const resumen = fichaResumen(f);
+    const cover = f.cover || f.foto;
     return `<article class="library-card library-cover-card" onclick="${inAq ? 'verFichaAcuario' : 'verFichaBiblioteca'}(${index})">
-      ${f.foto ? `<img class="library-card-cover" src="${esc(f.foto)}" alt="${esc(f.nombre)}" loading="lazy">` : '<div class="library-card-cover library-no-photo">□</div>'}
+      ${cover ? `<img class="library-card-cover" src="${esc(cover)}" alt="${esc(f.nombre)}" loading="lazy">` : '<div class="library-card-cover library-no-photo">□</div>'}
       <div class="library-card-body">
         <small>${esc(fichaModuleLabel(f))}</small>
         <h3>${esc(f.nombre)}</h3>
@@ -569,9 +694,12 @@
   }
 
   function fichaDetail(f, backFn, addButton) {
+    const cover = f.cover || f.foto;
+    const speciesPhoto = f.speciesPhoto && f.speciesPhoto !== cover ? f.speciesPhoto : '';
     return `<section class="panel library-detail">
       <button onclick="${backFn}">← Volver</button>
-      ${f.foto ? `<img class="library-detail-photo" src="${esc(f.foto)}" alt="${esc(f.nombre)}">` : ''}
+      ${cover ? `<img class="library-detail-photo" src="${esc(cover)}" alt="${esc(f.nombre)}">` : ''}
+      ${speciesPhoto ? `<img class="library-detail-photo species-detail-photo" src="${esc(speciesPhoto)}" alt="Foto real de ${esc(f.nombre)}">` : ''}
       <p class="small">${esc(fichaModuleLabel(f))}</p>
       <h2>${esc(f.nombre)}</h2>
       ${f.cientifico ? `<p class="scientific">${esc(f.cientifico)}</p>` : ''}
@@ -650,7 +778,7 @@
         category: fichaModulo(f) === 'coral' ? 'coral' : fichaModulo(f) === 'invertebrado' ? 'invertebrate' : fichaModulo(f) === 'planta' ? 'plant' : 'other',
         quantity: 1,
         status: 'active',
-        photo_url: f.foto || null,
+        photo_url: f.speciesPhoto || f.cover || f.foto || null,
         notes: f.descripcion || null
       };
       const { error } = await supabase.from('animals').insert(row);
