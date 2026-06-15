@@ -10,7 +10,8 @@
     section: 'inicio',
     viewToken: 0,
     libraryRows: [],
-    libraryView: []
+    libraryView: [],
+    libraryModule: null
   };
 
   window.s = supabase;
@@ -240,36 +241,184 @@
     return panelAcuario();
   };
 
+  const libraryModules = [
+    { key: 'pez_marino', label: 'Peces marinos', desc: 'Peces de arrecife, marinos y compatibilidad.', icon: '🐠' },
+    { key: 'pez_dulce', label: 'Peces de agua dulce', desc: 'Especies y variedades de dulce.', icon: '🐟' },
+    { key: 'coral', label: 'Corales', desc: 'SPS, LPS, blandos, luz, flujo y ubicacion.', icon: '🪸' },
+    { key: 'invertebrado', label: 'Invertebrados', desc: 'Gambas, caracoles, cangrejos, estrellas y erizos.', icon: '🦐' },
+    { key: 'planta', label: 'Plantas y algas', desc: 'Plantas de dulce, macroalgas y algas utiles.', icon: '🌿' },
+    { key: 'microfauna', label: 'Microfauna', desc: 'Copepodos, rotiferos, artemia y fitoplancton.', icon: '∞' },
+    { key: 'medicamento', label: 'Medicamentos', desc: 'Tratamientos, cuarentena, dosis y observaciones.', icon: '💊' },
+    { key: 'sal', label: 'Sales', desc: 'Sales, mezclas y parametros objetivo.', icon: '🧂' },
+    { key: 'test', label: 'Tests', desc: 'Tests, lectura, rango y mantenimiento.', icon: '🧪' },
+    { key: 'alimento', label: 'Alimentos', desc: 'Alimentacion, dosis, especies y conservacion.', icon: '🍽️' },
+    { key: 'equipamiento', label: 'Equipamiento', desc: 'Bombas, luces, filtros, skimmer y material tecnico.', icon: '⚙️' }
+  ];
+
+  const librarySections = [
+    ['Resumen rápido', ['resumen_rapido', 'resumenRapido', 'resumen', 'summary', 'description', 'descripcion', 'descripcion_detallada']],
+    ['Identificación', ['identificacion', 'identification', 'taxonomia', 'taxonomy']],
+    ['Hábitat natural', ['habitat_natural', 'habitatNatural', 'habitat', 'natural_habitat', 'origen', 'distribucion', 'distribution']],
+    ['Acuario recomendado', ['acuario_recomendado', 'acuarioRecomendado', 'aquarium_recommended', 'tank', 'acuario', 'tamano_acuario', 'litros_minimos', 'min_tank_liters', 'ubicacion']],
+    ['Parámetros', ['parametros', 'parameters', 'parametros_agua', 'water_parameters', 'water', 'agua']],
+    ['Comportamiento', ['comportamiento', 'behavior', 'temperamento', 'temperament']],
+    ['Alimentación', ['alimentacion', 'feeding', 'diet', 'dieta']],
+    ['Compatibilidad', ['compatibilidad', 'compatibility']],
+    ['Reef Safe', ['reef_safe', 'reefSafe', 'reef']],
+    ['Salud y enfermedades', ['salud_enfermedades', 'saludYEnfermedades', 'salud', 'enfermedades', 'health']],
+    ['Antes de comprar', ['antes_comprar', 'antesDeComprar', 'before_buying', 'compra']],
+    ['Errores frecuentes', ['errores_frecuentes', 'erroresFrecuentes', 'common_mistakes', 'errores']],
+    ['Curiosidades', ['curiosidades', 'curiosities']],
+    ['Fuentes', ['fuentes', 'sources', 'references_text', 'referencias']]
+  ];
+
+  function normText(value) {
+    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function hasAny(text, words) {
+    return words.some(word => text.includes(word));
+  }
+
   function normalizeFicha(row) {
     const raw = row || {};
+    const nested = raw.ficha || raw.ficha_normalizada || raw.fichaNormalizada || raw.data || {};
     return {
       id: raw.id || raw.uuid || raw.slug || '',
-      nombre: raw.title || raw.nombre || raw.nombre_comun || raw.common_name || raw.scientific_name || 'Ficha',
-      cientifico: raw.scientific_name || raw.nombre_cientifico || raw.scientific || '',
-      categoria: raw.category || raw.creator_category || raw.tipo || raw.tipo_ficha || raw.grupo || 'general',
-      foto: raw.photo_url || raw.image_url || raw.foto_url || raw.foto || raw.imagen || '',
-      descripcion: raw.description || raw.descripcion || raw.resumen || raw.resumen_rapido || raw.notes || '',
+      nombre: raw.title || raw.nombre || raw.nombre_comun || raw.common_name || nested.title || nested.nombre || raw.scientific_name || 'Ficha',
+      cientifico: raw.scientific_name || raw.nombre_cientifico || raw.scientific || nested.scientific_name || nested.nombre_cientifico || '',
+      categoria: nested.category || raw.category || raw.creator_category || raw.tipo || raw.tipo_ficha || raw.grupo || raw.seccion || 'general',
+      foto: raw.photo_url || raw.image_url || raw.cover_url || raw.foto_url || raw.foto || raw.imagen || raw.url_foto || nested.photo_url || nested.image_url || nested.foto || '',
+      descripcion: raw.resumen_rapido || raw.resumen || raw.description || raw.descripcion || raw.descripcion_detallada || raw.notes || nested.resumen || nested.description || nested.descripcion || '',
       raw
     };
   }
 
-  function fichaCategory(f) {
-    const text = `${f.categoria} ${f.nombre} ${f.descripcion}`.toLowerCase();
-    if (text.includes('coral')) return 'Coral';
-    if (text.includes('planta') || text.includes('alga')) return 'Planta/Alga';
-    if (text.includes('inverte')) return 'Invertebrado';
-    if (text.includes('sal') || text.includes('test') || text.includes('alimento')) return 'Producto';
-    return 'Ficha';
+  function fichaModulo(f) {
+    const raw = f?.raw || {};
+    const category = normText(raw?.ficha?.category || raw?.ficha_normalizada?.category || raw?.creator_category || raw?.tipo_ficha || raw?.tipo || raw?.category || f?.categoria || '');
+    const name = normText([f?.nombre, f?.cientifico].filter(Boolean).join(' '));
+    const all = normText([f?.nombre, f?.cientifico, f?.descripcion, category].filter(Boolean).join(' '));
+    if (hasAny(category, ['pez_marino', 'marine_fish', 'fish_marine', 'marino'])) return 'pez_marino';
+    if (hasAny(category, ['pez_dulce', 'freshwater_fish', 'fish_freshwater', 'dulce'])) return 'pez_dulce';
+    if (hasAny(category, ['invertebrado', 'invertebrate', 'crust', 'molus'])) return 'invertebrado';
+    if (hasAny(category, ['planta', 'plant', 'alga'])) return 'planta';
+    if (hasAny(category, ['medicamento', 'medicine', 'medic'])) return 'medicamento';
+    if (hasAny(category, ['equipamiento', 'equipment', 'equipo', 'equip'])) return 'equipamiento';
+    if (hasAny(category, ['sal', 'salt'])) return 'sal';
+    if (hasAny(category, ['test'])) return 'test';
+    if (hasAny(category, ['alimento', 'food', 'feeding'])) return 'alimento';
+    if (hasAny(category, ['microfauna'])) return 'microfauna';
+    if (hasAny(category, ['coral'])) return 'coral';
+    if (hasAny(name, ['anubia', 'cryptocoryne', 'echinodorus', 'bucephalandra', 'vallisneria', 'hygrophila', 'rotala', 'limnophila', 'microsorum', 'musgo', 'planta', 'macroalga', 'alga'])) return 'planta';
+    if (hasAny(name, ['camaron', 'gamba', 'shrimp', 'caracol', 'snail', 'cangrejo', 'crab', 'erizo', 'urchin', 'estrella', 'starfish', 'lysmata', 'caridina', 'neocaridina', 'turbo', 'trochus', 'nassarius'])) return 'invertebrado';
+    if (hasAny(name, ['coral', 'acropora', 'euphyllia', 'zoanthus', 'montipora', 'sarcophyton', 'palythoa', 'duncanopsammia'])) return 'coral';
+    if (all.includes('dulce') || all.includes('freshwater')) return 'pez_dulce';
+    if (all.includes('marin') || all.includes('arrecife') || all.includes('reef') || all.includes('pez') || all.includes('fish')) return 'pez_marino';
+    return 'general';
+  }
+
+  function fichaModuleLabel(f) {
+    const key = typeof f === 'string' ? f : fichaModulo(f);
+    return libraryModules.find(m => m.key === key)?.label || 'Ficha';
+  }
+
+  function fieldKey(value) {
+    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '');
+  }
+
+  function fieldValue(value) {
+    if (value == null || value === '') return '';
+    if (Array.isArray(value)) return value.map(fieldValue).filter(Boolean).join('\n');
+    if (typeof value === 'object') {
+      return fieldValue(value.texto || value.text || value.contenido || value.content || value.valor || value.value || value.descripcion || value.description || '');
+    }
+    return String(value);
+  }
+
+  function fieldFromObject(obj, keys, seen = new Set()) {
+    if (!obj || typeof obj !== 'object' || seen.has(obj)) return '';
+    seen.add(obj);
+    const wanted = keys.map(fieldKey);
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        if (!item || typeof item !== 'object') continue;
+        const title = item.titulo || item.title || item.nombre || item.name || item.key || item.id || item.label || item.apartado || item.modulo || item.seccion || item.heading || item.campo;
+        if (wanted.includes(fieldKey(title))) {
+          const out = fieldValue(item).trim();
+          if (out) return out;
+        }
+        const nested = fieldFromObject(item, keys, seen);
+        if (nested) return nested;
+      }
+      return '';
+    }
+    for (const [k, v] of Object.entries(obj)) {
+      if (wanted.includes(fieldKey(k))) {
+        const out = fieldValue(v).trim();
+        if (out) return out;
+      }
+      const nested = fieldFromObject(v, keys, seen);
+      if (nested) return nested;
+    }
+    return '';
+  }
+
+  function fichaField(f, keys) {
+    const raw = f.raw || {};
+    const pools = [raw, raw.apartados, raw.bloques, raw.modulos, raw.modules, raw.sections, raw.secciones, raw.data, raw.ficha, raw.ficha_normalizada, raw.fichaNormalizada, raw.ficha_tecnica, raw.fichaTecnica, raw.ai_result, raw.ai, raw.generated, raw.internet].filter(Boolean);
+    for (const pool of pools) {
+      const out = fieldFromObject(pool, keys);
+      if (out) return out;
+    }
+    return '';
+  }
+
+  function fichaResumen(f) {
+    return fichaField(f, ['resumen_rapido', 'resumenRapido', 'resumen', 'summary', 'description', 'descripcion', 'descripcion_detallada']) || f.descripcion || '';
+  }
+
+  function derivedSectionText(f, title) {
+    const raw = f.raw || {};
+    if (title === 'Identificación') {
+      return [`Nombre comun: ${f.nombre}`, f.cientifico ? `Nombre cientifico: ${f.cientifico}` : '', `Apartado: ${fichaModuleLabel(f)}`, raw.care_level ? `Dificultad: ${raw.care_level}` : ''].filter(Boolean).join('\n');
+    }
+    if (title === 'Acuario recomendado') return [raw.min_tank_liters ? `Litros minimos: ${raw.min_tank_liters} L` : '', raw.aquarium_zone ? `Zona: ${raw.aquarium_zone}` : ''].filter(Boolean).join('\n');
+    if (title === 'Parámetros') return fieldValue(raw.parameters).trim();
+    if (title === 'Comportamiento') return raw.temperament || '';
+    if (title === 'Alimentación') return raw.feeding || raw.diet || '';
+    if (title === 'Compatibilidad') return raw.compatibility || '';
+    if (title === 'Reef Safe') return raw.reef_safe != null ? String(raw.reef_safe) : '';
+    if (title === 'Fuentes') return [raw.references_text, raw.source_url ? `Fuente interna: ${raw.source_url}` : ''].filter(Boolean).join('\n');
+    return '';
+  }
+
+  function fichaSectionsHtml(f) {
+    return librarySections.map(function ([title, keys], index) {
+      const text = fichaField(f, keys) || derivedSectionText(f, title);
+      const open = index < 3 ? ' open' : '';
+      const body = text ? `<p>${esc(text).replaceAll('\n', '<br>')}</p>` : `<p class="small">Pendiente de completar en la ficha original.</p>`;
+      return `<details class="library-detail-section"${open}><summary>${esc(title)}</summary>${body}</details>`;
+    }).join('');
+  }
+
+  function moduleButtons(rows, handler) {
+    const html = libraryModules.map(function (m) {
+      const count = rows.filter(f => fichaModulo(f) === m.key).length;
+      return `<button class="${state.libraryModule === m.key ? 'active' : ''}" onclick="${handler}('${esc(m.key)}')"><b>${esc(m.icon)} ${count}</b><span>${esc(m.label)}</span><small>${esc(m.desc)}</small></button>`;
+    }).join('');
+    return `<div class="library-section-title"><h3>Apartados</h3><p class="small">Entra por categoria para no tener fichas sueltas.</p></div><div class="library-modules">${html}</div>`;
   }
 
   function fichaCard(f, index, inAq) {
-    return `<article class="library-card" onclick="${inAq ? 'verFichaAcuario' : 'verFichaBiblioteca'}(${index})">
-      ${f.foto ? `<img src="${esc(f.foto)}" alt="${esc(f.nombre)}" loading="lazy">` : '<div class="library-no-photo">□</div>'}
+    const resumen = fichaResumen(f);
+    return `<article class="library-card library-cover-card" onclick="${inAq ? 'verFichaAcuario' : 'verFichaBiblioteca'}(${index})">
+      ${f.foto ? `<img class="library-card-cover" src="${esc(f.foto)}" alt="${esc(f.nombre)}" loading="lazy">` : '<div class="library-card-cover library-no-photo">□</div>'}
       <div class="library-card-body">
-        <small>${esc(fichaCategory(f))}</small>
+        <small>${esc(fichaModuleLabel(f))}</small>
         <h3>${esc(f.nombre)}</h3>
         ${f.cientifico ? `<p class="scientific">${esc(f.cientifico)}</p>` : ''}
-        ${f.descripcion ? `<p>${esc(f.descripcion).slice(0, 180)}${f.descripcion.length > 180 ? '…' : ''}</p>` : ''}
+        ${resumen ? `<p>${esc(resumen).slice(0, 180)}${resumen.length > 180 ? '…' : ''}</p>` : ''}
       </div>
     </article>`;
   }
@@ -294,7 +443,7 @@
       const rows = await loadLibrary('');
       if (!isCurrent(t)) return;
       state.libraryRows = rows;
-      state.libraryView = rows;
+      state.libraryModule = null;
       renderLibrary('libraryList', rows, false);
     } catch (e) {
       if (isCurrent(t) && byId('libraryList')) byId('libraryList').innerHTML = msg(e.message, 'error');
@@ -309,7 +458,7 @@
       const rows = await loadLibrary(val('librarySearch'));
       if (!isCurrent(t)) return;
       state.libraryRows = rows;
-      state.libraryView = rows;
+      state.libraryModule = null;
       renderLibrary('libraryList', rows, false);
     } catch (e) {
       if (box) box.innerHTML = msg(e.message, 'error');
@@ -319,22 +468,30 @@
   function renderLibrary(containerId, rows, inAq) {
     const box = byId(containerId);
     if (!box) return;
+    const filtered = state.libraryModule ? rows.filter(f => fichaModulo(f) === state.libraryModule) : rows;
+    const title = state.libraryModule ? fichaModuleLabel(state.libraryModule) : 'Fichas disponibles';
     box.innerHTML = rows.length
-      ? `<div class="library-section-title"><h3>${rows.length} fichas</h3></div><div class="library-grid">${rows.map((f, i) => fichaCard(f, i, inAq)).join('')}</div>`
+      ? `${moduleButtons(rows, inAq ? 'filtrarFichasAcuarioModulo' : 'filtrarBibliotecaModulo')}<div class="library-section-title"><h3>${esc(title)}</h3><p class="small">${filtered.length} fichas.</p></div><div class="library-grid">${filtered.map((f, i) => fichaCard(f, i, inAq)).join('')}</div>`
       : msg('No encontré fichas con esa búsqueda.');
+    state.libraryView = filtered;
   }
 
   function fichaDetail(f, backFn, addButton) {
     return `<section class="panel library-detail">
       <button onclick="${backFn}">← Volver</button>
       ${f.foto ? `<img class="library-detail-photo" src="${esc(f.foto)}" alt="${esc(f.nombre)}">` : ''}
-      <p class="small">${esc(fichaCategory(f))}</p>
+      <p class="small">${esc(fichaModuleLabel(f))}</p>
       <h2>${esc(f.nombre)}</h2>
       ${f.cientifico ? `<p class="scientific">${esc(f.cientifico)}</p>` : ''}
-      ${f.descripcion ? `<p>${esc(f.descripcion)}</p>` : '<p class="small">Ficha sin descripción completa.</p>'}
       ${addButton || ''}
+      ${fichaSectionsHtml(f)}
     </section>`;
   }
+
+  window.filtrarBibliotecaModulo = function (module) {
+    state.libraryModule = state.libraryModule === module ? null : module;
+    renderLibrary('libraryList', state.libraryRows, false);
+  };
 
   window.verFichaBiblioteca = function (index) {
     const f = state.libraryView[index];
@@ -353,7 +510,7 @@
       const rows = await loadLibrary('');
       if (!isCurrent(t)) return;
       state.libraryRows = rows;
-      state.libraryView = rows;
+      state.libraryModule = null;
       renderLibrary('aqFichaList', rows, true);
     } catch (e) {
       if (isCurrent(t) && byId('aqFichaList')) byId('aqFichaList').innerHTML = msg(e.message, 'error');
@@ -369,11 +526,16 @@
       const rows = await loadLibrary(val('aqFichaSearch'));
       if (!isCurrent(t)) return;
       state.libraryRows = rows;
-      state.libraryView = rows;
+      state.libraryModule = null;
       renderLibrary('aqFichaList', rows, true);
     } catch (e) {
       if (box) box.innerHTML = msg(e.message, 'error');
     }
+  };
+
+  window.filtrarFichasAcuarioModulo = function (module) {
+    state.libraryModule = state.libraryModule === module ? null : module;
+    renderLibrary('aqFichaList', state.libraryRows, true);
   };
 
   window.verFichaAcuario = function (index) {
@@ -393,7 +555,7 @@
         aquarium_id: aq.id,
         common_name: f.nombre,
         scientific_name: f.cientifico || f.nombre,
-        category: fichaCategory(f).toLowerCase().includes('coral') ? 'coral' : 'other',
+        category: fichaModulo(f) === 'coral' ? 'coral' : fichaModulo(f) === 'invertebrado' ? 'invertebrate' : fichaModulo(f) === 'planta' ? 'plant' : 'other',
         quantity: 1,
         status: 'active',
         photo_url: f.foto || null,
@@ -734,7 +896,7 @@
     }
   }
 
-  byId('version').textContent = (config.APP_VERSION || 'AcuarioNexo') + ' · clean core';
+  byId('version').textContent = config.APP_VERSION || 'AcuarioNexo';
   byId('refreshAppBtn')?.addEventListener('click', function () {
     if (window.AcuarioNexoUpdate?.forceReload) window.AcuarioNexoUpdate.forceReload();
     else location.reload();
