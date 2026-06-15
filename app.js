@@ -83,6 +83,7 @@
       ${tabButton('resumen', 'Resumen')}
       ${tabButton('fichas', 'Fichas')}
       ${tabButton('animales', 'Animales')}
+      ${tabButton('mapa', 'Mapa IA')}
       ${tabButton('fotos', 'Fotos')}
       ${tabButton('parametros', 'Parámetros')}
       ${tabButton('tareas', 'Tareas')}
@@ -97,6 +98,73 @@
 
   function photoUrl(row) {
     return row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
+  }
+
+  const MAP_PREFIX = 'ACUARIONEXO_MAP_V2:';
+
+  function mapKey(aq) {
+    return `acuarionexo-map-v2-${aq?.id || 'local'}`;
+  }
+
+  function emptyMap(aq) {
+    return {
+      version: 2,
+      photo_url: aq?.map_photo_url || aq?.__cover_url || aq?.cover_url || aq?.photo_url || aq?.image_url || '',
+      markers: [],
+      selected_id: '',
+      updated_at: new Date().toISOString()
+    };
+  }
+
+  function normalizeMap(raw, aq) {
+    const base = emptyMap(aq);
+    if (!raw || typeof raw !== 'object') return base;
+    const markers = Array.isArray(raw.markers) ? raw.markers : [];
+    return {
+      ...base,
+      ...raw,
+      photo_url: raw.photo_url || base.photo_url,
+      markers: markers.map(function (m) {
+        return {
+          id: String(m.id || `mk-${Date.now()}`),
+          label: String(m.label || 'Punto'),
+          type: String(m.type || 'coral'),
+          note: String(m.note || ''),
+          x: Math.max(0, Math.min(100, Number(m.x) || 50)),
+          y: Math.max(0, Math.min(100, Number(m.y) || 50))
+        };
+      })
+    };
+  }
+
+  function readMap(aq) {
+    try {
+      const local = localStorage.getItem(mapKey(aq));
+      if (local) return normalizeMap(JSON.parse(local), aq);
+    } catch (_) {}
+    try {
+      const text = String(aq?.ai_summary || '');
+      if (text.startsWith(MAP_PREFIX)) return normalizeMap(JSON.parse(text.slice(MAP_PREFIX.length)), aq);
+    } catch (_) {}
+    return emptyMap(aq);
+  }
+
+  function writeMapLocal(aq, map) {
+    const clean = normalizeMap({ ...map, updated_at: new Date().toISOString() }, aq);
+    try { localStorage.setItem(mapKey(aq), JSON.stringify(clean)); } catch (_) {}
+    window.__aqMap = clean;
+    return clean;
+  }
+
+  async function uploadAquariumImage(file, folder) {
+    const aq = currentAquarium();
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const path = `${folder}/${state.user.id}/${aq.id}/${Date.now()}.${ext}`;
+    for (const bucket of ['aquarium-photos', 'photos', 'animal-photos']) {
+      const upload = await supabase.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
+      if (!upload.error) return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+    }
+    throw new Error('No se pudo subir la foto. Revisa Storage.');
   }
 
   async function loadAquariums() {
@@ -220,6 +288,7 @@
       <div class="quick-actions">
         <button onclick="openAqSection('fichas')"><span>□</span>Fichas</button>
         <button onclick="openAqSection('animales')"><span>🐟</span>Animales</button>
+        <button onclick="openAqSection('mapa')"><span>⌖</span>Mapa IA</button>
         <button onclick="openAqSection('fotos')"><span>📷</span>Fotos</button>
         <button onclick="openAqSection('parametros')"><span>🧪</span>Parámetros</button>
         <button onclick="openAqSection('tareas')"><span>♢</span>Tareas</button>
@@ -235,6 +304,7 @@
     if (section === 'resumen') return panelAcuario();
     if (section === 'fichas') return fichasAcuario();
     if (section === 'animales') return animales();
+    if (section === 'mapa') return mapaIA();
     if (section === 'fotos') return fotos();
     if (section === 'parametros') return parametros();
     if (section === 'tareas') return tareasAcuario();
@@ -842,6 +912,210 @@
     }
   };
 
+  function markerTypeLabel(type) {
+    return {
+      coral: 'Coral',
+      plant: 'Planta',
+      rock: 'Roca',
+      fish: 'Pez',
+      equipment: 'Equipo',
+      other: 'Otro'
+    }[type] || 'Punto';
+  }
+
+  function mapMarkerHtml(marker) {
+    const selected = window.__aqMap?.selected_id === marker.id ? ' selected' : '';
+    return `<button class="map-pin ${esc(marker.type)}${selected}" style="left:${esc(marker.x)}%;top:${esc(marker.y)}%" onclick="selectMapMarker(event,'${esc(marker.id)}')" title="${esc(marker.label)}">
+      <span>${esc(marker.label.slice(0, 2).toUpperCase())}</span>
+    </button>`;
+  }
+
+  function mapListHtml(map) {
+    if (!map.markers.length) return '<p class="small">Sin puntos todavía. Escribe un nombre y toca la foto para colocar el primer coral, planta o roca.</p>';
+    return map.markers.map(function (marker) {
+      const active = map.selected_id === marker.id ? ' active' : '';
+      return `<button class="map-list-item${active}" onclick="selectMapMarker(event,'${esc(marker.id)}')">
+        <b>${esc(marker.label)}</b><span>${esc(markerTypeLabel(marker.type))}</span>
+      </button>`;
+    }).join('');
+  }
+
+  function selectedMapMarker(map) {
+    return map.markers.find(m => m.id === map.selected_id) || map.markers[0] || null;
+  }
+
+  function mapEditorHtml(map) {
+    const selected = selectedMapMarker(map);
+    return `<section class="panel map-side">
+      <h3>Punto seleccionado</h3>
+      <label>Nombre</label><input id="mapMarkerLabel" value="${esc(selected?.label || '')}" placeholder="Ej. Euphyllia, Zoanthus, roca alta...">
+      <label>Tipo</label><select id="mapMarkerType">
+        <option value="coral" ${selected?.type === 'coral' ? 'selected' : ''}>Coral</option>
+        <option value="plant" ${selected?.type === 'plant' ? 'selected' : ''}>Planta</option>
+        <option value="rock" ${selected?.type === 'rock' ? 'selected' : ''}>Roca / zona</option>
+        <option value="fish" ${selected?.type === 'fish' ? 'selected' : ''}>Pez</option>
+        <option value="equipment" ${selected?.type === 'equipment' ? 'selected' : ''}>Equipo</option>
+        <option value="other" ${selected?.type === 'other' ? 'selected' : ''}>Otro</option>
+      </select>
+      <label>Nota IA</label><textarea id="mapMarkerNote" placeholder="Luz media, flujo suave, dejar separación...">${esc(selected?.note || '')}</textarea>
+      <div class="map-actions">
+        <button class="primary" onclick="updateMapMarker()">Actualizar punto</button>
+        <button onclick="newMapMarker()">Nuevo punto</button>
+        <button onclick="deleteMapMarker()">Borrar punto</button>
+      </div>
+      <h3>Colocados</h3>
+      <div class="map-list">${mapListHtml(map)}</div>
+    </section>`;
+  }
+
+  function mapStageHtml(map) {
+    if (!map.photo_url) {
+      return `<div class="map-empty-photo">
+        <b>Falta foto del acuario</b>
+        <p class="small">Sube una foto frontal del acuario para colocar encima corales, plantas, rocas o zonas.</p>
+      </div>`;
+    }
+    return `<div id="mapStage" class="map-photo-stage" onclick="placeMapMarker(event)">
+      <img src="${esc(map.photo_url)}" alt="Foto del acuario para mapa IA">
+      ${map.markers.map(mapMarkerHtml).join('')}
+    </div>`;
+  }
+
+  function renderMapIA(map) {
+    const aq = currentAquarium();
+    window.__aqMap = normalizeMap(map || window.__aqMap || readMap(aq), aq);
+    const clean = window.__aqMap;
+    render(aqHeader('mapa') + `<section class="panel map-panel">
+      <div class="panel-head"><div><h2>Mapa IA</h2><p class="small">Foto real del acuario con puntos de colocación.</p></div><button onclick="saveMapIA()">Guardar</button></div>
+      ${mapStageHtml(clean)}
+      <label>Foto base del acuario</label><input id="mapPhotoFile" type="file" accept="image/*" onchange="previewMapPhoto()">
+      <div id="mapPhotoPreview"></div>
+      <button class="primary" onclick="saveMapPhoto()">Usar esta foto en el mapa</button>
+      <div id="x"></div>
+    </section>${mapEditorHtml(clean)}`, 'acuarios');
+  }
+
+  function mapaIA() {
+    const aq = currentAquarium();
+    if (!aq) return dashboard();
+    renderMapIA(readMap(aq));
+  }
+  window.mapaIA = mapaIA;
+
+  window.previewMapPhoto = function () {
+    const file = byId('mapPhotoFile')?.files?.[0];
+    if (!file || !byId('mapPhotoPreview')) return;
+    const url = URL.createObjectURL(file);
+    byId('mapPhotoPreview').innerHTML = `<div class="photo-preview"><img src="${url}" alt="Foto base del mapa"></div>`;
+  };
+
+  window.saveMapPhoto = async function () {
+    try {
+      const aq = currentAquarium();
+      const file = byId('mapPhotoFile')?.files?.[0];
+      if (!file) throw new Error('Selecciona una foto del acuario.');
+      byId('x').innerHTML = msg('Subiendo foto del mapa...');
+      const publicUrl = await uploadAquariumImage(file, 'map');
+      const row = { user_id: state.user.id, aquarium_id: aq.id, title: 'Mapa IA acuario', image_url: publicUrl, photo_url: publicUrl };
+      const inserted = await supabase.from('aquarium_photos').insert(row);
+      if (inserted.error) throw inserted.error;
+      aq.__cover_url = aq.__cover_url || publicUrl;
+      const map = writeMapLocal(aq, { ...(window.__aqMap || readMap(aq)), photo_url: publicUrl });
+      renderMapIA(map);
+    } catch (e) {
+      if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+    }
+  };
+
+  window.placeMapMarker = function (event) {
+    const aq = currentAquarium();
+    const stage = byId('mapStage');
+    if (!stage || !aq) return;
+    const rect = stage.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const map = window.__aqMap || readMap(aq);
+    const label = val('mapMarkerLabel') || `Punto ${map.markers.length + 1}`;
+    const type = val('mapMarkerType') || 'coral';
+    const note = val('mapMarkerNote') || '';
+    const selected = selectedMapMarker(map);
+    if (selected && map.selected_id) {
+      selected.x = x;
+      selected.y = y;
+      selected.label = label;
+      selected.type = type;
+      selected.note = note;
+      writeMapLocal(aq, map);
+      renderMapIA(map);
+      return;
+    }
+    const marker = { id: `mk-${Date.now()}`, label, type, note, x, y };
+    map.markers.push(marker);
+    map.selected_id = marker.id;
+    writeMapLocal(aq, map);
+    renderMapIA(map);
+  };
+
+  window.selectMapMarker = function (event, id) {
+    if (event?.stopPropagation) event.stopPropagation();
+    const aq = currentAquarium();
+    const map = window.__aqMap || readMap(aq);
+    map.selected_id = id;
+    writeMapLocal(aq, map);
+    renderMapIA(map);
+  };
+
+  window.updateMapMarker = function () {
+    const aq = currentAquarium();
+    const map = window.__aqMap || readMap(aq);
+    let marker = selectedMapMarker(map);
+    if (!marker) {
+      marker = { id: `mk-${Date.now()}`, x: 50, y: 50, label: val('mapMarkerLabel') || 'Punto', type: val('mapMarkerType') || 'coral', note: val('mapMarkerNote') || '' };
+      map.markers.push(marker);
+      map.selected_id = marker.id;
+    } else {
+      marker.label = val('mapMarkerLabel') || marker.label;
+      marker.type = val('mapMarkerType') || marker.type;
+      marker.note = val('mapMarkerNote') || '';
+    }
+    writeMapLocal(aq, map);
+    renderMapIA(map);
+  };
+
+  window.newMapMarker = function () {
+    const aq = currentAquarium();
+    const map = window.__aqMap || readMap(aq);
+    map.selected_id = '';
+    writeMapLocal(aq, map);
+    renderMapIA(map);
+  };
+
+  window.deleteMapMarker = function () {
+    const aq = currentAquarium();
+    const map = window.__aqMap || readMap(aq);
+    map.markers = map.markers.filter(m => m.id !== map.selected_id);
+    map.selected_id = map.markers[0]?.id || '';
+    writeMapLocal(aq, map);
+    renderMapIA(map);
+  };
+
+  window.saveMapIA = async function () {
+    const aq = currentAquarium();
+    const map = writeMapLocal(aq, window.__aqMap || readMap(aq));
+    try {
+      const payload = MAP_PREFIX + JSON.stringify(map);
+      const result = await supabase.from('aquariums').update({ ai_summary: payload }).eq('id', aq.id);
+      if (result.error) throw result.error;
+      aq.ai_summary = payload;
+      renderMapIA(map);
+      const x = byId('x');
+      if (x) x.innerHTML = msg('Mapa IA guardado.', 'success');
+    } catch (e) {
+      const x = byId('x');
+      if (x) x.innerHTML = msg('Mapa guardado en este dispositivo. Supabase no aceptó el guardado remoto: ' + e.message, 'notice');
+    }
+  };
+
   function photoCard(p) {
     const url = photoUrl(p);
     return `<div class="item gallery-card">
@@ -889,17 +1163,7 @@
       const file = byId('photoFile')?.files?.[0];
       if (!file) throw new Error('Selecciona una imagen.');
       byId('x').innerHTML = msg('Subiendo foto...');
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const path = `gallery/${state.user.id}/${aq.id}/${Date.now()}.${ext}`;
-      let publicUrl = '';
-      for (const bucket of ['aquarium-photos', 'photos', 'animal-photos']) {
-        const upload = await supabase.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
-        if (!upload.error) {
-          publicUrl = supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-          break;
-        }
-      }
-      if (!publicUrl) throw new Error('No se pudo subir la foto. Revisa Storage.');
+      const publicUrl = await uploadAquariumImage(file, 'gallery');
       const row = { user_id: state.user.id, aquarium_id: aq.id, title: val('photoTitle') || 'Foto de acuario', image_url: publicUrl, photo_url: publicUrl };
       const { error } = await supabase.from('aquarium_photos').insert(row);
       if (error) throw error;
