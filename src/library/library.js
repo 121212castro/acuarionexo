@@ -394,11 +394,21 @@ function fichaCard(f, index, inAq) {
   </article>`;
 }
 
+function withTimeout(promise, ms, label) {
+  let timer;
+  const timeout = new Promise(function (_resolve, reject) {
+    timer = setTimeout(function () {
+      reject(new Error(`${label} tarda demasiado. Revisa conexion o permisos de Supabase.`));
+    }, ms);
+  });
+  return Promise.race([promise, timeout]).finally(function () { clearTimeout(timer); });
+}
+
 async function loadLibrary(search = '') {
   const clean = search.replace(/[%,]/g, ' ').trim();
   let query = supabase.from('library_entries').select('*').limit(clean ? 120 : 80);
   if (clean) query = query.or(`title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%`);
-  const { data, error } = await query;
+  const { data, error } = await withTimeout(query, 10000, 'La Biblioteca');
   if (error) throw error;
   return (data || []).map(normalizeFicha).filter(f => f.nombre && (f.cientifico || f.descripcion || f.foto));
 }
@@ -417,7 +427,7 @@ window.biblioteca = async function () {
     state.libraryModule = null;
     renderLibrary('libraryList', rows, false);
   } catch (e) {
-    if (isCurrent(t) && byId('libraryList')) byId('libraryList').innerHTML = msg(e.message, 'error');
+    if (isCurrent(t) && byId('libraryList')) byId('libraryList').innerHTML = msg(e.message || 'No se pudo cargar Biblioteca.', 'error');
   }
 };
 
@@ -432,7 +442,7 @@ window.buscarBiblioteca = async function () {
     state.libraryModule = null;
     renderLibrary('libraryList', rows, false);
   } catch (e) {
-    if (box) box.innerHTML = msg(e.message, 'error');
+    if (box) box.innerHTML = msg(e.message || 'No se pudo buscar en Biblioteca.', 'error');
   }
 };
 
@@ -443,7 +453,7 @@ function renderLibrary(containerId, rows, inAq) {
   const title = state.libraryModule ? fichaModuleLabel(state.libraryModule) : 'Fichas disponibles';
   box.innerHTML = rows.length
     ? `${moduleButtons(rows, inAq ? 'filtrarFichasAcuarioModulo' : 'filtrarBibliotecaModulo')}<div class="library-section-title"><h3>${esc(title)}</h3><p class="small">${filtered.length} fichas.</p></div><div class="library-grid">${filtered.map((f, i) => fichaCard(f, i, inAq)).join('')}</div>`
-    : msg('No encontré fichas con esa búsqueda.');
+    : msg('Biblioteca sin fichas visibles ahora mismo. Cuando Supabase tenga registros publicables aparecerán aquí.');
   state.libraryView = filtered;
 }
 
@@ -487,7 +497,7 @@ async function fichasAcuario() {
     state.libraryModule = null;
     renderLibrary('aqFichaList', rows, true);
   } catch (e) {
-    if (isCurrent(t) && byId('aqFichaList')) byId('aqFichaList').innerHTML = msg(e.message, 'error');
+    if (isCurrent(t) && byId('aqFichaList')) byId('aqFichaList').innerHTML = msg(e.message || 'No se pudieron cargar las fichas.', 'error');
   }
 }
 window.fichasAcuario = fichasAcuario;
@@ -503,7 +513,7 @@ window.buscarFichasAcuario = async function () {
     state.libraryModule = null;
     renderLibrary('aqFichaList', rows, true);
   } catch (e) {
-    if (box) box.innerHTML = msg(e.message, 'error');
+    if (box) box.innerHTML = msg(e.message || 'No se pudo buscar fichas.', 'error');
   }
 };
 

@@ -143,11 +143,17 @@ function createLoadContext() {
   return context;
 }
 
-function checkLoadOrder() {
+async function checkLoadOrder() {
   const context = createLoadContext();
   vm.createContext(context);
   for (const script of scriptRefs()) {
     vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), context, { filename: script });
+  }
+  if (typeof context.biblioteca !== 'function') fail('window.biblioteca is not registered.');
+  if (typeof context.biblioteca === 'function') {
+    await context.biblioteca();
+    const html = context.document.getElementById('libraryList').innerHTML;
+    if (/Cargando fichas/i.test(html)) fail('Biblioteca remains in loading state after render.');
   }
 }
 
@@ -155,7 +161,7 @@ try {
   checkRefs();
   checkBuild();
   checkSyntax();
-  checkLoadOrder();
+  await checkLoadOrder();
 } catch (error) {
   fail(error.stack || error.message);
 }
@@ -167,3 +173,4 @@ if (errors.length) {
 }
 
 console.log('AcuarioNexo validation OK');
+process.exit(0);
