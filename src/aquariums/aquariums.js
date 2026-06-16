@@ -45,12 +45,44 @@ function emptyLine(text) {
   return `<p class="small">${esc(text || 'Sin datos todavía')}</p>`;
 }
 
+async function countRows(table, buildQuery) {
+  try {
+    let query = supabase.from(table).select('id', { count: 'exact', head: true });
+    if (buildQuery) query = buildQuery(query);
+    const { count, error } = await query;
+    if (error) throw error;
+    return Number(count) || 0;
+  } catch (_) {
+    return 0;
+  }
+}
+
+async function loadDashboardStats(list) {
+  const aquariumIds = list.map(aq => aq.id).filter(Boolean);
+  const [animals, userFichas, creatorFichas, photos, measurements, tasks] = await Promise.all([
+    countRows('animals', q => q.eq('user_id', state.user.id)),
+    countRows('library_entries', q => q.eq('user_id', state.user.id)),
+    countRows('fichas_creator'),
+    aquariumIds.length ? countRows('aquarium_photos', q => q.eq('user_id', state.user.id).in('aquarium_id', aquariumIds)) : 0,
+    aquariumIds.length ? countRows('aquarium_measurements', q => q.in('aquarium_id', aquariumIds)) : 0,
+    countRows('tasks', q => q.eq('user_id', state.user.id).neq('status', 'done'))
+  ]);
+  return {
+    animals,
+    fichas: userFichas + creatorFichas,
+    photos,
+    measurements,
+    tasks
+  };
+}
+
 window.dashboard = async function () {
   if (!state.user) return login();
   const t = token();
   render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Inicio</h2><p>Cargando resumen...</p></div></section>`, 'inicio');
   try {
     const list = await loadAquariums();
+    const stats = await loadDashboardStats(list);
     if (!isCurrent(t)) return;
     const liters = list.reduce(function (total, aq) { return total + (Number(aq.real_liters ?? aq.liters) || 0); }, 0);
     const recent = list.slice(0, 3);
@@ -59,18 +91,18 @@ window.dashboard = async function () {
         <div class="quick-actions">
           ${dashboardStat('Acuarios activos', String(list.length))}
           ${dashboardStat('Litros gestionados', liters ? `${liters} L` : 'Sin datos')}
-          ${dashboardStat('Animales registrados', 'Sin datos todavía')}
-          ${dashboardStat('Fichas guardadas', 'Sin datos todavía')}
+          ${dashboardStat('Animales registrados', String(stats.animals))}
+          ${dashboardStat('Fichas visibles', String(stats.fichas))}
         </div>
       </section>
       <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>
-        ${emptyLine('Sin datos todavía')}
+        ${emptyLine(stats.tasks ? `${stats.tasks} avisos pendientes.` : 'Sin avisos pendientes.')}
       </section>
       <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2></div>
-        ${emptyLine('Último parámetro: Sin datos todavía')}
-        ${emptyLine('Último animal añadido: Sin datos todavía')}
-        ${emptyLine('Última foto: Sin datos todavía')}
-        ${emptyLine('Última tarea: Sin datos todavía')}
+        ${emptyLine(`${stats.measurements} mediciones registradas.`)}
+        ${emptyLine(`${stats.animals} animales registrados.`)}
+        ${emptyLine(`${stats.photos} fotos guardadas.`)}
+        ${emptyLine(`${stats.tasks} tareas o avisos pendientes.`)}
       </section>
       <section class="panel"><div class="panel-head"><h2>Mis acuarios</h2><button onclick="acuariosHome()">Ver todos los acuarios</button></div>
         <div class="tank-list">${recent.map(aquariumCard).join('') || '<p class="small">Sin acuarios todavía.</p>'}</div>

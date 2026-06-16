@@ -1,5 +1,5 @@
 {
-  "build": "official-audit-fixes-v1-20260616",
-  "label": "AcuarioNexo auditoria frontend y Biblioteca",
-  "updated_at": "2026-06-16T16:35:00+02:00"
+  "build": "official-data-hardening-v1-20260616",
+  "label": "AcuarioNexo saneamiento de persistencia y datos",
+  "updated_at": "2026-06-16T17:15:00+02:00"
 }

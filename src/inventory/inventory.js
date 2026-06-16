@@ -2,7 +2,6 @@
 (function () {
   const { supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage } = window.ANX;
 
-const INVENTORY_AQ_PREFIX = 'AcuarioNexoAcuario:';
 const generalInventoryCategories = ['Medicamento', 'Test', 'Comida', 'Material general'];
 const aquariumInventoryCategories = ['Pez', 'Planta', 'Invertebrado', 'Coral', 'Equipo'];
 
@@ -20,23 +19,13 @@ function inventoryMeta(item) {
   try { return JSON.parse(match[1]); } catch (_) { return {}; }
 }
 
-function inventoryNotesWithMeta(notes, meta) {
-  const clean = String(notes || '').trim();
-  const compact = {};
-  Object.keys(meta || {}).forEach(function (key) {
-    if (meta[key] !== null && meta[key] !== undefined && String(meta[key]).trim() !== '') compact[key] = meta[key];
-  });
-  const prefix = Object.keys(compact).length ? `AcuarioNexoMeta:${JSON.stringify(compact)}\n` : '';
-  return `${prefix}${clean}`.trim() || null;
-}
-
 function inventoryCover(item) {
   const meta = inventoryMeta(item);
-  return item.cover_url || item.image_url || item.photo_url || item.public_url || meta.cover_url || meta.image_url || '';
+  return item.photo_url || meta.cover_url || meta.image_url || '';
 }
 
 function inventoryExpiryStatus(item) {
-  const exp = inventoryMeta(item).expires_at || item.expires_at || item.expiry_date || '';
+  const exp = item.expiry_date || inventoryMeta(item).expires_at || '';
   if (!exp) return '';
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -59,8 +48,7 @@ function inventoryItemHtml(item, aqName) {
   const cleanNotes = inventoryNoteText(item);
   const shortNotes = cleanNotes.length > 180 ? `${cleanNotes.slice(0, 180)}...` : cleanNotes;
   const scope = inventoryAqId(item) ? (aqName || 'Acuario') : 'General';
-  const meta = inventoryMeta(item);
-  const expiry = meta.expires_at || item.expires_at || item.expiry_date || '';
+  const expiry = item.expiry_date || inventoryMeta(item).expires_at || '';
   const expiryStatus = inventoryExpiryStatus(item);
   const cover = inventoryCover(item);
   return `<button class="item inventory-card inventory-ficha-card" onclick="verInventario('${esc(item.id)}')">
@@ -74,30 +62,6 @@ function inventoryItemHtml(item, aqName) {
       ${shortNotes ? `<p>${esc(shortNotes)}</p>` : ''}
     </div>
   </button>`;
-}
-
-async function insertInventoryRow(row) {
-  const first = await supabase.from('inventory_items').insert(row);
-  if (!first.error) return first;
-  if (!Object.prototype.hasOwnProperty.call(row, 'aquarium_id')) return first;
-  if (!/aquarium_id|schema cache|column/i.test(first.error.message || '')) return first;
-  const fallback = { ...row };
-  const aqId = fallback.aquarium_id;
-  delete fallback.aquarium_id;
-  fallback.notes = `${INVENTORY_AQ_PREFIX}${aqId}| ${fallback.notes || ''}`.trim();
-  return supabase.from('inventory_items').insert(fallback);
-}
-
-async function updateInventoryRow(id, row) {
-  const first = await supabase.from('inventory_items').update(row).eq('id', id).eq('user_id', state.user.id);
-  if (!first.error) return first;
-  if (!Object.prototype.hasOwnProperty.call(row, 'aquarium_id')) return first;
-  if (!/aquarium_id|schema cache|column/i.test(first.error.message || '')) return first;
-  const fallback = { ...row };
-  const aqId = fallback.aquarium_id;
-  delete fallback.aquarium_id;
-  fallback.notes = `${INVENTORY_AQ_PREFIX}${aqId}| ${fallback.notes || ''}`.trim();
-  return supabase.from('inventory_items').update(fallback).eq('id', id).eq('user_id', state.user.id);
 }
 
 window.inventario = async function (scope = 'general') {
@@ -161,13 +125,15 @@ window.saveInventario = async function () {
       category: val('invCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
       quantity: num('invQty') ?? 1,
       unit: val('invUnit') || 'unidad',
-      notes: inventoryNotesWithMeta(val('invNotes'), { expires_at: val('invExpiry'), cover_url: val('invCover') })
+      expiry_date: val('invExpiry') || null,
+      photo_url: val('invCover') || null,
+      notes: val('invNotes') || null
     };
     if (scope === 'aquarium') {
       if (!aq) throw new Error('Abre un acuario para guardar inventario del acuario.');
       row.aquarium_id = aq.id;
     }
-    const { error } = await insertInventoryRow(row);
+    const { error } = await supabase.from('inventory_items').insert(row);
     if (error) throw error;
     scope === 'aquarium' ? inventario('aquarium') : inventario('general');
   } catch (e) {
@@ -187,9 +153,8 @@ window.verInventario = async function (id) {
     const aq = isAq && currentAquarium()?.id === aqId ? currentAquarium() : null;
     const active = isAq && aq ? 'acuarios' : 'inventario';
     const head = isAq && aq ? aqHeader('inventario') : '';
-    const meta = inventoryMeta(data);
     const cleanNotes = inventoryNoteText(data);
-    const expiry = meta.expires_at || data.expires_at || data.expiry_date || '';
+    const expiry = data.expiry_date || inventoryMeta(data).expires_at || '';
     const status = inventoryExpiryStatus(data);
     const cover = inventoryCover(data);
     render(head + `<section class="panel inventory-detail">
@@ -234,7 +199,7 @@ window.editarInventario = async function (id) {
       <label>Categoría</label><select id="invEditCategory">${categoryOptions}</select>
       <label>Cantidad</label><input id="invEditQty" type="number" step="0.1" value="${esc(data.quantity ?? 1)}">
       <label>Unidad</label><input id="invEditUnit" value="${esc(data.unit || 'unidad')}">
-      <label>Caducidad</label><input id="invEditExpiry" type="date" value="${esc(meta.expires_at || data.expires_at || data.expiry_date || '')}">
+      <label>Caducidad</label><input id="invEditExpiry" type="date" value="${esc(data.expiry_date || meta.expires_at || '')}">
       <label>Portada</label><input id="invEditCover" value="${esc(inventoryCover(data))}" placeholder="URL de imagen o portada">
       <label>Notas</label><textarea id="invEditNotes">${esc(inventoryNoteText(data))}</textarea>
       <button class="primary" onclick="guardarInventarioEditado('${esc(data.id)}','${isAq ? 'aquarium' : 'general'}')">Guardar cambios</button>
@@ -253,10 +218,12 @@ window.guardarInventarioEditado = async function (id, scope) {
       category: val('invEditCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
       quantity: num('invEditQty') ?? 1,
       unit: val('invEditUnit') || 'unidad',
-      notes: inventoryNotesWithMeta(val('invEditNotes'), { expires_at: val('invEditExpiry'), cover_url: val('invEditCover') })
+      expiry_date: val('invEditExpiry') || null,
+      photo_url: val('invEditCover') || null,
+      notes: val('invEditNotes') || null
     };
     if (scope === 'aquarium' && aq) row.aquarium_id = aq.id;
-    const { error } = await updateInventoryRow(id, row);
+    const { error } = await supabase.from('inventory_items').update(row).eq('id', id).eq('user_id', state.user.id);
     if (error) throw error;
     verInventario(id);
   } catch (e) {

@@ -4,10 +4,6 @@
 
 const MAP_PREFIX = 'ACUARIONEXO_MAP_V2:';
 
-function mapKey(aq) {
-  return `acuarionexo-map-v2-${aq?.id || 'local'}`;
-}
-
 function emptyMap(aq) {
   return {
     version: 2,
@@ -42,19 +38,14 @@ function normalizeMap(raw, aq) {
 
 function readMap(aq) {
   try {
-    const local = localStorage.getItem(mapKey(aq));
-    if (local) return normalizeMap(JSON.parse(local), aq);
-  } catch (_) {}
-  try {
     const text = String(aq?.ai_summary || '');
     if (text.startsWith(MAP_PREFIX)) return normalizeMap(JSON.parse(text.slice(MAP_PREFIX.length)), aq);
   } catch (_) {}
   return emptyMap(aq);
 }
 
-function writeMapLocal(aq, map) {
+function writeMapDraft(aq, map) {
   const clean = normalizeMap({ ...map, updated_at: new Date().toISOString() }, aq);
-  try { localStorage.setItem(mapKey(aq), JSON.stringify(clean)); } catch (_) {}
   window.__aqMap = clean;
   return clean;
 }
@@ -179,7 +170,7 @@ window.saveMapPhoto = async function () {
     const inserted = await supabase.from('aquarium_photos').insert(row);
     if (inserted.error) throw inserted.error;
     aq.__cover_url = aq.__cover_url || publicUrl;
-    const map = writeMapLocal(aq, { ...(window.__aqMap || readMap(aq)), photo_url: publicUrl });
+    const map = writeMapDraft(aq, { ...(window.__aqMap || readMap(aq)), photo_url: publicUrl });
     renderMapIA(map);
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
@@ -204,14 +195,14 @@ window.placeMapMarker = function (event) {
     selected.label = label;
     selected.type = type;
     selected.note = note;
-    writeMapLocal(aq, map);
+    writeMapDraft(aq, map);
     renderMapIA(map);
     return;
   }
   const marker = { id: `mk-${Date.now()}`, label, type, note, x, y, z: Number(val('mapMarkerZ')) || 50 };
   map.markers.push(marker);
   map.selected_id = marker.id;
-  writeMapLocal(aq, map);
+  writeMapDraft(aq, map);
   renderMapIA(map);
 };
 
@@ -493,7 +484,7 @@ window.selectMapMarker = function (event, id) {
   const aq = currentAquarium();
   const map = window.__aqMap || readMap(aq);
   map.selected_id = id;
-  writeMapLocal(aq, map);
+  writeMapDraft(aq, map);
   renderMapIA(map);
 };
 
@@ -513,7 +504,7 @@ window.updateMapMarker = function () {
     marker.y = Number(val('mapMarkerY')) || marker.y;
     marker.z = Number(val('mapMarkerZ')) || marker.z;
   }
-  writeMapLocal(aq, map);
+  writeMapDraft(aq, map);
   renderMapIA(map);
 };
 
@@ -521,7 +512,7 @@ window.newMapMarker = function () {
   const aq = currentAquarium();
   const map = window.__aqMap || readMap(aq);
   map.selected_id = '';
-  writeMapLocal(aq, map);
+  writeMapDraft(aq, map);
   renderMapIA(map);
 };
 
@@ -530,13 +521,13 @@ window.deleteMapMarker = function () {
   const map = window.__aqMap || readMap(aq);
   map.markers = map.markers.filter(m => m.id !== map.selected_id);
   map.selected_id = map.markers[0]?.id || '';
-  writeMapLocal(aq, map);
+  writeMapDraft(aq, map);
   renderMapIA(map);
 };
 
 window.saveMapIA = async function () {
   const aq = currentAquarium();
-  const map = writeMapLocal(aq, window.__aqMap || readMap(aq));
+  const map = writeMapDraft(aq, window.__aqMap || readMap(aq));
   try {
     const payload = MAP_PREFIX + JSON.stringify(map);
     const result = await supabase.from('aquariums').update({ ai_summary: payload }).eq('id', aq.id);
@@ -547,7 +538,7 @@ window.saveMapIA = async function () {
     if (x) x.innerHTML = msg('Mapa IA guardado.', 'success');
   } catch (e) {
     const x = byId('x');
-    if (x) x.innerHTML = msg('Mapa guardado en este dispositivo. Supabase no aceptó el guardado remoto: ' + e.message, 'notice');
+    if (x) x.innerHTML = msg('No se pudo guardar el mapa en Supabase. Revisa conexión o permisos: ' + e.message, 'error');
   }
 };
 })();
