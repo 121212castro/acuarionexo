@@ -52,7 +52,7 @@
     const item = (id, label, icon, fn) => `<button class="${active === id ? 'active' : ''}" onclick="${fn}"><span>${icon}</span><small>${label}</small></button>`;
     return `<nav class="bottom-nav">
       ${item('inicio', 'Inicio', '⌂', 'dashboard()')}
-      ${item('acuarios', 'Acuarios', '▣', 'dashboard()')}
+      ${item('acuarios', 'Acuarios', '▣', 'acuariosHome()')}
       ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
       ${item('inventario', 'Inventario', '▤', 'inventario()')}
