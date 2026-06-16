@@ -51,9 +51,13 @@ DOCUMENTACION DE CONTROL
 - MAPA_ARCHIVOS.md
 - README.md
 
+VALIDACION OFICIAL
+- package.json
+- scripts/validate-app.mjs
+
 COMPROBACIONES ANTES DE PUBLICAR
 1. index.html carga solo el nucleo web activo.
 2. app-version.json coincide con window.ACUARIONEXO_BUILD.
-3. node --check pasa en app.js y en todos los modulos src.
+3. npm run check pasa sin errores.
 4. El cambio queda commiteado y subido a GitHub.
 5. git status queda limpio despues del push.

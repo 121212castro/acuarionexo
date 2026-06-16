@@ -32,3 +32,7 @@ Estructura oficial:
 - `app.js`: nucleo coordinador y helpers compartidos.
 - `src/`: modulos de negocio por dominio.
 - `index.html`: orden de carga explicito de la app publicada.
+
+Validacion oficial:
+
+- Ejecutar `npm run check` antes de subir cambios.

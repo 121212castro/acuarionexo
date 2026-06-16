@@ -75,3 +75,8 @@ Estos archivos/carpetas no forman parte de la app publicada y se eliminaron para
 - `CHECKLIST_ANTES_DE_EDITAR.md`
 - `MAPA_ARCHIVOS.md`
 - `README.md`
+
+## Validacion
+
+- `package.json`: comando `npm run check`.
+- `scripts/validate-app.mjs`: comprueba referencias de `index.html`, build, sintaxis JS y orden de carga.

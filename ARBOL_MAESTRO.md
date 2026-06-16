@@ -101,6 +101,19 @@ Para cambios normales:
 
 No volver a meter funcionalidades grandes en `app.js`.
 
+## Validacion oficial
+
+Antes de subir cambios debe pasar:
+
+- `npm run check`
+
+Ese comando comprueba:
+
+- que todo lo cargado por `index.html` existe;
+- que `window.ACUARIONEXO_BUILD` coincide con `app-version.json`;
+- que `app.js`, `src/` y scripts activos tienen sintaxis valida;
+- que el orden de carga oficial no rompe en una simulacion basica.
+
 ## Archivos eliminados del core
 
 La limpieza de junio de 2026 elimino archivos que no estaban cargados por `index.html`, duplicaban funciones ya integradas en `app.js` o pertenecian a un wrapper separado:

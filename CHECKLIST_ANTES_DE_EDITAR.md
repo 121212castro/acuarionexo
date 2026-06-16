@@ -35,6 +35,7 @@ Antes de usar un archivo de referencia:
 ## 5. Publicacion
 
 - No dejar cambios solo en local.
+- Ejecutar `npm run check`.
 - Hacer commit.
 - Subir a GitHub.
 - Confirmar que el working tree queda limpio.

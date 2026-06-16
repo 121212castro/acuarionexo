@@ -50,3 +50,4 @@ Antes de considerar terminado un cambio:
 2. Debe estar subido a GitHub.
 3. El remoto debe estar limpio respecto al commit local.
 4. Si toca datos, debe estar aplicado en Supabase.
+5. `npm run check` debe pasar antes de publicar.
