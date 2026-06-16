@@ -6,7 +6,7 @@ App publicada: `https://121212castro.github.io/acuarionexo/`.
 
 Datos y autenticacion: Supabase.
 
-Regla base: el checkout local no es entorno de trabajo ni despliegue. Solo se usa para revisar, documentar, preparar commits y subirlos a GitHub.
+Regla base: el checkout local no es entorno de ejecucion ni despliegue. Solo se usa de forma temporal para auditar, preparar commits y subirlos a GitHub.
 
 ## Entrada real de la app
 
@@ -25,7 +25,7 @@ Carga activa comprobada:
 - `notifications.js`
 - `login-reef.js`
 
-No carga carpetas `src/`, archivos de prueba ni copias locales alternativas.
+No carga carpetas `src/`, archivos de prueba, wrappers moviles ni copias locales alternativas.
 
 ## Nucleo funcional
 
@@ -74,9 +74,9 @@ No se debe introducir persistencia local como fuente principal de datos.
 - `aquarium-map.css`: estilos usados por mapa integrado.
 - `manifest.webmanifest` e `icon-512.png`: PWA.
 
-## Referencia tecnica no activa
+## Archivos eliminados del core
 
-Estos archivos existen en el repo, pero no deben activarse desde `index.html` sin reintegracion limpia:
+La limpieza de junio de 2026 elimino archivos que no estaban cargados por `index.html`, duplicaban funciones ya integradas en `app.js` o pertenecian a un wrapper separado:
 
 - `parameters-ui.js`
 - `photo-ai.js`
@@ -89,14 +89,9 @@ Estos archivos existen en el repo, pero no deben activarse desde `index.html` si
 - `nav-sections-fix.js`
 - `reef_mixto_parametros_v1.json`
 - `assets/fondos/fondo-ficha-oficial.svg`
+- `mobile-wrapper/`
 
-Si una funcion de esos archivos se necesita, primero se revisa, se adapta al estado unico de `app.js` y se sube por GitHub.
-
-## Mobile wrapper
-
-`mobile-wrapper/` no es otra app web. Es contenedor nativo y debe cargar la URL oficial de GitHub Pages.
-
-No debe tener una copia funcional divergente del HTML de produccion.
+Si una funcion eliminada se necesita, se recupera desde el historial de GitHub, se adapta al estado unico de `app.js` y se sube como cambio nuevo.
 
 ## Regla antes de editar
 
@@ -106,4 +101,4 @@ Antes de cambiar cualquier archivo:
 2. Leer `REGLAS_DE_CAMBIO.md`.
 3. Leer `CHECKLIST_ANTES_DE_EDITAR.md`.
 4. Confirmar que el cambio pertenece a GitHub/Supabase, no a un entorno local.
-5. Confirmar que `index.html` no activa archivos de referencia por accidente.
+5. Confirmar que `index.html` no activa archivos externos por accidente.

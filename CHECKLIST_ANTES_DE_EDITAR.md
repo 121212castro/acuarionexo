@@ -14,7 +14,7 @@ Usar siempre antes de modificar la app.
 - Si es pantalla o comportamiento visible, revisar `app.js`.
 - Si es estilo, revisar CSS cargado por `index.html`.
 - Si es dato persistente, revisar Supabase.
-- Si es movil, revisar `mobile-wrapper/README.md` antes de tocar nada.
+- Si es una app paralela, wrapper o copia, no meterla en `main` sin decision explicita.
 
 ## 3. Cargas reales
 

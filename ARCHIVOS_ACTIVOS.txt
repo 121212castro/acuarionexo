@@ -24,29 +24,13 @@ NUCLEO WEB ACTIVO
 
 REGLAS OBLIGATORIAS
 - app.js es el unico arranque funcional de la app.
-- index.html solo carga Supabase, config.js, app.js y update-manager.js.
+- index.html solo carga el nucleo web activo y CDNs necesarios.
 - Ningun archivo externo debe redefinir window.dashboard, window.biblioteca, window.fotos, window.pars, window.panel, window.microfauna o rutas principales.
 - Si una funcionalidad hace falta, se integra primero en app.js con una unica fuente de estado.
 - No usar routers dinamicos.
 - No usar bloques inline grandes dentro de index.html.
 - app-version.json debe tener el mismo build que window.ACUARIONEXO_BUILD.
-- El contenedor mobile-wrapper/ no debe duplicar HTML de produccion: carga la URL oficial.
-
-ARCHIVOS QUE NO DEBEN CARGARSE EN PRODUCCION SIN REINTEGRACION LIMPIA
-- parameters-ui.js
-- photo-ai.js
-- aquarium-map.js
-- aquarium-map.css
-- measurement-schema.js
-- measurement-ai.js
-- measurement-engine.js
-- acuarionexo-api.js
-- api/measurement-alerts.js
-- nav-sections-fix.js
-- reef_mixto_parametros_v1.json
-- assets/fondos/fondo-ficha-oficial.svg
-
-Estos archivos pueden conservarse como referencia tecnica, pero no deben cargarse desde index.html hasta que se revisen y se integren sin sobreescrituras globales.
+- No conservar wrappers, motores antiguos ni copias paralelas dentro de main.
 
 DOCUMENTACION DE CONTROL
 - ARBOL_MAESTRO.md

@@ -32,9 +32,9 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - IA de mantenimiento y avisos.
 - Inventario.
 
-## Referencia tecnica no cargada
+## Eliminados de `main`
 
-No activar sin saneamiento previo:
+Estos archivos/carpetas no forman parte de la app publicada y se eliminaron para evitar confusion:
 
 - `parameters-ui.js`
 - `photo-ai.js`
@@ -47,11 +47,7 @@ No activar sin saneamiento previo:
 - `nav-sections-fix.js`
 - `reef_mixto_parametros_v1.json`
 - `assets/fondos/fondo-ficha-oficial.svg`
-
-## Mobile
-
-- `mobile-wrapper/`: contenedor nativo.
-- `mobile-wrapper/web-fallback/index.html`: fallback, no fuente principal de la app.
+- `mobile-wrapper/`
 
 ## Documentacion de control
 

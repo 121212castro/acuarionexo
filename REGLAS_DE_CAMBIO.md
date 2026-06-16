@@ -14,7 +14,7 @@ Todo cambio valido debe terminar en GitHub `main` o en Supabase, segun correspon
 - Duplicar pantallas en varios archivos.
 - Crear variables globales nuevas que pisen rutas existentes.
 - Cambiar datos productivos con archivos locales.
-- Editar `mobile-wrapper/web-fallback/index.html` como si fuera la app principal.
+- Reintroducir wrappers, copias paralelas o motores antiguos sin integracion limpia.
 
 ## Permitido
 
@@ -33,13 +33,12 @@ Todo cambio valido debe terminar en GitHub `main` o en Supabase, segun correspon
 - Version/build: `app-version.json` y `window.ACUARIONEXO_BUILD` en `index.html`.
 - Datos persistentes: Supabase.
 - Documentacion y reglas: archivos `.md` en raiz.
-- Contenedor movil: `mobile-wrapper/`, solo para envoltorio nativo.
 
 ## Si aparece un archivo dudoso
 
 No se carga.
 
-Primero se marca como referencia, se compara contra `index.html`, y solo se integra si no duplica estado ni pisa funciones globales.
+Primero se compara contra `index.html` y `app.js`. Solo se integra si no duplica estado ni pisa funciones globales.
 
 ## Publicacion
 
