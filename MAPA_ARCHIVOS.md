@@ -10,6 +10,16 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `styles.css`
 - `aquarium-map.css`
 - `login-reef.css`
+- `src/aquariums/aquariums.js`
+- `src/library/library.js`
+- `src/animals/animals.js`
+- `src/map/map.js`
+- `src/photos/photos.js`
+- `src/inventory/inventory.js`
+- `src/ai/ai.js`
+- `src/parameters/parameters.js`
+- `src/tasks/tasks.js`
+- `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
 - `login-reef.js`
@@ -17,20 +27,28 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `manifest.webmanifest`
 - `icon-512.png`
 
-## Nucleo de negocio en `app.js`
+## Nucleo en `app.js`
 
-- Auth y recuperacion de password.
-- Dashboard.
-- Alta/edicion/apertura de acuarios.
-- Panel de acuario.
-- Biblioteca y fichas.
-- Animales.
-- Mapa IA integrado.
-- Fotos.
-- Parametros.
-- Tareas.
-- IA de mantenimiento y avisos.
-- Inventario.
+- Configuracion compartida.
+- Cliente Supabase.
+- Estado comun `window.ANX.state`.
+- Helpers DOM y render.
+- Navegacion visual compartida.
+- Cabecera de acuario.
+- Subida de imagenes compartida.
+
+## Modulos de negocio
+
+- `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
+- `src/library/library.js`: biblioteca y fichas.
+- `src/animals/animals.js`: animales.
+- `src/map/map.js`: mapa IA y 3D.
+- `src/photos/photos.js`: fotos.
+- `src/inventory/inventory.js`: inventario.
+- `src/ai/ai.js`: motor IA y avisos sugeridos.
+- `src/parameters/parameters.js`: parametros.
+- `src/tasks/tasks.js`: tareas y avisos.
+- `src/auth/auth.js`: auth y arranque.
 
 ## Eliminados de `main`
 

@@ -19,10 +19,16 @@ Antes de editar, leer:
 
 Build actual:
 
-- `inicio-dashboard-v1-20260616`
+- `official-modules-v1-20260616`
 
 Destino:
 
 - GitHub Pages para servir la app.
 - Supabase para datos y fotos.
 - Sin Vercel.
+
+Estructura oficial:
+
+- `app.js`: nucleo coordinador y helpers compartidos.
+- `src/`: modulos de negocio por dominio.
+- `index.html`: orden de carga explicito de la app publicada.

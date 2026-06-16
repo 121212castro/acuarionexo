@@ -15,6 +15,7 @@ Todo cambio valido debe terminar en GitHub `main` o en Supabase, segun correspon
 - Crear variables globales nuevas que pisen rutas existentes.
 - Cambiar datos productivos con archivos locales.
 - Reintroducir wrappers, copias paralelas o motores antiguos sin integracion limpia.
+- Meter pantallas nuevas grandes en `app.js`.
 
 ## Permitido
 
@@ -27,7 +28,8 @@ Todo cambio valido debe terminar en GitHub `main` o en Supabase, segun correspon
 
 ## Donde va cada cambio
 
-- Pantallas visibles: `app.js`, hasta que haya fase formal de extraccion.
+- Nucleo compartido: `app.js`.
+- Pantallas visibles: modulo correspondiente dentro de `src/`.
 - Estilos: `styles.css`, `aquarium-map.css` o `login-reef.css`.
 - Configuracion publica: `config.js`.
 - Version/build: `app-version.json` y `window.ACUARIONEXO_BUILD` en `index.html`.

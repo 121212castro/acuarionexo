@@ -11,7 +11,8 @@ Usar siempre antes de modificar la app.
 
 ## 2. Archivo correcto
 
-- Si es pantalla o comportamiento visible, revisar `app.js`.
+- Si es pantalla o comportamiento visible, revisar primero el modulo `src/` correspondiente.
+- Si es nucleo compartido, revisar `app.js`.
 - Si es estilo, revisar CSS cargado por `index.html`.
 - Si es dato persistente, revisar Supabase.
 - Si es una app paralela, wrapper o copia, no meterla en `main` sin decision explicita.
@@ -20,7 +21,7 @@ Usar siempre antes de modificar la app.
 
 Comprobar `index.html`.
 
-Solo se considera activo lo que `index.html` carga directamente o lo que `app.js` usa.
+Solo se considera activo lo que `index.html` carga directamente o lo que esos modulos usan.
 
 ## 4. Archivos de referencia
 
@@ -28,7 +29,7 @@ Antes de usar un archivo de referencia:
 
 - comprobar si esta cargado por `index.html`;
 - comprobar si define funciones globales;
-- comprobar si duplica algo ya integrado en `app.js`;
+- comprobar si duplica algo ya integrado en `app.js` o en `src/`;
 - decidir si se integra o se elimina.
 
 ## 5. Publicacion

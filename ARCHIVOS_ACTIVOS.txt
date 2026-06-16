@@ -1,4 +1,4 @@
-ACUARIONEXO · CLEAN CORE · 15/06/2026
+ACUARIONEXO · OFFICIAL MODULES · 16/06/2026
 
 FUENTE DE VERDAD
 - Rama unica de trabajo: main.
@@ -15,6 +15,16 @@ NUCLEO WEB ACTIVO
 - aquarium-map.css
 - login-reef.css
 - app.js
+- src/aquariums/aquariums.js
+- src/library/library.js
+- src/animals/animals.js
+- src/map/map.js
+- src/photos/photos.js
+- src/inventory/inventory.js
+- src/ai/ai.js
+- src/parameters/parameters.js
+- src/tasks/tasks.js
+- src/auth/auth.js
 - update-manager.js
 - notifications.js
 - login-reef.js
@@ -23,12 +33,14 @@ NUCLEO WEB ACTIVO
 - icon-512.png
 
 REGLAS OBLIGATORIAS
-- app.js es el unico arranque funcional de la app.
+- app.js es el nucleo coordinador, no un contenedor de pantallas.
 - index.html solo carga el nucleo web activo y CDNs necesarios.
-- Ningun archivo externo debe redefinir window.dashboard, window.biblioteca, window.fotos, window.pars, window.panel, window.microfauna o rutas principales.
-- Si una funcionalidad hace falta, se integra primero en app.js con una unica fuente de estado.
+- Solo los modulos oficiales pueden exponer funciones window.* para botones inline.
+- Si una funcionalidad hace falta, se integra en su modulo de dominio con una unica fuente de estado en window.ANX.
+- src/auth/auth.js se carga al final porque ejecuta boot().
 - No usar routers dinamicos.
 - No usar bloques inline grandes dentro de index.html.
+- No volver a meter funcionalidades grandes en app.js.
 - app-version.json debe tener el mismo build que window.ACUARIONEXO_BUILD.
 - No conservar wrappers, motores antiguos ni copias paralelas dentro de main.
 
@@ -42,6 +54,6 @@ DOCUMENTACION DE CONTROL
 COMPROBACIONES ANTES DE PUBLICAR
 1. index.html carga solo el nucleo web activo.
 2. app-version.json coincide con window.ACUARIONEXO_BUILD.
-3. node --check app.js pasa sin errores.
+3. node --check pasa en app.js y en todos los modulos src.
 4. El cambio queda commiteado y subido a GitHub.
 5. git status queda limpio despues del push.
