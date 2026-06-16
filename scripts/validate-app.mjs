@@ -72,6 +72,7 @@ function createLoadContext() {
   const context = {
     console,
     setTimeout,
+    clearTimeout,
     setInterval() {},
     clearInterval() {},
     requestAnimationFrame(fn) { fn(); },

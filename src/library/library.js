@@ -406,11 +406,47 @@ function withTimeout(promise, ms, label) {
 
 async function loadLibrary(search = '') {
   const clean = search.replace(/[%,]/g, ' ').trim();
-  let query = supabase.from('library_entries').select('*').limit(clean ? 120 : 80);
-  if (clean) query = query.or(`title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%`);
-  const { data, error } = await withTimeout(query, 10000, 'La Biblioteca');
-  if (error) throw error;
-  return (data || []).map(normalizeFicha).filter(f => f.nombre && (f.cientifico || f.descripcion || f.foto));
+  const limit = clean ? 120 : 80;
+  const rows = [];
+  const sources = [
+    { table: 'library_entries', search: `title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%` },
+    { table: 'fichas_creator', search: `title.ilike.%${clean}%,nombre.ilike.%${clean}%,nombre_comun.ilike.%${clean}%,scientific_name.ilike.%${clean}%,nombre_cientifico.ilike.%${clean}%,description.ilike.%${clean}%,descripcion.ilike.%${clean}%` }
+  ];
+
+  for (const source of sources) {
+    try {
+      let query = supabase.from(source.table).select('*').limit(limit);
+      if (state.user?.id) query = query.eq('user_id', state.user.id);
+      if (clean) query = query.or(source.search);
+      const { data, error } = await withTimeout(query, 10000, `La Biblioteca (${source.table})`);
+      if (error) throw error;
+      rows.push(...(data || []));
+    } catch (e) {
+      if (!/user_id|schema cache|column/i.test(e.message || '')) {
+        console.warn(`Biblioteca: no se pudo leer ${source.table}`, e);
+        continue;
+      }
+      try {
+        let query = supabase.from(source.table).select('*').limit(limit);
+        if (clean) query = query.or(source.search);
+        const { data, error } = await withTimeout(query, 10000, `La Biblioteca (${source.table})`);
+        if (error) throw error;
+        rows.push(...(data || []));
+      } catch (fallbackError) {
+        console.warn(`Biblioteca: fallback sin user_id fallo en ${source.table}`, fallbackError);
+      }
+    }
+  }
+
+  const seen = new Set();
+  return rows
+    .map(normalizeFicha)
+    .filter(function (f) {
+      const key = f.id || `${f.nombre}|${f.cientifico}`;
+      if (!f.nombre || seen.has(key)) return false;
+      seen.add(key);
+      return f.cientifico || f.descripcion || f.foto;
+    });
 }
 
 window.biblioteca = async function () {
