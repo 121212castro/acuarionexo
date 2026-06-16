@@ -22,7 +22,6 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
-- `login-reef.js`
 - `app-version.json`
 - `manifest.webmanifest`
 - `icon-512.png`

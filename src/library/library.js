@@ -409,14 +409,22 @@ async function loadLibrary(search = '') {
   const limit = clean ? 120 : 80;
   const rows = [];
   const sources = [
-    { table: 'library_entries', search: `title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%` },
-    { table: 'fichas_creator', search: `title.ilike.%${clean}%,nombre.ilike.%${clean}%,nombre_comun.ilike.%${clean}%,scientific_name.ilike.%${clean}%,nombre_cientifico.ilike.%${clean}%,description.ilike.%${clean}%,descripcion.ilike.%${clean}%` }
+    {
+      table: 'library_entries',
+      userScoped: true,
+      search: `title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%`
+    },
+    {
+      table: 'fichas_creator',
+      userScoped: false,
+      search: `scientific_name.ilike.%${clean}%,category.ilike.%${clean}%`
+    }
   ];
 
   for (const source of sources) {
     try {
       let query = supabase.from(source.table).select('*').limit(limit);
-      if (state.user?.id) query = query.eq('user_id', state.user.id);
+      if (source.userScoped && state.user?.id) query = query.eq('user_id', state.user.id);
       if (clean) query = query.or(source.search);
       const { data, error } = await withTimeout(query, 10000, `La Biblioteca (${source.table})`);
       if (error) throw error;

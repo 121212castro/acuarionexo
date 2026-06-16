@@ -19,7 +19,7 @@ Antes de editar, leer:
 
 Build actual:
 
-- `official-modules-v1-20260616`
+- `official-audit-fixes-v1-20260616`
 
 Destino:
 

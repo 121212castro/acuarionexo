@@ -33,7 +33,6 @@ Carga activa comprobada:
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
-- `login-reef.js`
 
 No carga archivos de prueba, wrappers moviles ni copias locales alternativas.
 
@@ -80,7 +79,6 @@ No se debe introducir persistencia local como fuente principal de datos.
 - `app-version.json`: build publicado.
 - `update-manager.js`: gestion de actualizacion/cache.
 - `notifications.js`: soporte de notificaciones.
-- `login-reef.js`: experiencia visual del login.
 - `styles.css`: estilos principales.
 - `aquarium-map.css`: estilos usados por mapa integrado.
 - `manifest.webmanifest` e `icon-512.png`: PWA.
