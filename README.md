@@ -19,7 +19,7 @@ Antes de editar, leer:
 
 Build actual:
 
-- `official-data-hardening-v1-20260616`
+- `official-library-catalog-v1-20260616`
 
 Destino:
 

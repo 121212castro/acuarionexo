@@ -407,6 +407,18 @@ function withTimeout(promise, ms, label) {
 async function loadLibrary(search = '') {
   const clean = search.replace(/[%,]/g, ' ').trim();
   const limit = clean ? 120 : 80;
+  try {
+    const { data, error } = await withTimeout(
+      supabase.rpc('library_entries_catalog', { search_text: clean }).limit(limit),
+      10000,
+      'La Biblioteca oficial'
+    );
+    if (error) throw error;
+    return normalizeLibraryRows(data || []);
+  } catch (catalogError) {
+    console.warn('Biblioteca: catalogo oficial no disponible, usando fuentes legacy', catalogError);
+  }
+
   const rows = [];
   const sources = [
     {
@@ -446,11 +458,15 @@ async function loadLibrary(search = '') {
     }
   }
 
+  return normalizeLibraryRows(rows);
+}
+
+function normalizeLibraryRows(rows) {
   const seen = new Set();
-  return rows
+  return (rows || [])
     .map(normalizeFicha)
     .filter(function (f) {
-      const key = f.id || `${f.nombre}|${f.cientifico}`;
+      const key = f.id ? `${f.raw?.source_table || 'row'}:${f.id}` : `${f.nombre}|${f.cientifico}`;
       if (!f.nombre || seen.has(key)) return false;
       seen.add(key);
       return f.cientifico || f.descripcion || f.foto;

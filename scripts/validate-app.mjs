@@ -121,6 +121,7 @@ function createLoadContext() {
       };
       return {
         from() { return Object.create(chain); },
+        rpc() { return Object.create(chain); },
         storage: {
           from() {
             return {
