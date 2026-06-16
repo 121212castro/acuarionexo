@@ -1,30 +1,34 @@
-# AcuarioNexo Base Real V2
+# AcuarioNexo
 
-Base limpia conectada a Supabase.
+App oficial: `https://121212castro.github.io/acuarionexo/`
+
+Fuente de verdad:
+
+- GitHub `main` para codigo publicado.
+- Supabase para datos, auth, storage y configuracion de backend.
+
+Regla actual: local no es entorno vivo. Cualquier cambio valido debe subirse a GitHub o aplicarse en Supabase.
+
+Antes de editar, leer:
+
+- `ARBOL_MAESTRO.md`
+- `REGLAS_DE_CAMBIO.md`
+- `CHECKLIST_ANTES_DE_EDITAR.md`
+- `MAPA_ARCHIVOS.md`
+- `ARCHIVOS_ACTIVOS.txt`
 
 Build actual:
-- oficial-v1-fotos-fichas-v7-20260614
-- Biblioteca con Tests separados de Productos y sales.
-- Inventario con apartado Tests separado.
+
+- `inicio-dashboard-v1-20260616`
 
 Destino:
+
 - GitHub Pages para servir la app.
 - Supabase para datos y fotos.
 - Sin Vercel.
 
-Prioridad:
-- acuario marino enfermo,
-- avisos críticos,
-- hospital/tratamientos,
-- parámetros,
-- animales,
-- inventario,
-- fotos,
-- historial,
-- IA contextual preparada.
-
-
 App real para testers:
+
 - Contenedor nativo preparado en `mobile-wrapper/`.
 - Carga siempre `https://121212castro.github.io/acuarionexo/`.
 - No congela una copia del HTML dentro de la app.

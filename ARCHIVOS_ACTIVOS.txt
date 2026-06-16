@@ -3,6 +3,8 @@ ACUARIONEXO · CLEAN CORE · 15/06/2026
 FUENTE DE VERDAD
 - Rama unica de trabajo: main.
 - URL unica de app: https://121212castro.github.io/acuarionexo/
+- Local no es entorno vivo: solo sirve para revisar, preparar commits y subir.
+- Supabase es la fuente de datos, auth y storage.
 - No crear enlaces alternativos para cambios normales.
 - No reactivar archivos legacy ni motores que sobreescriban pantallas.
 
@@ -10,10 +12,15 @@ NUCLEO WEB ACTIVO
 - index.html
 - config.js
 - styles.css
+- aquarium-map.css
+- login-reef.css
 - app.js
 - update-manager.js
+- notifications.js
+- login-reef.js
 - app-version.json
 - manifest.webmanifest
+- icon-512.png
 
 REGLAS OBLIGATORIAS
 - app.js es el unico arranque funcional de la app.
@@ -34,12 +41,23 @@ ARCHIVOS QUE NO DEBEN CARGARSE EN PRODUCCION SIN REINTEGRACION LIMPIA
 - measurement-ai.js
 - measurement-engine.js
 - acuarionexo-api.js
+- api/measurement-alerts.js
+- nav-sections-fix.js
+- reef_mixto_parametros_v1.json
+- assets/fondos/fondo-ficha-oficial.svg
 
 Estos archivos pueden conservarse como referencia tecnica, pero no deben cargarse desde index.html hasta que se revisen y se integren sin sobreescrituras globales.
+
+DOCUMENTACION DE CONTROL
+- ARBOL_MAESTRO.md
+- REGLAS_DE_CAMBIO.md
+- CHECKLIST_ANTES_DE_EDITAR.md
+- MAPA_ARCHIVOS.md
+- README.md
 
 COMPROBACIONES ANTES DE PUBLICAR
 1. index.html carga solo el nucleo web activo.
 2. app-version.json coincide con window.ACUARIONEXO_BUILD.
 3. node --check app.js pasa sin errores.
-4. La app local abre sin errores de consola.
-5. git status queda limpio despues del commit.
+4. El cambio queda commiteado y subido a GitHub.
+5. git status queda limpio despues del push.
