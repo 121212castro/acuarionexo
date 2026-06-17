@@ -106,7 +106,7 @@
 
   async function saveSuggestions(suggestions){
     if(!suggestions.length) return 0;
-    const rows = suggestions.map(s => ({ user_id:state.user.id, aquarium_id:s.aquarium_id || null, title:s.title, task_type:s.type || 'ai', due_at:s.due_at || new Date().toISOString(), priority:s.priority || 'normal', status:'open', notes:s.notes || null }));
+    const rows = suggestions.map(s => ({ user_id:state.user.id, aquarium_id:s.aquarium_id || null, title:s.title, task_type:'ai', due_at:s.due_at || new Date().toISOString(), priority:s.priority || 'normal', status:'open', notes:s.notes || null }));
     const { error } = await supabase.from('tasks').insert(rows);
     if(error) throw error;
     return rows.length;
