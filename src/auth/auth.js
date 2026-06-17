@@ -9,7 +9,6 @@ function login() {
     <button class="primary" onclick="iniciar()">Entrar</button>
     <button onclick="crear()">Crear cuenta</button>
     <button onclick="recuperarPassword()">Olvidé mi contraseña</button>
-    <button class="ghost" onclick="adminPanel()">Admin</button>
     <div id="x"></div>
   </section>`, 'inicio', false);
 }
