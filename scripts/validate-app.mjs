@@ -20,6 +20,13 @@ function localRefs() {
     .map(ref => ref.split('?')[0]);
 }
 
+function localRefsWithVersion() {
+  return [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)]
+    .map(match => match[1])
+    .filter(ref => !/^https?:/i.test(ref) && !ref.startsWith('data:'))
+    .filter(ref => /\.(?:js|css)(?:\?|$)/i.test(ref));
+}
+
 function scriptRefs() {
   return [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)]
     .map(match => match[1])
@@ -38,6 +45,15 @@ function checkBuild() {
   const version = JSON.parse(fs.readFileSync(path.join(root, 'app-version.json'), 'utf8')).build;
   if (!htmlBuild) fail('index.html does not define window.ACUARIONEXO_BUILD.');
   if (htmlBuild !== version) fail(`Build mismatch: index.html=${htmlBuild || '-'} app-version.json=${version || '-'}`);
+  for (const ref of localRefsWithVersion()) {
+    const [, query = ''] = ref.split('?');
+    const params = new URLSearchParams(query);
+    const assetBuild = params.get('v');
+    if (!assetBuild) fail(`Version missing in active asset reference: ${ref}`);
+    if (htmlBuild && assetBuild && assetBuild !== htmlBuild) {
+      fail(`Asset version mismatch: ${ref} uses ${assetBuild}, expected ${htmlBuild}`);
+    }
+  }
 }
 
 function checkSyntax() {
@@ -77,7 +93,7 @@ function createLoadContext() {
     clearInterval() {},
     requestAnimationFrame(fn) { fn(); },
     scrollTo() {},
-    location: { origin: 'https://121212castro.github.io', pathname: '/acuarionexo/', hash: '', search: '', reload() {} },
+    location: { origin: 'https://121212castro.github.io', pathname: '/acuarionexo/', hash: '', search: '', reload() {}, replace() {} },
     history: { replaceState() {} },
     localStorage: { getItem() { return null; }, setItem() {} },
     Notification: undefined,
