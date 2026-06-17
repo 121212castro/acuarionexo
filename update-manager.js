@@ -1,7 +1,9 @@
 (function () {
   const APP = 'acuarionexo';
-  const BUILD = window.ACUARIONEXO_BUILD || 'dev';
+  const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
+  const LAST_CHECK_KEY = APP + ':last-version-check';
+  const CHECK_INTERVAL_MS = 60000;
 
   async function clearAppCache() {
     try {
@@ -16,34 +18,39 @@
     } catch (_) {}
   }
 
-  async function forceReload() {
+  async function forceReload(nextBuild) {
     await clearAppCache();
+    const build = nextBuild || CURRENT_BUILD || Date.now();
     const base = location.pathname || './';
-    location.replace(base + '?v=' + encodeURIComponent(BUILD) + '-' + Date.now());
+    location.replace(base + '?v=' + encodeURIComponent(build) + '-' + Date.now());
+  }
+
+  async function fetchRemoteVersion() {
+    const res = await fetch('app-version.json?v=' + Date.now(), {
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0'
+      }
+    });
+    if (!res.ok) return null;
+    const remote = await res.json();
+    return remote && remote.build ? remote.build : null;
   }
 
   async function checkVersion() {
     try {
-      const res = await fetch('app-version.json?v=' + Date.now(), {
-        cache: 'no-store',
-        headers: { 'Cache-Control': 'no-cache' }
-      });
-      if (!res.ok) return;
-      const remote = await res.json();
-      if (!remote || !remote.build) return;
-      if (remote.build !== BUILD) {
-        localStorage.setItem(KEY, remote.build);
-        await forceReload();
-        return;
-      }
-      const stored = localStorage.getItem(KEY);
-      if (!stored) {
-        localStorage.setItem(KEY, remote.build);
-        return;
-      }
-      if (stored !== remote.build) {
-        localStorage.setItem(KEY, remote.build);
-        await forceReload();
+      localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
+      const remoteBuild = await fetchRemoteVersion();
+      if (!remoteBuild) return;
+
+      const storedBuild = localStorage.getItem(KEY);
+      if (!storedBuild) localStorage.setItem(KEY, remoteBuild);
+
+      if (remoteBuild !== CURRENT_BUILD || (storedBuild && storedBuild !== remoteBuild)) {
+        localStorage.setItem(KEY, remoteBuild);
+        await forceReload(remoteBuild);
       }
     } catch (_) {}
   }
@@ -54,6 +61,8 @@
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) checkVersion();
   });
+  window.addEventListener('focus', checkVersion);
   window.addEventListener('online', checkVersion);
   setTimeout(checkVersion, 800);
+  setInterval(checkVersion, CHECK_INTERVAL_MS);
 })();
