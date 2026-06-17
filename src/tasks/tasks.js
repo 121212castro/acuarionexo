@@ -52,10 +52,10 @@ window.tareas = async function () {
   const t = token();
   render(`<section class="panel"><h2>Avisos</h2>${msg('Cargando tareas...')}</section>`, 'avisos');
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(120);
     if (error) throw error;
     if (!isCurrent(t)) return;
-    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas y avisos creados por ti o por la IA.</p></div><button class="primary" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos.')}</section>`, 'avisos');
+    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas y avisos pendientes.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.', 'success')}</section>`, 'avisos');
   } catch (e) {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
