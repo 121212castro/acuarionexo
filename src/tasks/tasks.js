@@ -60,4 +60,13 @@ window.tareas = async function () {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
 };
+
+(function loadExtendedAiAlerts(){
+  if (window.__AcuarioNexoExtendedAiAlertsLoaded) return;
+  window.__AcuarioNexoExtendedAiAlertsLoaded = true;
+  const script = document.createElement('script');
+  script.src = 'src/ai/ai-alerts-extra.js?v=ai-alerts-20260617';
+  script.defer = true;
+  document.head.appendChild(script);
+})();
 })();
