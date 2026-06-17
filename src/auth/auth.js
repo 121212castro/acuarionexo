@@ -80,7 +80,15 @@ window.iniciar = async function () {
 
 window.crear = async function () {
   try {
-    const { error } = await supabase.auth.signUp({ email: val('email'), password: val('password') });
+    const email = val('email');
+    const password = val('password');
+    if (!email) throw new Error('Pon el email de la cuenta.');
+    if (!password) throw new Error('Pon la contraseña.');
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { emailRedirectTo: authRedirectUrl() }
+    });
     if (error) throw error;
     byId('x').innerHTML = msg('Cuenta creada. Si Supabase pide confirmación, revisa el email.', 'success');
   } catch (e) {
