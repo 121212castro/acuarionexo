@@ -102,14 +102,6 @@ window.dashboard = async function () {
         ${emptyLine(`${stats.animals} animales registrados.`)}
         ${emptyLine(`${stats.photos} fotos guardadas.`)}
         ${emptyLine(`${stats.tasks} tareas o avisos pendientes.`)}
-      </section>
-      <section class="panel"><div class="panel-head"><h2>Accesos rápidos</h2></div>
-        <div class="quick-actions">
-          <button onclick="openQuickAqSection('parametros')"><span>🧪</span>Añadir parámetro</button>
-          <button onclick="openQuickAqSection('animales')"><span>🐟</span>Añadir animal</button>
-          <button onclick="openQuickAqSection('fotos')"><span>📷</span>Añadir foto</button>
-          <button onclick="openQuickAqSection('tareas')"><span>♢</span>Crear tarea</button>
-        </div>
       </section>`, 'inicio');
   } catch (e) {
     if (isCurrent(t)) render(msg(e.message, 'error'), 'inicio');
