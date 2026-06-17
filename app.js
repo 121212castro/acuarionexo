@@ -56,7 +56,6 @@
       ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
       ${item('inventario', 'Inventario', '▤', 'inventario()')}
-      ${state.user ? item('admin', 'Admin', '⚙', 'adminPanel()') : ''}
     </nav>`;
   }
 
@@ -122,27 +121,5 @@
     throw new Error('No se pudo subir la foto. Revisa Storage.');
   }
 
-  window.ANX = {
-    config,
-    app,
-    supabase,
-    state,
-    esc,
-    byId,
-    val,
-    num,
-    msg,
-    token,
-    isCurrent,
-    dateText,
-    currentAquarium,
-    authRedirectUrl,
-    isPasswordRecoveryUrl,
-    render,
-    panel,
-    aqHeader,
-    aquariumIcon,
-    photoUrl,
-    uploadAquariumImage
-  };
+  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage };
 })();
