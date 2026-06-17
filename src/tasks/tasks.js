@@ -60,4 +60,27 @@ window.tareas = async function () {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
 };
+
+window.crearAvisosIA = async function () {
+  try {
+    const suggestions = window.__aiReview?.suggestions || [];
+    if (!suggestions.length) throw new Error('No hay avisos IA para crear.');
+    if (byId('x')) byId('x').innerHTML = msg('Creando avisos...');
+    const rows = suggestions.map(s => ({
+      user_id: state.user.id,
+      aquarium_id: s.aquarium_id || null,
+      title: s.title,
+      task_type: 'task',
+      due_at: s.due_at || new Date().toISOString(),
+      priority: s.priority || 'normal',
+      status: 'open',
+      notes: s.notes || null
+    }));
+    const { error } = await supabase.from('tasks').insert(rows);
+    if (error) throw error;
+    if (byId('x')) byId('x').innerHTML = msg('Avisos IA creados.', 'success');
+  } catch (e) {
+    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+  }
+};
 })();
