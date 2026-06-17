@@ -7,7 +7,7 @@ async function tareasAcuario() {
   const t = token();
   render(aqHeader('tareas') + `<section class="panel"><div class="panel-head"><h2>Tareas</h2><button class="primary" onclick="formTareaAcuario()">Añadir</button></div>${msg('Cargando tareas...')}</section>`, 'acuarios');
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(80);
+    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).order('due_at', { ascending: true, nullsFirst: false }).limit(80);
     if (error) throw error;
     if (!isCurrent(t)) return;
     const html = (data || []).map(tareaCard).join('');
@@ -47,47 +47,17 @@ window.saveTareaAcuario = async function () {
   }
 };
 
-function loadExtendedAiAlerts() {
-  return new Promise(function(resolve, reject) {
-    if (window.__AcuarioNexoExtendedAiAlertsReady) return resolve();
-    let existing = document.querySelector('script[data-ai-alerts-extra="1"]');
-    if (existing) {
-      existing.addEventListener('load', function(){ window.__AcuarioNexoExtendedAiAlertsReady = true; resolve(); }, { once: true });
-      existing.addEventListener('error', reject, { once: true });
-      return;
-    }
-    const script = document.createElement('script');
-    script.dataset.aiAlertsExtra = '1';
-    script.src = 'src/ai/ai-alerts-extra.js?v=ai-alerts-20260617b';
-    script.onload = function(){ window.__AcuarioNexoExtendedAiAlertsReady = true; resolve(); };
-    script.onerror = function(){ reject(new Error('No se pudo cargar la IA extendida.')); };
-    document.head.appendChild(script);
-  });
-}
-
-window.revisarIAAcuarioNexo = async function () {
-  try {
-    await loadExtendedAiAlerts();
-    if (typeof window.iaAcuarioNexo !== 'function') throw new Error('La IA no está cargada.');
-    return window.iaAcuarioNexo();
-  } catch (e) {
-    render(`<section class="panel"><h2>IA AcuarioNexo</h2>${msg(e.message, 'error')}</section>`, 'avisos');
-  }
-};
-
 window.tareas = async function () {
   if (!state.user) return login();
   const t = token();
   render(`<section class="panel"><h2>Avisos</h2>${msg('Cargando tareas...')}</section>`, 'avisos');
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).order('due_at', { ascending: true, nullsFirst: false }).limit(120);
     if (error) throw error;
     if (!isCurrent(t)) return;
-    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas y avisos pendientes creados por ti o por la IA.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="revisarIAAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.')}</section>`, 'avisos');
+    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas y avisos creados por ti o por la IA.</p></div><button class="primary" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos.')}</section>`, 'avisos');
   } catch (e) {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
 };
-
-loadExtendedAiAlerts().catch(function(){});
 })();
