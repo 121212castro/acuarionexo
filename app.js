@@ -56,6 +56,7 @@
       ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
       ${item('inventario', 'Inventario', '▤', 'inventario()')}
+      ${state.user ? item('admin', 'Admin', '⚙', 'adminPanel()') : ''}
     </nav>`;
   }
 
