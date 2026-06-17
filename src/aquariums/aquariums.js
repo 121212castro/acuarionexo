@@ -108,15 +108,28 @@ window.dashboard = async function () {
   }
 };
 
-window.acuariosHome = async function () {
+window.acuariosHome = function () {
+  if (!state.user) return login();
+  state.aquarium = null;
+  window.q = null;
+  render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Acuarios</h2><p>Gestiona tus sistemas desde una pantalla limpia.</p></div></section>
+    <section class="panel">
+      <div class="quick-actions">
+        <button onclick="misAcuarios()"><span>▣</span>Mis acuarios</button>
+        <button onclick="formA()"><span>+</span>Nuevo acuario</button>
+      </div>
+    </section>`, 'acuarios');
+};
+
+window.misAcuarios = async function () {
   if (!state.user) return login();
   const t = token();
-  render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Mis acuarios</h2><p>Cargando sistemas...</p></div><button onclick="formA()">+</button></section>`, 'acuarios');
+  render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Mis acuarios</h2><p>Cargando sistemas...</p></div></section>`, 'acuarios');
   try {
     const list = await loadAquariums();
     if (!isCurrent(t)) return;
-    render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Mis acuarios</h2><p>${list.length} sistemas activos</p></div><button onclick="formA()">+</button></section>
-      <section class="panel"><div class="panel-head"><h2>Acuarios</h2><button onclick="formA()">Nuevo</button></div>
+    render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Mis acuarios</h2><p>${list.length} sistemas activos</p></div></section>
+      <section class="panel"><div class="panel-head"><h2>Acuarios guardados</h2><button onclick="acuariosHome()">← Volver</button></div>
       <div class="tank-list">${list.map(aquariumCard).join('') || '<p class="small">Sin acuarios todavía.</p>'}</div></section>`, 'acuarios');
   } catch (e) {
     if (isCurrent(t)) render(msg(e.message, 'error'), 'acuarios');
@@ -126,7 +139,7 @@ window.acuariosHome = async function () {
 window.formA = function (aq = {}) {
   const editing = !!aq.id;
   render(`<section class="panel">
-    <button onclick="acuariosHome()">← Volver</button>
+    <button onclick="${editing ? 'panel()' : 'acuariosHome()'}">← Volver</button>
     <h2>${editing ? 'Editar acuario' : 'Nuevo acuario'}</h2>
     <label>Nombre</label><input id="aqName" value="${esc(aq.name || '')}">
     <label>Tipo</label><select id="aqType">
@@ -159,7 +172,7 @@ window.saveA = async function (id = '') {
     const result = id ? await supabase.from('aquariums').update(row).eq('id', id) : await supabase.from('aquariums').insert(row);
     if (result.error) throw result.error;
     if (id && currentAquarium()?.id === id) state.aquarium = { ...state.aquarium, ...row, id };
-    id && currentAquarium()?.id === id ? panelAcuario() : acuariosHome();
+    id && currentAquarium()?.id === id ? panelAcuario() : misAcuarios();
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
   }
