@@ -85,7 +85,6 @@ window.dashboard = async function () {
     const stats = await loadDashboardStats(list);
     if (!isCurrent(t)) return;
     const liters = list.reduce(function (total, aq) { return total + (Number(aq.real_liters ?? aq.liters) || 0); }, 0);
-    const recent = list.slice(0, 3);
     render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Inicio</h2><p>Resumen general de la app</p></div></section>
       <section class="panel"><div class="panel-head"><h2>Estado general</h2></div>
         <div class="quick-actions">
@@ -104,12 +103,8 @@ window.dashboard = async function () {
         ${emptyLine(`${stats.photos} fotos guardadas.`)}
         ${emptyLine(`${stats.tasks} tareas o avisos pendientes.`)}
       </section>
-      <section class="panel"><div class="panel-head"><h2>Mis acuarios</h2><button onclick="acuariosHome()">Ver todos los acuarios</button></div>
-        <div class="tank-list">${recent.map(aquariumCard).join('') || '<p class="small">Sin acuarios todavía.</p>'}</div>
-      </section>
       <section class="panel"><div class="panel-head"><h2>Accesos rápidos</h2></div>
         <div class="quick-actions">
-          <button onclick="acuariosHome()"><span>🐠</span>Ver acuarios</button>
           <button onclick="openQuickAqSection('parametros')"><span>🧪</span>Añadir parámetro</button>
           <button onclick="openQuickAqSection('animales')"><span>🐟</span>Añadir animal</button>
           <button onclick="openQuickAqSection('fotos')"><span>📷</span>Añadir foto</button>
