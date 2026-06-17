@@ -9,6 +9,7 @@ function login() {
     <button class="primary" onclick="iniciar()">Entrar</button>
     <button onclick="crear()">Crear cuenta</button>
     <button onclick="recuperarPassword()">Olvidé mi contraseña</button>
+    <button class="ghost" onclick="adminPanel()">Admin</button>
     <div id="x"></div>
   </section>`, 'inicio', false);
 }
@@ -86,6 +87,23 @@ window.crear = async function () {
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
   }
+};
+
+window.adminPanel = function () {
+  if (!state.user) {
+    if (byId('x')) byId('x').innerHTML = msg('Primero entra con tu cuenta. Después aparecerá Admin en la barra inferior.', 'notice');
+    return;
+  }
+  render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>Panel de administración</p></div></section>
+    <section class="panel"><div class="panel-head"><h2>Accesos admin</h2></div>
+      <div class="quick-actions">
+        <button onclick="biblioteca()"><span>□</span>Fichas</button>
+        <button onclick="tareas()"><span>♢</span>Avisos</button>
+        <button onclick="inventario()"><span>▤</span>Inventario</button>
+        <button onclick="dashboard()"><span>⌂</span>Inicio</button>
+      </div>
+      <p class="small">Admin queda visible. Las acciones sensibles siguen protegidas por las políticas reales de Supabase.</p>
+    </section>`, 'admin');
 };
 
 async function boot() {
