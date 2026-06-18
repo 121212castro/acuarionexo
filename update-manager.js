@@ -50,7 +50,7 @@
 
       if (remoteBuild !== CURRENT_BUILD || (storedBuild && storedBuild !== remoteBuild)) {
         localStorage.setItem(KEY, remoteBuild);
-        await forceReload(remoteBuild);
+        return;
       }
     } catch (_) {}
   }
