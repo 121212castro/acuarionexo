@@ -1,0 +1,22 @@
+/* AcuarioNexo · corrección móvil Acuarios */
+@media (max-width: 520px) {
+  .panel .form-grid:has(input[type="date"]) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .panel input[type="date"] {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    display: block;
+    appearance: none;
+    -webkit-appearance: none;
+    font-size: 16px;
+    line-height: 1.2;
+    padding: 12px;
+  }
+
+  .panel .form-grid:has(input[type="date"]) > div {
+    min-width: 0;
+  }
+}
