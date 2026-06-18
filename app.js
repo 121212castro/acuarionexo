@@ -85,7 +85,7 @@
     const liters = aq.real_liters ?? aq.liters ?? '-';
     const type = aq.aquarium_type || aq.type || 'Acuario';
     return `<section class="tank-head">
-      <button onclick="dashboard()">←</button>
+      <button onclick="listaAcuarios()">←</button>
       <div><h2>${esc(aq.name || 'Acuario')}</h2><p>${esc(liters)} L · ${esc(type)}</p></div>
     </section>
     <nav class="tank-tabs">
