@@ -137,8 +137,10 @@ function calcVolumesFromInputs() {
   const displayNet = Math.max(0, displayWater - displaced);
   const sumpGross = lDisplay(val('sump_length_cm'), val('sump_width_cm'), val('sump_height_cm'));
   const sumpNet = byId('has_sump')?.checked ? lDisplay(val('sump_length_cm'), val('sump_width_cm'), val('sump_water_height_cm')) : 0;
+  const refugium = byId('has_refugium')?.checked ? (num('refugium_liters') || 0) : 0;
+  const ato = byId('has_ato_reservoir')?.checked ? (num('ato_reservoir_liters') || 0) : 0;
   const systemNet = displayNet + sumpNet;
-  return { gross, displayWater, displaced, displayNet, sumpGross, sumpNet, systemNet };
+  return { gross, displayWater, displaced, displayNet, sumpGross, sumpNet, refugium, ato, systemNet };
 }
 window.calcAqVolumes = function () {
   const c = calcVolumesFromInputs();
@@ -149,11 +151,34 @@ window.calcAqVolumes = function () {
   set('calcDisplayNet', c.displayNet);
   set('calcSumpGross', c.sumpGross);
   set('calcSumpNet', c.sumpNet);
+  set('calcRefugium', c.refugium);
+  set('calcAto', c.ato);
   set('calcSystemNet', c.systemNet);
+};
+
+window.pickAqCover = function (mode) {
+  const input = byId('aqCoverFile');
+  if (!input) return;
+  input.setAttribute('capture', mode === 'camera' ? 'environment' : '');
+  input.click();
+};
+window.previewAqCover = function () {
+  const input = byId('aqCoverFile');
+  const img = byId('aqCoverPreview');
+  const file = input?.files?.[0];
+  if (!file || !img) return;
+  img.src = URL.createObjectURL(file);
+  img.classList.remove('hidden');
+};
+window.clearAqCover = function () {
+  if (byId('aqCoverFile')) byId('aqCoverFile').value = '';
+  if (byId('aqCover')) byId('aqCover').value = '';
+  if (byId('aqCoverPreview')) byId('aqCoverPreview').classList.add('hidden');
 };
 
 window.formA = function (aq = {}) {
   const editing = !!aq.id;
+  const cover = aq.cover_photo_url || aq.__cover_url || '';
   render(`<section class="panel">
     <button onclick="${editing ? 'panel()' : 'acuariosHome()'}">← Volver</button>
     <h2>${editing ? 'Editar ficha del acuario' : 'Nuevo acuario'}</h2>
@@ -175,7 +200,16 @@ window.formA = function (aq = {}) {
       <option value="archived" ${aq.status === 'archived' ? 'selected' : ''}>Archivado / desmontado</option>
     </select>
     <label>Ubicación</label><input id="aqLocation" value="${safeVal(aq, 'location')}" placeholder="Salón, tienda, cliente...">
-    <label>Foto de portada URL</label><input id="aqCover" value="${safeVal(aq, 'cover_photo_url')}" placeholder="URL de imagen principal">
+
+    <h3>Foto de portada</h3>
+    <input id="aqCover" type="hidden" value="${esc(cover)}">
+    <input id="aqCoverFile" class="hidden" type="file" accept="image/*" onchange="previewAqCover()">
+    <img id="aqCoverPreview" class="aq-cover-photo ${cover ? '' : 'hidden'}" src="${esc(cover)}" alt="Portada">
+    <div class="quick-actions">
+      <button type="button" onclick="pickAqCover('camera')"><span>📷</span>Tomar foto</button>
+      <button type="button" onclick="pickAqCover('gallery')"><span>🖼</span>Galería</button>
+      <button type="button" onclick="clearAqCover()"><span>🗑</span>Quitar</button>
+    </div>
 
     <h3>Urna principal</h3>
     <div class="form-grid">
@@ -191,7 +225,7 @@ window.formA = function (aq = {}) {
       <div><label>Kg arena / sustrato</label><input id="sand_kg" type="number" step="0.1" value="${safeVal(aq, 'sand_kg')}" oninput="calcAqVolumes()"></div>
     </div>
 
-    <h3>Sump</h3>
+    <h3>Sump y auxiliares</h3>
     <label><input id="has_sump" type="checkbox" ${checkbox(aq, 'has_sump')} onchange="calcAqVolumes()"> Tiene sump</label>
     <div class="form-grid">
       <div><label>Largo sump (cm)</label><input id="sump_length_cm" type="number" step="0.1" value="${safeVal(aq, 'sump_length_cm')}" oninput="calcAqVolumes()"></div>
@@ -199,6 +233,10 @@ window.formA = function (aq = {}) {
       <div><label>Alto sump (cm)</label><input id="sump_height_cm" type="number" step="0.1" value="${safeVal(aq, 'sump_height_cm')}" oninput="calcAqVolumes()"></div>
       <div><label>Altura agua sump (cm)</label><input id="sump_water_height_cm" type="number" step="0.1" value="${safeVal(aq, 'sump_water_height_cm')}" oninput="calcAqVolumes()"></div>
     </div>
+    <label><input id="has_refugium" type="checkbox" ${checkbox(aq, 'has_refugium')} onchange="calcAqVolumes()"> Tiene refugio</label>
+    <label>Litros refugio</label><input id="refugium_liters" type="number" step="0.1" value="${safeVal(aq, 'refugium_liters')}" oninput="calcAqVolumes()">
+    <label><input id="has_ato_reservoir" type="checkbox" ${checkbox(aq, 'has_ato_reservoir')} onchange="calcAqVolumes()"> Tiene cámara / depósito de relleno ATO</label>
+    <label>Litros cámara / depósito ATO</label><input id="ato_reservoir_liters" type="number" step="0.1" value="${safeVal(aq, 'ato_reservoir_liters')}" oninput="calcAqVolumes()">
 
     <h3>Volumen calculado</h3>
     <div class="item">
@@ -208,6 +246,8 @@ window.formA = function (aq = {}) {
       <p>Litros útiles urna: <b id="calcDisplayNet">0.0 L</b></p>
       <p>Litros brutos sump: <b id="calcSumpGross">0.0 L</b></p>
       <p>Litros útiles sump: <b id="calcSumpNet">0.0 L</b></p>
+      <p>Litros refugio: <b id="calcRefugium">0.0 L</b></p>
+      <p>Litros ATO: <b id="calcAto">0.0 L</b></p>
       <p>Litros útiles sistema: <b id="calcSystemNet">0.0 L</b></p>
     </div>
     <label>Litros reales confirmados manualmente</label><input id="manual_real_liters" type="number" step="0.1" value="${safeVal(aq, 'manual_real_liters')}">
@@ -233,7 +273,12 @@ window.saveA = async function (id = '') {
   try {
     if (!val('aqName')) throw new Error('Pon un nombre al acuario.');
     const c = calcVolumesFromInputs();
-    const cover = val('aqCover') || null;
+    let cover = val('aqCover') || null;
+    const file = byId('aqCoverFile')?.files?.[0];
+    if (file) {
+      if (!id) throw new Error('Guarda primero el acuario y después cambia la portada.');
+      cover = await window.ANX.uploadAquariumImage(file, 'aquarium-covers');
+    }
     const row = {
       user_id: state.user.id,
       name: val('aqName'),
@@ -253,6 +298,10 @@ window.saveA = async function (id = '') {
       sump_width_cm: num('sump_width_cm'),
       sump_height_cm: num('sump_height_cm'),
       sump_water_height_cm: num('sump_water_height_cm'),
+      has_refugium: !!byId('has_refugium')?.checked,
+      refugium_liters: num('refugium_liters'),
+      has_ato_reservoir: !!byId('has_ato_reservoir')?.checked,
+      ato_reservoir_liters: num('ato_reservoir_liters'),
       gross_liters: Number(c.gross.toFixed(1)),
       display_net_liters: Number(c.displayNet.toFixed(1)),
       sump_net_liters: Number(c.sumpNet.toFixed(1)),
@@ -281,7 +330,7 @@ window.editA = async function () {
   const aq = currentAquarium();
   if (!aq) return acuariosHome();
   window.formA(aq);
-}
+};
 
 window.openA = async function (id) {
   const t = token();
