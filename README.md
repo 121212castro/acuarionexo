@@ -19,7 +19,13 @@ Antes de editar, leer:
 
 Build actual:
 
-- `biblioteca-store-only-v1-20260619`
+- `supabase-migration-v1-20260619`
+
+Supabase oficial:
+
+- Proyecto `acuarionexo-oficial`
+- Ref `vqpxhozavfzgtkqscncs`
+- URL `https://vqpxhozavfzgtkqscncs.supabase.co`
 
 Destino:
 
