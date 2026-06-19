@@ -51,7 +51,6 @@ function loadDashboardStats(_list) {
   // estos COUNT exactos pueden forzar escaneos y dejar Postgres en timeout.
   return {
     animals: 'No calculado',
-    fichas: 'No calculado',
     photos: 'No calculado',
     measurements: 'No calculado',
     tasks: null
@@ -73,7 +72,6 @@ window.dashboard = async function () {
           ${dashboardStat('Acuarios activos', String(list.length))}
           ${dashboardStat('Litros gestionados', liters ? `${liters.toFixed(1)} L` : 'Sin datos')}
           ${dashboardStat('Animales registrados', String(stats.animals))}
-          ${dashboardStat('Fichas visibles', String(stats.fichas))}
         </div>
       </section>
       <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>${emptyLine('Métricas desactivadas temporalmente en modo seguro para no cargar Supabase.')}</section>
@@ -325,7 +323,6 @@ window.panel = function () {
   </section>
   <section class="panel"><div class="panel-head"><h2>Accesos</h2><button onclick="formA(window.q)">Editar ficha</button></div>
     <div class="quick-actions">
-      <button onclick="fichasAcuario()"><span>□</span>Fichas</button>
       <button onclick="animales()"><span>🐟</span>Animales</button>
       <button onclick="mapaIA()"><span>◎</span>Mapa IA</button>
       <button onclick="fotos()"><span>▧</span>Fotos</button>
@@ -339,7 +336,6 @@ window.openAqSection = function (section) {
   const aq = currentAquarium();
   if (!aq) return listaAcuarios();
   if (section === 'resumen') return panel();
-  if (section === 'fichas') return fichasAcuario();
   if (section === 'animales') return animales();
   if (section === 'mapa') return mapaIA();
   if (section === 'fotos') return fotos();
