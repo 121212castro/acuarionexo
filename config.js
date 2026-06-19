@@ -1,6 +1,6 @@
 window.ACUARIONEXO_CONFIG = {
-  SUPABASE_URL: "https://fpykunamxygclolnjnke.supabase.co",
-  SUPABASE_KEY: "sb_publishable_FICmG_EDURKDibSrG0R2EA_kRqaHNe-",
+  SUPABASE_URL: "https://vqpxhozavfzgtkqscncs.supabase.co",
+  SUPABASE_KEY: "sb_publishable_qF95kBn3CSwIS40eBC_03g_ZWaaHjEy",
   APP_VERSION: "AcuarioNexo",
   FIREBASE_CONFIG: {
     apiKey: "AIzaSyCOSMcEEHG97qgtSeetB03fDYk8r-0420c",
