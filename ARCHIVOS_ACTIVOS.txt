@@ -16,7 +16,6 @@ NUCLEO WEB ACTIVO
 - login-reef.css
 - app.js
 - src/aquariums/aquariums.js
-- src/library/library.js
 - src/animals/animals.js
 - src/map/map.js
 - src/photos/photos.js
