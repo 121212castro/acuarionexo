@@ -6,7 +6,8 @@
     auth: {
       autoRefreshToken: false,
       persistSession: true,
-      detectSessionInUrl: true
+      detectSessionInUrl: true,
+      storageKey: 'acuarionexo-auth-v2'
     }
   });
   const state = {
