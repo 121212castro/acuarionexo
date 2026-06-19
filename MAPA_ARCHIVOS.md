@@ -79,3 +79,9 @@ Estos archivos/carpetas no forman parte de la app publicada y se eliminaron para
 
 - `package.json`: comando `npm run check`.
 - `scripts/validate-app.mjs`: comprueba referencias de `index.html`, build, sintaxis JS y orden de carga.
+
+## Nota de estabilidad 19/06/2026
+
+- `src/library/library.js` no debe cargar automaticamente Biblioteca con busqueda vacia.
+- `src/library/library.js` debe evitar fallback legacy si `library_entries_catalog` falla por timeout, 504, 500 o conexion.
+- `src/aquariums/aquariums.js` mantiene Dashboard en modo seguro sin conteos exactos automaticos.

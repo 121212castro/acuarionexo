@@ -73,6 +73,18 @@ Supabase es la fuente de:
 
 No se debe introducir persistencia local como fuente principal de datos.
 
+## Auditoria Supabase 19/06/2026
+
+Durante la auditoria de `Load failed` y `canceling statement due to statement timeout` se comprobo en logs de Supabase que la pantalla Biblioteca ejecutaba este flujo:
+
+- `POST /rest/v1/rpc/library_entries_catalog?limit=80`
+- despues fallback a `GET /rest/v1/library_entries?...`
+- despues fallback a `GET /rest/v1/fichas_creator?...`
+
+Ese encadenado llego a devolver `504` y `500`. Mientras la base este bajo presion, Biblioteca y Fichas no deben cargar catalogo automaticamente con busqueda vacia. La entrada correcta es buscar con al menos 2 caracteres y no lanzar fuentes legacy cuando la RPC falla por timeout.
+
+Tambien se comprobaron timeouts al intentar leer diagnostico SQL de funcion, RLS, indices y advisors desde Supabase, por lo que cualquier cambio de esquema debe hacerse solo cuando el proyecto vuelva a responder de forma estable.
+
 ## Archivos activos de soporte
 
 - `config.js`: claves/configuracion publica de Supabase.

@@ -19,7 +19,7 @@ Antes de editar, leer:
 
 Build actual:
 
-- `official-library-catalog-v1-20260616`
+- `biblioteca-safe-timeout-v1-20260619`
 
 Destino:
 

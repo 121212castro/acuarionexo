@@ -394,19 +394,34 @@ function fichaCard(f, index, inAq) {
   </article>`;
 }
 
-function withTimeout(promise, ms, label) {
+function withTimeout(request, ms, label) {
   let timer;
+  const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const promise = controller && request && typeof request.abortSignal === 'function'
+    ? request.abortSignal(controller.signal)
+    : request;
   const timeout = new Promise(function (_resolve, reject) {
     timer = setTimeout(function () {
+      if (controller) controller.abort();
       reject(new Error(`${label} tarda demasiado. Revisa conexion o permisos de Supabase.`));
     }, ms);
   });
   return Promise.race([promise, timeout]).finally(function () { clearTimeout(timer); });
 }
 
+function shouldUseLegacyLibraryFallback(error) {
+  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''} ${error?.code || ''}`;
+  return /schema cache|could not find the function|function .* does not exist|PGRST202/i.test(text);
+}
+
+function minSearchMessage() {
+  return msg('Escribe al menos 2 caracteres para buscar fichas. Se ha desactivado la carga automatica para no saturar Supabase mientras se corrigen los timeouts.');
+}
+
 async function loadLibrary(search = '') {
   const clean = search.replace(/[%,]/g, ' ').trim();
-  const limit = clean ? 120 : 80;
+  if (clean.length < 2) return [];
+  const limit = 80;
   try {
     const { data, error } = await withTimeout(
       supabase.rpc('library_entries_catalog', { search_text: clean }).limit(limit),
@@ -416,7 +431,8 @@ async function loadLibrary(search = '') {
     if (error) throw error;
     return normalizeLibraryRows(data || []);
   } catch (catalogError) {
-    console.warn('Biblioteca: catalogo oficial no disponible, usando fuentes legacy', catalogError);
+    if (!shouldUseLegacyLibraryFallback(catalogError)) throw catalogError;
+    console.warn('Biblioteca: catalogo oficial no localizado, usando fuentes legacy', catalogError);
   }
 
   const rows = [];
@@ -478,22 +494,20 @@ window.biblioteca = async function () {
   render(`<section class="panel library-panel">
     <div class="panel-head"><div><h2>Biblioteca</h2><p class="small">Fichas reales guardadas en Supabase.</p></div></div>
     <div class="library-search"><input id="librarySearch" placeholder="Buscar pez, coral, producto..."><button class="primary" onclick="buscarBiblioteca()">Buscar</button></div>
-    <div id="libraryList">${msg('Cargando fichas...')}</div>
+    <div id="libraryList">${minSearchMessage()}</div>
   </section>`, 'biblioteca');
-  try {
-    const rows = await loadLibrary('');
-    if (!isCurrent(t)) return;
-    state.libraryRows = rows;
-    state.libraryModule = null;
-    renderLibrary('libraryList', rows, false);
-  } catch (e) {
-    if (isCurrent(t) && byId('libraryList')) byId('libraryList').innerHTML = msg(e.message || 'No se pudo cargar Biblioteca.', 'error');
-  }
+  if (!isCurrent(t)) return;
+  state.libraryRows = [];
+  state.libraryModule = null;
 };
 
 window.buscarBiblioteca = async function () {
   const t = state.viewToken;
   const box = byId('libraryList');
+  if (val('librarySearch').length < 2) {
+    if (box) box.innerHTML = minSearchMessage();
+    return;
+  }
   if (box) box.innerHTML = msg('Buscando fichas...');
   try {
     const rows = await loadLibrary(val('librarySearch'));
@@ -548,23 +562,21 @@ async function fichasAcuario() {
   render(aqHeader('fichas') + `<section class="panel library-panel">
     <div class="panel-head"><div><h2>Fichas</h2><p class="small">Consulta e importa fichas al acuario.</p></div></div>
     <div class="library-search"><input id="aqFichaSearch" placeholder="Buscar pez, coral, producto..."><button class="primary" onclick="buscarFichasAcuario()">Buscar</button></div>
-    <div id="aqFichaList">${msg('Cargando fichas...')}</div>
+    <div id="aqFichaList">${minSearchMessage()}</div>
   </section>`, 'acuarios');
-  try {
-    const rows = await loadLibrary('');
-    if (!isCurrent(t)) return;
-    state.libraryRows = rows;
-    state.libraryModule = null;
-    renderLibrary('aqFichaList', rows, true);
-  } catch (e) {
-    if (isCurrent(t) && byId('aqFichaList')) byId('aqFichaList').innerHTML = msg(e.message || 'No se pudieron cargar las fichas.', 'error');
-  }
+  if (!isCurrent(t)) return;
+  state.libraryRows = [];
+  state.libraryModule = null;
 }
 window.fichasAcuario = fichasAcuario;
 
 window.buscarFichasAcuario = async function () {
   const t = state.viewToken;
   const box = byId('aqFichaList');
+  if (val('aqFichaSearch').length < 2) {
+    if (box) box.innerHTML = minSearchMessage();
+    return;
+  }
   if (box) box.innerHTML = msg('Buscando fichas...');
   try {
     const rows = await loadLibrary(val('aqFichaSearch'));
