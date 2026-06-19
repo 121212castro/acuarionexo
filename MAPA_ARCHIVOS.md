@@ -11,7 +11,6 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `aquarium-map.css`
 - `login-reef.css`
 - `src/aquariums/aquariums.js`
-- `src/library/library.js`
 - `src/animals/animals.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
@@ -39,7 +38,6 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Modulos de negocio
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
-- `src/library/library.js`: biblioteca y fichas.
 - `src/animals/animals.js`: animales.
 - `src/map/map.js`: mapa IA y 3D.
 - `src/photos/photos.js`: fotos.
@@ -82,7 +80,6 @@ Estos archivos/carpetas no forman parte de la app publicada y se eliminaron para
 
 ## Nota de estabilidad 19/06/2026
 
-- `src/library/library.js` no debe cargar automaticamente Biblioteca con busqueda vacia.
-- `src/library/library.js` debe leer solo `library_entries` como almacen final de Biblioteca.
-- `src/library/library.js` no debe llamar a `library_entries_catalog` ni consultar `fichas_creator`.
+- Biblioteca/Fichas queda retirada de AcuarioNexo en `detach-library-v1-20260619`.
+- AcuarioNexo no debe cargar modulo de biblioteca ni consultar tablas de fichas.
 - `src/aquariums/aquariums.js` mantiene Dashboard en modo seguro sin conteos exactos automaticos.
