@@ -22,7 +22,6 @@ Carga activa comprobada:
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
-- `src/library/library.js`
 - `src/animals/animals.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
@@ -43,7 +42,6 @@ No carga archivos de prueba, wrappers moviles ni copias locales alternativas.
 Las pantallas y reglas de negocio viven en modulos:
 
 - `src/aquariums/aquariums.js`: dashboard, alta/edicion/apertura de acuarios y panel de acuario.
-- `src/library/library.js`: biblioteca, normalizacion de fichas, detalle e importacion.
 - `src/animals/animals.js`: habitantes del acuario.
 - `src/map/map.js`: mapa IA, foto base, puntos y render 3D.
 - `src/photos/photos.js`: galeria y subida de fotos.
@@ -81,11 +79,11 @@ Durante la auditoria de `Load failed` y `canceling statement due to statement ti
 - despues fallback a `GET /rest/v1/library_entries?...`
 - despues fallback a `GET /rest/v1/fichas_creator?...`
 
-Ese encadenado llego a devolver `504` y `500`. Mientras la base este bajo presion, Biblioteca y Fichas no deben cargar catalogo automaticamente con busqueda vacia. La entrada correcta es buscar con al menos 2 caracteres y no lanzar fuentes legacy cuando la RPC falla por timeout.
+Ese encadenado llego a devolver `504` y `500`. Desde `detach-library-v1-20260619`, AcuarioNexo no carga Biblioteca/Fichas ni debe consultar tablas o RPC de fichas.
 
 Tambien se comprobaron timeouts al intentar leer diagnostico SQL de funcion, RLS, indices y advisors desde Supabase, por lo que cualquier cambio de esquema debe hacerse solo cuando el proyecto vuelva a responder de forma estable.
 
-Regla cerrada despues de la revision: Biblioteca es solo almacen final de fichas. AcuarioNexo debe leer `library_entries` filtrado por usuario. No debe llamar a `library_entries_catalog` ni consultar `fichas_creator` desde Biblioteca. NexoCreator crea y envia la ficha terminada; Biblioteca la almacena; despues se importa a Acuarios, Inventario o IA.
+Regla cerrada despues de la revision: Biblioteca/Fichas queda fuera de AcuarioNexo hasta que Supabase este estable y se reactive como modulo separado, probado y sin cargas automaticas. NexoCreator puede seguir preparando fichas, pero AcuarioNexo no debe tocarlas.
 
 ## Archivos activos de soporte
 
@@ -103,7 +101,8 @@ Para cambios normales:
 
 - Cambios de auth: `src/auth/auth.js`.
 - Cambios de acuarios o navegacion de acuario: `src/aquariums/aquariums.js`.
-- Cambios de biblioteca/fichas: `src/library/library.js`.
+- Biblioteca/Fichas retirada de AcuarioNexo desde `detach-library-v1-20260619`.
+- Cambios futuros de fichas deben hacerse fuera de AcuarioNexo hasta reactivar un modulo separado.
 - Cambios de inventario: `src/inventory/inventory.js`.
 - Cambios de parametros: `src/parameters/parameters.js`.
 - Cambios de avisos/IA: `src/ai/ai.js` y `src/tasks/tasks.js`.
