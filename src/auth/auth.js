@@ -14,6 +14,26 @@ function login() {
 }
 window.login = login;
 
+function authMessage(error) {
+  const text = String(error?.message || error || '');
+  if (/load failed|failed to fetch|network|timeout|522/i.test(text)) {
+    return 'Supabase no está respondiendo ahora mismo. El proyecto recibe la petición, pero Auth/Postgres termina en timeout 522.';
+  }
+  return text || 'No se pudo completar la operación.';
+}
+
+function withAuthTimeout(promise, seconds = 18) {
+  let timeoutId;
+  const timeout = new Promise(function (_resolve, reject) {
+    timeoutId = setTimeout(function () {
+      reject(new Error('timeout'));
+    }, seconds * 1000);
+  });
+  return Promise.race([promise, timeout]).finally(function () {
+    clearTimeout(timeoutId);
+  });
+}
+
 window.recuperarPassword = function () {
   render(`<section class="auth-card"><h2>Recuperar contraseña</h2>
     <p class="small">Escribe tu email y te enviaremos un enlace para crear una contraseña nueva.</p>
@@ -32,7 +52,7 @@ window.enviarRecuperacionPassword = async function () {
     if (error) throw error;
     byId('x').innerHTML = msg('Te enviamos un enlace para cambiar la contraseña. Revisa el email.', 'success');
   } catch (e) {
-    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
 };
 
@@ -64,17 +84,17 @@ window.guardarNuevaPassword = async function () {
       <button class="primary" onclick="login()">Entrar</button>
     </section>`, 'inicio', false);
   } catch (e) {
-    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
 };
 
 window.iniciar = async function () {
   try {
-    const { error } = await supabase.auth.signInWithPassword({ email: val('email'), password: val('password') });
+    const { error } = await withAuthTimeout(supabase.auth.signInWithPassword({ email: val('email'), password: val('password') }));
     if (error) throw error;
     boot();
   } catch (e) {
-    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
 };
 
@@ -92,7 +112,7 @@ window.crear = async function () {
     if (error) throw error;
     byId('x').innerHTML = msg('Cuenta creada. Si Supabase pide confirmación, revisa el email.', 'success');
   } catch (e) {
-    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
 };
 
@@ -114,7 +134,7 @@ window.adminPanel = function () {
 
 async function boot() {
   try {
-    const session = await supabase.auth.getSession();
+    const session = await withAuthTimeout(supabase.auth.getSession(), 8);
     state.user = session.data.session?.user || null;
     window.u = state.user;
     updateSessionHeader();
@@ -134,7 +154,7 @@ async function boot() {
     }
     state.user ? dashboard() : login();
   } catch (e) {
-    render(msg(e.message, 'error'), 'inicio', false);
+    render(msg(authMessage(e), 'error'), 'inicio', false);
   }
 }
 
