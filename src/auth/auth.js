@@ -104,7 +104,6 @@ window.adminPanel = function () {
   render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>Panel de administración</p></div></section>
     <section class="panel"><div class="panel-head"><h2>Accesos admin</h2></div>
       <div class="quick-actions">
-        <button onclick="biblioteca()"><span>□</span>Fichas</button>
         <button onclick="tareas()"><span>♢</span>Avisos</button>
         <button onclick="inventario()"><span>▤</span>Inventario</button>
         <button onclick="dashboard()"><span>⌂</span>Inicio</button>
