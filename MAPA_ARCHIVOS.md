@@ -83,5 +83,6 @@ Estos archivos/carpetas no forman parte de la app publicada y se eliminaron para
 ## Nota de estabilidad 19/06/2026
 
 - `src/library/library.js` no debe cargar automaticamente Biblioteca con busqueda vacia.
-- `src/library/library.js` debe evitar fallback legacy si `library_entries_catalog` falla por timeout, 504, 500 o conexion.
+- `src/library/library.js` debe leer solo `library_entries` como almacen final de Biblioteca.
+- `src/library/library.js` no debe llamar a `library_entries_catalog` ni consultar `fichas_creator`.
 - `src/aquariums/aquariums.js` mantiene Dashboard en modo seguro sin conteos exactos automaticos.

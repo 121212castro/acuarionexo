@@ -409,72 +409,26 @@ function withTimeout(request, ms, label) {
   return Promise.race([promise, timeout]).finally(function () { clearTimeout(timer); });
 }
 
-function shouldUseLegacyLibraryFallback(error) {
-  const text = `${error?.message || ''} ${error?.details || ''} ${error?.hint || ''} ${error?.code || ''}`;
-  return /schema cache|could not find the function|function .* does not exist|PGRST202/i.test(text);
-}
-
 function minSearchMessage() {
-  return msg('Escribe al menos 2 caracteres para buscar fichas. Se ha desactivado la carga automatica para no saturar Supabase mientras se corrigen los timeouts.');
+  return msg('Biblioteca es el almacen de fichas guardadas. Busca por nombre para ver solo fichas ya pasadas desde NexoCreator.');
 }
 
-async function loadLibrary(search = '') {
-  const clean = search.replace(/[%,]/g, ' ').trim();
+async function loadLibrary(searchText = '') {
+  const clean = searchText.replace(/[%,]/g, ' ').trim();
   if (clean.length < 2) return [];
   const limit = 80;
-  try {
-    const { data, error } = await withTimeout(
-      supabase.rpc('library_entries_catalog', { search_text: clean }).limit(limit),
-      10000,
-      'La Biblioteca oficial'
-    );
-    if (error) throw error;
-    return normalizeLibraryRows(data || []);
-  } catch (catalogError) {
-    if (!shouldUseLegacyLibraryFallback(catalogError)) throw catalogError;
-    console.warn('Biblioteca: catalogo oficial no localizado, usando fuentes legacy', catalogError);
-  }
-
-  const rows = [];
-  const sources = [
-    {
-      table: 'library_entries',
-      userScoped: true,
-      search: `title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%`
-    },
-    {
-      table: 'fichas_creator',
-      userScoped: false,
-      search: `scientific_name.ilike.%${clean}%,category.ilike.%${clean}%`
-    }
-  ];
-
-  for (const source of sources) {
-    try {
-      let query = supabase.from(source.table).select('*').limit(limit);
-      if (source.userScoped && state.user?.id) query = query.eq('user_id', state.user.id);
-      if (clean) query = query.or(source.search);
-      const { data, error } = await withTimeout(query, 10000, `La Biblioteca (${source.table})`);
-      if (error) throw error;
-      rows.push(...(data || []));
-    } catch (e) {
-      if (!/user_id|schema cache|column/i.test(e.message || '')) {
-        console.warn(`Biblioteca: no se pudo leer ${source.table}`, e);
-        continue;
-      }
-      try {
-        let query = supabase.from(source.table).select('*').limit(limit);
-        if (clean) query = query.or(source.search);
-        const { data, error } = await withTimeout(query, 10000, `La Biblioteca (${source.table})`);
-        if (error) throw error;
-        rows.push(...(data || []));
-      } catch (fallbackError) {
-        console.warn(`Biblioteca: fallback sin user_id fallo en ${source.table}`, fallbackError);
-      }
-    }
-  }
-
-  return normalizeLibraryRows(rows);
+  if (!state.user?.id) return [];
+  const searchFilter = `title.ilike.%${clean}%,scientific_name.ilike.%${clean}%,description.ilike.%${clean}%`;
+  const query = supabase
+    .from('library_entries')
+    .select('*')
+    .eq('user_id', state.user.id)
+    .or(searchFilter)
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+  const { data, error } = await withTimeout(query, 10000, 'La Biblioteca');
+  if (error) throw error;
+  return normalizeLibraryRows(data || []);
 }
 
 function normalizeLibraryRows(rows) {

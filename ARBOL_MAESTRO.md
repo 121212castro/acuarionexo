@@ -85,6 +85,8 @@ Ese encadenado llego a devolver `504` y `500`. Mientras la base este bajo presio
 
 Tambien se comprobaron timeouts al intentar leer diagnostico SQL de funcion, RLS, indices y advisors desde Supabase, por lo que cualquier cambio de esquema debe hacerse solo cuando el proyecto vuelva a responder de forma estable.
 
+Regla cerrada despues de la revision: Biblioteca es solo almacen final de fichas. AcuarioNexo debe leer `library_entries` filtrado por usuario. No debe llamar a `library_entries_catalog` ni consultar `fichas_creator` desde Biblioteca. NexoCreator crea y envia la ficha terminada; Biblioteca la almacena; despues se importa a Acuarios, Inventario o IA.
+
 ## Archivos activos de soporte
 
 - `config.js`: claves/configuracion publica de Supabase.

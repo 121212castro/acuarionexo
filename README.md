@@ -19,7 +19,7 @@ Antes de editar, leer:
 
 Build actual:
 
-- `biblioteca-safe-timeout-v1-20260619`
+- `biblioteca-store-only-v1-20260619`
 
 Destino:
 
