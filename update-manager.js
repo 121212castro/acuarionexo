@@ -3,7 +3,9 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
-  const CHECK_INTERVAL_MS = 60000;
+  const CHECK_INTERVAL_MS = 30 * 60 * 1000;
+  const MIN_CHECK_GAP_MS = 5 * 60 * 1000;
+  let checking = false;
 
   async function clearAppCache() {
     try {
@@ -40,6 +42,10 @@
   }
 
   async function checkVersion() {
+    if (checking) return;
+    const lastCheck = Date.parse(localStorage.getItem(LAST_CHECK_KEY) || '');
+    if (Number.isFinite(lastCheck) && Date.now() - lastCheck < MIN_CHECK_GAP_MS) return;
+    checking = true;
     try {
       localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
       const remoteBuild = await fetchRemoteVersion();
@@ -52,7 +58,10 @@
         localStorage.setItem(KEY, remoteBuild);
         return;
       }
-    } catch (_) {}
+    } catch (_) {
+    } finally {
+      checking = false;
+    }
   }
 
   window.AcuarioNexoUpdate = { checkVersion, forceReload, clearAppCache };
