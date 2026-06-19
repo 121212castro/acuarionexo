@@ -2,7 +2,13 @@
 (function () {
   const config = window.ACUARIONEXO_CONFIG || {};
   const app = document.getElementById('app');
-  const supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY);
+  const supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: true,
+      detectSessionInUrl: true
+    }
+  });
   const state = {
     user: null,
     aquariums: [],
