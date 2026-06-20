@@ -1,0 +1,63 @@
+name: Android Debug APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app.js'
+      - 'config.js'
+      - 'src/**'
+      - '*.css'
+      - '*.js'
+      - 'app-version.json'
+      - 'manifest.webmanifest'
+      - 'icon-512.png'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - 'scripts/prepare-mobile-bundle.mjs'
+      - '.github/workflows/android-debug-apk.yml'
+
+jobs:
+  build-debug-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate web app
+        run: npm run check
+
+      - name: Prepare bundled web assets
+        run: npm run mobile:prepare
+
+      - name: Generate Android project
+        run: npx cap add android
+
+      - name: Sync Android project
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug
+        working-directory: android
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: acuarionexo-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
