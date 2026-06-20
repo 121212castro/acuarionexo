@@ -19,7 +19,7 @@ Flujo recomendado:
 3. Descargar el artefacto `acuarionexo-debug-apk`.
 4. Instalar `app-debug.apk` en el dispositivo Android.
 
-Cuando la app esté lista para testers externos, cambiar a APK/AAB firmado de release.
+Cuando la app este lista para testers externos, cambiar a APK/AAB firmado de release.
 
 ## iPhone fuera de tienda
 
@@ -29,15 +29,22 @@ iOS no permite instalar una IPA normal fuera de App Store sin firma Apple. Opcio
 - TestFlight: no es App Store publica, pero requiere Apple Developer Program.
 - PWA instalada: funciona sin Apple Developer, pero no es app nativa empaquetada.
 
-Flujo preparado para generar proyecto iOS:
+## iOS ya preparado en GitHub
 
-```bash
-npm install
-npm run mobile:add:ios
-npm run mobile:open:ios
-```
+Hay dos workflows:
 
-Despues se firma desde Xcode con el equipo Apple correspondiente.
+- `iOS Capacitor Project`: genera y sube el proyecto Xcode como artefacto `acuarionexo-ios-project`.
+- `iOS Ad Hoc IPA`: genera una IPA instalable cuando esten configurados los secretos Apple.
+
+Secretos requeridos para `iOS Ad Hoc IPA`:
+
+- `APPLE_TEAM_ID`
+- `IOS_DISTRIBUTION_CERTIFICATE_BASE64`
+- `IOS_DISTRIBUTION_CERTIFICATE_PASSWORD`
+- `IOS_ADHOC_PROVISION_PROFILE_BASE64`
+- `IOS_KEYCHAIN_PASSWORD`
+
+La IPA solo se instalara en iPhones incluidos en el provisioning profile Ad Hoc.
 
 ## Scripts oficiales
 
@@ -54,6 +61,8 @@ npm run mobile:sync
 - `capacitor.config.json`: identificador `com.acuarionexo.app`, nombre `AcuarioNexo`, `webDir` `www`.
 - `scripts/prepare-mobile-bundle.mjs`: copia la app web activa dentro de `www/`.
 - `.github/workflows/android-debug-apk.yml`: genera APK Android debug desde GitHub.
+- `.github/workflows/ios-mobile-build.yml`: genera proyecto iOS/Xcode desde GitHub.
+- `.github/workflows/ios-adhoc-ipa.yml`: genera IPA Ad Hoc firmada cuando existan secretos Apple.
 
 ## Reglas
 
