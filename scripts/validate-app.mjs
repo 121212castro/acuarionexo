@@ -69,6 +69,7 @@ function createLoadContext() {
     if (!elements.has(id)) {
       elements.set(id, {
         id,
+        value: '',
         innerHTML: '',
         textContent: '',
         onclick: null,
@@ -79,7 +80,10 @@ function createLoadContext() {
         scrollIntoView() {},
         getBoundingClientRect() { return { left: 0, top: 0, width: 640, height: 360 }; },
         style: {},
-        appendChild() {}
+        appendChild() {},
+        click() {},
+        setAttribute() {},
+        removeAttribute() {}
       });
     }
     return elements.get(id);
@@ -93,6 +97,7 @@ function createLoadContext() {
     clearInterval() {},
     requestAnimationFrame(fn) { fn(); },
     scrollTo() {},
+    crypto: { randomUUID() { return '00000000-0000-4000-8000-000000000000'; } },
     location: { origin: 'https://121212castro.github.io', pathname: '/acuarionexo/', hash: '', search: '', reload() {}, replace() {} },
     history: { replaceState() {} },
     localStorage: { getItem() { return null; }, setItem() {} },
@@ -146,6 +151,9 @@ function createLoadContext() {
             };
           }
         },
+        functions: {
+          invoke() { return Promise.resolve({ data: { data: { sections: {} } }, error: null }); }
+        },
         auth: {
           getSession() { return Promise.resolve({ data: { session: null } }); },
           onAuthStateChange() {},
@@ -167,7 +175,7 @@ async function checkLoadOrder() {
   for (const script of scriptRefs()) {
     vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), context, { filename: script });
   }
-  if (typeof context.biblioteca === 'function') fail('window.biblioteca must stay detached from AcuarioNexo.');
+  if (typeof context.biblioteca !== 'function') fail('window.biblioteca must be available when the library module is active.');
 }
 
 try {
