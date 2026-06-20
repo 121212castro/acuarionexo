@@ -1,0 +1,60 @@
+/* AcuarioNexo · mobile form breathing room */
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  padding-bottom: calc(132px + env(safe-area-inset-bottom));
+}
+
+#app {
+  padding-bottom: calc(172px + env(safe-area-inset-bottom));
+}
+
+.panel.library-detail {
+  margin-bottom: calc(150px + env(safe-area-inset-bottom));
+  padding-bottom: calc(44px + env(safe-area-inset-bottom));
+}
+
+.library-detail textarea {
+  min-height: 118px;
+}
+
+.library-detail button.primary:last-of-type {
+  margin-bottom: calc(48px + env(safe-area-inset-bottom));
+}
+
+.bottom-nav {
+  box-shadow: 0 -16px 32px rgba(0, 0, 0, .34);
+}
+
+@media(max-width:430px) {
+  #app {
+    padding-left: 10px;
+    padding-right: 10px;
+    padding-bottom: calc(190px + env(safe-area-inset-bottom));
+  }
+
+  .panel.library-detail {
+    margin-top: 8px;
+    margin-bottom: calc(168px + env(safe-area-inset-bottom));
+    padding: 14px 12px calc(70px + env(safe-area-inset-bottom));
+  }
+
+  .library-detail label {
+    margin-top: 16px;
+    font-size: 17px;
+  }
+
+  .library-detail input,
+  .library-detail select,
+  .library-detail textarea {
+    min-height: 58px;
+    border-radius: 15px;
+  }
+
+  .library-detail textarea {
+    min-height: 132px;
+  }
+}
