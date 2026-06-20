@@ -16,7 +16,9 @@
     aquarium: null,
     section: 'inicio',
     passwordRecovery: false,
-    viewToken: 0
+    viewToken: 0,
+    libraryRows: [],
+    libraryFilter: 'all'
   };
 
   window.s = supabase;
@@ -57,6 +59,7 @@
     return `<nav class="bottom-nav">
       ${item('inicio', 'Inicio', '⌂', 'dashboard()')}
       ${item('acuarios', 'Acuarios', '▣', 'acuariosHome()')}
+      ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
       ${item('inventario', 'Inventario', '▤', 'inventario()')}
     </nav>`;
