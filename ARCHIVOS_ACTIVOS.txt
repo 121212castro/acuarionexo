@@ -1,9 +1,10 @@
-ACUARIONEXO · OFFICIAL MODULES · 16/06/2026
+ACUARIONEXO · OFFICIAL MODULES · 21/06/2026
 
 FUENTE DE VERDAD
 - Rama unica de trabajo: main.
-- URL unica de app: https://121212castro.github.io/acuarionexo/
-- Local no es entorno vivo: solo sirve para revisar, preparar commits y subir.
+- URL web: https://121212castro.github.io/acuarionexo/
+- App movil: Capacitor con archivos internos generados en www/.
+- Local no es entorno vivo: solo sirve para revisar, preparar y subir.
 - Supabase es la fuente de datos, auth y storage.
 - No crear enlaces alternativos para cambios normales.
 - No reactivar archivos legacy ni motores que sobreescriban pantallas.
@@ -14,14 +15,19 @@ NUCLEO WEB ACTIVO
 - styles.css
 - aquarium-map.css
 - login-reef.css
+- aquarium-cards.css
+- aquariums-mobile-fix.css
 - app.js
 - src/aquariums/aquariums.js
+- src/aquariums/photo-picker-fix.js
+- src/library/library.js
 - src/animals/animals.js
 - src/map/map.js
 - src/photos/photos.js
 - src/inventory/inventory.js
 - src/ai/ai.js
 - src/parameters/parameters.js
+- src/parameters/measurements-advanced.js
 - src/tasks/tasks.js
 - src/auth/auth.js
 - update-manager.js
@@ -30,9 +36,23 @@ NUCLEO WEB ACTIVO
 - manifest.webmanifest
 - icon-512.png
 
+NUCLEO MOVIL ACTIVO
+- capacitor.config.json
+- scripts/prepare-mobile-bundle.mjs
+- mobile/README.md
+- .github/workflows/android-debug-apk.yml
+
+GENERADO, NO EDITAR A MANO
+- www/
+- android/
+- ios/
+- node_modules/
+
 REGLAS OBLIGATORIAS
 - app.js es el nucleo coordinador, no un contenedor de pantallas.
 - index.html solo carga el nucleo web activo y CDNs necesarios.
+- La app movil copia el nucleo web activo a www/ con npm run mobile:prepare.
+- No usar server.url en Capacitor: la app debe llevar los archivos dentro.
 - Solo los modulos oficiales pueden exponer funciones window.* para botones inline.
 - Si una funcionalidad hace falta, se integra en su modulo de dominio con una unica fuente de estado en window.ANX.
 - src/auth/auth.js se carga al final porque ejecuta boot().
@@ -48,14 +68,16 @@ DOCUMENTACION DE CONTROL
 - CHECKLIST_ANTES_DE_EDITAR.md
 - MAPA_ARCHIVOS.md
 - README.md
+- mobile/README.md
 
 VALIDACION OFICIAL
 - package.json
 - scripts/validate-app.mjs
+- scripts/prepare-mobile-bundle.mjs
 
 COMPROBACIONES ANTES DE PUBLICAR
 1. index.html carga solo el nucleo web activo.
 2. app-version.json coincide con window.ACUARIONEXO_BUILD.
 3. npm run check pasa sin errores.
-4. El cambio queda commiteado y subido a GitHub.
-5. git status queda limpio despues del push.
+4. Si afecta a movil, npm run mobile:prepare pasa sin errores.
+5. El cambio queda subido a GitHub main.
