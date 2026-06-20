@@ -1,0 +1,56 @@
+name: iOS Capacitor Project
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'app.js'
+      - 'config.js'
+      - 'src/**'
+      - '*.css'
+      - '*.js'
+      - 'app-version.json'
+      - 'manifest.webmanifest'
+      - 'icon-512.png'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - 'scripts/prepare-mobile-bundle.mjs'
+      - '.github/workflows/ios-mobile-build.yml'
+
+jobs:
+  ios-project:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate web app
+        run: npm run check
+
+      - name: Prepare bundled web assets
+        run: npm run mobile:prepare
+
+      - name: Generate iOS project
+        run: npx cap add ios
+
+      - name: Sync iOS project
+        run: npx cap sync ios
+
+      - name: Zip iOS project
+        run: ditto -c -k --sequesterRsrc --keepParent ios acuarionexo-ios-project.zip
+
+      - name: Upload iOS project
+        uses: actions/upload-artifact@v4
+        with:
+          name: acuarionexo-ios-project
+          path: acuarionexo-ios-project.zip
