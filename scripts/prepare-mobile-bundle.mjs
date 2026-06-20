@@ -13,6 +13,7 @@ const files = [
   'login-reef.css',
   'aquarium-cards.css',
   'aquariums-mobile-fix.css',
+  'mobile-form-fix.css',
   'aquarium-summary-enhancer.js',
   'aquarium-section-router-fix.js',
   'inventory-timeout-fix.js',
