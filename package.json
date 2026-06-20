@@ -1,9 +1,25 @@
 {
   "name": "acuarionexo",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/validate-app.mjs"
+    "check": "node scripts/validate-app.mjs",
+    "mobile:prepare": "node scripts/prepare-mobile-bundle.mjs",
+    "mobile:sync": "npm run mobile:prepare && npx cap sync",
+    "mobile:add:android": "npm run mobile:prepare && npx cap add android",
+    "mobile:add:ios": "npm run mobile:prepare && npx cap add ios",
+    "mobile:open:android": "npx cap open android",
+    "mobile:open:ios": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/app": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor/ios": "latest",
+    "@capacitor/preferences": "latest"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "latest"
   }
 }
