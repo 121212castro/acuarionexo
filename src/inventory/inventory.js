@@ -74,7 +74,7 @@ window.inventario = async function (scope = 'general') {
   const title = isAq ? `Inventario de ${aq.name || 'acuario'}` : 'Inventario general';
   render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir</button></div>${msg('Cargando inventario...')}</section>`, active);
   try {
-    const { data, error } = await supabase.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(120);
+    const { data, error } = await supabase.from('inventory_items').select('id,name,category,quantity,unit,photo_url,aquarium_id,expiry_date,notes,created_at').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(120);
     if (error) throw error;
     if (!isCurrent(t)) return;
     const rows = data || [];
