@@ -6,15 +6,17 @@
 async function parametros() {
   const aq = currentAquarium();
   const t = token();
-  render(aqHeader('parametros') + `<section class="panel"><div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Admin</button><button class="primary" onclick="formParametro()">Añadir</button></div></div>${msg('Cargando parámetros...')}</section>`, 'acuarios');
+  render(aqHeader('parametros') + `<section class="panel"><div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('weekly')">Semanal</button></div></div>${msg('Cargando parámetros...')}</section>`, 'acuarios');
   try {
-    const { data, error } = await supabase.from('aquarium_measurements').select('*').eq('aquarium_id', aq.id).order('measured_at', { ascending: false }).limit(80);
+    const { data, error } = await supabase.from('aquarium_measurements').select('*').eq('aquarium_id', aq.id).order('measured_at', { ascending: false }).limit(180);
     if (error) throw error;
     if (!isCurrent(t)) return;
     const rows = data || [];
     render(aqHeader('parametros') + `<section class="panel param-screen">
-      <div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Admin</button><button class="primary" onclick="formParametro()">Añadir</button></div></div>
+      <div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('weekly')">Semanal</button></div></div>
+      ${paramActionPanel()}
       ${paramLatestPanel(aq, rows)}
+      ${paramCyclePanel(rows)}
       <h3>Historial</h3>
       ${paramHistoryHtml(rows)}
     </section>`, 'acuarios');
@@ -25,6 +27,14 @@ async function parametros() {
 
 function paramKeysForAquarium(aq) {
   return Object.keys(aiMeasurementPlans[aiAquariumMode(aq)] || aiMeasurementPlans.marine);
+}
+
+function paramActionPanel() {
+  return `<div class="param-actions param-profile-actions">
+    <button onclick="formMedicionCompleta('weekly')">Semanal</button>
+    <button onclick="formMedicionCompleta('monthly')">Mensual</button>
+    <button onclick="formMedicionCompleta('icp')">ICP</button>
+  </div>`;
 }
 
 function paramDisplayValue(row) {
@@ -75,6 +85,27 @@ function paramLatestPanel(aq, rows) {
   </div>`;
 }
 
+function paramCyclePanel(rows) {
+  const weekly = rows.find(r => r.source === 'weekly' || /semanal/i.test(r.method || ''));
+  const monthly = rows.find(r => r.source === 'monthly' || /mensual/i.test(r.method || ''));
+  const icp = rows.find(r => r.source === 'icp' || /icp|laboratorio/i.test(r.method || ''));
+  function item(title, row, action) {
+    return `<button class="param-cycle-card" onclick="${action}">
+      <b>${esc(title)}</b>
+      <strong>${row ? esc(dateText(row.measured_at || row.created_at)) : 'Pendiente'}</strong>
+      <small>${row ? esc(row.method || row.source || 'Registrado') : 'Crear registro'}</small>
+    </button>`;
+  }
+  return `<div class="param-aq-card">
+    <h3>Ciclos de medición</h3>
+    <div class="param-cycle-grid">
+      ${item('Semanal', weekly, "formMedicionCompleta('weekly')")}
+      ${item('Mensual', monthly, "formMedicionCompleta('monthly')")}
+      ${item('ICP', icp, "formMedicionCompleta('icp')")}
+    </div>
+  </div>`;
+}
+
 function paramHistoryHtml(rows) {
   if (!rows.length) return msg('Sin mediciones todavía.');
   return `<div class="date-list">${rows.map(function (r) {
@@ -82,7 +113,7 @@ function paramHistoryHtml(rows) {
     return `<div class="item param-history-row">
       <b>${esc(r.parameter_label || aiParameterLabels[key] || key || 'Parámetro')}</b>
       <p>${esc(paramDisplayValue(r))}</p>
-      <p class="small">${dateText(r.measured_at || r.created_at)}${r.notes ? ' · ' + esc(r.notes) : ''}</p>
+      <p class="small">${dateText(r.measured_at || r.created_at)}${r.method ? ' · ' + esc(r.method) : ''}${r.source ? ' · ' + esc(r.source) : ''}${r.notes ? ' · ' + esc(r.notes) : ''}</p>
     </div>`;
   }).join('')}</div>`;
 }
