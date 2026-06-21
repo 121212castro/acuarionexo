@@ -24,6 +24,7 @@ const files = [
   'src/aquariums/aquariums.js',
   'src/library/library.js',
   'src/animals/animals.js',
+  'src/map/map-v3-model.js',
   'src/map/map.js',
   'src/photos/photos.js',
   'src/inventory/inventory.js',
