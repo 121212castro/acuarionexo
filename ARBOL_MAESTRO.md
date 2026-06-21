@@ -21,16 +21,20 @@ Carga activa:
 - `login-reef.css`
 - `aquarium-cards.css`
 - `aquariums-mobile-fix.css`
+- `mobile-form-fix.css`
+- `library-images.css`
 - Supabase CDN
-- Three.js CDN
+- Three.js CDN r149
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
 - `src/library/library.js`
 - `src/animals/animals.js`
+- `src/map/map-v3-model.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
+- `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
@@ -70,9 +74,11 @@ Las pantallas y reglas de negocio viven en modulos:
 - `src/aquariums/aquariums.js`: dashboard, acuarios y panel de acuario.
 - `src/library/library.js`: biblioteca, fichas y borradores IA.
 - `src/animals/animals.js`: habitantes del acuario.
-- `src/map/map.js`: mapa IA, foto base, puntos y render 3D.
+- `src/map/map.js`: mapa IA, foto base, objetos colocables y render 3D real.
+- `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
 - `src/photos/photos.js`: galeria y subida de fotos.
 - `src/inventory/inventory.js`: inventario general y por acuario.
+- `src/microfauna/microfauna.js`: cultivos de microfauna.
 - `src/ai/ai.js`: reglas IA, interpretacion de parametros y avisos.
 - `src/ai/ai-alerts-extra.js`: aportes de revision IA diaria sin pisar la pantalla principal.
 - `src/parameters/parameters.js`: pantalla y registro de mediciones.
