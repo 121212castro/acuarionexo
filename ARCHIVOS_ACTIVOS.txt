@@ -17,13 +17,17 @@ NUCLEO WEB ACTIVO
 - login-reef.css
 - aquarium-cards.css
 - aquariums-mobile-fix.css
+- mobile-form-fix.css
+- library-images.css
 - app.js
 - src/aquariums/aquariums.js
 - src/library/library.js
 - src/animals/animals.js
+- src/map/map-v3-model.js
 - src/map/map.js
 - src/photos/photos.js
 - src/inventory/inventory.js
+- src/microfauna/microfauna.js
 - src/ai/ai.js
 - src/ai/ai-alerts-extra.js
 - src/parameters/parameters.js
