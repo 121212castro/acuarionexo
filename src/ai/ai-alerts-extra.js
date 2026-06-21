@@ -114,27 +114,5 @@
     return { suggestions, existing: existing.size };
   }
 
-  function card(s){
-    return `<div class="item ai-suggestion ${esc(s.priority || 'normal')}"><b>${esc(s.title)}</b><p class="small">${esc(s.aquarium_name || 'General')} · ${esc(s.priority || 'normal')} · ${dateText(s.due_at)}</p><p>${esc(s.notes || '')}</p></div>`;
-  }
-
-  async function saveSuggestions(suggestions){
-    if(!suggestions.length) return 0;
-    const rows = suggestions.map(s => ({ user_id:state.user.id, aquarium_id:s.aquarium_id || null, title:s.title, task_type:'ai', due_at:s.due_at || new Date().toISOString(), priority:s.priority || 'normal', status:'open', notes:s.notes || null }));
-    const { error } = await supabase.from('tasks').insert(rows);
-    if(error) throw error;
-    return rows.length;
-  }
-
-  window.iaAcuarioNexo = async function(){
-    if(!state.user) return login();
-    const t = token();
-    render(`<section class="panel"><h2>IA AcuarioNexo</h2>${msg('Revisando parámetros, cambios de agua, inventario y tareas...')}</section>`, 'avisos');
-    try{
-      const review = await reviewAll();
-      if(!isCurrent(t)) return;
-      const created = await saveSuggestions(review.suggestions);
-      render(`<section class="panel"><div class="panel-head"><div><h2>IA AcuarioNexo</h2><p class="small">Lee parámetros, cambios de agua, inventario, caducidades, stock y tareas.</p></div><button onclick="tareas()">Avisos</button></div>${created ? msg(`${created} avisos IA creados automáticamente.`, 'success') : ''}${review.suggestions.map(card).join('') || msg('No veo avisos nuevos ahora mismo.', 'success')}</section>`, 'avisos');
-    }catch(e){ if(isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos'); }
-  };
+  window.ANX.aiExtraReview = reviewAll;
 })();
