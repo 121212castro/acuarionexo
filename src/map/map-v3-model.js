@@ -44,9 +44,16 @@
   }
 
   function emptyV3Map(base = {}) {
+    const photos = base.photos && typeof base.photos === 'object' ? base.photos : {};
     return {
       version: 3,
-      photo_url: safeText(base.photo_url),
+      photo_url: safeText(photos.front || base.photo_url),
+      photos: {
+        front: safeText(photos.front || base.photo_url),
+        left: safeText(photos.left),
+        right: safeText(photos.right),
+        top: safeText(photos.top)
+      },
       markers: Array.isArray(base.markers) ? base.markers : [],
       entities: normalizeEntities(base.entities),
       selected_id: safeText(base.selected_id),
