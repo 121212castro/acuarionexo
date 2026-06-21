@@ -13,13 +13,13 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `aquarium-cards.css`
 - `aquariums-mobile-fix.css`
 - `src/aquariums/aquariums.js`
-- `src/aquariums/photo-picker-fix.js`
 - `src/library/library.js`
 - `src/animals/animals.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
 - `src/ai/ai.js`
+- `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
@@ -51,13 +51,13 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Modulos de negocio
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
-- `src/aquariums/photo-picker-fix.js`: separa galeria/camara en selector de portada.
 - `src/library/library.js`: biblioteca, fichas y borradores IA.
 - `src/animals/animals.js`: animales.
 - `src/map/map.js`: mapa IA y 3D.
 - `src/photos/photos.js`: fotos.
 - `src/inventory/inventory.js`: inventario.
 - `src/ai/ai.js`: motor IA y avisos sugeridos.
+- `src/ai/ai-alerts-extra.js`: revision extendida de avisos sin sobrescribir pantallas.
 - `src/parameters/parameters.js`: parametros.
 - `src/parameters/measurements-advanced.js`: medicion completa.
 - `src/tasks/tasks.js`: tareas y avisos.
@@ -84,3 +84,4 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - Biblioteca/Fichas esta activa como modulo separado y solo consulta `library_entries` al abrir Biblioteca.
 - Mediciones completas estan aisladas en `src/parameters/measurements-advanced.js`.
 - App movil se prepara con Capacitor llevando los archivos dentro del paquete.
+- No hay parches JS cargados al final que sustituyan modulos principales.
