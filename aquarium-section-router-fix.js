@@ -25,16 +25,18 @@
     }catch(e){x.render(x.aqHeader('fotos')+'<section class="panel">'+x.msg(e.message,'error')+'</section>','acuarios');}
   };
 
-  window.parametros = async function(){
-    const x=A(), a=aq(), t=x.token();
-    x.render(x.aqHeader('parametros')+'<section class="panel"><div class="panel-head"><h2>Parámetros</h2><button onclick="formParametro()">Añadir</button></div>'+x.msg('Cargando parámetros...')+'</section>','acuarios');
-    try{
-      const r=await x.supabase.from('aquarium_measurements').select('*').eq('aquarium_id',a.id).order('measured_at',{ascending:false}).limit(80);
-      if(r.error) throw r.error; if(!x.isCurrent(t)) return;
-      const html=(r.data||[]).map(function(p){return '<div class="item"><b>'+x.esc(p.parameter_label||p.parameter_key||'Parámetro')+'</b><p>'+x.esc(p.display_value||p.raw_text||p.normalized_value||'-')+'</p><p class="small">'+x.dateText(p.measured_at||p.created_at)+'</p></div>';}).join('')||x.msg('Sin mediciones todavía.');
-      x.render(x.aqHeader('parametros')+'<section class="panel"><div class="panel-head"><h2>Parámetros</h2><button onclick="formParametro()">Añadir</button></div>'+html+'</section>','acuarios');
-    }catch(e){x.render(x.aqHeader('parametros')+'<section class="panel">'+x.msg(e.message,'error')+'</section>','acuarios');}
-  };
+  if (typeof window.parametros !== 'function') {
+    window.parametros = async function(){
+      const x=A(), a=aq(), t=x.token();
+      x.render(x.aqHeader('parametros')+'<section class="panel"><div class="panel-head"><h2>Parámetros</h2><button onclick="formParametro()">Añadir</button></div>'+x.msg('Cargando parámetros...')+'</section>','acuarios');
+      try{
+        const r=await x.supabase.from('aquarium_measurements').select('*').eq('aquarium_id',a.id).order('measured_at',{ascending:false}).limit(80);
+        if(r.error) throw r.error; if(!x.isCurrent(t)) return;
+        const html=(r.data||[]).map(function(p){return '<div class="item"><b>'+x.esc(p.parameter_label||p.parameter_key||'Parámetro')+'</b><p>'+x.esc(p.display_value||p.raw_text||p.normalized_value||'-')+'</p><p class="small">'+x.dateText(p.measured_at||p.created_at)+'</p></div>';}).join('')||x.msg('Sin mediciones todavía.');
+        x.render(x.aqHeader('parametros')+'<section class="panel"><div class="panel-head"><h2>Parámetros</h2><button onclick="formParametro()">Añadir</button></div>'+html+'</section>','acuarios');
+      }catch(e){x.render(x.aqHeader('parametros')+'<section class="panel">'+x.msg(e.message,'error')+'</section>','acuarios');}
+    };
+  }
 
   const old=window.openAqSection;
   window.openAqSection=function(section){
