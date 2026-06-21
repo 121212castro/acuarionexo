@@ -425,6 +425,30 @@
   height: 100% !important;
 }
 
+.map-photo-checklist {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.map-photo-checklist span {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 7px 8px;
+  color: rgba(226, 242, 255, 0.68);
+  background: rgba(255, 255, 255, 0.045);
+  font-size: 11px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.map-photo-checklist span.ok {
+  color: #bbf7d0;
+  border-color: rgba(34, 197, 94, 0.38);
+  background: rgba(34, 197, 94, 0.12);
+}
+
 .map-photo-stage {
   position: relative;
   width: 100%;
