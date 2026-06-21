@@ -30,6 +30,7 @@ const files = [
   'src/map/map.js',
   'src/photos/photos.js',
   'src/inventory/inventory.js',
+  'src/microfauna/microfauna.js',
   'src/ai/ai.js',
   'src/parameters/parameters.js',
   'src/parameters/measurements-advanced.js',
