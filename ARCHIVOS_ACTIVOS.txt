@@ -19,13 +19,13 @@ NUCLEO WEB ACTIVO
 - aquariums-mobile-fix.css
 - app.js
 - src/aquariums/aquariums.js
-- src/aquariums/photo-picker-fix.js
 - src/library/library.js
 - src/animals/animals.js
 - src/map/map.js
 - src/photos/photos.js
 - src/inventory/inventory.js
 - src/ai/ai.js
+- src/ai/ai-alerts-extra.js
 - src/parameters/parameters.js
 - src/parameters/measurements-advanced.js
 - src/tasks/tasks.js
