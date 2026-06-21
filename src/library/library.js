@@ -35,6 +35,40 @@
   const typeName = type => labels[type] || 'Ficha';
   const tagsText = row => Array.isArray(row?.tags) ? row.tags.join(', ') : '';
   const tagsFromText = text => String(text || '').split(',').map(t => t.trim()).filter(Boolean).slice(0, 20);
+  const sourceFieldDefaults = {
+    manufacturer: '',
+    manufacturer_url: '',
+    datasheet_url: '',
+    product_code: '',
+    label_text: '',
+    source_notes: ''
+  };
+
+  function parseSourceNotes(row = {}) {
+    if (!row.source_notes) return { ...sourceFieldDefaults };
+    try {
+      return { ...sourceFieldDefaults, ...JSON.parse(row.source_notes) };
+    } catch (_) {
+      return { ...sourceFieldDefaults, source_notes: row.source_notes || '' };
+    }
+  }
+
+  function sourceContextFromForm() {
+    return {
+      manufacturer: val('libManufacturer'),
+      manufacturer_url: val('libManufacturerUrl'),
+      datasheet_url: val('libDatasheetUrl'),
+      product_code: val('libProductCode'),
+      label_text: val('libLabelText'),
+      source_notes: val('libSourceNotes')
+    };
+  }
+
+  function sourceNotesPayload() {
+    const source = sourceContextFromForm();
+    const hasValue = Object.values(source).some(value => String(value || '').trim());
+    return hasValue ? JSON.stringify(source) : null;
+  }
 
   async function loadRows() {
     const { data, error } = await supabase.from('library_entries').select('*').order('created_at', { ascending: false }).limit(80);
@@ -115,6 +149,7 @@
   window.formFicha = function (id = '', forcedType = '') {
     const row = id ? (state.libraryRows || []).find(r => r.id === id) || {} : {};
     const selectedType = forcedType || row.entry_type || (state.libraryFilter === 'all' ? 'pez_marino' : state.libraryFilter) || 'pez_marino';
+    const source = parseSourceNotes(row);
     render(`<section class="panel library-detail"><button onclick="biblioteca()">Volver</button><h2>${id ? 'Editar ficha' : 'Nueva ficha'}</h2>
       <input id="libImageFile" class="hidden" type="file" accept="image/*" onchange="uploadSelectedFichaImage(event)">
       <input id="libImageTarget" class="hidden" value="">
@@ -133,6 +168,13 @@
       <div id="imagePickerBox"></div>
       <label>Etiquetas</label><input id="libTags" value="${esc(tagsText(row))}" placeholder="reef, principiante, lps...">
       <label>Notas para IA</label><textarea id="libPrompt" placeholder="Datos que sabes, enfoque, advertencias, producto concreto...">${esc(row.ai_prompt || '')}</textarea>
+      <h3>Datos verificados</h3>
+      <div class="form-grid"><div><label>Fabricante / marca</label><input id="libManufacturer" value="${esc(source.manufacturer || '')}" placeholder="Ocean Nutrition, Tropic Marin..."></div>
+      <div><label>Codigo / lote / SKU</label><input id="libProductCode" value="${esc(source.product_code || '')}" placeholder="Referencia, lote, codigo de barras..."></div></div>
+      <label>URL fabricante</label><input id="libManufacturerUrl" value="${esc(source.manufacturer_url || '')}" placeholder="https://fabricante.com/producto">
+      <label>URL ficha tecnica / prospecto</label><input id="libDatasheetUrl" value="${esc(source.datasheet_url || '')}" placeholder="https://...">
+      <label>Texto de etiqueta</label><textarea id="libLabelText" placeholder="Ingredientes, composicion, dosis, instrucciones, advertencias...">${esc(source.label_text || '')}</textarea>
+      <label>Notas de fuente</label><textarea id="libSourceNotes" placeholder="De donde sale el dato, dudas, variante exacta, idioma de la etiqueta...">${esc(source.source_notes || '')}</textarea>
       <button type="button" onclick="generarFichaIA()">Generar borrador IA</button><div id="aiBox"></div>
       ${sectionsFor(selectedType).map(key => `<label>${esc(sectionLabels[key] || key)}</label><textarea id="libSection_${key}">${esc(row.sections?.[key] || '')}</textarea>`).join('')}
       <button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha</button><div id="x"></div></section>`, 'biblioteca');
@@ -143,7 +185,7 @@
     const sections = {};
     sectionsFor(entry_type).forEach(key => { sections[key] = val(`libSection_${key}`); });
     const status = val('libStatus') || 'draft';
-    return { user_id: state.user.id, title: val('libTitle') || 'Ficha', scientific_name: val('libScientific') || null, entry_type, status, visibility: status === 'published' ? 'public' : 'private', summary: sections.summary || null, cover_url: val('libCover') || null, photo_url: val('libPhoto') || null, sections, tags: tagsFromText(val('libTags')), ai_prompt: val('libPrompt') || null, validated_at: status === 'published' ? new Date().toISOString() : null, published_at: status === 'published' ? new Date().toISOString() : null, updated_at: new Date().toISOString() };
+    return { user_id: state.user.id, title: val('libTitle') || 'Ficha', scientific_name: val('libScientific') || null, entry_type, status, visibility: status === 'published' ? 'public' : 'private', summary: sections.summary || null, cover_url: val('libCover') || null, photo_url: val('libPhoto') || null, sections, tags: tagsFromText(val('libTags')), ai_prompt: val('libPrompt') || null, source_notes: sourceNotesPayload(), validated_at: status === 'published' ? new Date().toISOString() : null, published_at: status === 'published' ? new Date().toISOString() : null, updated_at: new Date().toISOString() };
   }
 
   window.guardarFicha = async function (id = '') {
@@ -255,14 +297,11 @@
     try {
       if (!val('libTitle')) throw new Error('Pon primero el nombre de la ficha.');
       if (byId('aiBox')) byId('aiBox').innerHTML = msg('Generando borrador...');
-      const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title: val('libTitle'), entry_type: val('libType'), notes: val('libPrompt') } });
+      const source_context = sourceContextFromForm();
+      const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title: val('libTitle'), scientific_name: val('libScientific'), entry_type: val('libType'), notes: val('libPrompt'), cover_url: val('libCover'), photo_url: val('libPhoto'), source_context } });
       if (error) throw error;
       const generated = data?.data || data || {};
       const warning = data?.warning || generated.warning || '';
-      if (generated.needs_ai_configuration || generated.ai_model === 'no-ai-configured') {
-        if (byId('aiBox')) byId('aiBox').innerHTML = msg(warning || 'IA real no configurada. No se rellenan campos con texto falso.', 'error');
-        return;
-      }
       const sections = generated.sections || {};
       let loaded = 0;
       Object.keys(sections).forEach(key => {
@@ -275,9 +314,12 @@
       if (Array.isArray(generated.tags) && byId('libTags')) byId('libTags').value = generated.tags.filter(tag => tag && !isPlaceholderText(tag)).join(', ');
       const notice = aiGenerationNotice(generated, warning);
       if (!loaded && !generated.scientific_name && !generated.tags?.length) {
+        if (generated.needs_ai_configuration || generated.ai_model === 'no-ai-configured') throw new Error(warning || 'OPENAI_API_KEY no configurada. Anade datos verificados o configura la IA.');
         throw new Error('La IA no devolvio contenido util para cargar. Revisa el nombre o anade mas notas.');
       }
-      if (byId('aiBox')) byId('aiBox').innerHTML = `<div class="success">Borrador cargado. Revisa antes de guardar.${notice ? `<br>${notice}` : ''}</div>`;
+      const className = generated.needs_ai_configuration || generated.ai_model === 'verified-input-no-ai' ? 'notice' : 'success';
+      const title = className === 'notice' ? 'Datos verificados cargados. Falta IA real para buscar y contrastar por internet/foto.' : 'Borrador IA cargado. Revisa antes de guardar.';
+      if (byId('aiBox')) byId('aiBox').innerHTML = `<div class="${className}">${title}${notice ? `<br>${notice}` : ''}</div>`;
     } catch (e) { if (byId('aiBox')) byId('aiBox').innerHTML = msg(e.message, 'error'); }
   };
 
