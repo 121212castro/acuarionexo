@@ -239,6 +239,69 @@
   margin: 3px 0;
 }
 
+.param-profile-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.param-cycle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.param-cycle-card {
+  min-width: 0;
+  min-height: 78px;
+  text-align: left;
+  padding: 10px;
+}
+
+.param-cycle-card b,
+.param-cycle-card strong,
+.param-cycle-card small {
+  display: block;
+}
+
+.param-cycle-card strong {
+  margin-top: 5px;
+  font-size: 14px;
+}
+
+.param-cycle-card small {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 11px;
+}
+
+.measurement-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.measurement-row {
+  border: 1px solid rgba(125, 211, 252, 0.2);
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.measurement-row label {
+  margin: 0 0 6px;
+}
+
+.measurement-row-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px;
+  gap: 8px;
+}
+
+.measurement-row-inputs input {
+  margin: 0;
+}
+
 .param-legend {
   display: flex;
   flex-wrap: wrap;
@@ -311,6 +374,21 @@
 
 .param-history-row {
   margin-top: 8px;
+}
+
+@media (max-width: 430px) {
+  .panel-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .param-cycle-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .measurement-row-inputs {
+    grid-template-columns: minmax(0, 1fr) 82px;
+  }
 }
 
 .map-3d-wrap {
