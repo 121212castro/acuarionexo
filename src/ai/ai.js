@@ -333,7 +333,17 @@ async function buildAiMaintenanceReview() {
     });
   }
   const openTitles = new Set((tasks.data || []).map(t => String(t.title || '').toLowerCase()));
-  const filtered = suggestions.filter(s => !openTitles.has(String(s.title || '').toLowerCase()));
+  if (window.ANX.aiExtraReview) {
+    const extra = await window.ANX.aiExtraReview();
+    suggestions.push(...(extra.suggestions || []));
+  }
+  const seen = new Set();
+  const filtered = suggestions.filter(function (s) {
+    const key = String(s.title || '').toLowerCase();
+    if (!key || openTitles.has(key) || seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
   filtered.sort((a, b) => (a.priority === 'high' ? -1 : 1) - (b.priority === 'high' ? -1 : 1));
   return { created_at: new Date().toISOString(), suggestions: filtered.slice(0, 40), existing: suggestions.length - filtered.length };
 }
