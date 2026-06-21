@@ -57,7 +57,7 @@ function normalizeMeasurementKey(row) {
   if (['hierro', 'fe', 'iron', 'iron_fe'].includes(key)) return 'iron_fe';
   if (['manganeso', 'mn', 'manganese', 'manganese_mn'].includes(key)) return 'manganese_mn';
   if (['zinc', 'zn', 'zinc_zn'].includes(key)) return 'zinc_zn';
-  if (['cobre', 'cu', 'copper', 'copper_cu'].includes(key)) return 'copper_cu';
+  if (['cobre', 'cu', 'copper_cu'].includes(key)) return 'copper_cu';
   if (['aluminio', 'al', 'aluminum', 'aluminium', 'aluminum_al'].includes(key)) return 'aluminum_al';
   if (['silicio', 'si', 'silicon', 'silicate', 'silicatos', 'silicon_si'].includes(key)) return 'silicon_si';
   if (['litio', 'li', 'lithium', 'lithium_li'].includes(key)) return 'lithium_li';
@@ -232,6 +232,73 @@ function aiInventorySuggestions(items) {
   return suggestions;
 }
 
+function microProfile(type) {
+  if (window.ANX.microfaunaProfileFor) return window.ANX.microfaunaProfileFor(type);
+  return null;
+}
+
+function microDueSuggestion(row, field, title, notes, priority) {
+  if (!row?.[field]) return null;
+  const due = new Date(row[field]);
+  if (Number.isNaN(due.getTime()) || due > new Date()) return null;
+  return {
+    type: 'microfauna',
+    priority: priority || 'normal',
+    aquarium_id: row.aquarium_id || null,
+    aquarium_name: row.name || 'Microfauna',
+    title,
+    due_at: new Date().toISOString(),
+    notes
+  };
+}
+
+function microfaunaSuggestions(rows) {
+  const suggestions = [];
+  (rows || []).forEach(function (row) {
+    const p = microProfile(row.culture_type) || {};
+    const label = p.label || row.culture_type || 'Microfauna';
+    const name = row.name || label;
+    const feed = row.feed_type || p.feed || 'alimento indicado';
+    const amount = row.feed_amount ? ` (${row.feed_amount})` : '';
+    [
+      microDueSuggestion(row, 'next_feed_at', `Alimentar ${name}`, `Cultivo ${label}. Alimentar con ${feed}${amount}. Revisar olor, color y densidad antes de subir dosis.`),
+      microDueSuggestion(row, 'next_water_change_at', `Cambio de agua ${name}`, `Cultivo ${label}. Cambio orientativo: ${row.water_change_percent || p.waterPercent || '-'}%. Igualar salinidad y temperatura antes de reponer.`),
+      microDueSuggestion(row, 'next_harvest_at', `Recolectar ${name}`, `Cultivo ${label}. Recolectar parcial y dejar poblacion madre suficiente para que no colapse.`),
+      microDueSuggestion(row, 'hatch_expected_at', `Revisar eclosion ${name}`, `Cultivo ${label}. Comprobar eclosion, separar residuos/cascaras si aplica y decidir si se enriquece antes de alimentar.`, 'high')
+    ].filter(Boolean).forEach(s => suggestions.push(s));
+
+    if (p.salinity && Number.isFinite(Number(row.salinity_ppt))) {
+      const salinity = Number(row.salinity_ppt);
+      if (salinity < p.salinity[0] || salinity > p.salinity[1]) {
+        suggestions.push({
+          type: 'microfauna',
+          priority: 'normal',
+          aquarium_id: row.aquarium_id || null,
+          aquarium_name: name,
+          title: `Revisar salinidad ${name}`,
+          due_at: new Date().toISOString(),
+          notes: `${label}: salinidad ${salinity} ppt. Rango orientativo ${p.salinity[0]}-${p.salinity[1]} ppt. Ajustar despacio para evitar choque del cultivo.`
+        });
+      }
+    }
+    if (p.temperature && Number.isFinite(Number(row.temperature_c))) {
+      const temp = Number(row.temperature_c);
+      if (temp < p.temperature[0] || temp > p.temperature[1]) {
+        suggestions.push({
+          type: 'microfauna',
+          priority: 'normal',
+          aquarium_id: row.aquarium_id || null,
+          aquarium_name: name,
+          title: `Revisar temperatura ${name}`,
+          due_at: new Date().toISOString(),
+          notes: `${label}: temperatura ${temp} C. Rango orientativo ${p.temperature[0]}-${p.temperature[1]} C. Revisar estabilidad antes de corregir.`
+        });
+      }
+    }
+  });
+  return suggestions;
+}
+
 function aiSuggestionCard(s) {
   return `<div class="item ai-suggestion ${esc(s.priority || 'normal')}">
     <b>${esc(s.title)}</b>
@@ -247,6 +314,9 @@ async function buildAiMaintenanceReview() {
   const tasks = await supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').limit(250);
   if (tasks.error) throw tasks.error;
   const suggestions = aiInventorySuggestions(inv.data || []);
+  const micro = await supabase.from('microfauna_cultures').select('*').eq('user_id', state.user.id).eq('status', 'active').limit(150);
+  if (micro.error) throw micro.error;
+  suggestions.push(...microfaunaSuggestions(micro.data || []));
   for (const aq of aquariums) {
     const measurements = await supabase.from('aquarium_measurements').select('*').eq('aquarium_id', aq.id).order('measured_at', { ascending: false }).limit(120);
     if (measurements.error) throw measurements.error;
@@ -320,6 +390,7 @@ window.crearAvisosIA = async function () {
     normalizeMeasurementKey,
     measurementNumber,
     aiLatestMeasurements,
-    interpretMeasurementValue
+    interpretMeasurementValue,
+    microfaunaSuggestions
   });
 })();
