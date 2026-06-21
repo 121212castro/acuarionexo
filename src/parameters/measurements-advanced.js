@@ -1,54 +1,145 @@
 /* AcuarioNexo · mediciones completas */
 (function () {
   const { supabase, state, esc, byId, val, msg, currentAquarium, render, aqHeader } = window.ANX;
-  const parameterLabels = window.ANX.aiParameterLabels || {};
-  const plans = window.ANX.aiMeasurementPlans || {};
-  const normalize = window.ANX.normalizeMeasurementKey || (v => String(v || '').trim().toLowerCase().replace(/\s+/g, '_'));
+  const labels = window.ANX.aiParameterLabels || {};
+  const normalize = window.ANX.normalizeMeasurementKey || (v => String(v?.parameter_key || v || '').trim().toLowerCase().replace(/\s+/g, '_'));
 
-  const defaultKeys = ['temperature','salinity','ph','kh','ammonia','nitrite','nitrate','phosphate','calcium','magnesium','potassium','iodine'];
-  const units = { temperature: '°C', salinity: 'ppt', salinity_sg: 'sg', ph: 'pH', kh: 'dKH', ammonia: 'mg/L', nitrite: 'mg/L', nitrate: 'mg/L', phosphate: 'mg/L', calcium: 'mg/L', magnesium: 'mg/L', potassium: 'mg/L', iodine: 'mg/L' };
-  function keysFor(aq) {
-    const mode = window.ANX.aiAquariumMode ? window.ANX.aiAquariumMode(aq) : 'reef_mixed';
-    const plan = plans[mode]?.parameters || [];
-    return [...new Set([...(plan.length ? plan : defaultKeys), 'salinity_sg'])];
+  const units = {
+    temperature_c: '°C', salinity_ppt: 'ppt', salinity_sg: 'sg', ph: 'pH', kh_dkh: 'dKH',
+    ammonia_nh3: 'mg/L', nitrite_no2: 'mg/L', nitrate_no3: 'mg/L', phosphate_po4: 'mg/L',
+    calcium_ca: 'mg/L', magnesium_mg: 'mg/L', potassium_k: 'mg/L', iodine_i: 'µg/L',
+    strontium_sr: 'mg/L', boron_b: 'mg/L', iron_fe: 'µg/L', manganese_mn: 'µg/L',
+    zinc_zn: 'µg/L', copper_cu: 'µg/L', aluminum_al: 'µg/L', silicon_si: 'µg/L',
+    lithium_li: 'µg/L', gh: 'dGH'
+  };
+
+  const profiles = {
+    weekly: {
+      title: 'Medición semanal',
+      method: 'Semanal',
+      source: 'weekly',
+      marine: ['temperature_c', 'salinity_ppt', 'salinity_sg', 'ph', 'kh_dkh', 'nitrate_no3', 'phosphate_po4'],
+      freshwater: ['temperature_c', 'ph', 'kh_dkh', 'gh', 'ammonia_nh3', 'nitrite_no2', 'nitrate_no3']
+    },
+    monthly: {
+      title: 'Medición mensual',
+      method: 'Mensual',
+      source: 'monthly',
+      marine: ['calcium_ca', 'magnesium_mg', 'potassium_k', 'iodine_i', 'nitrate_no3', 'phosphate_po4'],
+      freshwater: ['gh', 'kh_dkh', 'nitrate_no3', 'phosphate_po4', 'iron_fe']
+    },
+    icp: {
+      title: 'ICP / laboratorio',
+      method: 'ICP',
+      source: 'icp',
+      marine: ['salinity_ppt', 'kh_dkh', 'calcium_ca', 'magnesium_mg', 'potassium_k', 'iodine_i', 'strontium_sr', 'boron_b', 'iron_fe', 'manganese_mn', 'zinc_zn', 'copper_cu', 'aluminum_al', 'silicon_si', 'lithium_li'],
+      freshwater: ['calcium_ca', 'magnesium_mg', 'potassium_k', 'iron_fe', 'manganese_mn', 'zinc_zn', 'copper_cu', 'aluminum_al', 'silicon_si']
+    }
+  };
+
+  function modeFor(aq) {
+    return window.ANX.aiAquariumMode ? window.ANX.aiAquariumMode(aq) : 'marine';
   }
-  function labelFor(key) { return parameterLabels[key] || key.replace(/_/g, ' '); }
 
-  function injectButton() {
-    const panel = document.querySelector('.panel-head .panel-actions') || document.querySelector('.panel-head');
-    if (!panel || byId('advancedMeasurementsBtn')) return;
-    panel.insertAdjacentHTML('afterbegin', '<button id="advancedMeasurementsBtn" onclick="formMedicionCompleta()">Completa</button>');
+  function labelFor(key) {
+    return labels[key] || key.replace(/_/g, ' ');
   }
 
-  const originalParametros = window.parametros;
-  if (typeof originalParametros === 'function') {
-    window.parametros = async function () {
-      await originalParametros();
-      setTimeout(injectButton, 0);
-    };
+  function keysFor(aq, profileKey) {
+    const profile = profiles[profileKey] || profiles.weekly;
+    return profile[modeFor(aq)] || profile.marine;
   }
 
-  window.formMedicionCompleta = function () {
+  function numberFromInput(id) {
+    const text = String(val(id) || '').replace(',', '.').trim();
+    if (!text) return null;
+    const match = text.match(/-?\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : null;
+  }
+
+  function uuid() {
+    if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+    return '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c =>
+      (Number(c) ^ Math.random() * 16 >> Number(c) / 4).toString(16)
+    );
+  }
+
+  function profileButtons(active) {
+    return `<div class="param-actions param-profile-actions">
+      <button type="button" class="${active === 'weekly' ? 'active' : ''}" onclick="formMedicionCompleta('weekly')">Semanal</button>
+      <button type="button" class="${active === 'monthly' ? 'active' : ''}" onclick="formMedicionCompleta('monthly')">Mensual</button>
+      <button type="button" class="${active === 'icp' ? 'active' : ''}" onclick="formMedicionCompleta('icp')">ICP</button>
+    </div>`;
+  }
+
+  function inputRows(aq, profileKey) {
+    return keysFor(aq, profileKey).map(key => `<div class="measurement-row">
+      <label>${esc(labelFor(key))}</label>
+      <div class="measurement-row-inputs">
+        <input id="m_${esc(key)}" inputmode="decimal" placeholder="Valor">
+        <input id="u_${esc(key)}" value="${esc(units[key] || '')}" placeholder="Unidad">
+      </div>
+    </div>`).join('');
+  }
+
+  window.formMedicionCompleta = function (profileKey = 'weekly') {
     const aq = currentAquarium();
     if (!aq) return;
+    const profile = profiles[profileKey] || profiles.weekly;
     const now = new Date().toISOString().slice(0, 16);
-    const rows = keysFor(aq).map(key => `<div class="measurement-row"><label>${esc(labelFor(key))}</label><input id="m_${esc(key)}" inputmode="decimal" placeholder="Valor"><input id="u_${esc(key)}" value="${esc(units[key] || '')}" placeholder="Unidad"></div>`).join('');
-    render(aqHeader('parametros') + `<section class="panel"><button onclick="parametros()">Volver</button><h2>Medicion completa</h2><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><label>Metodo / test</label><input id="measureMethod" placeholder="Hanna, Salifert, ICP, refractometro..."><div class="measurement-grid">${rows}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
+    render(aqHeader('parametros') + `<section class="panel guided-box">
+      <button onclick="parametros()">Volver</button>
+      <h2>${esc(profile.title)}</h2>
+      ${profileButtons(profileKey)}
+      <input id="measureProfile" class="hidden" value="${esc(profileKey)}">
+      <label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}">
+      <label>Metodo / test</label><input id="measureMethod" value="${esc(profile.method)}" placeholder="Hanna, Salifert, ICP, laboratorio...">
+      <div class="measurement-grid">${inputRows(aq, profileKey)}</div>
+      <label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea>
+      <button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div>
+    </section>`, 'acuarios');
   };
 
   window.saveMedicionCompleta = async function () {
     const aq = currentAquarium();
     if (!aq) return;
-    const batch = crypto?.randomUUID ? crypto.randomUUID() : `batch-${Date.now()}`;
-    const measured_at = val('measureDate') ? new Date(val('measureDate')).toISOString() : new Date().toISOString();
+    const profileKey = val('measureProfile') || 'weekly';
+    const profile = profiles[profileKey] || profiles.weekly;
+    const batch = uuid();
+    const measuredAt = val('measureDate') ? new Date(val('measureDate')).toISOString() : new Date().toISOString();
     const notes = val('measureNotes') || null;
-    const method = val('measureMethod') || null;
-    const rows = keysFor(aq).map(key => ({ key, value: Number(String(val(`m_${key}`)).replace(',', '.')), unit: val(`u_${key}`) || units[key] || null })).filter(row => Number.isFinite(row.value)).map(row => ({ user_id: state.user.id, aquarium_id: aq.id, parameter: normalize(row.key), value: row.value, unit: row.unit, method, notes, batch_id: batch, measured_at }));
+    const method = val('measureMethod') || profile.method;
+    const rows = keysFor(aq, profileKey).map(key => {
+      const display = val(`m_${key}`);
+      const numeric = numberFromInput(`m_${key}`);
+      const unit = val(`u_${key}`) || units[key] || null;
+      return { key, display, numeric, unit };
+    }).filter(row => row.display || Number.isFinite(row.numeric)).map(row => ({
+      user_id: state.user.id,
+      aquarium_id: aq.id,
+      parameter_key: normalize({ parameter_key: row.key }),
+      parameter_label: labelFor(row.key),
+      parameter: normalize({ parameter_key: row.key }),
+      display_value: row.display ? `${row.display}${row.unit ? ` ${row.unit}` : ''}` : String(row.numeric),
+      raw_text: row.display || String(row.numeric),
+      raw_value: row.numeric,
+      value: row.numeric,
+      normalized_value: row.numeric,
+      unit: row.unit,
+      method,
+      source: profile.source,
+      notes,
+      batch_id: batch,
+      measured_at: measuredAt,
+      updated_at: new Date().toISOString()
+    }));
     try {
-      if (!rows.length) throw new Error('Añade al menos una medicion.');
+      if (!rows.length) throw new Error('Añade al menos una medición.');
       const { error } = await supabase.from('aquarium_measurements').insert(rows);
       if (error) throw error;
       parametros();
-    } catch (e) { if (byId('x')) byId('x').innerHTML = msg(e.message, 'error'); }
+    } catch (e) {
+      if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+    }
   };
 })();
