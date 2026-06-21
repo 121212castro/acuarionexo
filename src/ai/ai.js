@@ -57,7 +57,7 @@ function normalizeMeasurementKey(row) {
   if (['hierro', 'fe', 'iron', 'iron_fe'].includes(key)) return 'iron_fe';
   if (['manganeso', 'mn', 'manganese', 'manganese_mn'].includes(key)) return 'manganese_mn';
   if (['zinc', 'zn', 'zinc_zn'].includes(key)) return 'zinc_zn';
-  if (['cobre', 'cu', 'copper_cu'].includes(key)) return 'copper_cu';
+  if (['cobre', 'cu', 'copper', 'copper_cu'].includes(key)) return 'copper_cu';
   if (['aluminio', 'al', 'aluminum', 'aluminium', 'aluminum_al'].includes(key)) return 'aluminum_al';
   if (['silicio', 'si', 'silicon', 'silicate', 'silicatos', 'silicon_si'].includes(key)) return 'silicon_si';
   if (['litio', 'li', 'lithium', 'lithium_li'].includes(key)) return 'lithium_li';
