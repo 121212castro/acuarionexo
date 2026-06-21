@@ -149,7 +149,8 @@ window.calcAqVolumes = function () {
 window.pickAqCover = function (mode) {
   const input = byId('aqCoverFile');
   if (!input) return;
-  input.setAttribute('capture', mode === 'camera' ? 'environment' : '');
+  if (mode === 'camera') input.setAttribute('capture', 'environment');
+  else input.removeAttribute('capture');
   input.click();
 };
 window.previewAqCover = function () {
@@ -327,6 +328,18 @@ window.panel = function () {
   render(aqHeader('resumen') + `<section class="summary-card aq-cover">
     ${cover ? `<img src="${esc(cover)}" alt="${esc(aq.name || 'Acuario')}">` : ''}
     <div><small>${esc(aq.aquarium_type || 'Acuario')}</small><h2>${esc(aq.name || 'Acuario')}</h2><p>${esc(liters)} L · ${esc(aq.status || 'activo')}</p></div>
+    <div id="aqSummaryExtra" class="item">
+      <p><b>Estado:</b> ${esc(aq.status || '-')}</p>
+      <p><b>Tipo:</b> ${esc(aq.aquarium_type || '-')}</p>
+      <p><b>Litros reales:</b> ${esc(aq.manual_real_liters || aq.system_net_liters || aq.real_liters || '-')} L</p>
+      <p><b>Sump:</b> ${aq.has_sump ? 'Si' : 'No'}</p>
+      <p><b>Refugio:</b> ${aq.has_refugium ? 'Si' : 'No'}</p>
+      <p><b>ATO:</b> ${aq.has_ato_reservoir ? 'Si' : 'No'}</p>
+      <p><b>Montaje:</b> ${esc(aq.mounted_at || '-')}</p>
+      <p><b>Llenado:</b> ${esc(aq.filled_at || '-')}</p>
+      <p><b>Inicio ciclado:</b> ${esc(aq.cycling_start_date || '-')}</p>
+      <p><b>Fin ciclado:</b> ${esc(aq.cycling_end_date || '-')}</p>
+    </div>
   </section>
   <section class="panel"><div class="panel-head"><h2>Accesos</h2><button onclick="formA(window.q)">Editar ficha</button></div>
     <div class="quick-actions">
