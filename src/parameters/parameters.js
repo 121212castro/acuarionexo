@@ -62,9 +62,9 @@ function paramTileHtml(aq, key, row) {
   const stateInfo = paramVisualState(aq, row);
   const label = aiParameterLabels[key] || row?.parameter_label || key;
   if (!row) {
-    return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formParametro('${esc(key)}')"><b>${esc(label)}</b><strong>Pendiente</strong><span class="status-pill">${esc(stateInfo.label)}</span></button>`;
+    return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formMedicionCompleta('weekly')"><b>${esc(label)}</b><strong>Pendiente</strong><span class="status-pill">${esc(stateInfo.label)}</span></button>`;
   }
-  return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formParametro('${esc(key)}')">
+  return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formMedicionCompleta('weekly')">
     <b>${esc(label)}</b>
     <strong>${esc(paramDisplayValue(row))}</strong>
     <span class="status-pill">${esc(stateInfo.label)}</span>
@@ -119,14 +119,22 @@ function paramHistoryHtml(rows) {
 }
 
 window.parametrosAdmin = function () {
-  formParametro();
+  formParametro('__manual');
 };
 
 window.formParametro = function (preset = '') {
+  if (!preset) return formMedicionCompleta('weekly');
+  const manualPreset = preset === '__manual' ? '' : preset;
   render(aqHeader('parametros') + `<section class="panel">
     <button onclick="openAqSection('parametros')">← Volver</button>
-    <h2>Admin parámetros</h2>
-    <label>Parámetro</label><input id="parName" value="${esc(preset)}" placeholder="KH, NO3, PO4, pH...">
+    <h2>Registro manual</h2>
+    <div class="param-actions param-profile-actions">
+      <button type="button" onclick="formMedicionCompleta('weekly')">Semanal</button>
+      <button type="button" onclick="formMedicionCompleta('monthly')">Mensual</button>
+      <button type="button" onclick="formMedicionCompleta('icp')">ICP</button>
+    </div>
+    ${msg('Usa este formulario solo para una medición puntual fuera de los ciclos.', 'notice')}
+    <label>Parámetro</label><input id="parName" value="${esc(manualPreset)}" placeholder="KH, NO3, PO4, pH...">
     <label>Valor</label><input id="parValue" placeholder="Ej. 8.2">
     <label>Fecha</label><input id="parDate" type="datetime-local" value="${new Date().toISOString().slice(0, 16)}">
     <label>Notas</label><textarea id="parNotes"></textarea>
