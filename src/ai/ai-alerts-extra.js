@@ -61,6 +61,15 @@
     return null;
   }
 
+  function missingAquariumData(aq){
+    const out = [];
+    const liters = Number(aq.manual_real_liters || aq.system_net_liters || aq.real_liters || aq.volume_liters || aq.liters || 0);
+    const name = aq.name || 'Acuario';
+    if(!liters) out.push({ type:'missing_data', priority:'high', aquarium_id:aq.id, aquarium_name:name, title:`Completar litros · ${name}`, due_at:new Date().toISOString(), notes:'La IA necesita litros reales/netos para calcular cambios de agua, dosis, sal y riesgos con seguridad.' });
+    if(!aq.aquarium_type && !aq.type) out.push({ type:'missing_data', priority:'normal', aquarium_id:aq.id, aquarium_name:name, title:`Definir tipo de acuario · ${name}`, due_at:new Date().toISOString(), notes:'Falta saber si es marino, dulce, reef, hospital o cuarentena. Ese dato cambia rangos, mediciones y recomendaciones.' });
+    return out;
+  }
+
   function inventorySuggestions(items){
     const out = [];
     const meta = ANX.inventoryMeta || (()=>({}));
@@ -86,6 +95,7 @@
     const inv = await supabase.from('inventory_items').select('*').eq('user_id', state.user.id).limit(300);
     let suggestions = inv.error ? [] : inventorySuggestions(inv.data || []);
     for(const aq of aquariums || []){
+      suggestions = suggestions.concat(missingAquariumData(aq));
       const m = await supabase.from('aquarium_measurements').select('*').eq('aquarium_id', aq.id).order('measured_at', { ascending:false }).limit(150);
       if(!m.error){
         const last = latestMeasurements(m.data || []);
@@ -96,6 +106,10 @@
       const wc = waterSuggestion(aq, await waterRows(aq));
       if(wc) suggestions.push(wc);
     }
+    try{
+      const micro = await supabase.from('microfauna_cultures').select('*').eq('user_id', state.user.id).eq('status', 'active').limit(150);
+      if(!micro.error && ANX.microfaunaSuggestions) suggestions = suggestions.concat(ANX.microfaunaSuggestions(micro.data || []));
+    }catch(_){}
     suggestions = suggestions.filter(s => !existing.has(openKey(s))).slice(0, 80);
     return { suggestions, existing: existing.size };
   }
