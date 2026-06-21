@@ -74,6 +74,13 @@ window.dashboard = async function () {
           ${dashboardStat('Animales registrados', String(stats.animals))}
         </div>
       </section>
+      <section class="panel"><div class="panel-head"><h2>Módulos</h2></div>
+        <div class="quick-actions">
+          <button onclick="microfauna()"><span>◌</span>Microfauna</button>
+          <button onclick="biblioteca()"><span>□</span>Biblioteca</button>
+          <button onclick="inventario()"><span>▤</span>Inventario</button>
+        </div>
+      </section>
       <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>${emptyLine('Métricas desactivadas temporalmente en modo seguro para no cargar Supabase.')}</section>
       <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2></div>
         ${emptyLine('Actividad no calculada automáticamente mientras se investiga el consumo de base de datos.')}
