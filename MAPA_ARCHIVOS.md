@@ -12,12 +12,17 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `login-reef.css`
 - `aquarium-cards.css`
 - `aquariums-mobile-fix.css`
+- `mobile-form-fix.css`
+- `library-images.css`
 - `src/aquariums/aquariums.js`
 - `src/library/library.js`
 - `src/animals/animals.js`
+- Three.js CDN r149
+- `src/map/map-v3-model.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
+- `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
@@ -53,9 +58,11 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
 - `src/library/library.js`: biblioteca, fichas y borradores IA.
 - `src/animals/animals.js`: animales.
-- `src/map/map.js`: mapa IA y 3D.
+- `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
+- `src/map/map.js`: mapa IA y escena 3D real.
 - `src/photos/photos.js`: fotos.
 - `src/inventory/inventory.js`: inventario.
+- `src/microfauna/microfauna.js`: cultivos de microfauna.
 - `src/ai/ai.js`: motor IA y avisos sugeridos.
 - `src/ai/ai-alerts-extra.js`: revision extendida de avisos sin sobrescribir pantallas.
 - `src/parameters/parameters.js`: parametros.
