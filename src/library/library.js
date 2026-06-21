@@ -90,6 +90,28 @@
     return row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
   }
 
+  function imagePreviewHtml(fieldId, title, url) {
+    const safeUrl = String(url || '').trim();
+    return safeUrl
+      ? `<img src="${esc(safeUrl)}" alt="${esc(title)}" loading="lazy" onerror="imagenFichaNoCarga('${esc(fieldId)}')">`
+      : '<span>Sin imagen</span>';
+  }
+
+  function updateImagePreview(fieldId, title, url) {
+    const preview = byId(`${fieldId}Preview`);
+    if (!preview) return;
+    const safeUrl = String(url || '').trim();
+    preview.classList.toggle('empty', !safeUrl);
+    preview.innerHTML = imagePreviewHtml(fieldId, title || preview.dataset.title || 'Imagen', safeUrl);
+  }
+
+  function setImageFieldValue(fieldId, url) {
+    const input = byId(fieldId);
+    if (input) input.value = url || '';
+    const title = input?.dataset?.title || 'Imagen';
+    updateImagePreview(fieldId, title, url || '');
+  }
+
   function isPlaceholderText(text) {
     return /borrador pendiente|pendiente de validar|completar este apartado|datos reales antes de publicar/i.test(String(text || ''));
   }
@@ -137,8 +159,8 @@
 
   function imageField(title, fieldId, url) {
     return `<section class="library-image-panel"><div class="panel-head"><h3>${esc(title)}</h3><button type="button" onclick="limpiarImagenFicha('${fieldId}')">Borrar</button></div>
-      <div class="library-image-preview ${url ? '' : 'empty'}">${url ? `<img src="${esc(url)}" alt="${esc(title)}">` : '<span>Sin imagen</span>'}</div>
-      <input id="${fieldId}" value="${esc(url || '')}" placeholder="URL de ${esc(title.toLowerCase())}">
+      <div id="${fieldId}Preview" data-title="${esc(title)}" class="library-image-preview ${url ? '' : 'empty'}">${imagePreviewHtml(fieldId, title, url)}</div>
+      <input id="${fieldId}" data-title="${esc(title)}" value="${esc(url || '')}" placeholder="URL de ${esc(title.toLowerCase())}" oninput="actualizarPreviewImagenFicha('${fieldId}')">
       <div class="image-actions">
         <button type="button" onclick="subirImagenFicha('${fieldId}')">Subir foto</button>
         <button type="button" onclick="elegirImagenExistente('${fieldId}')">Elegir existente</button>
@@ -198,16 +220,26 @@
   };
 
   window.limpiarImagenFicha = function (fieldId) {
-    const input = byId(fieldId);
-    if (input) input.value = '';
+    setImageFieldValue(fieldId, '');
     formFichaPreviewMessage('Imagen quitada. Guarda la ficha para confirmar.');
   };
 
   window.copiarImagenFicha = function (fromId, toId) {
     const from = byId(fromId);
-    const to = byId(toId);
-    if (from && to) to.value = from.value || '';
+    setImageFieldValue(toId, from?.value || '');
     formFichaPreviewMessage('Imagen copiada. Guarda la ficha para confirmar.');
+  };
+
+  window.actualizarPreviewImagenFicha = function (fieldId) {
+    const input = byId(fieldId);
+    updateImagePreview(fieldId, input?.dataset?.title || 'Imagen', input?.value || '');
+  };
+
+  window.imagenFichaNoCarga = function (fieldId) {
+    const preview = byId(`${fieldId}Preview`);
+    if (!preview) return;
+    preview.classList.add('empty');
+    preview.innerHTML = '<span>No se pudo cargar la imagen</span>';
   };
 
   function formFichaPreviewMessage(text) {
@@ -245,8 +277,7 @@
         lastError = upload.error;
       }
       if (!publicUrl) throw lastError || new Error('No se pudo subir la imagen.');
-      const input = byId(fieldId);
-      if (input) input.value = publicUrl;
+      setImageFieldValue(fieldId, publicUrl);
       if (box) box.innerHTML = msg('Imagen subida. Guarda la ficha para confirmar.', 'success');
     } catch (e) {
       if (box) box.innerHTML = msg(e.message, 'error');
@@ -282,8 +313,7 @@
   };
 
   window.usarImagenFicha = function (fieldId, url) {
-    const input = byId(fieldId);
-    if (input) input.value = url;
+    setImageFieldValue(fieldId, url);
     const box = byId('imagePickerBox');
     if (box) box.innerHTML = msg('Imagen seleccionada. Guarda la ficha para confirmar.', 'success');
   };
