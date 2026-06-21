@@ -26,19 +26,16 @@ Carga activa:
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
-- `src/aquariums/photo-picker-fix.js`
-- `aquarium-summary-enhancer.js`
 - `src/library/library.js`
 - `src/animals/animals.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
 - `src/ai/ai.js`
+- `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
-- `aquarium-section-router-fix.js`
-- `inventory-timeout-fix.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -71,13 +68,13 @@ IOS fuera de tienda:
 Las pantallas y reglas de negocio viven en modulos:
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y panel de acuario.
-- `src/aquariums/photo-picker-fix.js`: separa galeria/camara en portada de acuario.
 - `src/library/library.js`: biblioteca, fichas y borradores IA.
 - `src/animals/animals.js`: habitantes del acuario.
 - `src/map/map.js`: mapa IA, foto base, puntos y render 3D.
 - `src/photos/photos.js`: galeria y subida de fotos.
 - `src/inventory/inventory.js`: inventario general y por acuario.
 - `src/ai/ai.js`: reglas IA, interpretacion de parametros y avisos.
+- `src/ai/ai-alerts-extra.js`: aportes de revision IA diaria sin pisar la pantalla principal.
 - `src/parameters/parameters.js`: pantalla y registro de mediciones.
 - `src/parameters/measurements-advanced.js`: medicion completa.
 - `src/tasks/tasks.js`: tareas y avisos.
@@ -109,7 +106,6 @@ Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
 - Acuarios/navegacion de acuario: `src/aquariums/aquariums.js`.
-- Selector galeria/camara: `src/aquariums/photo-picker-fix.js`.
 - Biblioteca/Fichas: `src/library/library.js`.
 - Inventario: `src/inventory/inventory.js`.
 - Parametros: `src/parameters/parameters.js`.
@@ -121,6 +117,7 @@ Para cambios normales:
 - Empaquetado movil: `capacitor.config.json`, `scripts/prepare-mobile-bundle.mjs`, `mobile/README.md`.
 
 No volver a meter funcionalidades grandes en `app.js`.
+No crear archivos `*-fix.js` o parches que pisen funciones al final del `index.html`; corregir siempre el modulo dueno real.
 
 ## Validacion oficial
 
