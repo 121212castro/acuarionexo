@@ -56,6 +56,19 @@
     return row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
   }
 
+  function isPlaceholderText(text) {
+    return /borrador pendiente|pendiente de validar|completar este apartado|datos reales antes de publicar/i.test(String(text || ''));
+  }
+
+  function aiGenerationNotice(generated, warning) {
+    const warnings = Array.isArray(generated?.warnings) ? generated.warnings.filter(Boolean) : [];
+    const candidates = Array.isArray(generated?.candidates) ? generated.candidates.filter(item => item?.name || item?.scientific_name) : [];
+    const candidateHtml = candidates.length ? `<ul>${candidates.map(item => `<li><b>${esc(item.name || item.scientific_name)}</b>${item.scientific_name && item.name ? ` · ${esc(item.scientific_name)}` : ''}${item.confidence ? ` · ${esc(item.confidence)}` : ''}${item.reason ? `<br>${esc(item.reason)}` : ''}</li>`).join('')}</ul>` : '';
+    const warningsHtml = warnings.length ? `<ul>${warnings.map(item => `<li>${esc(item)}</li>`).join('')}</ul>` : '';
+    const confidence = generated?.confidence ? `<p><b>Confianza:</b> ${esc(generated.confidence)}</p>` : '';
+    return [warning ? `<p>${esc(warning)}</p>` : '', confidence, candidateHtml, warningsHtml].filter(Boolean).join('');
+  }
+
   function card(row) {
     const cover = row.cover_url || row.photo_url || '';
     return `<button class="library-card library-cover-card" onclick="verFicha('${esc(row.id)}')">
@@ -245,11 +258,26 @@
       const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title: val('libTitle'), entry_type: val('libType'), notes: val('libPrompt') } });
       if (error) throw error;
       const generated = data?.data || data || {};
+      const warning = data?.warning || generated.warning || '';
+      if (generated.needs_ai_configuration || generated.ai_model === 'no-ai-configured') {
+        if (byId('aiBox')) byId('aiBox').innerHTML = msg(warning || 'IA real no configurada. No se rellenan campos con texto falso.', 'error');
+        return;
+      }
       const sections = generated.sections || {};
-      Object.keys(sections).forEach(key => { const el = byId(`libSection_${key}`); if (el) el.value = sections[key] || ''; });
-      if (generated.scientific_name && byId('libScientific')) byId('libScientific').value = generated.scientific_name;
-      if (generated.tags && byId('libTags')) byId('libTags').value = generated.tags.join(', ');
-      if (byId('aiBox')) byId('aiBox').innerHTML = msg('Borrador cargado. Revisa antes de guardar.', 'success');
+      let loaded = 0;
+      Object.keys(sections).forEach(key => {
+        const text = sections[key] || '';
+        if (!text || isPlaceholderText(text)) return;
+        const el = byId(`libSection_${key}`);
+        if (el) { el.value = text; loaded += 1; }
+      });
+      if (generated.scientific_name && !isPlaceholderText(generated.scientific_name) && byId('libScientific')) byId('libScientific').value = generated.scientific_name;
+      if (Array.isArray(generated.tags) && byId('libTags')) byId('libTags').value = generated.tags.filter(tag => tag && !isPlaceholderText(tag)).join(', ');
+      const notice = aiGenerationNotice(generated, warning);
+      if (!loaded && !generated.scientific_name && !generated.tags?.length) {
+        throw new Error('La IA no devolvio contenido util para cargar. Revisa el nombre o anade mas notas.');
+      }
+      if (byId('aiBox')) byId('aiBox').innerHTML = `<div class="success">Borrador cargado. Revisa antes de guardar.${notice ? `<br>${notice}` : ''}</div>`;
     } catch (e) { if (byId('aiBox')) byId('aiBox').innerHTML = msg(e.message, 'error'); }
   };
 
