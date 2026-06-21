@@ -5,8 +5,8 @@
 
 const AI_DAY = 24 * 60 * 60 * 1000;
 const aiMeasurementPlans = {
-  marine: { temperature_c: 1, salinity_ppt: 2, ph: 2, kh_dkh: 3, nitrate_no3: 7, phosphate_po4: 7, calcium_ca: 14, magnesium_mg: 14 },
-  freshwater: { temperature_c: 1, ph: 7, kh_dkh: 14, gh: 14, ammonia_nh3: 7, nitrite_no2: 7, nitrate_no3: 7, phosphate_po4: 14 }
+  marine: { temperature_c: 1, salinity_ppt: 2, ph: 2, kh_dkh: 3, nitrate_no3: 7, phosphate_po4: 7, calcium_ca: 30, magnesium_mg: 30, potassium_k: 30, iodine_i: 30 },
+  freshwater: { temperature_c: 1, ph: 7, kh_dkh: 14, gh: 14, ammonia_nh3: 7, nitrite_no2: 7, nitrate_no3: 7, phosphate_po4: 30, iron_fe: 30 }
 };
 const aiParameterLabels = {
   temperature_c: 'Temperatura',
@@ -18,6 +18,17 @@ const aiParameterLabels = {
   phosphate_po4: 'PO4',
   calcium_ca: 'Calcio',
   magnesium_mg: 'Magnesio',
+  potassium_k: 'Potasio',
+  iodine_i: 'Yodo',
+  strontium_sr: 'Estroncio',
+  boron_b: 'Boro',
+  iron_fe: 'Hierro',
+  manganese_mn: 'Manganeso',
+  zinc_zn: 'Zinc',
+  copper_cu: 'Cobre',
+  aluminum_al: 'Aluminio',
+  silicon_si: 'Silicio',
+  lithium_li: 'Litio',
   gh: 'GH',
   ammonia_nh3: 'NH3/NH4',
   nitrite_no2: 'NO2'
@@ -39,6 +50,17 @@ function normalizeMeasurementKey(row) {
   if (['po4', 'fosfato', 'fosfatos', 'phosphate', 'phosphate_po4'].includes(key)) return 'phosphate_po4';
   if (['calcio', 'ca', 'calcium', 'calcium_ca'].includes(key)) return 'calcium_ca';
   if (['magnesio', 'mg', 'magnesium', 'magnesium_mg'].includes(key)) return 'magnesium_mg';
+  if (['potasio', 'k', 'potassium', 'potassium_k'].includes(key)) return 'potassium_k';
+  if (['yodo', 'iodo', 'i', 'iodine', 'iodine_i'].includes(key)) return 'iodine_i';
+  if (['estroncio', 'sr', 'strontium', 'strontium_sr'].includes(key)) return 'strontium_sr';
+  if (['boro', 'b', 'boron', 'boron_b'].includes(key)) return 'boron_b';
+  if (['hierro', 'fe', 'iron', 'iron_fe'].includes(key)) return 'iron_fe';
+  if (['manganeso', 'mn', 'manganese', 'manganese_mn'].includes(key)) return 'manganese_mn';
+  if (['zinc', 'zn', 'zinc_zn'].includes(key)) return 'zinc_zn';
+  if (['cobre', 'cu', 'copper', 'copper_cu'].includes(key)) return 'copper_cu';
+  if (['aluminio', 'al', 'aluminum', 'aluminium', 'aluminum_al'].includes(key)) return 'aluminum_al';
+  if (['silicio', 'si', 'silicon', 'silicate', 'silicatos', 'silicon_si'].includes(key)) return 'silicon_si';
+  if (['litio', 'li', 'lithium', 'lithium_li'].includes(key)) return 'lithium_li';
   if (key === 'ph') return 'ph';
   return key;
 }
