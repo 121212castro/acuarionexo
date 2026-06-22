@@ -325,9 +325,9 @@ window.panel = function () {
   if (!aq) return listaAcuarios();
   const cover = aq.__cover_url || aq.cover_photo_url || aq.cover_url || aq.photo_url || aq.image_url || '';
   const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
-  render(aqHeader('resumen') + `<section class="summary-card aq-cover">
-    ${cover ? `<img src="${esc(cover)}" alt="${esc(aq.name || 'Acuario')}">` : ''}
-    <div><small>${esc(aq.aquarium_type || 'Acuario')}</small><h2>${esc(aq.name || 'Acuario')}</h2><p>${esc(liters)} L · ${esc(aq.status || 'activo')}</p></div>
+  render(aqHeader('resumen') + `<section class="panel aq-summary">
+    ${cover ? `<figure class="aq-summary-media"><img class="aq-summary-cover" src="${esc(cover)}" alt="${esc(aq.name || 'Acuario')}" loading="lazy"></figure>` : ''}
+    <div class="aq-summary-title"><small>${esc(aq.aquarium_type || 'Acuario')}</small><h2>${esc(aq.name || 'Acuario')}</h2><p>${esc(liters)} L · ${esc(aq.status || 'activo')}</p></div>
     <div id="aqSummaryExtra" class="item">
       <p><b>Estado:</b> ${esc(aq.status || '-')}</p>
       <p><b>Tipo:</b> ${esc(aq.aquarium_type || '-')}</p>
