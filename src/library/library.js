@@ -5,7 +5,8 @@
   const types = [
     ['pez_marino', 'Pez marino'], ['pez_dulce', 'Pez agua dulce'], ['coral', 'Coral'],
     ['invertebrado', 'Invertebrado'], ['planta', 'Planta / alga'], ['medicamento', 'Medicamento'],
-    ['sal', 'Sal'], ['alimento', 'Alimento'], ['equipamiento', 'Equipo'], ['test', 'Test'], ['general', 'General']
+    ['sal', 'Sal'], ['aditivo', 'Aditivo'], ['alimento', 'Alimento'], ['equipamiento', 'Equipo'], ['test', 'Test'],
+    ['microfauna', 'Microfauna'], ['general', 'General']
   ];
   const labels = Object.fromEntries(types);
   const sectionLabels = {
@@ -26,11 +27,15 @@
     planta: ['summary','identity','habitat','aquarium','parameters','lighting','co2','maintenance','compatibility','health','sources'],
     medicamento: ['summary','identity','uses','dose','compatibility','remove','risks','aftercare','inventory_logic','sources'],
     sal: ['summary','identity','parameters','mixing','use','risks','sources'],
+    aditivo: ['summary','identity','composition','dose','use','compatibility','risks','storage','sources'],
     alimento: ['summary','identity','nutrition','use','compatibility','risks','acuarionexo_plan','sources'],
     equipamiento: ['summary','identity','specs','installation','maintenance','compatibility','risks','sources'],
     test: ['summary','identity','parameters','reading','range','use','risks','storage','sources'],
+    microfauna: ['summary','identity','culture','parameters','feeding','maintenance','harvest','risks','sources'],
     general: ['summary','identity','aquarium','parameters','compatibility','risks','sources']
   };
+  const productTypes = new Set(['medicamento', 'sal', 'aditivo', 'alimento', 'equipamiento', 'test']);
+  const biologicalTypes = new Set(['pez_marino', 'pez_dulce', 'coral', 'invertebrado', 'planta', 'microfauna']);
   const sectionsFor = type => sectionsByType[type] || sectionsByType.general;
   const typeName = type => labels[type] || 'Ficha';
   const tagsText = row => Array.isArray(row?.tags) ? row.tags.join(', ') : '';
@@ -116,6 +121,24 @@
     return /borrador pendiente|pendiente de validar|completar este apartado|datos reales antes de publicar/i.test(String(text || ''));
   }
 
+  function sectionText(value) {
+    if (value == null) return '';
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value)) {
+      return value.map(sectionText).filter(Boolean).join('\n');
+    }
+    if (typeof value === 'object') {
+      return Object.entries(value)
+        .map(([key, val]) => {
+          const text = sectionText(val);
+          return text ? `${key}: ${text}` : '';
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+    return String(value);
+  }
+
   function aiGenerationNotice(generated, warning) {
     const warnings = Array.isArray(generated?.warnings) ? generated.warnings.filter(Boolean) : [];
     const candidates = Array.isArray(generated?.candidates) ? generated.candidates.filter(item => item?.name || item?.scientific_name) : [];
@@ -180,6 +203,34 @@
     </section>`;
   }
 
+  function sourceFieldsHtml(type, source) {
+    if (productTypes.has(type)) {
+      return `<h3>Datos verificados del producto</h3>
+        <div class="form-grid"><div><label>Fabricante / marca</label><input id="libManufacturer" value="${esc(source.manufacturer || '')}" placeholder="Ocean Nutrition, Tropic Marin..."></div>
+        <div><label>Codigo / lote / SKU</label><input id="libProductCode" value="${esc(source.product_code || '')}" placeholder="Referencia, lote, codigo de barras..."></div></div>
+        <label>URL fabricante</label><input id="libManufacturerUrl" value="${esc(source.manufacturer_url || '')}" placeholder="https://fabricante.com/producto">
+        <label>URL ficha tecnica / prospecto</label><input id="libDatasheetUrl" value="${esc(source.datasheet_url || '')}" placeholder="https://...">
+        <label>Texto de etiqueta</label><textarea id="libLabelText" placeholder="Ingredientes, composicion, dosis, instrucciones, advertencias...">${esc(source.label_text || '')}</textarea>
+        <label>Notas de fuente</label><textarea id="libSourceNotes" placeholder="De donde sale el dato, dudas, variante exacta, idioma de la etiqueta...">${esc(source.source_notes || '')}</textarea>`;
+    }
+    if (biologicalTypes.has(type)) {
+      return `<h3>Datos verificados de identificacion</h3>
+        <label>URL fuente fiable</label><input id="libDatasheetUrl" value="${esc(source.datasheet_url || '')}" placeholder="FishBase, WoRMS, fabricante del cultivo, articulo tecnico...">
+        <label>Notas de identificacion</label><textarea id="libSourceNotes" placeholder="Rasgos visibles, procedencia, dudas, sinonimos, variedad, fuente consultada...">${esc(source.source_notes || '')}</textarea>
+        <input id="libManufacturer" class="hidden" value="">
+        <input id="libProductCode" class="hidden" value="">
+        <input id="libManufacturerUrl" class="hidden" value="">
+        <textarea id="libLabelText" class="hidden"></textarea>`;
+    }
+    return `<h3>Datos verificados</h3>
+      <label>URL fuente fiable</label><input id="libDatasheetUrl" value="${esc(source.datasheet_url || '')}" placeholder="https://...">
+      <label>Notas de fuente</label><textarea id="libSourceNotes" placeholder="De donde sale el dato, dudas, variante exacta...">${esc(source.source_notes || '')}</textarea>
+      <input id="libManufacturer" class="hidden" value="">
+      <input id="libProductCode" class="hidden" value="">
+      <input id="libManufacturerUrl" class="hidden" value="">
+      <textarea id="libLabelText" class="hidden"></textarea>`;
+  }
+
   window.formFicha = function (id = '', forcedType = '') {
     const row = id ? (state.libraryRows || []).find(r => r.id === id) || {} : {};
     const selectedType = forcedType || row.entry_type || (state.libraryFilter === 'all' ? 'pez_marino' : state.libraryFilter) || 'pez_marino';
@@ -202,15 +253,9 @@
       <div id="imagePickerBox"></div>
       <label>Etiquetas</label><input id="libTags" value="${esc(tagsText(row))}" placeholder="reef, principiante, lps...">
       <label>Notas para IA</label><textarea id="libPrompt" placeholder="Datos que sabes, enfoque, advertencias, producto concreto...">${esc(row.ai_prompt || '')}</textarea>
-      <h3>Datos verificados</h3>
-      <div class="form-grid"><div><label>Fabricante / marca</label><input id="libManufacturer" value="${esc(source.manufacturer || '')}" placeholder="Ocean Nutrition, Tropic Marin..."></div>
-      <div><label>Codigo / lote / SKU</label><input id="libProductCode" value="${esc(source.product_code || '')}" placeholder="Referencia, lote, codigo de barras..."></div></div>
-      <label>URL fabricante</label><input id="libManufacturerUrl" value="${esc(source.manufacturer_url || '')}" placeholder="https://fabricante.com/producto">
-      <label>URL ficha tecnica / prospecto</label><input id="libDatasheetUrl" value="${esc(source.datasheet_url || '')}" placeholder="https://...">
-      <label>Texto de etiqueta</label><textarea id="libLabelText" placeholder="Ingredientes, composicion, dosis, instrucciones, advertencias...">${esc(source.label_text || '')}</textarea>
-      <label>Notas de fuente</label><textarea id="libSourceNotes" placeholder="De donde sale el dato, dudas, variante exacta, idioma de la etiqueta...">${esc(source.source_notes || '')}</textarea>
+      ${sourceFieldsHtml(selectedType, source)}
       <button type="button" onclick="generarFichaIA()">Generar borrador IA</button><div id="aiBox"></div>
-      ${sectionsFor(selectedType).map(key => `<label>${esc(sectionLabels[key] || key)}</label><textarea id="libSection_${key}">${esc(row.sections?.[key] || '')}</textarea>`).join('')}
+      ${sectionsFor(selectedType).map(key => `<label>${esc(sectionLabels[key] || key)}</label><textarea id="libSection_${key}">${esc(sectionText(row.sections?.[key]))}</textarea>`).join('')}
       <button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha</button><div id="x"></div></section>`, 'biblioteca');
   };
 
@@ -347,7 +392,7 @@
       const sections = generated.sections || {};
       let loaded = 0;
       Object.keys(sections).forEach(key => {
-        const text = sections[key] || '';
+        const text = sectionText(sections[key]);
         if (!text || isPlaceholderText(text)) return;
         const el = byId(`libSection_${key}`);
         if (el) { el.value = text; loaded += 1; }
@@ -370,6 +415,6 @@
     if (!row) return biblioteca();
     const mainPhoto = row.photo_url || row.cover_url || '';
     const coverOnly = row.cover_url && row.cover_url !== mainPhoto;
-    render(`<section class="panel library-detail"><button onclick="biblioteca()">Volver</button>${mainPhoto ? `<img class="library-detail-photo" src="${esc(mainPhoto)}" alt="${esc(row.title)}">` : ''}${coverOnly ? `<div class="library-cover-note"><b>Portada</b><img src="${esc(row.cover_url)}" alt="Portada"></div>` : ''}<small>${esc(typeName(row.entry_type))} · ${esc(row.status || 'draft')}</small><h2>${esc(row.title || 'Ficha')}</h2>${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}${sectionsFor(row.entry_type).map(key => row.sections?.[key] ? `<section class="library-detail-section"><h3>${esc(sectionLabels[key] || key)}</h3><p>${esc(row.sections[key]).replace(/\n/g, '<br>')}</p></section>` : '').join('')}<button class="primary" onclick="formFicha('${esc(row.id)}')">Editar ficha</button></section>`, 'biblioteca');
+    render(`<section class="panel library-detail"><button onclick="biblioteca()">Volver</button>${mainPhoto ? `<img class="library-detail-photo" src="${esc(mainPhoto)}" alt="${esc(row.title)}">` : ''}${coverOnly ? `<div class="library-cover-note"><b>Portada</b><img src="${esc(row.cover_url)}" alt="Portada"></div>` : ''}<small>${esc(typeName(row.entry_type))} · ${esc(row.status || 'draft')}</small><h2>${esc(row.title || 'Ficha')}</h2>${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}${sectionsFor(row.entry_type).map(key => sectionText(row.sections?.[key]) ? `<section class="library-detail-section"><h3>${esc(sectionLabels[key] || key)}</h3><p>${esc(sectionText(row.sections[key])).replace(/\n/g, '<br>')}</p></section>` : '').join('')}<button class="primary" onclick="formFicha('${esc(row.id)}')">Editar ficha</button></section>`, 'biblioteca');
   };
 })();
