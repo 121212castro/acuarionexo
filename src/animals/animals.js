@@ -26,6 +26,8 @@ async function animales() {
   }
 }
 
+window.animales = animales;
+
 window.formAnimal = function () {
   render(aqHeader('animales') + `<section class="panel">
     <button onclick="openAqSection('animales')">← Volver</button>
