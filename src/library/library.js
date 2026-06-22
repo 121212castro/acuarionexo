@@ -125,6 +125,18 @@
     return [warning ? `<p>${esc(warning)}</p>` : '', confidence, candidateHtml, warningsHtml].filter(Boolean).join('');
   }
 
+  async function functionErrorMessage(error) {
+    const fallback = error?.message || 'No se pudo generar la ficha con IA real.';
+    try {
+      const context = error?.context;
+      if (context && typeof context.json === 'function') {
+        const body = await context.json();
+        return body?.message || body?.error || fallback;
+      }
+    } catch (_) {}
+    return fallback;
+  }
+
   function card(row) {
     const cover = row.cover_url || row.photo_url || '';
     return `<button class="library-card library-cover-card" onclick="verFicha('${esc(row.id)}')">
@@ -329,7 +341,7 @@
       if (byId('aiBox')) byId('aiBox').innerHTML = msg('Generando borrador...');
       const source_context = sourceContextFromForm();
       const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title: val('libTitle'), scientific_name: val('libScientific'), entry_type: val('libType'), notes: val('libPrompt'), cover_url: val('libCover'), photo_url: val('libPhoto'), source_context } });
-      if (error) throw error;
+      if (error) throw new Error(await functionErrorMessage(error));
       const generated = data?.data || data || {};
       const warning = data?.warning || generated.warning || '';
       const sections = generated.sections || {};
