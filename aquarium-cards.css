@@ -171,6 +171,7 @@ body{
 .summary-card.aq-cover>img,
 .aq-summary-media{
   width:100%;
+  height:min(32vh,240px);
   max-height:min(32vh,240px);
   border-radius:18px;
   overflow:hidden;
@@ -179,7 +180,6 @@ body{
 }
 
 .summary-card.aq-cover>img{
-  height:auto;
   aspect-ratio:16/9;
   display:block;
   object-fit:cover;
@@ -227,6 +227,7 @@ body{
 @media(max-width:430px){
   .summary-card.aq-cover>img,
   .aq-summary-media{
+    height:190px;
     max-height:190px;
   }
 
