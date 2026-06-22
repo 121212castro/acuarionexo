@@ -24,6 +24,8 @@ async function fotos() {
   }
 }
 
+window.fotos = fotos;
+
 window.formFoto = function () {
   render(aqHeader('fotos') + `<section class="panel">
     <button onclick="openAqSection('fotos')">← Volver</button>
