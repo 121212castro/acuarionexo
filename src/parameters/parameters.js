@@ -25,6 +25,8 @@ async function parametros() {
   }
 }
 
+window.parametros = parametros;
+
 function paramKeysForAquarium(aq) {
   return Object.keys(aiMeasurementPlans[aiAquariumMode(aq)] || aiMeasurementPlans.marine);
 }
