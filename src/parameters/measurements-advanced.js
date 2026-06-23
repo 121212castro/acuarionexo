@@ -6,11 +6,13 @@
 
   const units = {
     temperature_c: '°C', salinity_ppt: 'ppt', salinity_sg: 'sg', ph: 'pH', kh_dkh: 'dKH',
-    ammonia_nh3: 'mg/L', nitrite_no2: 'mg/L', nitrate_no3: 'mg/L', phosphate_po4: 'mg/L',
+    ammonia_nh3: 'mg/L', ammonium_nh4: 'mg/L', nitrite_no2: 'mg/L', nitrate_no3: 'mg/L', phosphate_po4: 'mg/L',
     calcium_ca: 'mg/L', magnesium_mg: 'mg/L', potassium_k: 'mg/L', iodine_i: 'µg/L',
     strontium_sr: 'mg/L', boron_b: 'mg/L', iron_fe: 'µg/L', manganese_mn: 'µg/L',
     zinc_zn: 'µg/L', copper_cu: 'µg/L', aluminum_al: 'µg/L', silicon_si: 'µg/L',
-    lithium_li: 'µg/L', gh: 'dGH'
+    lithium_li: 'µg/L', nickel_ni: 'µg/L', chromium_cr: 'µg/L', vanadium_v: 'µg/L',
+    molybdenum_mo: 'µg/L', fluorine_f: 'mg/L', bromine_br: 'mg/L', gh: 'dGH', tds: 'ppm',
+    chlorine_cl2: 'mg/L', oxygen_o2: 'mg/L'
   };
 
   const profiles = {
@@ -19,21 +21,21 @@
       method: 'Semanal',
       source: 'weekly',
       marine: ['temperature_c', 'salinity_ppt', 'salinity_sg', 'ph', 'kh_dkh', 'nitrate_no3', 'phosphate_po4'],
-      freshwater: ['temperature_c', 'ph', 'kh_dkh', 'gh', 'ammonia_nh3', 'nitrite_no2', 'nitrate_no3']
+      freshwater: ['temperature_c', 'ph', 'kh_dkh', 'gh', 'ammonia_nh3', 'nitrite_no2', 'nitrate_no3', 'tds']
     },
     monthly: {
       title: 'Medición mensual',
       method: 'Mensual',
       source: 'monthly',
-      marine: ['calcium_ca', 'magnesium_mg', 'potassium_k', 'iodine_i', 'nitrate_no3', 'phosphate_po4'],
-      freshwater: ['gh', 'kh_dkh', 'nitrate_no3', 'phosphate_po4', 'iron_fe']
+      marine: ['temperature_c', 'salinity_ppt', 'salinity_sg', 'ph', 'kh_dkh', 'calcium_ca', 'magnesium_mg', 'potassium_k', 'nitrate_no3', 'phosphate_po4', 'iodine_i', 'strontium_sr'],
+      freshwater: ['temperature_c', 'ph', 'kh_dkh', 'gh', 'ammonia_nh3', 'nitrite_no2', 'nitrate_no3', 'phosphate_po4', 'iron_fe', 'tds']
     },
     icp: {
       title: 'ICP / laboratorio',
       method: 'ICP',
       source: 'icp',
-      marine: ['salinity_ppt', 'kh_dkh', 'calcium_ca', 'magnesium_mg', 'potassium_k', 'iodine_i', 'strontium_sr', 'boron_b', 'iron_fe', 'manganese_mn', 'zinc_zn', 'copper_cu', 'aluminum_al', 'silicon_si', 'lithium_li'],
-      freshwater: ['calcium_ca', 'magnesium_mg', 'potassium_k', 'iron_fe', 'manganese_mn', 'zinc_zn', 'copper_cu', 'aluminum_al', 'silicon_si']
+      marine: ['salinity_ppt', 'salinity_sg', 'kh_dkh', 'calcium_ca', 'magnesium_mg', 'potassium_k', 'iodine_i', 'strontium_sr', 'boron_b', 'iron_fe', 'manganese_mn', 'zinc_zn', 'copper_cu', 'aluminum_al', 'silicon_si', 'lithium_li', 'nickel_ni', 'chromium_cr', 'vanadium_v', 'molybdenum_mo', 'fluorine_f', 'bromine_br'],
+      freshwater: ['calcium_ca', 'magnesium_mg', 'potassium_k', 'iron_fe', 'manganese_mn', 'zinc_zn', 'copper_cu', 'aluminum_al', 'silicon_si', 'nickel_ni', 'chromium_cr', 'tds']
     }
   };
 
