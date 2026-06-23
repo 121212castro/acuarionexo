@@ -15,7 +15,7 @@
     reef_safe: 'Reef safe', health: 'Salud', purchase: 'Antes de comprar', mistakes: 'Errores frecuentes',
     breeding: 'Reproduccion', lighting: 'Iluminacion', flow: 'Flujo', placement: 'Ubicacion', co2: 'CO2 / nutrientes',
     maintenance: 'Mantenimiento', uses: 'Usos', dose: 'Dosis', remove: 'Retirar durante tratamiento', risks: 'Riesgos',
-    aftercare: 'Seguimiento', inventory_logic: 'Logica AcuarioNexo', mixing: 'Preparacion', use: 'Uso', nutrition: 'Composicion',
+    aftercare: 'Seguimiento', monitoring: 'Mediciones / seguimiento', inventory_logic: 'Logica AcuarioNexo', mixing: 'Preparacion', use: 'Uso', nutrition: 'Composicion',
     acuarionexo_plan: 'Plan AcuarioNexo', specs: 'Especificaciones', installation: 'Instalacion', reading: 'Lectura',
     range: 'Rangos', storage: 'Conservacion', sources: 'Fuentes'
   };
@@ -25,12 +25,12 @@
     coral: ['summary','identity','habitat','aquarium','parameters','lighting','flow','placement','feeding','compatibility','health','purchase','mistakes','sources'],
     invertebrado: ['summary','identity','habitat','aquarium','parameters','behavior','feeding','compatibility','reef_safe','health','purchase','mistakes','sources'],
     planta: ['summary','identity','habitat','aquarium','parameters','lighting','co2','maintenance','compatibility','health','sources'],
-    medicamento: ['summary','identity','uses','dose','compatibility','remove','risks','aftercare','inventory_logic','sources'],
-    sal: ['summary','identity','parameters','mixing','use','risks','sources'],
-    aditivo: ['summary','identity','composition','dose','use','compatibility','risks','storage','sources'],
-    alimento: ['summary','identity','nutrition','use','compatibility','risks','acuarionexo_plan','sources'],
-    equipamiento: ['summary','identity','specs','installation','maintenance','compatibility','risks','sources'],
-    test: ['summary','identity','parameters','reading','range','use','risks','storage','sources'],
+    medicamento: ['summary','identity','uses','dose','monitoring','compatibility','remove','risks','aftercare','inventory_logic','sources'],
+    sal: ['summary','identity','parameters','mixing','use','monitoring','risks','sources'],
+    aditivo: ['summary','identity','composition','dose','use','monitoring','compatibility','risks','storage','sources'],
+    alimento: ['summary','identity','nutrition','use','monitoring','compatibility','risks','acuarionexo_plan','sources'],
+    equipamiento: ['summary','identity','specs','installation','maintenance','monitoring','compatibility','risks','sources'],
+    test: ['summary','identity','parameters','reading','range','use','monitoring','risks','storage','sources'],
     microfauna: ['summary','identity','culture','parameters','feeding','maintenance','harvest','risks','sources'],
     general: ['summary','identity','aquarium','parameters','compatibility','risks','sources']
   };
