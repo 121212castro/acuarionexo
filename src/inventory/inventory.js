@@ -5,6 +5,16 @@
 const generalInventoryCategories = ['Medicamentos', 'Sales', 'Aditivos', 'Alimentos', 'Tests', 'Material general'];
 const marineInventoryCategories = ['Peces marinos', 'Corales', 'Invertebrados', 'Microfauna', 'Equipos'];
 const freshwaterInventoryCategories = ['Peces', 'Invertebrados', 'Plantas', 'Equipos'];
+const importedSectionLabels = {
+  summary: 'Resumen', identity: 'Identificacion', habitat: 'Habitat', aquarium: 'Acuario recomendado',
+  parameters: 'Parametros', behavior: 'Comportamiento', feeding: 'Alimentacion', compatibility: 'Compatibilidad',
+  reef_safe: 'Reef safe', health: 'Salud', purchase: 'Antes de comprar', mistakes: 'Errores frecuentes',
+  breeding: 'Reproduccion', lighting: 'Iluminacion', flow: 'Flujo', placement: 'Ubicacion', co2: 'CO2 / nutrientes',
+  maintenance: 'Mantenimiento', uses: 'Usos', dose: 'Dosis', remove: 'Retirar durante tratamiento', risks: 'Riesgos',
+  aftercare: 'Seguimiento', inventory_logic: 'Logica AcuarioNexo', mixing: 'Preparacion', use: 'Uso', nutrition: 'Composicion',
+  acuarionexo_plan: 'Plan AcuarioNexo', specs: 'Especificaciones', installation: 'Instalacion', reading: 'Lectura',
+  range: 'Rangos', storage: 'Conservacion', sources: 'Fuentes', culture: 'Cultivo', harvest: 'Recolecta'
+};
 
 function inventoryMode(aq) {
   const type = String(aq?.aquarium_type || aq?.type || '').toLowerCase();
@@ -41,6 +51,40 @@ function inventoryMeta(item) {
   try { return JSON.parse(match[1]); } catch (_) { return {}; }
 }
 
+function sectionText(value) {
+  if (value == null) return '';
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value)) return value.map(sectionText).filter(Boolean).join('\n');
+  if (typeof value === 'object') {
+    return Object.entries(value).map(([key, val]) => {
+      const text = sectionText(val);
+      return text ? `${key}: ${text}` : '';
+    }).filter(Boolean).join('\n');
+  }
+  return String(value);
+}
+
+function importedFichaHtml(meta) {
+  const card = meta.library_card;
+  if (!card || typeof card !== 'object') return '';
+  const sections = card.sections && typeof card.sections === 'object' ? card.sections : {};
+  const rows = Object.keys(sections).map(key => {
+    const text = sectionText(sections[key]);
+    if (!text) return '';
+    return `<section class="library-detail-section inventory-imported-section"><h3>${esc(importedSectionLabels[key] || key)}</h3><p>${esc(text).replace(/\n/g, '<br>')}</p></section>`;
+  }).filter(Boolean).join('');
+  const tags = Array.isArray(card.tags) && card.tags.length ? `<p class="small"><b>Etiquetas:</b> ${esc(card.tags.join(', '))}</p>` : '';
+  const source = card.source_notes ? `<section class="library-detail-section inventory-imported-section"><h3>Fuente original</h3><p>${esc(sectionText(card.source_notes)).replace(/\n/g, '<br>')}</p></section>` : '';
+  return `<section class="inventory-imported-card">
+    <div class="panel-head"><h3>Ficha tecnica importada</h3><small>${esc(card.type_label || card.type || 'Biblioteca')}</small></div>
+    <h2>${esc(card.title || 'Ficha')}</h2>
+    ${card.scientific_name ? `<p class="scientific">${esc(card.scientific_name)}</p>` : ''}
+    ${tags}
+    ${rows || (card.summary ? `<section class="library-detail-section inventory-imported-section"><h3>Resumen</h3><p>${esc(card.summary)}</p></section>` : '')}
+    ${source}
+  </section>`;
+}
+
 function inventoryCover(item) {
   const meta = inventoryMeta(item);
   return item.photo_url || meta.cover_url || meta.image_url || '';
@@ -74,11 +118,12 @@ function inventoryItemHtml(item, aqName) {
   const meta = inventoryMeta(item);
   const expiryStatus = inventoryExpiryStatus(item);
   const cover = inventoryCover(item);
+  const hasFicha = meta.library_card ? ' · ficha completa' : '';
   return `<button class="item inventory-card inventory-ficha-card" onclick="verInventario('${esc(item.id)}')">
     <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(item.name || 'Inventario')}" loading="lazy">` : '<span>▤</span>'}</div>
     <div class="inventory-card-body">
       <div class="inventory-card-head">
-        <div><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}</p></div>
+        <div><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}${hasFicha}</p></div>
         <span>${esc(scope)}</span>
       </div>
       ${(meta.purchase_date || meta.purchase_place || meta.purchase_price) ? `<p class="small">Compra: ${esc([meta.purchase_date, meta.purchase_place, meta.purchase_price].filter(Boolean).join(' · '))}</p>` : ''}
@@ -213,6 +258,7 @@ window.verInventario = async function (id) {
         <div><small>Lote / SKU</small><b>${esc(meta.batch || 'Sin dato')}</b></div>
       </div>
       ${cleanNotes ? `<section class="library-detail-section"><h3>Notas</h3><p>${esc(cleanNotes)}</p></section>` : ''}
+      ${importedFichaHtml(meta)}
       <button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button>
     </section>`, active);
   } catch (e) {
@@ -246,6 +292,7 @@ window.editarInventario = async function (id) {
       <label>Dónde se compra / procedencia</label><input id="invEditPurchasePlace" value="${esc(meta.purchase_place || '')}" placeholder="Tienda, criador, proveedor, web...">
       <label>Precio</label><input id="invEditPurchasePrice" inputmode="decimal" value="${esc(meta.purchase_price || '')}">
       <label>Lote / SKU / referencia</label><input id="invEditBatch" value="${esc(meta.batch || '')}">
+      <textarea id="invEditExistingMeta" class="hidden">${esc(JSON.stringify(meta || {}))}</textarea>
       <label>Caducidad</label><input id="invEditExpiry" type="date" value="${esc(data.expiry_date || meta.expires_at || '')}">
       <label>Portada</label><input id="invEditCover" value="${esc(inventoryCover(data))}" placeholder="URL de imagen o portada">
       <label>Notas</label><textarea id="invEditNotes">${esc(inventoryNoteText(data))}</textarea>
@@ -260,7 +307,10 @@ window.editarInventario = async function (id) {
 window.guardarInventarioEditado = async function (id, scope) {
   try {
     const aq = currentAquarium();
+    let previousMeta = {};
+    try { previousMeta = JSON.parse(val('invEditExistingMeta') || '{}'); } catch (_) { previousMeta = {}; }
     const meta = {
+      ...previousMeta,
       source: 'manual',
       scope,
       purchase_date: val('invEditPurchaseDate'),
