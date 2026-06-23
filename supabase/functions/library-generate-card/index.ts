@@ -278,7 +278,32 @@ async function fetchText(url: string) {
 }
 
 function promptFor(payload: Payload, sourceBlock: Record<string, string>, entryType: string) {
-  const typeRules = productTypes.has(entryType)
+  const mode = payload.mode || "generate";
+  if (mode === "identify") {
+  return `IDENTIFY V1 AcuarioNexo. Solo identifica. No crees ficha completa.
+
+Tipo solicitado: ${entryType}.
+Nombre común introducido: ${clean(payload.title, 180)}.
+Nombre científico/marca introducido: ${clean(payload.scientific_name, 180)}.
+Notas usuario: ${clean(payload.notes, 1800)}.
+Datos y fuentes aportadas: ${JSON.stringify(sourceBlock)}.
+
+Reglas obligatorias:
+- Usa búsqueda web real y, si hay foto, visión para identificar lo visible.
+- No inventes.
+- Si hay duda, devuelve candidatos con motivo.
+- identity_confirmed solo puede ser true si hay coincidencia clara y fuentes reales con URL.
+- Sin fuentes reales, identity_confirmed=false.
+- No crees ficha completa.
+- No rellenes cuidados, parámetros, dosis ni compatibilidad.
+- Devuelve solo JSON puro, sin markdown.
+
+Devuelve JSON con:
+title, scientific_name, entry_type, summary, tags, confidence, identity_confirmed, candidates, warnings, sources, sections.
+
+sections solo debe contener identity y sources.`;}
+}
+const typeRules = productTypes.has(entryType)
     ? "Es una ficha de producto/equipo. Prioridad estricta: fabricante, etiqueta, ficha tecnica, prospecto, documentacion oficial. Tiendas y foros solo sirven como apoyo, nunca como fuente principal de dosis/composicion."
     : "Es una ficha biologica/cultivo. Prioridad estricta: bases biologicas reconocidas, taxonomia aceptada, literatura/documentacion tecnica y despues foros solo como experiencia no autoritativa.";
 
