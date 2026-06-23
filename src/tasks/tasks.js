@@ -1,13 +1,71 @@
 /* AcuarioNexo · tasks */
 (function () {
-  const { supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage } = window.ANX;
+  const { supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, render, aqHeader } = window.ANX;
+
+function taskMeta(task) {
+  const text = String(task?.notes || '');
+  const match = text.match(/^AcuarioNexoTaskMeta:(\{[^\n]*\})/i) || text.match(/\nAcuarioNexoTaskMeta:(\{[^\n]*\})/i);
+  if (!match) return {};
+  try { return JSON.parse(match[1]); } catch (_) { return {}; }
+}
+
+function taskNotes(task) {
+  return String(task?.notes || '').replace(/^AcuarioNexoTaskMeta:\{[^\n]*\}\n?/i, '').trim();
+}
+
+function taskNotesPayload(notes, meta = {}) {
+  const cleanMeta = Object.fromEntries(Object.entries(meta).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+  return `${Object.keys(cleanMeta).length ? `AcuarioNexoTaskMeta:${JSON.stringify(cleanMeta)}\n` : ''}${notes || ''}`.trim() || null;
+}
+
+function taskRoute(task) {
+  const meta = taskMeta(task);
+  const text = [meta.route, task.task_type, task.type, task.category, task.title, task.notes].join(' ').toLowerCase();
+  if (/param|medic|kh|no3|po4|salinidad|temperatura|ph|calcio|magnesio|icp/.test(text)) return 'parametros';
+  if (/invent|stock|comprar|caduc|reponer|test|sal|aditivo|alimento|medicamento/.test(text)) return 'inventario';
+  if (/microfauna|rotif|copepod|artemia|fitoplancton|infusorio|cultivo|eclosion|recolect/.test(text)) return 'microfauna';
+  if (/agua|cambio|mantenimiento|tarea/.test(text)) return 'tareas';
+  return meta.route || 'tareas';
+}
+
+async function openTaskTarget(task) {
+  const route = taskRoute(task);
+  if (task.aquarium_id && (!currentAquarium() || currentAquarium().id !== task.aquarium_id)) {
+    if (typeof openA === 'function') {
+      await openA(task.aquarium_id);
+      setTimeout(() => openTaskRoute(route), 0);
+      return;
+    }
+  }
+  openTaskRoute(route);
+}
+
+function openTaskRoute(route) {
+  if (route === 'parametros') return openAqSection('parametros');
+  if (route === 'inventario') return currentAquarium() ? inventario('aquarium') : inventario('general');
+  if (route === 'microfauna' && typeof microfauna === 'function') return microfauna();
+  if (route === 'tareas') return currentAquarium() ? openAqSection('tareas') : tareas();
+  return tareas();
+}
+
+function repeatOptions(selected = '') {
+  const options = [
+    ['', 'No repetir'],
+    ['1', 'Cada día'],
+    ['7', 'Cada semana'],
+    ['14', 'Cada 2 semanas'],
+    ['30', 'Cada mes'],
+    ['90', 'Cada 3 meses']
+  ];
+  return options.map(([value, label]) => `<option value="${value}" ${String(selected) === value ? 'selected' : ''}>${label}</option>`).join('');
+}
 
 async function tareasAcuario() {
   const aq = currentAquarium();
   const t = token();
   render(aqHeader('tareas') + `<section class="panel"><div class="panel-head"><h2>Tareas</h2><button class="primary" onclick="formTareaAcuario()">Añadir</button></div>${msg('Cargando tareas...')}</section>`, 'acuarios');
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).order('due_at', { ascending: true, nullsFirst: false }).limit(80);
+    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(80);
     if (error) throw error;
     if (!isCurrent(t)) return;
     const html = (data || []).map(tareaCard).join('');
@@ -19,7 +77,13 @@ async function tareasAcuario() {
 window.tareasAcuario = tareasAcuario;
 
 function tareaCard(task) {
-  return `<div class="${task.status === 'done' ? 'success' : 'item'}"><b>${esc(task.title || 'Tarea')}</b><p class="small">${dateText(task.due_at)} · ${esc(task.priority || 'normal')} · ${esc(task.status || 'open')}</p>${task.notes ? `<p>${esc(task.notes)}</p>` : ''}</div>`;
+  const meta = taskMeta(task);
+  const repeat = meta.repeat_days ? ` · repetir ${meta.repeat_days} días` : '';
+  return `<button class="${task.status === 'done' ? 'success' : 'item'} task-card" onclick="verAviso('${esc(task.id)}')">
+    <b>${esc(task.title || 'Tarea')}</b>
+    <p class="small">${dateText(task.due_at)} · ${esc(task.priority || 'normal')} · ${esc(task.status || 'open')}${esc(repeat)}</p>
+    ${taskNotes(task) ? `<p>${esc(taskNotes(task))}</p>` : ''}
+  </button>`;
 }
 
 window.formTareaAcuario = function () {
@@ -28,6 +92,7 @@ window.formTareaAcuario = function () {
     <h2>Nueva tarea</h2>
     <label>Título</label><input id="taskTitle">
     <label>Fecha</label><input id="taskDue" type="datetime-local">
+    <label>Repetición</label><select id="taskRepeat">${repeatOptions()}</select>
     <label>Notas</label><textarea id="taskNotes"></textarea>
     <button class="primary" onclick="saveTareaAcuario()">Guardar</button>
     <div id="x"></div>
@@ -38,10 +103,108 @@ window.saveTareaAcuario = async function () {
   try {
     const aq = currentAquarium();
     if (!val('taskTitle')) throw new Error('Pon un título.');
-    const row = { user_id: state.user.id, aquarium_id: aq.id, title: val('taskTitle'), task_type: 'task', due_at: val('taskDue') ? new Date(val('taskDue')).toISOString() : null, priority: 'normal', status: 'open', notes: val('taskNotes') || null };
+    const repeatDays = num('taskRepeat');
+    const row = {
+      user_id: state.user.id,
+      aquarium_id: aq.id,
+      title: val('taskTitle'),
+      task_type: 'task',
+      due_at: val('taskDue') ? new Date(val('taskDue')).toISOString() : null,
+      priority: 'normal',
+      status: 'open',
+      notes: taskNotesPayload(val('taskNotes'), { repeat_days: repeatDays || null, route: 'tareas' })
+    };
     const { error } = await supabase.from('tasks').insert(row);
     if (error) throw error;
     tareasAcuario();
+  } catch (e) {
+    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+  }
+};
+
+async function loadTask(id) {
+  const { data, error } = await supabase.from('tasks').select('*').eq('id', id).eq('user_id', state.user.id).single();
+  if (error) throw error;
+  return data;
+}
+
+window.verAviso = async function (id) {
+  const t = token();
+  render(`<section class="panel">${msg('Abriendo aviso...')}</section>`, 'avisos');
+  try {
+    const task = await loadTask(id);
+    if (!isCurrent(t)) return;
+    const meta = taskMeta(task);
+    const active = task.aquarium_id && currentAquarium()?.id === task.aquarium_id ? 'acuarios' : 'avisos';
+    const head = active === 'acuarios' ? aqHeader('tareas') : '';
+    render(head + `<section class="panel task-detail">
+      <button onclick="${active === 'acuarios' ? "openAqSection('tareas')" : 'tareas()'}">← Volver</button>
+      <small>${esc(task.task_type || task.type || 'aviso')} · ${esc(task.priority || 'normal')} · ${dateText(task.due_at)}</small>
+      <h2>${esc(task.title || 'Aviso')}</h2>
+      ${taskNotes(task) ? `<p>${esc(taskNotes(task))}</p>` : ''}
+      <div class="quick-actions">
+        <button onclick="irAAviso('${esc(task.id)}')"><span>↪</span>Ir</button>
+        <button class="primary" onclick="completarAviso('${esc(task.id)}')"><span>✓</span>Hecho</button>
+      </div>
+      <label>Repetir este aviso</label>
+      <select id="taskRepeatEdit">${repeatOptions(meta.repeat_days ? String(meta.repeat_days) : '')}</select>
+      <button onclick="guardarRepeticionAviso('${esc(task.id)}')">Guardar repetición</button>
+      <div id="x"></div>
+    </section>`, active);
+  } catch (e) {
+    render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
+  }
+};
+
+window.irAAviso = async function (id) {
+  try {
+    const task = await loadTask(id);
+    await openTaskTarget(task);
+  } catch (e) {
+    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+  }
+};
+
+window.guardarRepeticionAviso = async function (id) {
+  try {
+    const task = await loadTask(id);
+    const meta = { ...taskMeta(task), repeat_days: num('taskRepeatEdit') || null, route: taskRoute(task) };
+    const { error } = await supabase.from('tasks').update({ notes: taskNotesPayload(taskNotes(task), meta), updated_at: new Date().toISOString() }).eq('id', id).eq('user_id', state.user.id);
+    if (error) throw error;
+    if (byId('x')) byId('x').innerHTML = msg('Repetición guardada.', 'success');
+  } catch (e) {
+    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+  }
+};
+
+window.completarAviso = async function (id) {
+  try {
+    const task = await loadTask(id);
+    const meta = taskMeta(task);
+    const repeatDays = Number(meta.repeat_days || 0);
+    const now = new Date();
+    const updates = { status: 'done', completed_at: now.toISOString(), updated_at: now.toISOString() };
+    const { error } = await supabase.from('tasks').update(updates).eq('id', id).eq('user_id', state.user.id);
+    if (error) throw error;
+    if (repeatDays > 0) {
+      const base = task.due_at ? new Date(task.due_at) : now;
+      const next = new Date(Math.max(base.getTime(), now.getTime()) + repeatDays * 86400000);
+      const nextRow = {
+        user_id: state.user.id,
+        aquarium_id: task.aquarium_id || null,
+        title: task.title,
+        task_type: task.task_type || task.type || 'task',
+        type: task.type || null,
+        category: task.category || null,
+        priority: task.priority || 'normal',
+        status: 'open',
+        due_at: next.toISOString(),
+        notes: taskNotesPayload(taskNotes(task), meta)
+      };
+      const insert = await supabase.from('tasks').insert(nextRow);
+      if (insert.error) throw insert.error;
+    }
+    tareas();
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
   }
@@ -55,7 +218,7 @@ window.tareas = async function () {
     const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(120);
     if (error) throw error;
     if (!isCurrent(t)) return;
-    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Tareas y avisos pendientes.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.', 'success')}</section>`, 'avisos');
+    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Toca un aviso para abrirlo, ir al módulo, marcarlo hecho o repetirlo.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.', 'success')}</section>`, 'avisos');
   } catch (e) {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
