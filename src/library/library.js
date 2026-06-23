@@ -202,6 +202,19 @@
     return (state.libraryRows || []).filter(row => inventoryScopeForType(row.entry_type) === scope);
   }
 
+  async function loadInventoryAquariums() {
+    if (Array.isArray(state.aquariums) && state.aquariums.length) return state.aquariums;
+    const { data, error } = await supabase.from('aquariums').select('id,name,aquarium_type,status,created_at').eq('user_id', state.user.id).order('created_at', { ascending: false });
+    if (error) throw error;
+    state.aquariums = data || [];
+    return state.aquariums;
+  }
+
+  function aquariumOptionsHtml(selectedId) {
+    const list = state.aquariums || [];
+    return list.map(aq => `<option value="${esc(aq.id)}" ${String(aq.id) === String(selectedId || '') ? 'selected' : ''}>${esc(aq.name || 'Acuario')} · ${esc(aq.aquarium_type || 'acuario')}</option>`).join('');
+  }
+
   function importMetaFromForm(row, scope) {
     return {
       source: 'library',
@@ -215,7 +228,21 @@
       source_title: row.title || '',
       scientific_name: row.scientific_name || '',
       cover_url: row.cover_url || '',
-      image_url: row.photo_url || ''
+      image_url: row.photo_url || '',
+      library_card: {
+        id: row.id,
+        type: row.entry_type || 'general',
+        type_label: typeName(row.entry_type),
+        title: row.title || '',
+        scientific_name: row.scientific_name || '',
+        summary: row.summary || '',
+        cover_url: row.cover_url || '',
+        photo_url: row.photo_url || '',
+        tags: Array.isArray(row.tags) ? row.tags : [],
+        status: row.status || '',
+        source_notes: row.source_notes || '',
+        sections: row.sections || {}
+      }
     };
   }
 
@@ -224,13 +251,10 @@
     return [
       `AcuarioNexoMeta:${JSON.stringify(meta)}`,
       `AcuarioNexoLibrary:${row.id}`,
-      row.summary || '',
-      row.scientific_name ? `Nombre cientifico / marca: ${row.scientific_name}` : '',
       meta.purchase_date ? `Fecha compra/alta: ${meta.purchase_date}` : '',
       meta.purchase_place ? `Compra/proveedor: ${meta.purchase_place}` : '',
       meta.purchase_price ? `Precio: ${meta.purchase_price}` : '',
       meta.batch ? `Lote/SKU: ${meta.batch}` : '',
-      row.source_notes ? `Fuente ficha: ${row.source_notes}` : '',
       userNotes
     ].filter(Boolean).join('\n');
   }
@@ -238,12 +262,13 @@
   window.importarFichaInventario = async function (scope = 'general') {
     if (!state.user) return login();
     const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
-    const realScope = scope === 'aquarium' && aq ? 'aquarium' : 'general';
+    const realScope = scope === 'aquarium' ? 'aquarium' : 'general';
     const active = realScope === 'aquarium' ? 'acuarios' : 'inventario';
     const head = realScope === 'aquarium' && window.ANX.aqHeader ? window.ANX.aqHeader('inventario') : '';
     render(head + `<section class="panel">${msg('Cargando fichas disponibles...')}</section>`, active);
     try {
       await loadRows();
+      if (realScope === 'aquarium') await loadInventoryAquariums();
       const rows = importableRowsForScope(realScope);
       render(head + `<section class="panel">
         <button onclick="${inventoryBackAction(realScope)}">← Volver</button>
@@ -264,6 +289,8 @@
     if (!row) return importarFichaInventario(scope);
     const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
     const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
+    const aquariums = state.aquariums || [];
+    const selectedAqId = aq?.id || aquariums[0]?.id || '';
     const active = realScope === 'aquarium' ? 'acuarios' : 'inventario';
     const head = realScope === 'aquarium' && window.ANX.aqHeader ? window.ANX.aqHeader('inventario') : '';
     const isProduct = productTypes.has(row.entry_type) && row.entry_type !== 'equipamiento';
@@ -273,6 +300,7 @@
       <small>${esc(typeName(row.entry_type))}</small>
       <h2>${esc(row.title || row.scientific_name || 'Ficha')}</h2>
       ${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}
+      ${realScope === 'aquarium' ? `<label>Acuario destino</label><select id="importAquariumId">${aquariumOptionsHtml(selectedAqId)}</select>` : ''}
       <label>Cantidad</label><input id="importQty" type="number" step="0.1" value="1">
       <label>Unidad</label><input id="importUnit" value="${esc(unit)}" placeholder="ejemplar, bote, kg, ml, unidad...">
       <label>Fecha compra / alta</label><input id="importPurchaseDate" type="date">
@@ -292,11 +320,17 @@
       if (!row) throw new Error('No encuentro la ficha cargada.');
       const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
       const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
-      if (realScope === 'aquarium' && !aq) throw new Error('Abre primero el acuario al que pertenece esta ficha.');
+      const targetAquariumId = realScope === 'aquarium' ? (val('importAquariumId') || aq?.id || '') : '';
+      if (realScope === 'aquarium' && !targetAquariumId) throw new Error('Elige el acuario destino.');
       const meta = importMetaFromForm(row, realScope);
+      const targetAq = (state.aquariums || []).find(item => String(item.id) === String(targetAquariumId));
+      if (targetAq) {
+        meta.aquarium_id = targetAq.id;
+        meta.aquarium_name = targetAq.name || '';
+      }
       const payload = {
         user_id: state.user.id,
-        aquarium_id: realScope === 'aquarium' ? aq.id : null,
+        aquarium_id: realScope === 'aquarium' ? targetAquariumId : null,
         name: row.title || row.scientific_name || 'Ficha',
         category: inventoryCategoryFor(row),
         quantity: Number(val('importQty')) || 1,
@@ -308,16 +342,21 @@
       };
       const { error } = await supabase.from('inventory_items').insert(payload);
       if (error) throw error;
-      realScope === 'aquarium' ? inventario('aquarium') : inventario('general');
+      if (realScope === 'aquarium' && aq && String(aq.id) === String(targetAquariumId)) inventario('aquarium');
+      else biblioteca();
     } catch (e) {
       const box = byId('x') || byId('aiBox');
       if (box) box.innerHTML = msg(e.message, 'error');
     }
   };
 
-  window.pasarFichaAInventario = function (id) {
+  window.pasarFichaAInventario = async function (id) {
     const row = (state.libraryRows || []).find(r => r.id === id);
     if (!row) return biblioteca();
+    if (inventoryScopeForType(row.entry_type) === 'aquarium') {
+      try { await loadInventoryAquariums(); }
+      catch (e) { const box = byId('x') || byId('aiBox'); if (box) box.innerHTML = msg(e.message, 'error'); return; }
+    }
     formImportarFichaInventario(id, inventoryScopeForType(row.entry_type));
   };
 
