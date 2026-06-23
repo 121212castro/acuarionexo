@@ -5,8 +5,8 @@
 
 const AI_DAY = 24 * 60 * 60 * 1000;
 const aiMeasurementPlans = {
-  marine: { temperature_c: 1, salinity_ppt: 2, ph: 2, kh_dkh: 3, nitrate_no3: 7, phosphate_po4: 7, calcium_ca: 30, magnesium_mg: 30, potassium_k: 30, iodine_i: 30 },
-  freshwater: { temperature_c: 1, ph: 7, kh_dkh: 14, gh: 14, ammonia_nh3: 7, nitrite_no2: 7, nitrate_no3: 7, phosphate_po4: 30, iron_fe: 30 }
+  marine: { temperature_c: 1, salinity_ppt: 2, ph: 2, kh_dkh: 3, nitrate_no3: 7, phosphate_po4: 7, calcium_ca: 30, magnesium_mg: 30, potassium_k: 30, iodine_i: 30, strontium_sr: 30 },
+  freshwater: { temperature_c: 1, ph: 7, kh_dkh: 14, gh: 14, ammonia_nh3: 7, nitrite_no2: 7, nitrate_no3: 7, phosphate_po4: 30, iron_fe: 30, tds: 14 }
 };
 const aiParameterLabels = {
   temperature_c: 'Temperatura',
@@ -31,7 +31,17 @@ const aiParameterLabels = {
   lithium_li: 'Litio',
   gh: 'GH',
   ammonia_nh3: 'NH3/NH4',
-  nitrite_no2: 'NO2'
+  ammonium_nh4: 'NH4',
+  nitrite_no2: 'NO2',
+  tds: 'TDS',
+  chlorine_cl2: 'Cloro',
+  oxygen_o2: 'Oxígeno',
+  nickel_ni: 'Níquel',
+  chromium_cr: 'Cromo',
+  vanadium_v: 'Vanadio',
+  molybdenum_mo: 'Molibdeno',
+  fluorine_f: 'Flúor',
+  bromine_br: 'Bromo'
 };
 
 function aiAquariumMode(aq) {
@@ -48,6 +58,8 @@ function normalizeMeasurementKey(row) {
   if (['kh', 'alcalinidad', 'alkalinity', 'kh_dkh'].includes(key)) return 'kh_dkh';
   if (['no3', 'nitrato', 'nitratos', 'nitrate', 'nitrate_no3'].includes(key)) return 'nitrate_no3';
   if (['po4', 'fosfato', 'fosfatos', 'phosphate', 'phosphate_po4'].includes(key)) return 'phosphate_po4';
+  if (['nh3', 'nh4', 'amonio', 'amoniaco', 'ammonia', 'ammonium', 'ammonia_nh3'].includes(key)) return 'ammonia_nh3';
+  if (['no2', 'nitrito', 'nitritos', 'nitrite', 'nitrite_no2'].includes(key)) return 'nitrite_no2';
   if (['calcio', 'ca', 'calcium', 'calcium_ca'].includes(key)) return 'calcium_ca';
   if (['magnesio', 'mg', 'magnesium', 'magnesium_mg'].includes(key)) return 'magnesium_mg';
   if (['potasio', 'k', 'potassium', 'potassium_k'].includes(key)) return 'potassium_k';
@@ -61,6 +73,13 @@ function normalizeMeasurementKey(row) {
   if (['aluminio', 'al', 'aluminum', 'aluminium', 'aluminum_al'].includes(key)) return 'aluminum_al';
   if (['silicio', 'si', 'silicon', 'silicate', 'silicatos', 'silicon_si'].includes(key)) return 'silicon_si';
   if (['litio', 'li', 'lithium', 'lithium_li'].includes(key)) return 'lithium_li';
+  if (['niquel', 'nickel', 'ni', 'nickel_ni'].includes(key)) return 'nickel_ni';
+  if (['cromo', 'chromium', 'cr', 'chromium_cr'].includes(key)) return 'chromium_cr';
+  if (['vanadio', 'vanadium', 'v', 'vanadium_v'].includes(key)) return 'vanadium_v';
+  if (['molibdeno', 'molybdenum', 'mo', 'molybdenum_mo'].includes(key)) return 'molybdenum_mo';
+  if (['fluor', 'fluorine', 'f', 'fluorine_f'].includes(key)) return 'fluorine_f';
+  if (['bromo', 'bromine', 'br', 'bromine_br'].includes(key)) return 'bromine_br';
+  if (['tds', 'ppm'].includes(key)) return 'tds';
   if (key === 'ph') return 'ph';
   return key;
 }
@@ -307,6 +326,14 @@ function aiSuggestionCard(s) {
   </div>`;
 }
 
+function aiSuggestionRoute(s) {
+  const text = [s.type, s.title, s.notes].join(' ').toLowerCase();
+  if (/measurement|chemistry|medir|kh|no3|po4|salinidad|temperatura|calcio|magnesio|icp/.test(text)) return 'parametros';
+  if (/inventory|stock|comprar|caduc|reponer|test|sal|aditivo|alimento|medicamento/.test(text)) return 'inventario';
+  if (/microfauna|rotif|copepod|artemia|fitoplancton|infusorio|cultivo|eclosion|recolect/.test(text)) return 'microfauna';
+  return 'tareas';
+}
+
 async function buildAiMaintenanceReview() {
   const aquariums = state.aquariums.length ? state.aquariums : await loadAquariums();
   const inv = await supabase.from('inventory_items').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(250);
@@ -382,7 +409,7 @@ window.crearAvisosIA = async function () {
       due_at: s.due_at || new Date().toISOString(),
       priority: s.priority || 'normal',
       status: 'open',
-      notes: s.notes || null
+      notes: `AcuarioNexoTaskMeta:${JSON.stringify({ route: aiSuggestionRoute(s), source: 'ai' })}\n${s.notes || ''}`.trim()
     }));
     const { error } = await supabase.from('tasks').insert(rows);
     if (error) throw error;
