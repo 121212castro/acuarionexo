@@ -664,6 +664,17 @@
   min-height: 120px;
 }
 
+.inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.inventory-import-form .scientific {
+  margin-top: -6px;
+}
+
 @media (max-width: 430px) {
   .map-pin {
     width: 30px;
@@ -684,6 +695,15 @@
 
   .inventory-fields {
     grid-template-columns: 1fr;
+  }
+
+  .inline-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .inline-actions button {
+    flex: 1 1 130px;
   }
 
   .micro-kpis,
