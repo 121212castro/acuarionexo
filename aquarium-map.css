@@ -206,6 +206,26 @@
   font-size: 44px;
 }
 
+.inventory-group {
+  margin-top: 14px;
+}
+
+.inventory-group h3 {
+  margin: 0 0 8px;
+  font-size: 19px;
+}
+
+.task-card {
+  width: 100%;
+  display: block;
+  text-align: left;
+  color: var(--ink);
+}
+
+.task-detail .quick-actions {
+  grid-template-columns: 1fr 1fr;
+}
+
 .ai-suggestion {
   border-color: rgba(125, 211, 252, 0.34);
 }
