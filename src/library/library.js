@@ -194,38 +194,131 @@
     return map[type] || typeName(type);
   }
 
-  window.pasarFichaAInventario = async function (id) {
+  function inventoryBackAction(scope) {
+    return scope === 'aquarium' ? "openAqSection('inventario')" : "inventario('general')";
+  }
+
+  function importableRowsForScope(scope) {
+    return (state.libraryRows || []).filter(row => inventoryScopeForType(row.entry_type) === scope);
+  }
+
+  function importMetaFromForm(row, scope) {
+    return {
+      source: 'library',
+      library_id: row.id,
+      library_type: row.entry_type || 'general',
+      scope,
+      purchase_date: val('importPurchaseDate'),
+      purchase_place: val('importPurchasePlace'),
+      purchase_price: val('importPurchasePrice'),
+      batch: val('importBatch'),
+      source_title: row.title || '',
+      scientific_name: row.scientific_name || '',
+      cover_url: row.cover_url || '',
+      image_url: row.photo_url || ''
+    };
+  }
+
+  function inventoryNotesFromImport(row, meta) {
+    const userNotes = val('importNotes');
+    return [
+      `AcuarioNexoMeta:${JSON.stringify(meta)}`,
+      `AcuarioNexoLibrary:${row.id}`,
+      row.summary || '',
+      row.scientific_name ? `Nombre cientifico / marca: ${row.scientific_name}` : '',
+      meta.purchase_date ? `Fecha compra/alta: ${meta.purchase_date}` : '',
+      meta.purchase_place ? `Compra/proveedor: ${meta.purchase_place}` : '',
+      meta.purchase_price ? `Precio: ${meta.purchase_price}` : '',
+      meta.batch ? `Lote/SKU: ${meta.batch}` : '',
+      row.source_notes ? `Fuente ficha: ${row.source_notes}` : '',
+      userNotes
+    ].filter(Boolean).join('\n');
+  }
+
+  window.importarFichaInventario = async function (scope = 'general') {
+    if (!state.user) return login();
+    const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
+    const realScope = scope === 'aquarium' && aq ? 'aquarium' : 'general';
+    const active = realScope === 'aquarium' ? 'acuarios' : 'inventario';
+    const head = realScope === 'aquarium' && window.ANX.aqHeader ? window.ANX.aqHeader('inventario') : '';
+    render(head + `<section class="panel">${msg('Cargando fichas disponibles...')}</section>`, active);
+    try {
+      await loadRows();
+      const rows = importableRowsForScope(realScope);
+      render(head + `<section class="panel">
+        <button onclick="${inventoryBackAction(realScope)}">← Volver</button>
+        <div class="panel-head"><h2>${realScope === 'aquarium' ? 'Añadir desde Biblioteca' : 'Añadir producto desde Biblioteca'}</h2></div>
+        <p class="small">${realScope === 'aquarium' ? 'Elige una ficha de animal, coral, microfauna o equipo y crea su registro real en este acuario.' : 'Elige una ficha de producto y crea su registro real compartido.'}</p>
+        <div class="library-grid">${rows.map(row => `<button class="library-card library-cover-card" onclick="formImportarFichaInventario('${esc(row.id)}','${realScope}')">
+          ${(row.cover_url || row.photo_url) ? `<img class="library-card-cover" src="${esc(row.cover_url || row.photo_url)}" alt="${esc(row.title || 'Ficha')}" loading="lazy">` : `<div class="library-card-cover library-no-photo">${esc(typeName(row.entry_type).slice(0, 1))}</div>`}
+          <div class="library-card-body"><h3>${esc(row.title || 'Ficha')}</h3><p class="scientific">${esc(row.scientific_name || typeName(row.entry_type))}</p><small>${esc(typeName(row.entry_type))}</small></div>
+        </button>`).join('') || msg('No hay fichas compatibles para este inventario.', 'notice')}</div>
+      </section>`, active);
+    } catch (e) {
+      render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
+    }
+  };
+
+  window.formImportarFichaInventario = function (id, scope = 'general') {
+    const row = (state.libraryRows || []).find(r => r.id === id);
+    if (!row) return importarFichaInventario(scope);
+    const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
+    const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
+    const active = realScope === 'aquarium' ? 'acuarios' : 'inventario';
+    const head = realScope === 'aquarium' && window.ANX.aqHeader ? window.ANX.aqHeader('inventario') : '';
+    const isProduct = productTypes.has(row.entry_type) && row.entry_type !== 'equipamiento';
+    const unit = isProduct ? 'unidad' : 'ejemplar';
+    render(head + `<section class="panel inventory-import-form">
+      <button onclick="importarFichaInventario('${realScope}')">← Volver</button>
+      <small>${esc(typeName(row.entry_type))}</small>
+      <h2>${esc(row.title || row.scientific_name || 'Ficha')}</h2>
+      ${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}
+      <label>Cantidad</label><input id="importQty" type="number" step="0.1" value="1">
+      <label>Unidad</label><input id="importUnit" value="${esc(unit)}" placeholder="ejemplar, bote, kg, ml, unidad...">
+      <label>Fecha compra / alta</label><input id="importPurchaseDate" type="date">
+      <label>Dónde se compra / procedencia</label><input id="importPurchasePlace" placeholder="Tienda, criador, proveedor, web...">
+      <label>Precio</label><input id="importPurchasePrice" inputmode="decimal" placeholder="Ej. 24.90">
+      ${isProduct ? '<label>Caducidad</label><input id="importExpiry" type="date">' : ''}
+      <label>Lote / SKU / referencia</label><input id="importBatch" placeholder="Opcional">
+      <label>Notas de este registro</label><textarea id="importNotes" placeholder="Aclimatacion, observaciones, dosificacion real, estado al llegar..."></textarea>
+      <button class="primary" onclick="guardarImportacionFichaInventario('${esc(row.id)}','${realScope}')">Guardar en inventario</button>
+      <div id="x"></div>
+    </section>`, active);
+  };
+
+  window.guardarImportacionFichaInventario = async function (id, scope = 'general') {
     try {
       const row = (state.libraryRows || []).find(r => r.id === id);
       if (!row) throw new Error('No encuentro la ficha cargada.');
-      const scope = inventoryScopeForType(row.entry_type);
+      const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
       const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
-      if (scope === 'aquarium' && !aq) throw new Error('Abre primero el acuario al que pertenece esta ficha.');
-      const notes = [
-        `AcuarioNexoLibrary:${row.id}`,
-        row.summary || '',
-        row.scientific_name ? `Nombre cientifico / marca: ${row.scientific_name}` : '',
-        row.source_notes ? `Fuente: ${row.source_notes}` : ''
-      ].filter(Boolean).join('\n');
+      if (realScope === 'aquarium' && !aq) throw new Error('Abre primero el acuario al que pertenece esta ficha.');
+      const meta = importMetaFromForm(row, realScope);
       const payload = {
         user_id: state.user.id,
-        aquarium_id: scope === 'aquarium' ? aq.id : null,
+        aquarium_id: realScope === 'aquarium' ? aq.id : null,
         name: row.title || row.scientific_name || 'Ficha',
         category: inventoryCategoryFor(row),
-        quantity: 1,
-        unit: 'unidad',
+        quantity: Number(val('importQty')) || 1,
+        unit: val('importUnit') || 'unidad',
+        expiry_date: val('importExpiry') || null,
         photo_url: row.photo_url || row.cover_url || null,
-        notes,
+        notes: inventoryNotesFromImport(row, meta),
         updated_at: new Date().toISOString()
       };
       const { error } = await supabase.from('inventory_items').insert(payload);
       if (error) throw error;
-      const box = byId('x') || byId('aiBox');
-      if (box) box.innerHTML = msg(scope === 'aquarium' ? 'Ficha pasada al inventario de este acuario.' : 'Ficha pasada al inventario general.', 'success');
+      realScope === 'aquarium' ? inventario('aquarium') : inventario('general');
     } catch (e) {
       const box = byId('x') || byId('aiBox');
       if (box) box.innerHTML = msg(e.message, 'error');
     }
+  };
+
+  window.pasarFichaAInventario = function (id) {
+    const row = (state.libraryRows || []).find(r => r.id === id);
+    if (!row) return biblioteca();
+    formImportarFichaInventario(id, inventoryScopeForType(row.entry_type));
   };
 
   function modules() {
