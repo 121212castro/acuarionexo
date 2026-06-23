@@ -574,10 +574,13 @@
 
   window.generarFichaIA = async function () {
     try {
-      if (!val('libTitle')) throw new Error('Pon primero el nombre de la ficha.');
+      const title = val('libTitle');
+      const coverUrl = val('libCover');
+      const photoUrl = val('libPhoto');
+      if (!title && !coverUrl && !photoUrl) throw new Error('Pon un nombre o sube una foto para que la IA pueda identificar y buscar.');
       if (byId('aiBox')) byId('aiBox').innerHTML = msg('Generando borrador...');
       const source_context = sourceContextFromForm();
-      const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title: val('libTitle'), scientific_name: val('libScientific'), entry_type: val('libType'), notes: val('libPrompt'), cover_url: val('libCover'), photo_url: val('libPhoto'), source_context } });
+      const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title, scientific_name: val('libScientific'), entry_type: val('libType'), notes: val('libPrompt'), cover_url: coverUrl, photo_url: photoUrl, source_context } });
       if (error) throw new Error(await functionErrorMessage(error));
       const generated = data?.data || data || {};
       const warning = data?.warning || generated.warning || '';
@@ -597,8 +600,8 @@
         throw new Error('La IA no devolvio contenido util para cargar. Revisa el nombre o anade mas notas.');
       }
       const className = generated.needs_ai_configuration || generated.ai_model === 'verified-input-no-ai' ? 'notice' : 'success';
-      const title = className === 'notice' ? 'Datos verificados cargados. Falta IA real para buscar y contrastar por internet/foto.' : 'Borrador IA cargado. Revisa antes de guardar.';
-      if (byId('aiBox')) byId('aiBox').innerHTML = `<div class="${className}">${title}${notice ? `<br>${notice}` : ''}</div>`;
+      const noticeTitle = className === 'notice' ? 'Datos verificados cargados. Falta IA real para buscar y contrastar por internet/foto.' : 'Borrador IA cargado. Revisa antes de guardar.';
+      if (byId('aiBox')) byId('aiBox').innerHTML = `<div class="${className}">${noticeTitle}${notice ? `<br>${notice}` : ''}</div>`;
     } catch (e) { if (byId('aiBox')) byId('aiBox').innerHTML = msg(e.message, 'error'); }
   };
 
