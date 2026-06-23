@@ -150,9 +150,12 @@ function mapStageHtml(map) {
   const photos = mapPhotos(map);
   return `<div class="map-3d-wrap">
     <div class="map-3d-toolbar">
-      <button onclick="rotateMap3D(-18)">Girar izquierda</button>
-      <button onclick="rotateMap3D(18)">Girar derecha</button>
-      <button onclick="resetMap3D()">Frontal</button>
+      <button onclick="setMap3DView('front')">Frontal</button>
+      <button onclick="setMap3DView('left')">Izquierda</button>
+      <button onclick="setMap3DView('right')">Derecha</button>
+      <button onclick="setMap3DView('top')">Superior</button>
+      <button onclick="rotateMap3D(-18)">Girar -</button>
+      <button onclick="rotateMap3D(18)">Girar +</button>
     </div>
     <div id="map3dStage" class="map-3d-stage"></div>
     ${photoChecklistHtml(map)}
@@ -278,6 +281,37 @@ function marker3DScale(marker) {
   return Math.max(0.7, Math.min(2.2, raw / 14));
 }
 
+function aquariumDimensions(aq) {
+  const length = Math.max(45, Number(aq?.tank_length_cm) || 120);
+  const depth = Math.max(25, Number(aq?.tank_width_cm) || 55);
+  const height = Math.max(28, Number(aq?.tank_height_cm) || 60);
+  const water = Math.max(12, Math.min(height, Number(aq?.display_water_height_cm) || height * 0.88));
+  const scale = 126 / Math.max(length, depth, height);
+  const w = Math.max(72, length * scale);
+  const d = Math.max(34, depth * scale);
+  const h = Math.max(42, height * scale);
+  const waterH = Math.max(24, water * scale);
+  return {
+    source: { length, depth, height, water },
+    w,
+    d,
+    h,
+    waterH,
+    glass: 1.2,
+    sandH: Math.max(3.4, Math.min(7.5, h * 0.075)),
+    innerW: w - 6,
+    innerD: d - 6
+  };
+}
+
+function marker3DPositionInTank(marker, tank) {
+  return {
+    x: ((Number(marker.x) || 50) - 50) / 100 * tank.innerW,
+    y: tank.sandH + 2 + (100 - (Number(marker.y) || 50)) / 100 * Math.max(8, tank.waterH - tank.sandH - 8),
+    z: ((Number(marker.z) || 50) - 50) / 100 * tank.innerD
+  };
+}
+
 function material(color, options = {}) {
   return new THREE.MeshStandardMaterial({
     color,
@@ -316,32 +350,32 @@ function makeNoiseRock(seed) {
   return group;
 }
 
-function addBaseAquascape(scene) {
+function addBaseAquascape(scene, tank) {
   const positions = [
-    [-32, 0, -12, 0.9, 1.15],
-    [-18, 0, -21, 0.72, 0.9],
-    [0, 0, -16, 1.18, 1.28],
-    [20, 0, -20, 0.78, 0.94],
-    [34, 0, -9, 0.92, 1.08],
-    [-8, 0, 5, 0.56, 0.7],
-    [13, 0, 6, 0.54, 0.66]
+    [-0.36, -0.22, 0.9, 1.15],
+    [-0.18, -0.34, 0.72, 0.9],
+    [0.02, -0.24, 1.18, 1.28],
+    [0.23, -0.33, 0.78, 0.94],
+    [0.38, -0.15, 0.92, 1.08],
+    [-0.08, 0.12, 0.56, 0.7],
+    [0.16, 0.1, 0.54, 0.66]
   ];
   positions.forEach(function (item, index) {
     const rock = makeNoiseRock(index + 3);
-    rock.position.set(item[0], 2.8, item[2]);
+    rock.position.set(item[0] * tank.innerW, tank.sandH + 0.8, item[1] * tank.innerD);
     rock.scale.set(item[3], item[4], item[3]);
     scene.add(rock);
   });
 }
 
-function addWaterFlow(scene) {
+function addWaterFlow(scene, tank) {
   const flowMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.22, side: THREE.DoubleSide });
   for (let i = 0; i < 5; i += 1) {
     const curve = new THREE.CatmullRomCurve3([
-      new THREE.Vector3(-48, 42 - i * 4, 23 - i * 4),
-      new THREE.Vector3(-18, 39 - i * 2, 8 - i),
-      new THREE.Vector3(18, 36 + i, -4 + i),
-      new THREE.Vector3(47, 34 + i * 2, -18 + i * 3)
+      new THREE.Vector3(-tank.innerW * 0.46, tank.waterH * 0.74 - i * 3, tank.innerD * 0.38 - i * 2),
+      new THREE.Vector3(-tank.innerW * 0.16, tank.waterH * 0.66 - i, tank.innerD * 0.1),
+      new THREE.Vector3(tank.innerW * 0.18, tank.waterH * 0.62 + i, -tank.innerD * 0.04),
+      new THREE.Vector3(tank.innerW * 0.46, tank.waterH * 0.58 + i * 2, -tank.innerD * 0.34 + i)
     ]);
     const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 36, 0.22, 8, false), flowMat);
     scene.add(tube);
@@ -511,9 +545,9 @@ function containRect(srcW, srcH, boxW, boxH) {
   return { x: (boxW - w) / 2, y: (boxH - h) / 2, w, h };
 }
 
-function tankPhotoPlaneSize(image) {
-  const rect = containRect(image?.width || 16, image?.height || 9, 120, 72);
-  return { w: rect.w, h: rect.h, y: 36 + (36 - rect.y - rect.h / 2) };
+function tankPhotoPlaneSize(image, tank) {
+  const rect = containRect(image?.width || 16, image?.height || 9, tank.innerW, tank.waterH);
+  return { w: rect.w, h: rect.h, y: tank.sandH + (tank.waterH - rect.y - rect.h / 2) };
 }
 
 function addPhotoPlane(scene, renderer, camera, url, setup) {
@@ -521,7 +555,7 @@ function addPhotoPlane(scene, renderer, camera, url, setup) {
   let mesh;
   const texture = new THREE.TextureLoader().load(url, function (loaded) {
     if (setup.fit === 'front') {
-      const plane = tankPhotoPlaneSize(loaded.image);
+      const plane = tankPhotoPlaneSize(loaded.image, setup.tank);
       mesh.geometry.dispose();
       mesh.geometry = new THREE.PlaneGeometry(plane.w, plane.h);
       mesh.position.y = plane.y;
@@ -538,6 +572,155 @@ function addPhotoPlane(scene, renderer, camera, url, setup) {
   mesh.rotation.set(setup.rx || 0, setup.ry || 0, setup.rz || 0);
   scene.add(mesh);
 }
+
+function addTankShell(scene, tank) {
+  const glassMat = new THREE.MeshPhysicalMaterial({
+    color: 0xc8f4ff,
+    transparent: true,
+    opacity: 0.17,
+    roughness: 0.03,
+    metalness: 0,
+    transmission: 0.38,
+    thickness: 1.6,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const backMat = glassMat.clone();
+  backMat.opacity = 0.1;
+  const panels = [
+    [tank.w, tank.h, 0, tank.h / 2, tank.d / 2, 0, 0, 0, glassMat],
+    [tank.w, tank.h, 0, tank.h / 2, -tank.d / 2, 0, 0, 0, backMat],
+    [tank.d, tank.h, -tank.w / 2, tank.h / 2, 0, 0, Math.PI / 2, 0, glassMat],
+    [tank.d, tank.h, tank.w / 2, tank.h / 2, 0, 0, Math.PI / 2, 0, glassMat]
+  ];
+  panels.forEach(function (p) {
+    const mesh = new THREE.Mesh(new THREE.PlaneGeometry(p[0], p[1]), p[8]);
+    mesh.position.set(p[2], p[3], p[4]);
+    mesh.rotation.set(p[5], p[6], p[7]);
+    scene.add(mesh);
+  });
+
+  const edgeGeo = new THREE.BoxGeometry(tank.w, tank.h, tank.d);
+  const edges = new THREE.EdgesGeometry(edgeGeo);
+  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xb8ecff, transparent: true, opacity: 0.86 }));
+  line.position.y = tank.h / 2;
+  scene.add(line);
+
+  const rimMat = new THREE.MeshStandardMaterial({ color: 0x07111b, roughness: 0.42, metalness: 0.55 });
+  const rimH = 1.4;
+  const bars = [
+    [tank.w + 2, rimH, 1.4, 0, tank.h + rimH / 2, tank.d / 2],
+    [tank.w + 2, rimH, 1.4, 0, tank.h + rimH / 2, -tank.d / 2],
+    [1.4, rimH, tank.d + 2, -tank.w / 2, tank.h + rimH / 2, 0],
+    [1.4, rimH, tank.d + 2, tank.w / 2, tank.h + rimH / 2, 0],
+    [tank.w + 2, rimH, 1.4, 0, rimH / 2, tank.d / 2],
+    [tank.w + 2, rimH, 1.4, 0, rimH / 2, -tank.d / 2],
+    [1.4, rimH, tank.d + 2, -tank.w / 2, rimH / 2, 0],
+    [1.4, rimH, tank.d + 2, tank.w / 2, rimH / 2, 0]
+  ];
+  bars.forEach(function (b) {
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(b[0], b[1], b[2]), rimMat);
+    mesh.position.set(b[3], b[4], b[5]);
+    scene.add(mesh);
+  });
+}
+
+function addSubstrate(scene, tank) {
+  const geo = new THREE.PlaneGeometry(tank.w, tank.d, 22, 14);
+  const pos = geo.attributes.position;
+  for (let i = 0; i < pos.count; i += 1) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    const wave = Math.sin(x * 0.08) * 0.7 + Math.cos(y * 0.11) * 0.55 + (y / tank.d) * 1.8;
+    pos.setZ(i, wave);
+  }
+  geo.computeVertexNormals();
+  const sand = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: 0xcbbf8a, roughness: 0.96, metalness: 0.02 }));
+  sand.rotation.x = -Math.PI / 2;
+  sand.position.y = tank.sandH;
+  scene.add(sand);
+
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(tank.w, tank.sandH, tank.d),
+    new THREE.MeshStandardMaterial({ color: 0x9b8457, roughness: 0.98 })
+  );
+  base.position.y = tank.sandH / 2;
+  scene.add(base);
+}
+
+function addWaterVolume(scene, tank) {
+  const water = new THREE.Mesh(
+    new THREE.BoxGeometry(tank.w - 3, tank.waterH, tank.d - 3),
+    new THREE.MeshPhysicalMaterial({
+      color: 0x19a7d8,
+      transparent: true,
+      opacity: 0.16,
+      roughness: 0.18,
+      metalness: 0,
+      transmission: 0.24,
+      depthWrite: false
+    })
+  );
+  water.position.y = tank.waterH / 2;
+  scene.add(water);
+
+  const surfaceGeo = new THREE.PlaneGeometry(tank.w - 4, tank.d - 4, 30, 18);
+  const pos = surfaceGeo.attributes.position;
+  for (let i = 0; i < pos.count; i += 1) {
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    pos.setZ(i, Math.sin(x * 0.12) * 0.22 + Math.cos(y * 0.16) * 0.18);
+  }
+  surfaceGeo.computeVertexNormals();
+  const surface = new THREE.Mesh(
+    surfaceGeo,
+    new THREE.MeshPhysicalMaterial({ color: 0x8bedff, transparent: true, opacity: 0.34, roughness: 0.06, metalness: 0, transmission: 0.1, side: THREE.DoubleSide })
+  );
+  surface.rotation.x = -Math.PI / 2;
+  surface.position.y = tank.waterH;
+  scene.add(surface);
+  return surface;
+}
+
+function addLightingRig(scene, tank) {
+  const fixture = new THREE.Mesh(
+    new THREE.BoxGeometry(tank.w * 0.72, 2.8, 6),
+    new THREE.MeshStandardMaterial({ color: 0x07111b, roughness: 0.28, metalness: 0.65 })
+  );
+  fixture.position.set(0, tank.h + 8, -tank.d * 0.08);
+  scene.add(fixture);
+  const glow = new THREE.Mesh(
+    new THREE.PlaneGeometry(tank.w * 0.68, 4),
+    new THREE.MeshBasicMaterial({ color: 0x76d7ff, transparent: true, opacity: 0.52, side: THREE.DoubleSide })
+  );
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.set(0, tank.h + 6.2, -tank.d * 0.08);
+  scene.add(glow);
+}
+
+function addDimensionLabel(scene, tank) {
+  const text = `${Math.round(tank.source.length)} x ${Math.round(tank.source.depth)} x ${Math.round(tank.source.height)} cm`;
+  addLabelSprite(scene, text, new THREE.Vector3(0, tank.h + 5, -tank.d * 0.48), false);
+}
+
+function cameraStateFor(view, tank) {
+  const radius = Math.max(tank.w, tank.d, tank.h) * 1.72;
+  if (view === 'left') return { rotation: -90, pitch: 0.4, zoom: radius };
+  if (view === 'right') return { rotation: 90, pitch: 0.4, zoom: radius };
+  if (view === 'top') return { rotation: 0, pitch: 1.42, zoom: radius * 1.05 };
+  return { rotation: 0, pitch: 0.42, zoom: radius };
+}
+
+function applyCamera(camera, tank) {
+  const rotation = window.__aqMapRotation || 0;
+  const pitch = Math.max(0.18, Math.min(1.48, window.__aqMapPitch ?? 0.42));
+  const zoom = window.__aqMapZoom || Math.max(tank.w, tank.d, tank.h) * 1.72;
+  const radians = rotation * Math.PI / 180;
+  const horizontal = Math.cos(pitch) * zoom;
+  camera.position.set(Math.sin(radians) * horizontal, Math.sin(pitch) * zoom + tank.h * 0.24, Math.cos(radians) * horizontal);
+  camera.lookAt(0, tank.h * 0.46, 0);
+}
+
 function renderMap3D(map) {
   const stage = byId('map3dStage');
   if (!stage) return;
@@ -548,100 +731,59 @@ function renderMap3D(map) {
   if (window.__aqMap3DDispose) window.__aqMap3DDispose();
   stage.innerHTML = '';
   const width = Math.max(320, stage.clientWidth || 640);
-  const height = Math.max(260, Math.round(width * 0.58));
+  const height = Math.max(260, stage.clientHeight || Math.round(width * 0.75));
+  const aq = currentAquarium();
+  const tank = aquariumDimensions(aq);
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x020b14);
-  scene.fog = new THREE.Fog(0x020b14, 145, 330);
-  const camera = new THREE.PerspectiveCamera(44, width / height, 0.1, 1000);
-  const rotation = window.__aqMapRotation || 0;
-  const radians = rotation * Math.PI / 180;
-  const zoom = window.__aqMapZoom || 160;
-  camera.position.set(Math.sin(radians) * zoom, 72, Math.cos(radians) * zoom);
-  camera.lookAt(0, 34, 0);
+  scene.fog = new THREE.Fog(0x020b14, 150, 420);
+  const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+  if (!window.__aqMapZoom) {
+    const initial = cameraStateFor('front', tank);
+    window.__aqMapRotation = initial.rotation;
+    window.__aqMapPitch = initial.pitch;
+    window.__aqMapZoom = initial.zoom;
+  }
+  applyCamera(camera, tank);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
   renderer.setSize(width, height);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   if ('outputColorSpace' in renderer && THREE.SRGBColorSpace) renderer.outputColorSpace = THREE.SRGBColorSpace;
   else if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
   stage.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xe0fbff, 0x082033, 2.2));
-  const light = new THREE.DirectionalLight(0xffffff, 1.4);
-  light.position.set(30, 90, 80);
+  scene.add(new THREE.HemisphereLight(0xdff8ff, 0x061727, 1.8));
+  const light = new THREE.DirectionalLight(0xffffff, 1.35);
+  light.position.set(tank.w * 0.28, tank.h * 1.7, tank.d * 1.2);
+  light.castShadow = true;
+  light.shadow.mapSize.width = 1024;
+  light.shadow.mapSize.height = 1024;
   scene.add(light);
-  const reefLight = new THREE.PointLight(0x1aa7ff, 1.8, 180);
-  reefLight.position.set(0, 70, 12);
+  const reefLight = new THREE.PointLight(0x1aa7ff, 2.2, Math.max(tank.w, tank.d) * 2.4);
+  reefLight.position.set(0, tank.h + 10, tank.d * 0.16);
   scene.add(reefLight);
 
-  const tank = new THREE.BoxGeometry(120, 72, 72);
-  const edges = new THREE.EdgesGeometry(tank);
-  const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.78 }));
-  line.position.y = 36;
-  scene.add(line);
-
-  const glassMaterial = new THREE.MeshPhysicalMaterial({
-    color: 0xbdefff,
-    transparent: true,
-    opacity: 0.13,
-    roughness: 0.08,
-    metalness: 0,
-    transmission: 0.45,
-    depthWrite: false
-  });
-  const frontGlass = new THREE.Mesh(new THREE.PlaneGeometry(120, 72), glassMaterial);
-  frontGlass.position.set(0, 36, 36.05);
-  scene.add(frontGlass);
-  const leftGlass = new THREE.Mesh(new THREE.PlaneGeometry(72, 72), glassMaterial);
-  leftGlass.rotation.y = Math.PI / 2;
-  leftGlass.position.set(-60.05, 36, 0);
-  scene.add(leftGlass);
-  const rightGlass = leftGlass.clone();
-  rightGlass.position.x = 60.05;
-  scene.add(rightGlass);
-
-  const water = new THREE.Mesh(
-    new THREE.BoxGeometry(118, 64, 70),
-    new THREE.MeshPhysicalMaterial({
-      color: 0x1ba8d6,
-      transparent: true,
-      opacity: 0.18,
-      roughness: 0.25,
-      metalness: 0,
-      transmission: 0.18,
-      depthWrite: false
-    })
-  );
-  water.position.y = 34;
-  scene.add(water);
-
-  const surface = new THREE.Mesh(
-    new THREE.PlaneGeometry(118, 70),
-    new THREE.MeshBasicMaterial({ color: 0x70e0ff, transparent: true, opacity: 0.18, side: THREE.DoubleSide })
-  );
-  surface.rotation.x = -Math.PI / 2;
-  surface.position.y = 66.4;
-  scene.add(surface);
-
-  const sand = new THREE.Mesh(
-    new THREE.BoxGeometry(120, 5, 72),
-    new THREE.MeshStandardMaterial({ color: 0xc9b36a, roughness: 0.9 })
-  );
-  sand.position.y = 2.5;
-  scene.add(sand);
+  addTankShell(scene, tank);
+  addSubstrate(scene, tank);
+  const surface = addWaterVolume(scene, tank);
+  addLightingRig(scene, tank);
+  addDimensionLabel(scene, tank);
 
   const photos = mapPhotos(map);
-  addPhotoPlane(scene, renderer, camera, photos.front, { fit: 'front', w: 112, h: 64, x: 0, y: 36, z: -36.45, opacity: 0.18 });
-  addPhotoPlane(scene, renderer, camera, photos.left, { w: 64, h: 64, x: -60.45, y: 36, z: 0, ry: Math.PI / 2, opacity: 0.14 });
-  addPhotoPlane(scene, renderer, camera, photos.right, { w: 64, h: 64, x: 60.45, y: 36, z: 0, ry: -Math.PI / 2, opacity: 0.14 });
-  addPhotoPlane(scene, renderer, camera, photos.top, { w: 112, h: 64, x: 0, y: 66.9, z: 0, rx: -Math.PI / 2, opacity: 0.1 });
+  addPhotoPlane(scene, renderer, camera, photos.front, { tank, fit: 'front', w: tank.innerW, h: tank.waterH, x: 0, y: tank.waterH / 2, z: -tank.d / 2 - 0.35, opacity: 0.24 });
+  addPhotoPlane(scene, renderer, camera, photos.left, { w: tank.innerD, h: tank.waterH, x: -tank.w / 2 - 0.35, y: tank.waterH / 2, z: 0, ry: Math.PI / 2, opacity: 0.18 });
+  addPhotoPlane(scene, renderer, camera, photos.right, { w: tank.innerD, h: tank.waterH, x: tank.w / 2 + 0.35, y: tank.waterH / 2, z: 0, ry: -Math.PI / 2, opacity: 0.18 });
+  addPhotoPlane(scene, renderer, camera, photos.top, { w: tank.innerW, h: tank.innerD, x: 0, y: tank.waterH + 0.42, z: 0, rx: -Math.PI / 2, opacity: 0.13 });
 
-  addBaseAquascape(scene);
-  addWaterFlow(scene);
+  addBaseAquascape(scene, tank);
+  addWaterFlow(scene, tank);
 
   const animatedObjects = [];
   map.markers.forEach(function (marker) {
-    const pos = marker3DPosition(marker);
+    const pos = marker3DPositionInTank(marker, tank);
     const group = createAquariumObject(marker);
     group.position.set(pos.x, pos.y, pos.z);
     group.rotation.y = marker.type === 'fish' ? Math.PI * 0.05 : (Number(marker.z) - 50) * 0.018;
@@ -655,34 +797,34 @@ function renderMap3D(map) {
     addRoundedBox(hint, 22, 8, 14, 0x0e8eff, 9, { roughness: 0.5, transparent: true, opacity: 0.75 });
     hint.position.set(0, 0, 0);
     scene.add(hint);
-    addLabelSprite(scene, 'Añade puntos', new THREE.Vector3(0, 11, 0), true);
+    addLabelSprite(scene, 'Sin puntos', new THREE.Vector3(0, tank.sandH + 10, 0), true);
   }
 
   let dragging = false;
   let lastX = 0;
+  let lastY = 0;
   const canvas = renderer.domElement;
   canvas.addEventListener('pointerdown', function (event) {
     dragging = true;
     lastX = event.clientX;
+    lastY = event.clientY;
     canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener('pointermove', function (event) {
     if (!dragging) return;
     window.__aqMapRotation = (window.__aqMapRotation || 0) + (event.clientX - lastX) * 0.35;
+    window.__aqMapPitch = Math.max(0.18, Math.min(1.48, (window.__aqMapPitch ?? 0.42) + (lastY - event.clientY) * 0.006));
     lastX = event.clientX;
-    const r = (window.__aqMapRotation || 0) * Math.PI / 180;
-    const z = window.__aqMapZoom || 160;
-    camera.position.set(Math.sin(r) * z, 72, Math.cos(r) * z);
-    camera.lookAt(0, 34, 0);
+    lastY = event.clientY;
+    applyCamera(camera, tank);
   });
   canvas.addEventListener('pointerup', function () { dragging = false; });
   canvas.addEventListener('wheel', function (event) {
     event.preventDefault();
-    window.__aqMapZoom = Math.max(112, Math.min(230, (window.__aqMapZoom || 160) + event.deltaY * 0.15));
-    const r = (window.__aqMapRotation || 0) * Math.PI / 180;
-    const z = window.__aqMapZoom;
-    camera.position.set(Math.sin(r) * z, 72, Math.cos(r) * z);
-    camera.lookAt(0, 34, 0);
+    const minZoom = Math.max(tank.w, tank.d, tank.h) * 1.05;
+    const maxZoom = Math.max(tank.w, tank.d, tank.h) * 2.8;
+    window.__aqMapZoom = Math.max(minZoom, Math.min(maxZoom, (window.__aqMapZoom || maxZoom * 0.62) + event.deltaY * 0.15));
+    applyCamera(camera, tank);
   }, { passive: false });
 
   let stopped = false;
@@ -699,7 +841,7 @@ function renderMap3D(map) {
         object.rotation.y += 0.012;
       }
     });
-    surface.material.opacity = 0.14 + Math.sin(time * 1.8) * 0.035;
+    surface.material.opacity = 0.28 + Math.sin(time * 1.8) * 0.045;
     renderer.render(scene, camera);
     window.__aqMap3DFrame = requestAnimationFrame(animate);
   }
@@ -724,9 +866,17 @@ window.rotateMap3D = function (delta) {
   renderMap3D(window.__aqMap || readMap(currentAquarium()));
 };
 
-window.resetMap3D = function () {
-  window.__aqMapRotation = 0;
+window.setMap3DView = function (view) {
+  const tank = aquariumDimensions(currentAquarium());
+  const next = cameraStateFor(view, tank);
+  window.__aqMapRotation = next.rotation;
+  window.__aqMapPitch = next.pitch;
+  window.__aqMapZoom = next.zoom;
   renderMap3D(window.__aqMap || readMap(currentAquarium()));
+};
+
+window.resetMap3D = function () {
+  window.setMap3DView('front');
 };
 
 window.previewMapMarkerPosition = function () {
