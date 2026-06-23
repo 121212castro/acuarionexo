@@ -46,17 +46,25 @@ const sectionMap: Record<string, string[]> = {
   invertebrado: ["summary", "identity", "habitat", "aquarium", "parameters", "behavior", "feeding", "compatibility", "reef_safe", "health", "purchase", "mistakes", "sources"],
   planta: ["summary", "identity", "habitat", "aquarium", "parameters", "lighting", "co2", "maintenance", "compatibility", "health", "sources"],
   microfauna: ["summary", "identity", "culture", "parameters", "feeding", "maintenance", "harvest", "risks", "sources"],
-  medicamento: ["summary", "identity", "uses", "dose", "compatibility", "remove", "risks", "aftercare", "inventory_logic", "sources"],
-  sal: ["summary", "identity", "parameters", "mixing", "use", "risks", "sources"],
-  aditivo: ["summary", "identity", "composition", "dose", "use", "compatibility", "risks", "storage", "sources"],
-  alimento: ["summary", "identity", "nutrition", "use", "compatibility", "risks", "acuarionexo_plan", "sources"],
-  equipamiento: ["summary", "identity", "specs", "installation", "maintenance", "compatibility", "risks", "sources"],
-  test: ["summary", "identity", "parameters", "reading", "range", "use", "risks", "storage", "sources"],
+  medicamento: ["summary", "identity", "uses", "dose", "monitoring", "compatibility", "remove", "risks", "aftercare", "inventory_logic", "sources"],
+  sal: ["summary", "identity", "parameters", "mixing", "use", "monitoring", "risks", "sources"],
+  aditivo: ["summary", "identity", "composition", "dose", "use", "monitoring", "compatibility", "risks", "storage", "sources"],
+  alimento: ["summary", "identity", "nutrition", "use", "monitoring", "compatibility", "risks", "acuarionexo_plan", "sources"],
+  equipamiento: ["summary", "identity", "specs", "installation", "maintenance", "monitoring", "compatibility", "risks", "sources"],
+  test: ["summary", "identity", "parameters", "reading", "range", "use", "monitoring", "risks", "storage", "sources"],
   general: ["summary", "identity", "aquarium", "parameters", "compatibility", "risks", "sources"]
 };
 
 const biologicalTypes = new Set(["pez_marino", "pez_dulce", "coral", "invertebrado", "planta", "microfauna"]);
 const productTypes = new Set(["medicamento", "sal", "aditivo", "alimento", "equipamiento", "test"]);
+const criticalProductSections: Record<string, string[]> = {
+  medicamento: ["uses", "dose", "monitoring", "risks"],
+  sal: ["parameters", "mixing", "use", "monitoring"],
+  aditivo: ["dose", "use", "monitoring", "risks"],
+  alimento: ["nutrition", "use", "monitoring", "risks"],
+  equipamiento: ["specs", "installation", "maintenance"],
+  test: ["parameters", "reading", "range", "use"]
+};
 const fallbackModel = "gpt-4.1-mini";
 const supportedModels = new Set(["gpt-4o-mini", "gpt-4o", "gpt-4.1", "gpt-4.1-mini"]);
 const forbiddenText = /pendiente de validar|completar este apartado|datos reales antes de publicar|borrador pendiente|\[object Object\]/i;
@@ -219,6 +227,33 @@ function normalize(parsed: any, payload: Payload, model: string): NormalizedCard
   };
 }
 
+function isUsefulSection(text: unknown) {
+  const value = clean(text, 1200);
+  return value.length >= 24 && !genericText.test(value);
+}
+
+function validateRequiredSections(card: NormalizedCard) {
+  const required = criticalProductSections[card.entry_type] || [];
+  const missing = required.filter(key => !isUsefulSection(card.sections[key]));
+  if (!missing.length) return "";
+  const labels: Record<string, string> = {
+    uses: "usos",
+    dose: "dosis",
+    monitoring: "mediciones / seguimiento",
+    risks: "riesgos",
+    parameters: "parametros objetivo",
+    mixing: "preparacion",
+    use: "uso",
+    nutrition: "composicion / nutricion",
+    specs: "especificaciones",
+    installation: "instalacion",
+    maintenance: "mantenimiento",
+    reading: "lectura",
+    range: "rango"
+  };
+  return missing.map(key => labels[key] || key).join(", ");
+}
+
 async function fetchText(url: string) {
   if (!/^https?:\/\//i.test(url)) return "";
   const controller = new AbortController();
@@ -265,7 +300,9 @@ Reglas obligatorias:
 - En sections.sources resume las fuentes con URLs.
 - No escribas frases genericas como "informacion no disponible", "consultar fabricante" o "consultar el envase". Si no encuentras un dato, deja ese campo vacio y pon una advertencia concreta.
 - No inventes dosis, parametros, composicion, compatibilidades ni URLs.
-- Para productos, dosis/composicion solo pueden salir de fabricante, etiqueta, prospecto o ficha tecnica fiable.
+- Para productos, dosis, modo de uso, mediciones necesarias, seguimiento, composicion y riesgos solo pueden salir de fabricante, etiqueta, prospecto o ficha tecnica fiable.
+- Para productos que afecten parametros del agua, sections.monitoring debe indicar que medir, cuando medir, frecuencia inicial, frecuencia de seguimiento y cuando retirar/ajustar el producto.
+- Para resinas, adsorbentes, sales, aditivos, tests y medicamentos, no dejes sections.dose, sections.use ni sections.monitoring vacios si existen en la plantilla.
 - Para animales, corales, plantas y microfauna no uses fabricante, SKU, referencia comercial ni prospecto salvo cultivo/producto comercial real.
 - Si el usuario escribe solo una parte del nombre, busca candidatos y elige el mas probable. Ejemplo: "Ocellaris" debe contrastarse como posible Amphiprion ocellaris.
 - confidence debe ser numero 0-1.
@@ -303,7 +340,7 @@ Deno.serve(async (req: Request) => {
     product_code: productTypes.has(entryType) ? clean(s.product_code, 180) : "",
     label_text: productTypes.has(entryType) ? clean(s.label_text, 4200) : "",
     source_notes: clean(s.source_notes, 1800),
-    photo_url: photoUrl,
+    photo_url: clean(payload.photo_url || payload.cover_url, 800),
     manufacturer_page_excerpt: productTypes.has(entryType) ? await fetchText(clean(s.manufacturer_url, 500)) : "",
     datasheet_page_excerpt: await fetchText(clean(s.datasheet_url, 500))
   };
@@ -335,6 +372,10 @@ Deno.serve(async (req: Request) => {
     const normalized = normalize(extractJson(text), payload, model);
     if (!normalized.sections.sources || !/https?:\/\//i.test(normalized.sections.sources)) {
       return jsonError("sources_missing", "La IA no devolvio fuentes reales con URL. No se carga una ficha generica.", 502);
+    }
+    const missingCritical = validateRequiredSections(normalized);
+    if (missingCritical) {
+      return jsonError("critical_sections_missing", `La IA no completo apartados obligatorios para este producto: ${missingCritical}. No se carga una ficha incompleta.`, 502);
     }
     const usefulSections = Object.entries(normalized.sections).filter(([key, value]) => key !== "sources" && clean(value).length > 20).length;
     if (usefulSections < 3) {
