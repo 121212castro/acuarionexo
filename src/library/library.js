@@ -168,6 +168,66 @@
     </button>`;
   }
 
+  function inventoryScopeForType(type) {
+    if (type === 'equipamiento') return 'aquarium';
+    if (productTypes.has(type)) return 'general';
+    if (['pez_marino', 'pez_dulce', 'coral', 'invertebrado', 'planta', 'microfauna'].includes(type)) return 'aquarium';
+    return 'general';
+  }
+
+  function inventoryCategoryFor(row) {
+    const type = row.entry_type || 'general';
+    const map = {
+      pez_marino: 'Peces marinos',
+      pez_dulce: 'Peces',
+      coral: 'Corales',
+      invertebrado: 'Invertebrados',
+      planta: 'Plantas',
+      microfauna: 'Microfauna',
+      equipamiento: 'Equipos',
+      medicamento: 'Medicamentos',
+      sal: 'Sales',
+      aditivo: 'Aditivos',
+      alimento: 'Alimentos',
+      test: 'Tests'
+    };
+    return map[type] || typeName(type);
+  }
+
+  window.pasarFichaAInventario = async function (id) {
+    try {
+      const row = (state.libraryRows || []).find(r => r.id === id);
+      if (!row) throw new Error('No encuentro la ficha cargada.');
+      const scope = inventoryScopeForType(row.entry_type);
+      const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
+      if (scope === 'aquarium' && !aq) throw new Error('Abre primero el acuario al que pertenece esta ficha.');
+      const notes = [
+        `AcuarioNexoLibrary:${row.id}`,
+        row.summary || '',
+        row.scientific_name ? `Nombre cientifico / marca: ${row.scientific_name}` : '',
+        row.source_notes ? `Fuente: ${row.source_notes}` : ''
+      ].filter(Boolean).join('\n');
+      const payload = {
+        user_id: state.user.id,
+        aquarium_id: scope === 'aquarium' ? aq.id : null,
+        name: row.title || row.scientific_name || 'Ficha',
+        category: inventoryCategoryFor(row),
+        quantity: 1,
+        unit: 'unidad',
+        photo_url: row.photo_url || row.cover_url || null,
+        notes,
+        updated_at: new Date().toISOString()
+      };
+      const { error } = await supabase.from('inventory_items').insert(payload);
+      if (error) throw error;
+      const box = byId('x') || byId('aiBox');
+      if (box) box.innerHTML = msg(scope === 'aquarium' ? 'Ficha pasada al inventario de este acuario.' : 'Ficha pasada al inventario general.', 'success');
+    } catch (e) {
+      const box = byId('x') || byId('aiBox');
+      if (box) box.innerHTML = msg(e.message, 'error');
+    }
+  };
+
   function modules() {
     const all = `<button class="${state.libraryFilter === 'all' ? 'active' : ''}" onclick="filtrarBiblioteca('all')"><b>Todo</b><span>Fichas</span><small>Almacen</small></button>`;
     return `<div class="library-modules">${all}${types.map(([key, label]) => `<button class="${state.libraryFilter === key ? 'active' : ''}" onclick="filtrarBiblioteca('${key}')"><b>${esc(label)}</b><span>${esc(key)}</span><small>Crear y validar</small></button>`).join('')}</div>`;
@@ -415,6 +475,6 @@
     if (!row) return biblioteca();
     const mainPhoto = row.photo_url || row.cover_url || '';
     const coverOnly = row.cover_url && row.cover_url !== mainPhoto;
-    render(`<section class="panel library-detail"><button onclick="biblioteca()">Volver</button>${mainPhoto ? `<img class="library-detail-photo" src="${esc(mainPhoto)}" alt="${esc(row.title)}">` : ''}${coverOnly ? `<div class="library-cover-note"><b>Portada</b><img src="${esc(row.cover_url)}" alt="Portada"></div>` : ''}<small>${esc(typeName(row.entry_type))} · ${esc(row.status || 'draft')}</small><h2>${esc(row.title || 'Ficha')}</h2>${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}${sectionsFor(row.entry_type).map(key => sectionText(row.sections?.[key]) ? `<section class="library-detail-section"><h3>${esc(sectionLabels[key] || key)}</h3><p>${esc(sectionText(row.sections[key])).replace(/\n/g, '<br>')}</p></section>` : '').join('')}<button class="primary" onclick="formFicha('${esc(row.id)}')">Editar ficha</button></section>`, 'biblioteca');
+    render(`<section class="panel library-detail"><button onclick="biblioteca()">Volver</button>${mainPhoto ? `<img class="library-detail-photo" src="${esc(mainPhoto)}" alt="${esc(row.title)}">` : ''}${coverOnly ? `<div class="library-cover-note"><b>Portada</b><img src="${esc(row.cover_url)}" alt="Portada"></div>` : ''}<small>${esc(typeName(row.entry_type))} · ${esc(row.status || 'draft')}</small><h2>${esc(row.title || 'Ficha')}</h2>${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}${sectionsFor(row.entry_type).map(key => sectionText(row.sections?.[key]) ? `<section class="library-detail-section"><h3>${esc(sectionLabels[key] || key)}</h3><p>${esc(sectionText(row.sections[key])).replace(/\n/g, '<br>')}</p></section>` : '').join('')}<div class="quick-actions"><button class="primary" onclick="pasarFichaAInventario('${esc(row.id)}')"><span>▤</span>Pasar a inventario</button><button onclick="formFicha('${esc(row.id)}')"><span>□</span>Editar ficha</button></div><div id="x"></div></section>`, 'biblioteca');
   };
 })();
