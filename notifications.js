@@ -115,3 +115,9 @@
   window.AcuarioNexoNotifications = { enable: enableNotifications, checkDueTasks };
   window.addEventListener('load', start);
 })();
+
+(function () {
+  var script = document.createElement('script');
+  script.src = 'src/library/library-controls-freeze.js?v=library-freeze-20260623';
+  document.head.appendChild(script);
+})();
