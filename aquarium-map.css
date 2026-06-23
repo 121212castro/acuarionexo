@@ -20,7 +20,7 @@
 }
 
 .photo-preview img,
-library-detail-photo {
+.library-detail-photo {
   width: 100% !important;
   max-height: min(62vh, 520px) !important;
   object-fit: contain !important;
