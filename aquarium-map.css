@@ -20,7 +20,7 @@
 }
 
 .photo-preview img,
-.library-detail-photo {
+library-detail-photo {
   width: 100% !important;
   max-height: min(62vh, 520px) !important;
   object-fit: contain !important;
@@ -418,24 +418,28 @@
 
 .map-3d-toolbar {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
 .map-3d-toolbar button {
-  min-height: 42px;
-  padding: 8px;
+  min-height: 44px;
+  padding: 8px 6px;
+  border-radius: 13px;
+  font-size: 13px;
+  white-space: nowrap;
 }
 
 .map-3d-stage {
   width: 100%;
-  aspect-ratio: 16 / 9;
-  min-height: 320px;
+  aspect-ratio: 4 / 3;
+  min-height: 360px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 18px;
   background:
-    linear-gradient(180deg, rgba(111, 226, 255, 0.12), rgba(3, 16, 29, 0.98)),
+    radial-gradient(circle at 50% 12%, rgba(118, 215, 255, 0.2), transparent 44%),
+    linear-gradient(180deg, rgba(10, 36, 58, 0.96), rgba(2, 11, 20, 0.98)),
     #03101d;
   touch-action: none;
 }
@@ -757,7 +761,12 @@
   }
 
   .map-3d-toolbar {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .map-3d-stage {
+    min-height: 330px;
+    aspect-ratio: 3 / 4;
   }
 
   .inventory-tabs {
