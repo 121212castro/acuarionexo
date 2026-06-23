@@ -2,8 +2,29 @@
 (function () {
   const { supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage } = window.ANX;
 
-const generalInventoryCategories = ['Medicamento', 'Test', 'Comida', 'Material general'];
-const aquariumInventoryCategories = ['Pez', 'Planta', 'Invertebrado', 'Coral', 'Equipo'];
+const generalInventoryCategories = ['Medicamentos', 'Sales', 'Aditivos', 'Alimentos', 'Tests', 'Material general'];
+const marineInventoryCategories = ['Peces marinos', 'Corales', 'Invertebrados', 'Microfauna', 'Equipos'];
+const freshwaterInventoryCategories = ['Peces', 'Invertebrados', 'Plantas', 'Equipos'];
+
+function inventoryMode(aq) {
+  const type = String(aq?.aquarium_type || aq?.type || '').toLowerCase();
+  return /fresh|dulce|plant|gamb|betta|discus/.test(type) ? 'freshwater' : 'marine';
+}
+
+function aquariumInventoryCategoriesFor(aq) {
+  return inventoryMode(aq) === 'freshwater' ? freshwaterInventoryCategories : marineInventoryCategories;
+}
+
+function groupedInventoryHtml(rows, aqName) {
+  if (!rows.length) return msg('Sin inventario todavía.');
+  const groups = {};
+  rows.forEach(item => {
+    const key = item.category || 'Sin categoría';
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  });
+  return Object.keys(groups).sort().map(category => `<section class="inventory-group"><h3>${esc(category)}</h3>${groups[category].map(item => inventoryItemHtml(item, aqName)).join('')}</section>`).join('');
+}
 
 function inventoryNoteText(item) {
   return String(item.notes || '')
@@ -81,14 +102,14 @@ window.inventario = async function (scope = 'general') {
     const filtered = isAq
       ? rows.filter(item => inventoryAqId(item) === String(aq.id))
       : rows.filter(item => !inventoryAqId(item));
-    const html = filtered.map(item => inventoryItemHtml(item, isAq ? aq.name : '')).join('');
+    const html = groupedInventoryHtml(filtered, isAq ? aq.name : '');
     const tabs = `<div class="inventory-tabs">
       <button class="${isAq ? 'active' : ''}" ${aq ? `onclick="openAqSection('inventario')"` : 'disabled'}>Este acuario</button>
       <button class="${!isAq ? 'active' : ''}" onclick="inventario('general')">General compartido</button>
     </div>`;
     const hint = isAq
-      ? '<p class="small inventory-hint">Aqui van habitantes, plantas, invertebrados, corales y equipo que pertenecen solo a este acuario.</p>'
-      : '<p class="small inventory-hint">Aqui van medicamentos, tests, comida y material que pueden servir para varios acuarios.</p>';
+      ? '<p class="small inventory-hint">Aqui van los habitantes, microfauna y equipos que pertenecen solo a este acuario.</p>'
+      : '<p class="small inventory-hint">Aqui van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.</p>';
     render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir</button></div>${tabs}${hint}${html || msg('Sin inventario todavía.')}</section>`, active);
   } catch (e) {
     if (isCurrent(t)) render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
@@ -100,7 +121,7 @@ window.formInventario = function (scope = 'general') {
   const isAq = scope === 'aquarium' && aq;
   const active = isAq ? 'acuarios' : 'inventario';
   const head = isAq ? aqHeader('inventario') : '';
-  const categories = isAq ? aquariumInventoryCategories : generalInventoryCategories;
+  const categories = isAq ? aquariumInventoryCategoriesFor(aq) : generalInventoryCategories;
   const categoryOptions = categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
   render(head + `<section class="panel"><button onclick="${isAq ? "openAqSection('inventario')" : "inventario('general')"}">← Volver</button><h2>${isAq ? 'Nuevo item del acuario' : 'Nuevo item general'}</h2>
     <label>Nombre</label><input id="invName">
@@ -122,7 +143,7 @@ window.saveInventario = async function () {
     const row = {
       user_id: state.user.id,
       name: val('invName'),
-      category: val('invCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
+      category: val('invCategory') || (scope === 'aquarium' ? 'Equipos' : 'Material general'),
       quantity: num('invQty') ?? 1,
       unit: val('invUnit') || 'unidad',
       expiry_date: val('invExpiry') || null,
@@ -189,7 +210,7 @@ window.editarInventario = async function (id) {
     const aq = isAq && currentAquarium()?.id === aqId ? currentAquarium() : null;
     const active = isAq && aq ? 'acuarios' : 'inventario';
     const head = isAq && aq ? aqHeader('inventario') : '';
-    const categories = isAq ? aquariumInventoryCategories : generalInventoryCategories;
+    const categories = isAq ? aquariumInventoryCategoriesFor(aq) : generalInventoryCategories;
     const categoryOptions = categories.map(c => `<option value="${esc(c)}" ${data.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
     const meta = inventoryMeta(data);
     render(head + `<section class="panel">
@@ -215,7 +236,7 @@ window.guardarInventarioEditado = async function (id, scope) {
     const aq = currentAquarium();
     const row = {
       name: val('invEditName'),
-      category: val('invEditCategory') || (scope === 'aquarium' ? 'Equipo' : 'Material general'),
+      category: val('invEditCategory') || (scope === 'aquarium' ? 'Equipos' : 'Material general'),
       quantity: num('invEditQty') ?? 1,
       unit: val('invEditUnit') || 'unidad',
       expiry_date: val('invEditExpiry') || null,
