@@ -446,7 +446,7 @@
       <label>Etiquetas</label><input id="libTags" value="${esc(tagsText(row))}" placeholder="reef, principiante, lps...">
       <label>Notas para IA</label><textarea id="libPrompt" placeholder="Datos que sabes, enfoque, advertencias, producto concreto...">${esc(row.ai_prompt || '')}</textarea>
       ${sourceFieldsHtml(selectedType, source)}
-      <button type="button" onclick="generarFichaIA()">Generar borrador IA</button><div id="aiBox"></div>
+      <button type="button" onclick="mostrarIdentify()">🔍 Identificar organismo</button><div id="aiBox"></div>
       ${sectionsFor(selectedType).map(key => `<label>${esc(sectionLabels[key] || key)}</label><textarea id="libSection_${key}">${esc(sectionText(row.sections?.[key]))}</textarea>`).join('')}
       <button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha</button><div id="x"></div></section>`, 'biblioteca');
   };
@@ -570,6 +570,37 @@
   window.cerrarSelectorImagen = function () {
     const box = byId('imagePickerBox');
     if (box) box.innerHTML = '';
+  };
+
+  window.mostrarIdentify = function () {
+    const nombreComun = val('libTitle');
+    const nombreCientifico = val('libScientific');
+    const marca = val('libManufacturer') || (productTypes.has(val('libType')) ? val('libScientific') : '');
+    render(`<section class="panel library-detail identify-v1"><button onclick="formFicha()">Volver</button>
+      <h2>Identificar organismo/producto</h2>
+      <div class="notice">
+        <p><b>Sin identificar</b> = No ficha</p>
+        <p><b>Sin investigar</b> = No ficha</p>
+        <p><b>Sin validar</b> = No publicacion</p>
+      </div>
+      <label>Nombre comun</label><input id="identifyCommonName" value="${esc(nombreComun)}" placeholder="Ej. Pez payaso, Sal marina, Test de calcio...">
+      <label>Nombre cientifico</label><input id="identifyScientificName" value="${esc(nombreCientifico)}" placeholder="Ej. Amphiprion ocellaris">
+      <label>Marca</label><input id="identifyBrand" value="${esc(marca)}" placeholder="Solo productos: marca/fabricante">
+      <button class="primary" type="button" onclick="buscarIdentify()">Buscar</button>
+      <div id="identifyBox"></div>
+    </section>`, 'biblioteca');
+  };
+
+  window.buscarIdentify = function () {
+    const nombreComun = val('identifyCommonName');
+    const nombreCientifico = val('identifyScientificName');
+    const marca = val('identifyBrand');
+    const box = byId('identifyBox');
+    if (!nombreComun && !nombreCientifico && !marca) {
+      if (box) box.innerHTML = msg('Introduce al menos nombre comun, nombre cientifico o marca para empezar la identificacion.', 'error');
+      return;
+    }
+    if (box) box.innerHTML = msg('IDENTIFY V1 preparado. Este paso solo identifica y bloquea la creacion de ficha hasta investigar y validar.', 'notice');
   };
 
   window.generarFichaIA = async function () {
