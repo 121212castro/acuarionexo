@@ -280,7 +280,7 @@ async function fetchText(url: string) {
 function promptFor(payload: Payload, sourceBlock: Record<string, string>, entryType: string) {
   const mode = payload.mode || "generate";
   if (mode === "identify") {
-  return `IDENTIFY V1 AcuarioNexo. Solo identifica. No crees ficha completa.
+    return `IDENTIFY V1 AcuarioNexo. Solo identifica. No crees ficha completa.
 
 Tipo solicitado: ${entryType}.
 Nombre común introducido: ${clean(payload.title, 180)}.
@@ -301,9 +301,9 @@ Reglas obligatorias:
 Devuelve JSON con:
 title, scientific_name, entry_type, summary, tags, confidence, identity_confirmed, candidates, warnings, sources, sections.
 
-sections solo debe contener identity y sources.`;}
-}
-const typeRules = productTypes.has(entryType)
+sections solo debe contener identity y sources.`;
+  }
+  const typeRules = productTypes.has(entryType)
     ? "Es una ficha de producto/equipo. Prioridad estricta: fabricante, etiqueta, ficha tecnica, prospecto, documentacion oficial. Tiendas y foros solo sirven como apoyo, nunca como fuente principal de dosis/composicion."
     : "Es una ficha biologica/cultivo. Prioridad estricta: bases biologicas reconocidas, taxonomia aceptada, literatura/documentacion tecnica y despues foros solo como experiencia no autoritativa.";
 
