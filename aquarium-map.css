@@ -430,19 +430,25 @@
 .map-3d-stage {
   width: 100%;
   aspect-ratio: 16 / 9;
-  min-height: 280px;
+  min-height: 320px;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 18px;
   background:
     linear-gradient(180deg, rgba(111, 226, 255, 0.12), rgba(3, 16, 29, 0.98)),
     #03101d;
+  touch-action: none;
 }
 
 .map-3d-stage canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;
+  cursor: grab;
+}
+
+.map-3d-stage canvas:active {
+  cursor: grabbing;
 }
 
 .map-photo-checklist {
@@ -481,7 +487,7 @@
 
 .map-photo-reference {
   aspect-ratio: 16 / 9;
-  max-height: 240px;
+  max-height: 180px;
   opacity: 0.9;
 }
 
@@ -503,6 +509,30 @@
   border: 1px dashed var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.045);
+}
+
+.map-empty-photo.compact {
+  min-height: 96px;
+  padding: 14px;
+}
+
+.map-reference-box {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.map-reference-box summary {
+  padding: 12px 14px;
+  color: #e8f6ff;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.map-reference-box .map-photo-stage {
+  margin: 0 12px 12px;
+  width: calc(100% - 24px);
 }
 
 .map-pin {
