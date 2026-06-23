@@ -147,12 +147,6 @@ function mapEditorHtml(map) {
 }
 
 function mapStageHtml(map) {
-  if (!photoCount(map)) {
-    return `<div class="map-empty-photo">
-      <b>Faltan fotos para crear el gemelo virtual</b>
-      <p class="small">Sube al menos la vista frontal. Para una pecera virtual seria, añade lateral izquierda, lateral derecha y superior.</p>
-    </div>`;
-  }
   const photos = mapPhotos(map);
   return `<div class="map-3d-wrap">
     <div class="map-3d-toolbar">
@@ -162,10 +156,15 @@ function mapStageHtml(map) {
     </div>
     <div id="map3dStage" class="map-3d-stage"></div>
     ${photoChecklistHtml(map)}
-    <div id="mapStage" class="map-photo-stage map-photo-reference" onclick="placeMapMarker(event)">
-      <img src="${esc(photos.front || photos.left || photos.right || photos.top)}" alt="Foto del acuario para mapa IA">
-      ${map.markers.map(mapMarkerHtml).join('')}
-    </div>
+    ${photoCount(map) ? `<details class="map-reference-box"><summary>Referencia de foto para colocar puntos</summary>
+      <div id="mapStage" class="map-photo-stage map-photo-reference" onclick="placeMapMarker(event)">
+        <img src="${esc(photos.front || photos.left || photos.right || photos.top)}" alt="Foto de referencia del acuario">
+        ${map.markers.map(mapMarkerHtml).join('')}
+      </div>
+    </details>` : `<div class="map-empty-photo compact">
+      <b>Gemelo 3D preparado</b>
+      <p class="small">Sube fotos frontal, laterales y superior para usarlas como referencia del acuario real.</p>
+    </div>`}
   </div>`;
 }
 
@@ -174,7 +173,7 @@ function renderMapIA(map) {
   window.__aqMap = normalizeMap(map || window.__aqMap || readMap(aq), aq);
   const clean = window.__aqMap;
   render(aqHeader('mapa') + `<section class="panel map-panel">
-    <div class="panel-head"><div><h2>Gemelo virtual</h2><p class="small">Pecera virtual con fotos por ángulo y objetos 3D colocables.</p></div><button onclick="saveMapIA()">Guardar</button></div>
+    <div class="panel-head"><div><h2>Gemelo 3D</h2><p class="small">Pecera navegable con volumen real, sustrato, rocas y objetos 3D colocables.</p></div><button onclick="saveMapIA()">Guardar</button></div>
     ${mapStageHtml(clean)}
     <label>Ángulo de foto</label><select id="mapPhotoAngle">
       <option value="front">Frontal</option>
@@ -288,6 +287,96 @@ function material(color, options = {}) {
     opacity: options.opacity ?? 1,
     side: options.side || THREE.FrontSide
   });
+}
+
+function addRoundedBox(group, w, h, d, color, y, options = {}) {
+  const mesh = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, d),
+    material(color, options)
+  );
+  mesh.position.y = y;
+  group.add(mesh);
+  return mesh;
+}
+
+function makeNoiseRock(seed) {
+  const group = new THREE.Group();
+  const base = material(0x776f63, { roughness: 0.96 });
+  const moss = material(0x45614f, { roughness: 0.9 });
+  const count = 5 + (seed % 4);
+  for (let i = 0; i < count; i += 1) {
+    const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(1, 2), i === count - 1 ? moss : base);
+    const angle = (i / count) * Math.PI * 2 + seed * 0.37;
+    const radius = 2.2 + ((seed + i) % 3);
+    mesh.position.set(Math.cos(angle) * radius, 1.8 + ((seed + i) % 4) * 0.7, Math.sin(angle) * radius);
+    mesh.scale.set(3.2 + ((seed + i) % 5), 2.4 + ((seed * 2 + i) % 4), 2.7 + ((seed + i * 3) % 5));
+    mesh.rotation.set(seed * 0.2 + i, seed * 0.17, i * 0.41);
+    group.add(mesh);
+  }
+  return group;
+}
+
+function addBaseAquascape(scene) {
+  const positions = [
+    [-32, 0, -12, 0.9, 1.15],
+    [-18, 0, -21, 0.72, 0.9],
+    [0, 0, -16, 1.18, 1.28],
+    [20, 0, -20, 0.78, 0.94],
+    [34, 0, -9, 0.92, 1.08],
+    [-8, 0, 5, 0.56, 0.7],
+    [13, 0, 6, 0.54, 0.66]
+  ];
+  positions.forEach(function (item, index) {
+    const rock = makeNoiseRock(index + 3);
+    rock.position.set(item[0], 2.8, item[2]);
+    rock.scale.set(item[3], item[4], item[3]);
+    scene.add(rock);
+  });
+}
+
+function addWaterFlow(scene) {
+  const flowMat = new THREE.MeshBasicMaterial({ color: 0x7dd3fc, transparent: true, opacity: 0.22, side: THREE.DoubleSide });
+  for (let i = 0; i < 5; i += 1) {
+    const curve = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(-48, 42 - i * 4, 23 - i * 4),
+      new THREE.Vector3(-18, 39 - i * 2, 8 - i),
+      new THREE.Vector3(18, 36 + i, -4 + i),
+      new THREE.Vector3(47, 34 + i * 2, -18 + i * 3)
+    ]);
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 36, 0.22, 8, false), flowMat);
+    scene.add(tube);
+  }
+}
+
+function addLabelSprite(scene, text, position, selected) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 96;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = selected ? 'rgba(14,142,255,0.92)' : 'rgba(3,16,29,0.82)';
+  ctx.strokeStyle = selected ? 'rgba(255,255,255,0.75)' : 'rgba(125,211,252,0.55)';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  if (ctx.roundRect) {
+    ctx.roundRect(8, 16, 240, 54, 18);
+  } else {
+    ctx.rect(8, 16, 240, 54);
+  }
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#f8fbff';
+  ctx.font = '700 24px -apple-system, BlinkMacSystemFont, Segoe UI, Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(String(text || 'Punto').slice(0, 18), 128, 43);
+  const texture = new THREE.CanvasTexture(canvas);
+  if ('colorSpace' in texture && THREE.SRGBColorSpace) texture.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false }));
+  sprite.position.copy(position);
+  sprite.position.y += 15;
+  sprite.scale.set(22, 8, 1);
+  scene.add(sprite);
 }
 
 function addRockModel(group, color, selected) {
@@ -461,11 +550,13 @@ function renderMap3D(map) {
   const width = Math.max(320, stage.clientWidth || 640);
   const height = Math.max(260, Math.round(width * 0.58));
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x03101d);
-  const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 1000);
+  scene.background = new THREE.Color(0x020b14);
+  scene.fog = new THREE.Fog(0x020b14, 145, 330);
+  const camera = new THREE.PerspectiveCamera(44, width / height, 0.1, 1000);
   const rotation = window.__aqMapRotation || 0;
   const radians = rotation * Math.PI / 180;
-  camera.position.set(Math.sin(radians) * 160, 70, Math.cos(radians) * 160);
+  const zoom = window.__aqMapZoom || 160;
+  camera.position.set(Math.sin(radians) * zoom, 72, Math.cos(radians) * zoom);
   camera.lookAt(0, 34, 0);
 
   const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
@@ -475,10 +566,13 @@ function renderMap3D(map) {
   else if (THREE.sRGBEncoding) renderer.outputEncoding = THREE.sRGBEncoding;
   stage.appendChild(renderer.domElement);
 
-  scene.add(new THREE.HemisphereLight(0xdffaff, 0x082033, 2.6));
+  scene.add(new THREE.HemisphereLight(0xe0fbff, 0x082033, 2.2));
   const light = new THREE.DirectionalLight(0xffffff, 1.4);
   light.position.set(30, 90, 80);
   scene.add(light);
+  const reefLight = new THREE.PointLight(0x1aa7ff, 1.8, 180);
+  reefLight.position.set(0, 70, 12);
+  scene.add(reefLight);
 
   const tank = new THREE.BoxGeometry(120, 72, 72);
   const edges = new THREE.EdgesGeometry(tank);
@@ -537,10 +631,13 @@ function renderMap3D(map) {
   scene.add(sand);
 
   const photos = mapPhotos(map);
-  addPhotoPlane(scene, renderer, camera, photos.front, { fit: 'front', w: 120, h: 72, x: 0, y: 36, z: -36.25, opacity: 0.82 });
-  addPhotoPlane(scene, renderer, camera, photos.left, { w: 72, h: 72, x: -60.25, y: 36, z: 0, ry: Math.PI / 2, opacity: 0.72 });
-  addPhotoPlane(scene, renderer, camera, photos.right, { w: 72, h: 72, x: 60.25, y: 36, z: 0, ry: -Math.PI / 2, opacity: 0.72 });
-  addPhotoPlane(scene, renderer, camera, photos.top, { w: 120, h: 72, x: 0, y: 66.8, z: 0, rx: -Math.PI / 2, opacity: 0.48 });
+  addPhotoPlane(scene, renderer, camera, photos.front, { fit: 'front', w: 112, h: 64, x: 0, y: 36, z: -36.45, opacity: 0.18 });
+  addPhotoPlane(scene, renderer, camera, photos.left, { w: 64, h: 64, x: -60.45, y: 36, z: 0, ry: Math.PI / 2, opacity: 0.14 });
+  addPhotoPlane(scene, renderer, camera, photos.right, { w: 64, h: 64, x: 60.45, y: 36, z: 0, ry: -Math.PI / 2, opacity: 0.14 });
+  addPhotoPlane(scene, renderer, camera, photos.top, { w: 112, h: 64, x: 0, y: 66.9, z: 0, rx: -Math.PI / 2, opacity: 0.1 });
+
+  addBaseAquascape(scene);
+  addWaterFlow(scene);
 
   const animatedObjects = [];
   map.markers.forEach(function (marker) {
@@ -549,8 +646,44 @@ function renderMap3D(map) {
     group.position.set(pos.x, pos.y, pos.z);
     group.rotation.y = marker.type === 'fish' ? Math.PI * 0.05 : (Number(marker.z) - 50) * 0.018;
     scene.add(group);
+    addLabelSprite(scene, marker.label, new THREE.Vector3(pos.x, pos.y, pos.z), window.__aqMap?.selected_id === marker.id);
     animatedObjects.push(group);
   });
+
+  if (!map.markers.length) {
+    const hint = new THREE.Group();
+    addRoundedBox(hint, 22, 8, 14, 0x0e8eff, 9, { roughness: 0.5, transparent: true, opacity: 0.75 });
+    hint.position.set(0, 0, 0);
+    scene.add(hint);
+    addLabelSprite(scene, 'Añade puntos', new THREE.Vector3(0, 11, 0), true);
+  }
+
+  let dragging = false;
+  let lastX = 0;
+  const canvas = renderer.domElement;
+  canvas.addEventListener('pointerdown', function (event) {
+    dragging = true;
+    lastX = event.clientX;
+    canvas.setPointerCapture(event.pointerId);
+  });
+  canvas.addEventListener('pointermove', function (event) {
+    if (!dragging) return;
+    window.__aqMapRotation = (window.__aqMapRotation || 0) + (event.clientX - lastX) * 0.35;
+    lastX = event.clientX;
+    const r = (window.__aqMapRotation || 0) * Math.PI / 180;
+    const z = window.__aqMapZoom || 160;
+    camera.position.set(Math.sin(r) * z, 72, Math.cos(r) * z);
+    camera.lookAt(0, 34, 0);
+  });
+  canvas.addEventListener('pointerup', function () { dragging = false; });
+  canvas.addEventListener('wheel', function (event) {
+    event.preventDefault();
+    window.__aqMapZoom = Math.max(112, Math.min(230, (window.__aqMapZoom || 160) + event.deltaY * 0.15));
+    const r = (window.__aqMapRotation || 0) * Math.PI / 180;
+    const z = window.__aqMapZoom;
+    camera.position.set(Math.sin(r) * z, 72, Math.cos(r) * z);
+    camera.lookAt(0, 34, 0);
+  }, { passive: false });
 
   let stopped = false;
   const clock = new THREE.Clock();
