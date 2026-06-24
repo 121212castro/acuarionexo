@@ -1,0 +1,12 @@
+begin;
+drop policy if exists library_entries_owner_select on public.library_entries;
+drop policy if exists library_entries_public_select on public.library_entries;
+drop policy if exists library_entries_owner_insert on public.library_entries;
+drop policy if exists library_entries_owner_update on public.library_entries;
+drop policy if exists library_entries_owner_delete on public.library_entries;
+create policy library_entries_authenticated_select on public.library_entries for select to authenticated using(user_id=(select auth.uid()) or(visibility='public' and status='published'));
+create policy library_entries_anon_select on public.library_entries for select to anon using(visibility='public' and status='published');
+create policy library_entries_owner_update on public.library_entries for update to authenticated using(user_id=(select auth.uid())) with check(user_id=(select auth.uid()));
+create index if not exists library_entries_validated_by_idx on public.library_entries(validated_by);
+create index if not exists library_audit_user_idx on public.library_audit_log(user_id);
+commit;
