@@ -591,7 +591,7 @@
     </section>`, 'biblioteca');
   };
 
-  window.buscarIdentify = function () {
+  window.buscarIdentify = async function () {
     const nombreComun = val('identifyCommonName');
     const nombreCientifico = val('identifyScientificName');
     const marca = val('identifyBrand');
@@ -637,8 +637,8 @@
       </div>`;
     } catch (e) {
       if (box) box.innerHTML = msg(e.message || 'Error en identificacion.', 'error');
-    };
-
+   }
+};
   window.generarFichaIA = async function () {
     try {
       const title = val('libTitle');
