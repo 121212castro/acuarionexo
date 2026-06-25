@@ -129,6 +129,7 @@ function aiDueSuggestion(aq, key, freq, row) {
 }
 
 function reefRangeState(key, value) {
+  if (key === 'salinity_sg' && Number.isFinite(value) && value > 10) value = value / 1000;
   if (!Number.isFinite(value)) return null;
   if (key === 'temperature_c') {
     if (value < 23) return { state: 'crítico bajo', priority: 'high' };
@@ -141,7 +142,7 @@ function reefRangeState(key, value) {
     if (value > 2) return null;
     if (value < 1.022) return { state: 'crítico bajo', priority: 'high' };
     if (value < 1.024) return { state: 'bajo', priority: 'normal' };
-    if (value >= 1.025 && value <= 1.026) return null;
+    if (value <= 1.026) return null;
     if (value > 1.028) return { state: 'crítico alto', priority: 'high' };
     return { state: 'alto', priority: 'normal' };
   }
@@ -192,9 +193,10 @@ function reefRangeState(key, value) {
 
 function interpretMeasurementValue(aq, measurementRow) {
   if (!measurementRow || aiAquariumMode(aq) !== 'marine') return null;
-  const value = measurementNumber(measurementRow);
+  let value = measurementNumber(measurementRow);
   let key = normalizeMeasurementKey(measurementRow);
   if (key === 'salinity_ppt' && value !== null && value < 2) key = 'salinity_sg';
+  if (key === 'salinity_sg' && Number.isFinite(value) && value > 10) value = value / 1000;
   const range = reefRangeState(key, value);
   if (!range) return null;
   const label = aiParameterLabels[key] || key;
