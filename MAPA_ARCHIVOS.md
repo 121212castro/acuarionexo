@@ -19,6 +19,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - Three.js CDN r149
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
+- `src/library/ui/library.js`
 - `src/library/library.js`
 - `src/library/library-v3.js`
 - `src/animals/animals.js`
@@ -62,7 +63,8 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
 - `src/library/core/library-schema.js`: contrato oficial de Biblioteca V3/V4 expuesto como `window.ANX.LibrarySchema`.
-- `src/library/library.js`: biblioteca, fichas y borradores IA.
+- `src/library/ui/library.js`: puente de carga de Biblioteca oficial hacia `src/library/library.js`.
+- `src/library/library.js`: biblioteca, fichas y borradores IA; sigue conservado como modulo funcional cargado por el puente UI.
 - `src/library/library-v3.js`: flujo Biblioteca V3/V4 de identificacion, borrador, edicion, auditoria, publicacion, borrado e inventario.
 - `src/animals/animals.js`: animales.
 - `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
@@ -103,11 +105,18 @@ Primer modulo movido:
 - Antes: `src/library/library-schema.js`
 - Ahora: `src/library/core/library-schema.js`
 
+Segundo paso ejecutado:
+
+- `src/library/ui/library.js` creado como puente de carga controlado.
+- `index.html` carga `src/library/ui/library.js` en lugar de cargar directamente `src/library/library.js`.
+- `src/library/library.js` se mantiene conservado porque el puente lo carga de forma sincronica y no se ha copiado aun su contenido completo.
+- La ruta antigua `src/library/library.js` no se elimina en este paso.
+
 Resultado:
 
-- `index.html` carga `src/library/core/library-schema.js` antes de `library.js` y `library-v3.js`.
+- `index.html` carga `src/library/core/library-schema.js` antes de `src/library/ui/library.js` y `library-v3.js`.
 - La ruta antigua `src/library/library-schema.js` ha sido eliminada.
-- No se ha movido ningun otro modulo.
+- No se ha movido ningun otro modulo funcional.
 
 ## Documentacion de control
 
