@@ -90,6 +90,30 @@ Las pantallas y reglas de negocio viven en modulos:
 
 Ningun modulo debe crear una app paralela. Si expone funciones para botones inline, debe hacerlo de forma explicita en `window` y mantener el estado compartido en `window.ANX.state`.
 
+## Arquitectura Biblioteca preparada
+
+Fase 1 creada para refactorizacion modular, sin mover funciones y sin alterar la carga activa de `index.html`:
+
+- `src/library/core/`
+- `src/library/inventory/`
+- `src/library/images/`
+- `src/library/ui/`
+- `src/library/ficha/`
+
+Estado activo tras Fase 1:
+
+- `src/library/library.js` sigue siendo el unico modulo activo de Biblioteca/Fichas cargado por `index.html`.
+- Los subdirectorios nuevos contienen solo `.gitkeep`.
+- Ninguna funcion se ha movido todavia.
+
+Responsabilidades previstas:
+
+- `src/library/core/`: `library-core.js`, `library-db.js`, `library-utils.js`, `library-search.js`, `library-schema.js`.
+- `src/library/inventory/`: `inventory-import.js`, `inventory-link.js`, `inventory-validation.js`.
+- `src/library/images/`: `image-upload.js`, `image-picker.js`, `image-preview.js`, `image-utils.js`.
+- `src/library/ui/`: `library-ui.js`, `library-render.js`, `library-cards.js`, `library-toolbar.js`, `library-filters.js`.
+- `src/library/ficha/`: `ficha-identify.js`, `ficha-generate.js`, `ficha-edit.js`, `ficha-audit.js`, `ficha-publish.js`, `ficha-view.js`, `ficha-delete.js`, `ficha-fields.js`.
+
 ## Datos externos
 
 Supabase es la fuente de:
@@ -112,7 +136,7 @@ Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
 - Acuarios/navegacion de acuario: `src/aquariums/aquariums.js`.
-- Biblioteca/Fichas: `src/library/library.js`.
+- Biblioteca/Fichas: `src/library/library.js` hasta que se mueva modulo por modulo en fases posteriores.
 - Inventario: `src/inventory/inventory.js`.
 - Parametros: `src/parameters/parameters.js`.
 - Medicion completa: `src/parameters/measurements-advanced.js`.
