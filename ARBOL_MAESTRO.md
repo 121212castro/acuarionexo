@@ -24,11 +24,14 @@ Carga activa:
 - `mobile-form-fix.css`
 - `library-images.css`
 - Supabase CDN
+- Firebase CDN
 - Three.js CDN r149
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
+- `src/library/core/library-schema.js`
 - `src/library/library.js`
+- `src/library/library-v3.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
@@ -36,6 +39,7 @@ Carga activa:
 - `src/inventory/inventory.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
+- `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
@@ -72,7 +76,9 @@ IOS fuera de tienda:
 Las pantallas y reglas de negocio viven en modulos:
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y panel de acuario.
+- `src/library/core/library-schema.js`: contrato oficial de Biblioteca V3/V4; expone `window.ANX.LibrarySchema`.
 - `src/library/library.js`: biblioteca, fichas y borradores IA.
+- `src/library/library-v3.js`: Biblioteca V3/V4, dependiente de `window.ANX.LibrarySchema`.
 - `src/animals/animals.js`: habitantes del acuario.
 - `src/map/map.js`: mapa IA, foto base, objetos colocables y render 3D real.
 - `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
@@ -80,6 +86,7 @@ Las pantallas y reglas de negocio viven en modulos:
 - `src/inventory/inventory.js`: inventario general y por acuario.
 - `src/microfauna/microfauna.js`: cultivos de microfauna.
 - `src/ai/ai.js`: reglas IA, interpretacion de parametros y avisos.
+- `src/ai/ai-library-v3.js`: apoyo IA para Biblioteca V3.
 - `src/ai/ai-alerts-extra.js`: aportes de revision IA diaria sin pisar la pantalla principal.
 - `src/parameters/parameters.js`: pantalla y registro de mediciones.
 - `src/parameters/measurements-advanced.js`: medicion completa.
@@ -100,11 +107,13 @@ Fase 1 creada para refactorizacion modular, sin mover funciones y sin alterar la
 - `src/library/ui/`
 - `src/library/ficha/`
 
-Estado activo tras Fase 1:
+Estado activo tras Fase 2:
 
-- `src/library/library.js` sigue siendo el unico modulo activo de Biblioteca/Fichas cargado por `index.html`.
-- Los subdirectorios nuevos contienen solo `.gitkeep`.
-- Ninguna funcion se ha movido todavia.
+- `src/library/core/library-schema.js` es el primer modulo movido.
+- `src/library/library.js` y `src/library/library-v3.js` siguen cargados desde su ubicacion original.
+- `index.html` carga `src/library/core/library-schema.js` antes de `library.js` y `library-v3.js`.
+- La ruta antigua `src/library/library-schema.js` ha sido eliminada.
+- No se ha movido ningun otro modulo.
 
 Responsabilidades previstas:
 
@@ -136,7 +145,7 @@ Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
 - Acuarios/navegacion de acuario: `src/aquariums/aquariums.js`.
-- Biblioteca/Fichas: `src/library/library.js` hasta que se mueva modulo por modulo en fases posteriores.
+- Biblioteca/Fichas: `src/library/library.js`, `src/library/library-v3.js` y submodulos de `src/library/` segun avance la refactorizacion.
 - Inventario: `src/inventory/inventory.js`.
 - Parametros: `src/parameters/parameters.js`.
 - Medicion completa: `src/parameters/measurements-advanced.js`.
