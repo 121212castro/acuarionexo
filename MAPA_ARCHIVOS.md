@@ -14,16 +14,21 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `aquariums-mobile-fix.css`
 - `mobile-form-fix.css`
 - `library-images.css`
-- `src/aquariums/aquariums.js`
-- `src/library/library.js`
-- `src/animals/animals.js`
+- Supabase CDN
+- Firebase CDN
 - Three.js CDN r149
+- `src/aquariums/aquariums.js`
+- `src/library/core/library-schema.js`
+- `src/library/library.js`
+- `src/library/library-v3.js`
+- `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
+- `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
@@ -56,7 +61,9 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Modulos de negocio
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
+- `src/library/core/library-schema.js`: contrato oficial de Biblioteca V3/V4 expuesto como `window.ANX.LibrarySchema`.
 - `src/library/library.js`: biblioteca, fichas y borradores IA.
+- `src/library/library-v3.js`: flujo Biblioteca V3/V4 de identificacion, borrador, edicion, auditoria, publicacion, borrado e inventario.
 - `src/animals/animals.js`: animales.
 - `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
 - `src/map/map.js`: mapa IA y escena 3D real.
@@ -64,6 +71,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/inventory/inventory.js`: inventario.
 - `src/microfauna/microfauna.js`: cultivos de microfauna.
 - `src/ai/ai.js`: motor IA y avisos sugeridos.
+- `src/ai/ai-library-v3.js`: apoyo IA para Biblioteca V3.
 - `src/ai/ai-alerts-extra.js`: revision extendida de avisos sin sobrescribir pantallas.
 - `src/parameters/parameters.js`: parametros.
 - `src/parameters/measurements-advanced.js`: medicion completa.
@@ -87,6 +95,19 @@ Responsabilidades previstas:
 - `src/library/images/`: subida, seleccion, previsualizacion y utilidades de imagen.
 - `src/library/ui/`: render, tarjetas, toolbar y filtros.
 - `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar y campos de ficha.
+
+## Fase 2 Biblioteca
+
+Primer modulo movido:
+
+- Antes: `src/library/library-schema.js`
+- Ahora: `src/library/core/library-schema.js`
+
+Resultado:
+
+- `index.html` carga `src/library/core/library-schema.js` antes de `library.js` y `library-v3.js`.
+- La ruta antigua `src/library/library-schema.js` ha sido eliminada.
+- No se ha movido ningun otro modulo.
 
 ## Documentacion de control
 
@@ -116,4 +137,4 @@ Responsabilidades previstas:
 - Se ha creado solo la arquitectura modular vacia bajo `src/library/`.
 - No se ha movido ninguna funcion.
 - No se ha modificado `index.html`.
-- `src/library/library.js` sigue siendo el modulo activo de Biblioteca/Fichas.
+- `src/library/library.js` sigue siendo modulo activo de Biblioteca/Fichas.
