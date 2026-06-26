@@ -70,6 +70,24 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/tasks/tasks.js`: tareas y avisos.
 - `src/auth/auth.js`: auth y arranque.
 
+## Arquitectura preparada de Biblioteca
+
+Fase 1 creada sin mover funciones ni cambiar comportamiento. Estos directorios quedan preparados para la refactorizacion modular posterior:
+
+- `src/library/core/.gitkeep`
+- `src/library/inventory/.gitkeep`
+- `src/library/images/.gitkeep`
+- `src/library/ui/.gitkeep`
+- `src/library/ficha/.gitkeep`
+
+Responsabilidades previstas:
+
+- `src/library/core/`: nucleo, acceso a datos, utilidades, busqueda y esquema.
+- `src/library/inventory/`: importacion, enlace y validacion de inventario.
+- `src/library/images/`: subida, seleccion, previsualizacion y utilidades de imagen.
+- `src/library/ui/`: render, tarjetas, toolbar y filtros.
+- `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar y campos de ficha.
+
 ## Documentacion de control
 
 - `ARCHIVOS_ACTIVOS.txt`
@@ -92,3 +110,10 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - Mediciones completas estan aisladas en `src/parameters/measurements-advanced.js`.
 - App movil se prepara con Capacitor llevando los archivos dentro del paquete.
 - No hay parches JS cargados al final que sustituyan modulos principales.
+
+## Nota Fase 1 Biblioteca 26/06/2026
+
+- Se ha creado solo la arquitectura modular vacia bajo `src/library/`.
+- No se ha movido ninguna funcion.
+- No se ha modificado `index.html`.
+- `src/library/library.js` sigue siendo el modulo activo de Biblioteca/Fichas.
