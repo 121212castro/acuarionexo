@@ -148,17 +148,6 @@
     return [warning ? `<p>${esc(warning)}</p>` : '', confidence, candidateHtml, warningsHtml].filter(Boolean).join('');
   }
 
-  async function functionErrorMessage(error) {
-    const fallback = error?.message || 'No se pudo generar la ficha con IA real.';
-    try {
-      const context = error?.context;
-      if (context && typeof context.json === 'function') {
-        const body = await context.json();
-        return body?.message || body?.error || fallback;
-      }
-    } catch (_) {}
-    return fallback;
-  }
 
   function card(row) {
     const cover = row.cover_url || row.photo_url || '';
