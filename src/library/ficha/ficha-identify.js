@@ -36,5 +36,16 @@
     </section>`, 'biblioteca');
   };
 
+  window.buscarIdentify = async function () {
+    const nombreComun = val('identifyCommonName');
+    const nombreCientifico = val('identifyScientificName');
+    const marca = val('identifyBrand');
+    const box = byId('identifyBox');
+    if (!nombreComun && !nombreCientifico && !marca) {
+      if (box) box.innerHTML = msg('Introduce al menos nombre comun, nombre cientifico o marca para empezar la identificacion.', 'error');
+      return;
+    }
+  };
+
   window.ANX.LibraryIdentify.functionErrorMessage = functionErrorMessage;
 })();
