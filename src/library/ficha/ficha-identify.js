@@ -45,6 +45,26 @@
       if (box) box.innerHTML = msg('Introduce al menos nombre comun, nombre cientifico o marca para empezar la identificacion.', 'error');
       return;
     }
+    try {
+      if (box) box.innerHTML = msg('Identificando con IA real...', 'notice');
+      const { data, error } = await supabase.functions.invoke('library-generate-card', {
+        body: {
+          mode: 'identify',
+          title: nombreComun,
+          scientific_name: nombreCientifico,
+          entry_type: val('libType') || 'general',
+          notes: marca,
+          source_context: {
+            manufacturer: marca,
+            source_notes: marca
+          }
+        }
+      });
+      if (error) throw new Error(await functionErrorMessage(error));
+      window.ANX.LibraryIdentify.lastIdentifyResult = data;
+    } catch (e) {
+      if (box) box.innerHTML = msg(e.message || 'Error en identificacion.', 'error');
+    }
   };
 
   window.ANX.LibraryIdentify.functionErrorMessage = functionErrorMessage;
