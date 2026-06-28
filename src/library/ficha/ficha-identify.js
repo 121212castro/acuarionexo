@@ -45,8 +45,10 @@
       if (box) box.innerHTML = msg('Introduce al menos nombre comun, nombre cientifico o marca para empezar la identificacion.', 'error');
       return;
     }
+
     try {
       if (box) box.innerHTML = msg('Identificando con IA real...', 'notice');
+
       const { data, error } = await supabase.functions.invoke('library-generate-card', {
         body: {
           mode: 'identify',
@@ -60,8 +62,25 @@
           }
         }
       });
+
       if (error) throw new Error(await functionErrorMessage(error));
-      window.ANX.LibraryIdentify.lastIdentifyResult = data;
+
+      const result = data?.data || data || {};
+      window.ANX.LibraryIdentify.lastIdentifyResult = result;
+      if (!result.identity_confirmed) {
+        if (box) box.innerHTML = msg('Identificacion no validada. No se puede crear ficha.', 'error');
+        return;
+      }
+
+      if (byId('libTitle')) byId('libTitle').value = result.title || nombreComun;
+      if (byId('libScientific')) byId('libScientific').value = result.scientific_name || nombreCientifico;
+
+      if (box) box.innerHTML = `<div class="success">
+        Identificacion validada.<br>
+        <b>${esc(result.title || '')}</b><br>
+        ${esc(result.scientific_name || '')}<br><br>
+        <button type="button" onclick="formFicha('', '${esc(result.entry_type || val('libType') || 'general')}')">Crear borrador</button>
+      </div>`;
     } catch (e) {
       if (box) box.innerHTML = msg(e.message || 'Error en identificacion.', 'error');
     }
