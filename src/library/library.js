@@ -648,7 +648,7 @@
       if (byId('aiBox')) byId('aiBox').innerHTML = msg('Generando borrador...');
       const source_context = sourceContextFromForm();
       const { data, error } = await supabase.functions.invoke('library-generate-card', { body: { title, scientific_name: val('libScientific'), entry_type: val('libType'), notes: val('libPrompt'), cover_url: coverUrl, photo_url: photoUrl, source_context } });
-      if (error) throw new Error(await functionErrorMessage(error));
+      if (error) throw new Error(await window.ANX.LibraryIdentify.functionErrorMessage(error));
       const generated = data?.data || data || {};
       const warning = data?.warning || generated.warning || '';
       const sections = generated.sections || {};
