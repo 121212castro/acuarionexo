@@ -35,15 +35,20 @@
     if (value == null) return '';
     if (typeof value === 'string') return value;
     if (Array.isArray(value)) return value.map(sectionText).filter(Boolean).join('\n');
+
     if (typeof value === 'object') {
       return Object.entries(value)
         .map(([key, val]) => {
-          const text = sectionText(val);
-          return text ? `${key}: ${text}` : '';
+          if (val == null || val === '') return '';
+          if (typeof val === 'object') {
+            return `${key}:\n${sectionText(val)}`;
+          }
+          return `${key}: ${String(val)}`;
         })
         .filter(Boolean)
         .join('\n');
     }
+
     return String(value);
   }
 
