@@ -1,0 +1,130 @@
+/* AcuarioNexo · fix anti-desbordamiento móvil en fichas de biblioteca */
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+#app,
+.panel,
+.card,
+.auth-card,
+.summary-card,
+.library-detail,
+.library-grid,
+.library-card,
+.library-card-body,
+.library-image-grid,
+.library-image-panel,
+.library-image-preview,
+.library-picker,
+.library-picker-grid,
+.library-cover-note,
+.form-grid,
+.image-actions {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.library-detail,
+.library-detail *,
+.library-card,
+.library-card *,
+.library-image-panel,
+.library-image-panel *,
+.library-picker,
+.library-picker *,
+.library-cover-note,
+.library-cover-note * {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.library-detail,
+.library-image-panel,
+.library-picker,
+.library-cover-note {
+  overflow-x: hidden;
+}
+
+.library-card {
+  width: 100%;
+  min-width: 0;
+}
+
+.library-card img,
+.library-card-cover,
+.library-detail-photo,
+.library-cover-note img,
+.library-image-preview img,
+.library-picker-grid img,
+img {
+  max-width: 100%;
+  height: auto;
+  box-sizing: border-box;
+}
+
+.library-card img,
+.library-card-cover,
+.library-detail-photo,
+.library-cover-note img,
+.library-image-preview img,
+.library-picker-grid img {
+  display: block;
+}
+
+.library-card-body {
+  min-width: 0;
+}
+
+.library-card h3,
+.library-card p,
+.library-card small,
+.library-detail h2,
+.library-detail h3,
+.library-detail p,
+.library-detail summary,
+.library-detail-section,
+.library-detail-section p,
+.library-detail-section summary,
+.library-image-panel h3,
+.library-picker-grid span,
+input,
+textarea,
+select,
+button {
+  max-width: 100%;
+  min-width: 0;
+}
+
+input,
+textarea,
+select {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 430px) {
+  #app {
+    overflow-x: hidden;
+  }
+
+  .library-grid,
+  .library-image-grid,
+  .form-grid,
+  .image-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .library-card {
+    grid-template-columns: 82px minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .library-card img,
+  .library-card-cover,
+  .library-no-photo {
+    width: 82px;
+    height: 82px;
+  }
+}
