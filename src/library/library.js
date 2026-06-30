@@ -593,12 +593,4 @@
       if (byId('aiBox')) byId('aiBox').innerHTML = `<div class="${className}">${noticeTitle}${notice ? `<br>${notice}` : ''}</div>`;
     } catch (e) { if (byId('aiBox')) byId('aiBox').innerHTML = msg(e.message, 'error'); }
   };
-
-  window.verFicha = function (id) {
-    const row = (state.libraryRows || []).find(r => r.id === id);
-    if (!row) return biblioteca();
-    const mainPhoto = row.photo_url || row.cover_url || '';
-    const coverOnly = row.cover_url && row.cover_url !== mainPhoto;
-    render(`<section class="panel library-detail"><button onclick="biblioteca()">Volver</button>${mainPhoto ? `<img class="library-detail-photo" src="${esc(mainPhoto)}" alt="${esc(row.title)}">` : ''}${coverOnly ? `<div class="library-cover-note"><b>Portada</b><img src="${esc(row.cover_url)}" alt="Portada"></div>` : ''}<small>${esc(typeName(row.entry_type))} · ${esc(row.status || 'draft')}</small><h2>${esc(row.title || 'Ficha')}</h2>${row.scientific_name ? `<p class="scientific">${esc(row.scientific_name)}</p>` : ''}${sectionsFor(row.entry_type).map(key => sectionText(row.sections?.[key]) ? `<section class="library-detail-section"><h3>${esc(sectionLabels[key] || key)}</h3><p>${esc(sectionText(row.sections[key])).replace(/\n/g, '<br>')}</p></section>` : '').join('')}<div class="quick-actions"><button class="primary" onclick="pasarFichaAInventario('${esc(row.id)}')"><span>▤</span>Pasar a inventario</button><button onclick="formFicha('${esc(row.id)}')"><span>□</span>Editar ficha</button></div><div id="x"></div></section>`, 'biblioteca');
-  };
 })();
