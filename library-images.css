@@ -4,6 +4,10 @@
   grid-template-columns: 1fr;
   gap: 12px;
   margin: 12px 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .library-image-panel {
@@ -11,15 +15,22 @@
   border-radius: 18px;
   background: rgba(255, 255, 255, .045);
   padding: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .library-image-panel .panel-head {
   margin-bottom: 8px;
+  min-width: 0;
 }
 
 .library-image-panel h3 {
   font-size: 18px;
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .library-image-panel .panel-head button {
@@ -40,10 +51,14 @@
   background: rgba(3, 16, 29, .86);
   color: var(--muted);
   font-weight: 850;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .library-image-preview img {
   width: 100%;
+  max-width: 100%;
   height: 190px;
   object-fit: cover;
   display: block;
@@ -53,10 +68,16 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .image-actions button {
   min-height: 44px;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
 }
 
 .image-actions.paired {
@@ -69,12 +90,19 @@
   background: rgba(3, 16, 29, .78);
   padding: 12px;
   margin: 12px 0;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .library-picker-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .library-picker-grid button {
@@ -83,10 +111,13 @@
   text-align: left;
   border-radius: 16px;
   background: rgba(255, 255, 255, .055);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .library-picker-grid img {
   width: 100%;
+  max-width: 100%;
   height: 118px;
   object-fit: cover;
   display: block;
@@ -97,6 +128,8 @@
   padding: 8px;
   font-size: 12px;
   line-height: 1.2;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .library-cover-note {
@@ -107,13 +140,25 @@
   border: 1px solid var(--line);
   border-radius: 16px;
   background: rgba(255, 255, 255, .045);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
 }
 
 .library-cover-note img {
   width: 100%;
+  max-width: 100%;
   max-height: 160px;
   object-fit: cover;
   border-radius: 12px;
+  display: block;
+}
+
+.library-cover-note,
+.library-cover-note * {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 @media(min-width:760px) {
