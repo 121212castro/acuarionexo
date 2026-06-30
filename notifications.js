@@ -4,6 +4,17 @@
   let checking = false;
   let enabling = false;
 
+  function installFichaCss() {
+    if (document.getElementById('anx-ficha-css')) return;
+    const css = '.library-detail-cover{position:relative;width:100%;height:190px;max-height:190px;min-height:150px;overflow:hidden;border-radius:20px;margin:0 0 12px;display:block}.library-detail-cover img{width:100%;max-height:190px;height:auto;display:block}.library-cover-title{position:absolute;left:12px;right:12px;bottom:10px;z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.75)}.library-cover-title h2{font-size:26px;line-height:1.03;margin:0}.ficha-maestra .library-detail-photo{width:100%;max-height:310px}.ficha-maestra .library-detail-section{margin:10px 0;padding:12px}.ficha-maestra .quick-actions{grid-template-columns:1fr 1fr}.ficha-maestra .quick-actions button{min-height:54px}';
+    const style = document.createElement('style');
+    style.id = 'anx-ficha-css';
+    style.textContent = css;
+    document.head.appendChild(style);
+  }
+
+  installFichaCss();
+
   function canNotify() {
     return 'Notification' in window;
   }
@@ -96,6 +107,7 @@
   }
 
   function start() {
+    installFichaCss();
     if (!canNotify()) return;
     setTimeout(enableNotifications, 3500);
     setTimeout(checkDueTasks, 30000);
