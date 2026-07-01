@@ -27,23 +27,39 @@
     scientific_name: { label: 'Nombre científico', required: true, minLength: 5, ai: true, public: true, section: 'identity', validator: 'scientificName' },
     entry_type: { label: 'Tipo de ficha', required: true, ai: true, public: false, section: 'identity' },
     sources: { label: 'Fuentes', required: true, minSources: 2, ai: true, public: true, section: 'sources' },
+    cover_url: { label: 'Foto portada con nombre', required: true, minLength: 8, ai: false, public: true, section: 'cover' },
+    photo_url: { label: 'Foto principal al abrir ficha', required: true, minLength: 8, ai: false, public: true, section: 'photo' },
+    summary: { label: 'Resumen del pez', required: true, minLength: 40, ai: true, public: true, section: 'summary' },
+    identity_notes: { label: 'Identificación completa', required: true, minLength: 40, ai: true, public: true, section: 'identity' },
     family: { label: 'Familia', required: true, ai: true, public: false, section: 'identity' },
     order_name: { label: 'Orden', required: true, ai: true, public: false, section: 'identity' },
     class_name: { label: 'Clase', required: true, ai: true, public: false, section: 'identity' },
     distribution: { label: 'Distribución / hábitat', required: true, minLength: 25, ai: true, public: true, section: 'habitat' },
+    habitat_natural: { label: 'Hábitat natural', required: true, minLength: 40, ai: true, public: true, section: 'habitat' },
     adult_size_cm: { label: 'Tamaño adulto', required: true, type: 'number', ai: true, public: true, section: 'identity' },
+    life_expectancy: { label: 'Esperanza de vida', required: true, minLength: 2, ai: true, public: true, section: 'identity' },
     minimum_tank_liters: { label: 'Acuario mínimo', required: true, type: 'number', ai: true, public: true, section: 'aquarium' },
+    aquarium_recommended: { label: 'Acuario recomendado', required: true, minLength: 40, ai: true, public: true, section: 'aquarium' },
     temperature_min: { label: 'Temperatura mínima', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
     temperature_max: { label: 'Temperatura máxima', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
     ph_min: { label: 'pH mínimo', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
     ph_max: { label: 'pH máximo', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
     salinity_min: { label: 'Salinidad mínima', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
     salinity_max: { label: 'Salinidad máxima', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
+    kh_min: { label: 'KH mínimo', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
+    kh_max: { label: 'KH máximo', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
+    nitrate_max: { label: 'Nitrato máximo', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
+    phosphate_max: { label: 'Fosfato máximo', required: true, type: 'number', ai: true, public: true, section: 'parameters' },
     diet: { label: 'Alimentación', required: true, minLength: 25, ai: true, public: true, section: 'feeding' },
+    feeding_plan: { label: 'Plan de alimentación', required: true, minLength: 40, ai: true, public: true, section: 'feeding' },
     behavior: { label: 'Comportamiento', required: true, minLength: 25, ai: true, public: true, section: 'behavior' },
     compatibility: { label: 'Compatibilidad', required: true, minLength: 25, ai: true, public: true, section: 'compatibility' },
     reef_safe: { label: 'Reef safe', required: true, allowed: REEF_SAFE, ai: true, public: true, section: 'reef_safe' },
-    care_level: { label: 'Nivel de cuidado', required: true, ai: true, public: true, section: 'purchase' },
+    reef_safe_notes: { label: 'Detalle reef safe', required: true, minLength: 30, ai: true, public: true, section: 'reef_safe' },
+    breeding: { label: 'Reproducción', required: true, minLength: 30, ai: true, public: true, section: 'breeding' },
+    diseases: { label: 'Enfermedades', required: true, minLength: 30, ai: true, public: true, section: 'health' },
+    care_level: { label: 'Nivel de cuidado', required: true, ai: true, public: true, section: 'maintenance' },
+    curiosities: { label: 'Curiosidades', required: true, minLength: 20, ai: true, public: true, section: 'curiosities' },
     lighting: { label: 'Iluminación', required: true, minLength: 15, ai: true, public: true, section: 'lighting' },
     flow: { label: 'Flujo / caudal', required: true, minLength: 10, ai: true, public: true, section: 'flow' },
     placement: { label: 'Ubicación', required: true, minLength: 10, ai: true, public: true, section: 'placement' },
@@ -76,7 +92,7 @@
 
   const COMMON_FIELDS = ['title', 'entry_type', 'sources'];
   const CONTRACTS = {
-    pez_marino: COMMON_FIELDS.concat(['scientific_name', 'family', 'order_name', 'class_name', 'distribution', 'adult_size_cm', 'minimum_tank_liters', 'temperature_min', 'temperature_max', 'ph_min', 'ph_max', 'salinity_min', 'salinity_max', 'diet', 'behavior', 'compatibility', 'reef_safe', 'care_level']),
+    pez_marino: ['title', 'entry_type', 'scientific_name', 'cover_url', 'photo_url', 'summary', 'identity_notes', 'family', 'order_name', 'class_name', 'distribution', 'habitat_natural', 'adult_size_cm', 'life_expectancy', 'minimum_tank_liters', 'aquarium_recommended', 'temperature_min', 'temperature_max', 'ph_min', 'ph_max', 'salinity_min', 'salinity_max', 'kh_min', 'kh_max', 'nitrate_max', 'phosphate_max', 'behavior', 'compatibility', 'diet', 'feeding_plan', 'reef_safe', 'reef_safe_notes', 'breeding', 'diseases', 'care_level', 'maintenance', 'curiosities', 'sources'],
     pez_dulce: COMMON_FIELDS.concat(['scientific_name', 'family', 'order_name', 'class_name', 'distribution', 'adult_size_cm', 'minimum_tank_liters', 'temperature_min', 'temperature_max', 'ph_min', 'ph_max', 'diet', 'behavior', 'compatibility', 'care_level']),
     coral: COMMON_FIELDS.concat(['scientific_name', 'family', 'distribution', 'lighting', 'flow', 'placement', 'growth_rate', 'aggressiveness', 'reef_safe']),
     invertebrado: COMMON_FIELDS.concat(['scientific_name', 'family', 'distribution', 'reef_safe', 'molting', 'feeding', 'behavior']),
@@ -92,10 +108,10 @@
   };
 
   const SECTION_LABELS = {
-    identity: 'Identificación', habitat: 'Hábitat natural', aquarium: 'Acuario recomendado', parameters: 'Parámetros', behavior: 'Comportamiento', feeding: 'Alimentación', compatibility: 'Compatibilidad', reef_safe: 'Reef safe', health: 'Salud', purchase: 'Antes de comprar', lighting: 'Iluminación', flow: 'Flujo', placement: 'Ubicación', maintenance: 'Mantenimiento', culture: 'Cultivo', harvest: 'Cosecha', use: 'Uso recomendado', nutrition: 'Composición', dose: 'Dosis', monitoring: 'Mediciones / seguimiento', risks: 'Riesgos', uses: 'Usos indicados', remove: 'Retirar durante tratamiento', reading: 'Lectura', range: 'Rangos', specs: 'Especificaciones', sources: 'Fuentes'
+    cover: 'Portada', photo: 'Foto principal', summary: 'Resumen', identity: 'Identificación', habitat: 'Hábitat natural', aquarium: 'Acuario recomendado', parameters: 'Parámetros', behavior: 'Comportamiento', feeding: 'Alimentación', compatibility: 'Compatibilidad', reef_safe: 'Reef safe', breeding: 'Reproducción', health: 'Enfermedades', purchase: 'Antes de comprar', lighting: 'Iluminación', flow: 'Flujo', placement: 'Ubicación', maintenance: 'Mantenimiento', curiosities: 'Curiosidades', culture: 'Cultivo', harvest: 'Cosecha', use: 'Uso recomendado', nutrition: 'Composición', dose: 'Dosis', monitoring: 'Mediciones / seguimiento', risks: 'Riesgos', uses: 'Usos indicados', remove: 'Retirar durante tratamiento', reading: 'Lectura', range: 'Rangos', specs: 'Especificaciones', sources: 'Fuentes'
   };
 
-  const TEMPLATE_ORDER = ['identity', 'habitat', 'aquarium', 'parameters', 'behavior', 'feeding', 'compatibility', 'reef_safe', 'health', 'purchase', 'lighting', 'flow', 'placement', 'maintenance', 'culture', 'harvest', 'use', 'nutrition', 'dose', 'monitoring', 'risks', 'uses', 'remove', 'reading', 'range', 'specs', 'sources'];
+  const TEMPLATE_ORDER = ['cover', 'photo', 'summary', 'identity', 'habitat', 'aquarium', 'parameters', 'behavior', 'compatibility', 'feeding', 'reef_safe', 'breeding', 'health', 'maintenance', 'curiosities', 'purchase', 'lighting', 'flow', 'placement', 'culture', 'harvest', 'use', 'nutrition', 'dose', 'monitoring', 'risks', 'uses', 'remove', 'reading', 'range', 'specs', 'sources'];
 
   function fieldRule(field) {
     return FIELD_RULES[field] || { label: field, required: true, ai: true, public: true, section: 'identity' };
