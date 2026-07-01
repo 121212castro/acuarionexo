@@ -23,15 +23,14 @@ Carga activa:
 - `aquariums-mobile-fix.css`
 - `mobile-form-fix.css`
 - `library-images.css`
+- `library-mobile-overflow-fix.css`
 - Supabase CDN
-- Firebase CDN
-- Three.js CDN r149
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
-- `src/library/library.js`
+- `src/library/ficha/ficha-identify.js`
 - `src/library/library-v3.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
@@ -80,7 +79,8 @@ Las pantallas y reglas de negocio viven en modulos:
 - `src/library/core/library-schema.js`: contrato oficial de Biblioteca V3/V4; expone `window.ANX.LibrarySchema`.
 - `src/library/ui/library.js`: puente de carga controlado hacia Biblioteca/Fichas.
 - `src/library/library.js`: biblioteca, fichas y borradores IA; sigue conservado como modulo funcional cargado por el puente UI.
-- `src/library/library-v3.js`: Biblioteca V3/V4, dependiente de `window.ANX.LibrarySchema`.
+- `src/library/library-v3.js`: Biblioteca V3/V4, dependiente de `window.ANX.LibrarySchema`; define la vista activa de ficha `window.verFicha`.
+- `src/library/ficha/ficha-identify.js`: identificacion de fichas.
 - `src/animals/animals.js`: habitantes del acuario.
 - `src/map/map.js`: mapa IA, foto base, objetos colocables y render 3D real.
 - `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
@@ -109,12 +109,14 @@ Fase 1 creada para refactorizacion modular, sin mover funciones y sin alterar la
 - `src/library/ui/`
 - `src/library/ficha/`
 
-Estado activo tras Fase 2:
+Estado activo tras ajuste de ficha:
 
 - `src/library/core/library-schema.js` es el primer modulo movido.
-- `src/library/ui/library.js` se carga desde `index.html` como puente controlado hacia `src/library/library.js`.
+- `src/library/ui/library.js` se carga desde `index.html` como puente controlado hacia Biblioteca/Fichas.
+- `src/library/ficha/ficha-identify.js` se carga desde `index.html`.
+- `src/library/ficha/ficha-view.js` queda fuera de la carga activa para evitar duplicar y pisar `window.verFicha`.
 - `src/library/library.js` sigue conservado y no se elimina en este paso.
-- `src/library/library-v3.js` sigue cargado desde su ubicacion original.
+- `src/library/library-v3.js` sigue cargado desde su ubicacion original y conserva la vista activa de ficha.
 - `index.html` carga `src/library/core/library-schema.js` antes de `src/library/ui/library.js` y `library-v3.js`.
 - La ruta antigua `src/library/library-schema.js` ha sido eliminada.
 - No se ha movido ningun otro modulo funcional.
