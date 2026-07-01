@@ -42,7 +42,8 @@ export const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control
 export function json(body: unknown, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
 export function errorJson(code: string, message: string, status = 400, details?: unknown) { return json({ error: code, message, details }, status); }
 export function clean(value: unknown, max = 5000) { return String(value ?? "").trim().slice(0, max); }
-export function extractJson(text: string) { const fenced = text.match(/```json\s*([\s\S]*?)```/i)?.[1]; return JSON.parse(fenced || text.match(/\{[\s\S]*\}/)?.[0] || text); }
+function jsonCandidate(text: string) { return text.match(/```json\s*([\s\S]*?)```/i)?.[1] || text.match(/\{[\s\S]*\}/)?.[0] || text; }
+export function extractJson(text: string) { return JSON.parse(jsonCandidate(text)); }
 export function urlsFromAny(value: unknown, found: string[] = []): string[] {
   if (value == null) return found;
   if (typeof value === "string") (value.match(/https?:\/\/[^\s<>"')\]]+/gi) || []).forEach(url => found.push(url.replace(/[.,;:]+$/, "")));
@@ -110,12 +111,35 @@ export async function authenticatedClients(req: Request) {
   const { data, error } = await userClient.auth.getUser(); if (error || !data.user) throw new Error("AUTH_REQUIRED");
   return { user: data.user, userClient, serviceClient: createClient(url, service) };
 }
+async function repairJsonWithModel(apiKey: string, model: string, brokenText: string, originalError: unknown) {
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      input: [
+        { role: "system", content: "Eres un reparador estricto de JSON. Devuelve solo JSON válido. No añadas explicación, markdown ni texto fuera del JSON." },
+        { role: "user", content: [{ type: "input_text", text: `Error al parsear: ${String(originalError)}\n\nRepara este contenido para que sea JSON válido sin cambiar el significado:\n${brokenText.slice(0, 60000)}` }] }
+      ],
+      temperature: 0
+    })
+  });
+  if (!response.ok) throw new Error(`OPENAI_REPAIR_${response.status}:${(await response.text()).slice(0, 800)}`);
+  const output = await response.json();
+  const repaired = output.output_text || output.output?.flatMap((item: any) => item.content || []).map((part: any) => part.text || "").join("\n") || "";
+  return extractJson(repaired);
+}
 export async function openAiJson(system: string, prompt: string, imageUrl = "") {
   const apiKey = Deno.env.get("OPENAI_API_KEY"); if (!apiKey) throw new Error("OPENAI_API_KEY_MISSING");
   const model = clean(Deno.env.get("OPENAI_MODEL") || "gpt-4.1-mini", 80);
-  const content: any[] = [{ type: "input_text", text: prompt }]; if (imageUrl) content.push({ type: "input_image", image_url: imageUrl, detail: "high" });
+  const content: any[] = [{ type: "input_text", text: `${prompt}\n\nDevuelve SOLO JSON válido. No uses markdown. No escribas comentarios. No dejes comas, corchetes ni llaves sin cerrar.` }];
+  if (imageUrl) content.push({ type: "input_image", image_url: imageUrl, detail: "high" });
   const response = await fetch("https://api.openai.com/v1/responses", { method: "POST", headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }, body: JSON.stringify({ model, input: [{ role: "system", content: system }, { role: "user", content }], tools: [{ type: "web_search_preview" }], tool_choice: { type: "web_search_preview" }, temperature: 0.1 }) });
   if (!response.ok) throw new Error(`OPENAI_${response.status}:${(await response.text()).slice(0, 800)}`);
   const output = await response.json(); const text = output.output_text || output.output?.flatMap((item: any) => item.content || []).map((part: any) => part.text || "").join("\n") || "";
-  return { parsed: extractJson(text), model };
+  try {
+    return { parsed: extractJson(text), model };
+  } catch (parseError) {
+    return { parsed: await repairJsonWithModel(apiKey, model, text, parseError), model };
+  }
 }
