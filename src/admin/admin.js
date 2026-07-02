@@ -98,7 +98,7 @@
           <div class="quick-actions">
             <button onclick="adminUsers()"><span>👥</span>Usuarios</button>
             <button onclick="adminReports()"><span>⚠</span>Fallos</button>
-            <button disabled><span>◈</span>Consumo IA</button>
+            <button onclick="adminAiUsage()"><span>◈</span>Consumo IA</button>
             <button onclick="adminGrantForm()"><span>＋</span>Dar Admin</button>
           </div>
         </section>
@@ -115,6 +115,21 @@
     } catch (e) {
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>Error</p></div></section><section class="panel">${msg(e.message, 'error')}</section>`, 'inicio');
     }
+  };
+
+  window.adminAiUsage = async function () {
+    if (!state.user) return login();
+    await loadAdminRole();
+    if (!adminAllowed()) return adminBlocked();
+    render(`<section class="summary-card"><div><small>Admin</small><h2>Consumo IA</h2><p>Registro de actividad y coste</p></div></section>
+      <section class="panel"><button onclick="adminPanel()">← Admin</button>
+        <div class="quick-actions">
+          <article class="summary-card"><div><small>Acciones IA</small><h2>0</h2></div></article>
+          <article class="summary-card"><div><small>Tokens</small><h2>Pendiente</h2></div></article>
+          <article class="summary-card"><div><small>Coste estimado</small><h2>Pendiente</h2></div></article>
+        </div>
+        <p class="small">La tabla ai_usage_logs está creada. Los datos aparecerán aquí cuando conectemos cada acción IA al registrador de consumo.</p>
+      </section>`, 'admin');
   };
 
   window.ANX.Admin = { loadAdminRole, adminAllowed, roleLabel };
