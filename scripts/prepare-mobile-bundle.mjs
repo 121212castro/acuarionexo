@@ -25,7 +25,7 @@ const files = [
   'src/aquariums/aquariums.js',
   'src/library/core/library-schema.js',
   'src/library/ui/library.js',
-  'src/library/library.js',
+  'src/library/inventory/library-inventory-import.js',
   'src/library/library-v3.js',
   'src/library/ficha/ficha-chat-import.js',
   'src/animals/animals.js',
