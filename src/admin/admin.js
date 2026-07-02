@@ -2,14 +2,15 @@
 (function () {
   const { supabase, state, esc, byId, msg, render } = window.ANX;
 
-  function loadAdminExtra() {
-    if (document.querySelector('script[data-module="admin-extra"]')) return;
+  function loadScriptOnce(src, module) {
+    if (document.querySelector(`script[data-module="${module}"]`)) return;
     const script = document.createElement('script');
-    script.src = 'src/admin/admin-extra.js?v=pez-marino-contract-20260702';
-    script.dataset.module = 'admin-extra';
+    script.src = src;
+    script.dataset.module = module;
     document.head.appendChild(script);
   }
-  loadAdminExtra();
+  loadScriptOnce('src/admin/admin-extra.js?v=pez-marino-contract-20260702', 'admin-extra');
+  loadScriptOnce('src/admin/report-issue.js?v=pez-marino-contract-20260702', 'report-issue');
 
   const ADMIN_ROLES = new Set(['owner', 'admin', 'trusted_admin']);
 
