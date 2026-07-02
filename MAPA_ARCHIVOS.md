@@ -37,6 +37,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
 - `src/admin/admin-extra.js`
+- `src/admin/report-issue.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -44,24 +45,21 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `manifest.webmanifest`
 - `icon-512.png`
 
-## Navegacion principal
+## Reportes de fallos
 
-`app.js` controla la barra inferior fija.
+`src/admin/report-issue.js` permite a usuarios con sesion enviar reportes a `admin_reports`.
 
-Modulos visibles para usuario normal:
+Campos guardados:
 
-- Inicio
-- Acuarios
-- Biblioteca
-- Microfauna
-- Avisos
-- Inventario
+- usuario
+- zona afectada
+- gravedad
+- titulo
+- descripcion
+- user agent
+- estado abierto
 
-Modulo visible solo con rol activo:
-
-- Admin
-
-`library-mobile-overflow-fix.css` corrige la barra inferior en movil para admitir 7 botones cuando Admin esta activo.
+Los administradores los revisan desde Admin > Fallos.
 
 ## Admin restringido
 
