@@ -32,7 +32,7 @@ function aquariumCard(aq) {
   const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
   return `<article class="tank-card" onclick="openA('${esc(aq.id)}')">
     <div class="tank-art">${photo ? `<img src="${esc(photo)}" alt="${esc(aq.name)}" loading="lazy">` : aquariumIcon(aq)}</div>
-    <div class="tank-info"><h3>${esc(aq.name || 'Acuario')}</h3><p>${esc(aq.aquarium_type || 'Acuario')}</p><span>${esc(liters)} L</span></div>
+    <div class="tank-info"><h3>${esc(aq.name || 'Acuario')}</h3><p>${esc(aq.aquarium_type || 'Acuario')} · ${esc(liters)} L</p></div>
     <b>›</b>
   </article>`;
 }
@@ -128,15 +128,40 @@ function resumenAcuario() {
   const type = aq.aquarium_type || aq.type || 'Acuario';
   const created = aq.created_at ? new Date(aq.created_at).toLocaleDateString('es-ES') : 'Sin fecha';
   render(aqHeader('resumen') + `<section class="panel">
-    <div class="panel-head"><h2>Resumen</h2><button onclick="listaAcuarios()">Volver</button></div>
+    <div class="panel-head"><h2>Resumen</h2><div><button onclick="editarNotaAcuario()">Editar nota</button><button onclick="listaAcuarios()">Volver</button></div></div>
     <div class="quick-actions">
       ${dashboardStat('Tipo', type)}
       ${dashboardStat('Litros', `${liters} L`)}
       ${dashboardStat('Alta', created)}
     </div>
-    ${aq.notes ? `<p>${esc(aq.notes)}</p>` : '<p class="small">Selecciona una pestaña para gestionar animales, mapa, fotos, inventario, parámetros o tareas.</p>'}
+    ${aq.notes ? `<p>${esc(aq.notes)}</p>` : '<p class="small">Sin nota del acuario.</p>'}
   </section>`, 'acuarios');
 }
+
+window.editarNotaAcuario = async function () {
+  const aq = currentAquarium();
+  if (!aq) return listaAcuarios();
+  const current = aq.notes || '';
+  const next = prompt('Editar nota del acuario', current);
+  if (next === null) return;
+  try {
+    const { data, error } = await supabase
+      .from('aquariums')
+      .update({ notes: next.trim() || null })
+      .eq('id', aq.id)
+      .eq('user_id', state.user.id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    const saved = data || { ...aq, notes: next.trim() || null };
+    state.aquarium = { ...aq, ...saved };
+    window.q = state.aquarium;
+    state.aquariums = (state.aquariums || []).map(function (item) { return String(item.id) === String(aq.id) ? { ...item, ...saved } : item; });
+    resumenAcuario();
+  } catch (e) {
+    render(aqHeader('resumen') + `<section class="panel">${msg(e.message, 'error')}<button onclick="openAqSection('resumen')">Volver</button></section>`, 'acuarios');
+  }
+};
 
 window.openA = function (id) {
   const aq = (state.aquariums || []).find(function (item) { return String(item.id) === String(id); });
