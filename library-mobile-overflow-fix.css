@@ -104,9 +104,120 @@ select {
   overflow-wrap: anywhere;
 }
 
+/* Biblioteca · botones limpios en móvil */
+.library-search {
+  grid-template-columns: 1fr;
+}
+
+.panel .panel-head:has(+ .library-search) {
+  align-items: stretch;
+  gap: 10px;
+}
+
+.panel .panel-head:has(+ .library-search) h2 {
+  align-self: center;
+}
+
+.panel .panel-head:has(+ .library-search) button,
+.panel .panel-head:has(+ .library-search) + .library-search + .form-grid button,
+#app .library-detail > button,
+#app .library-detail button.primary {
+  min-height: 44px;
+  border-radius: 16px;
+  padding: 10px 14px;
+  line-height: 1.08;
+  white-space: normal;
+  overflow-wrap: normal;
+  word-break: normal;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.library-modules {
+  gap: 10px;
+}
+
+.library-modules button {
+  min-height: 92px;
+  padding: 14px 14px;
+  border-radius: 20px;
+  text-align: left;
+  background: linear-gradient(180deg, rgba(14, 47, 77, .94), rgba(8, 32, 55, .94));
+  box-shadow: none;
+}
+
+.library-modules button.active {
+  background: linear-gradient(180deg, rgba(14, 142, 255, .78), rgba(7, 85, 216, .72)) !important;
+  box-shadow: 0 0 0 1px rgba(255,255,255,.14) inset, 0 8px 14px rgba(14,142,255,.16) !important;
+}
+
+.library-modules b {
+  font-size: 19px;
+  line-height: 1.05;
+}
+
+.library-modules span {
+  font-size: 13px;
+}
+
+.library-modules small {
+  font-size: 11px;
+}
+
 @media (max-width: 430px) {
   #app {
     overflow-x: hidden;
+  }
+
+  .bottom-nav {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 4px;
+    padding-left: 5px;
+    padding-right: 5px;
+  }
+
+  .bottom-nav button {
+    border-radius: 14px;
+    padding: 6px 1px;
+  }
+
+  .bottom-nav span {
+    font-size: 18px;
+  }
+
+  .bottom-nav small {
+    font-size: 8.4px;
+    letter-spacing: -.2px;
+  }
+
+  .panel .panel-head:has(+ .library-search) {
+    display: grid;
+    grid-template-columns: 1fr;
+    margin-bottom: 12px;
+  }
+
+  .panel .panel-head:has(+ .library-search) h2 {
+    font-size: 23px;
+  }
+
+  .panel .panel-head:has(+ .library-search) button {
+    width: 100%;
+    min-height: 46px;
+    font-size: 15px;
+    justify-self: stretch;
+  }
+
+  .panel .panel-head:has(+ .library-search) + .library-search + .form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .panel .panel-head:has(+ .library-search) + .library-search + .form-grid button {
+    width: 100%;
+    min-height: 46px;
+    font-size: 15px;
   }
 
   .library-grid,
@@ -114,6 +225,20 @@ select {
   .form-grid,
   .image-actions {
     grid-template-columns: 1fr;
+  }
+
+  .library-modules {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .library-modules button {
+    min-height: 86px;
+    padding: 12px;
+  }
+
+  .library-modules b {
+    font-size: 18px;
   }
 
   .library-card {
