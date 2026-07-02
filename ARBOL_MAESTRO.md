@@ -44,6 +44,7 @@ Carga activa actual:
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
 - `src/admin/admin-extra.js`
+- `src/admin/report-issue.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -59,6 +60,12 @@ Carga activa actual:
 - Admin solo con rol activo
 
 La barra inferior movil se ajusta desde `library-mobile-overflow-fix.css` para admitir 7 botones.
+
+## Reportes de fallos
+
+- `src/admin/report-issue.js`: formulario para que usuarios con sesion reporten fallos.
+- Guarda en `admin_reports`.
+- Admin revisa desde Fallos.
 
 ## Admin restringido
 
@@ -81,9 +88,3 @@ Admin ya esta activo para propietario.
 - `src/library/library-v3.js`: dueño real de Biblioteca/Fichas.
 - `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
 - `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
-
-Eliminados:
-
-- `src/library/library.js`
-- `src/library/ficha/ficha-identify.js`
-- `src/library/ficha/ficha-view.js`
