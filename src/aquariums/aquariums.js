@@ -121,6 +121,53 @@ window.listaAcuarios = async function () {
   }
 };
 
+function resumenAcuario() {
+  const aq = currentAquarium();
+  if (!aq) return listaAcuarios();
+  const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
+  const type = aq.aquarium_type || aq.type || 'Acuario';
+  const created = aq.created_at ? new Date(aq.created_at).toLocaleDateString('es-ES') : 'Sin fecha';
+  render(aqHeader('resumen') + `<section class="panel">
+    <div class="panel-head"><h2>Resumen</h2><button onclick="listaAcuarios()">Volver</button></div>
+    <div class="quick-actions">
+      ${dashboardStat('Tipo', type)}
+      ${dashboardStat('Litros', `${liters} L`)}
+      ${dashboardStat('Alta', created)}
+    </div>
+    ${aq.notes ? `<p>${esc(aq.notes)}</p>` : '<p class="small">Selecciona una pestaña para gestionar animales, mapa, fotos, inventario, parámetros o tareas.</p>'}
+  </section>`, 'acuarios');
+}
+
+window.openA = function (id) {
+  const aq = (state.aquariums || []).find(function (item) { return String(item.id) === String(id); });
+  if (!aq) {
+    render(msg('No se encontró este acuario. Vuelve a cargar la lista.', 'error'), 'acuarios');
+    return;
+  }
+  state.aquarium = aq;
+  window.q = aq;
+  state.section = 'resumen';
+  resumenAcuario();
+};
+
+window.openAqSection = function (section) {
+  const aq = currentAquarium();
+  if (!aq) return listaAcuarios();
+  state.section = section || 'resumen';
+  const routes = {
+    resumen: resumenAcuario,
+    animales: window.animales,
+    mapa: window.mapaIA,
+    fotos: window.fotos,
+    inventario: function () { return window.inventario('aquarium'); },
+    parametros: window.parametros,
+    tareas: window.tareas
+  };
+  const fn = routes[state.section] || resumenAcuario;
+  if (typeof fn === 'function') return fn();
+  render(aqHeader(state.section) + `<section class="panel">${msg('Este módulo no está disponible todavía.', 'notice')}</section>`, 'acuarios');
+};
+
 function safeVal(aq, key) { return esc(aq[key] ?? ''); }
 function checkbox(aq, key) { return aq[key] ? 'checked' : ''; }
 function lDisplay(a, b, h) { return ((Number(a) || 0) * (Number(b) || 0) * (Number(h) || 0) / 1000) || 0; }
