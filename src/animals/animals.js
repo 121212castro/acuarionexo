@@ -46,18 +46,22 @@
 
   function animalCard(item) {
     const meta = inventoryMeta(item);
+    const name = animalName(item, meta);
     const cover = item.photo_url || meta.library_card?.photo_url || meta.library_card?.cover_url || meta.image_url || meta.cover_url || '';
     const summary = animalSummary(item, meta);
-    return `<button class="item inventory-card animal-inventory-card" onclick="verInventario('${esc(item.id)}')">
-      <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(animalName(item, meta))}" loading="lazy">` : '<span>□</span>'}</div>
+    return `<article class="item inventory-card animal-inventory-card" onclick="verInventario('${esc(item.id)}')">
+      <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(name)}" loading="lazy">` : '<span>□</span>'}</div>
       <div class="inventory-card-body">
         <div class="inventory-card-head">
-          <div><b>${esc(animalName(item, meta))}</b><p class="small">${esc(animalScientific(item, meta) || item.category || 'Animal')} · Cantidad ${esc(item.quantity ?? 1)}</p></div>
+          <div><b>${esc(name)}</b><p class="small">${esc(animalScientific(item, meta) || item.category || 'Animal')} · Cantidad ${esc(item.quantity ?? 1)}</p></div>
           <span>Vivo</span>
         </div>
         ${summary ? `<p>${esc(summary.length > 220 ? `${summary.slice(0, 220)}...` : summary)}</p>` : ''}
+        <div class="card-actions">
+          <button class="ghost danger" onclick="event.stopPropagation(); eliminarAnimalInventario('${esc(item.id)}', '${esc(name)}')">🗑 Eliminar</button>
+        </div>
       </div>
-    </button>`;
+    </article>`;
   }
 
   async function animales() {
@@ -84,6 +88,27 @@
       if (isCurrent(t)) render(aqHeader('animales') + `<section class="panel">${msg(e.message, 'error')}</section>`, 'acuarios');
     }
   }
+
+  window.eliminarAnimalInventario = async function (id, name = 'este organismo') {
+    const aq = currentAquarium();
+    if (!aq || !id) return;
+    const ok = confirm(`¿Eliminar ${name} del acuario?\n\nSe borrará del inventario de este acuario. Esta acción no se puede deshacer.`);
+    if (!ok) return;
+    const t = token();
+    render(aqHeader('animales') + `<section class="panel">${msg('Eliminando organismo...')}</section>`, 'acuarios');
+    try {
+      const { error } = await supabase.from('inventory_items')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', state.user.id)
+        .eq('aquarium_id', aq.id);
+      if (error) throw error;
+      if (!isCurrent(t)) return;
+      await animales();
+    } catch (e) {
+      if (isCurrent(t)) render(aqHeader('animales') + `<section class="panel">${msg(e.message, 'error')}<button onclick="animales()">Volver a animales</button></section>`, 'acuarios');
+    }
+  };
 
   window.animales = animales;
   window.formAnimal = function () { importarFichaInventario('aquarium'); };
