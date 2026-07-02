@@ -86,7 +86,7 @@ window.dashboard = async function () {
           ${state.isAdmin ? '<button onclick="adminPanel()"><span>⚙</span>Admin</button>' : ''}
         </div>
       </section>
-      <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>${emptyLine('Métricas desactivadas temporalmente en modo seguro para no cargar Supabase.')}</section>
+      <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>${emptyLine('Sin avisos importantes.')}</section>
       <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2></div>
         ${emptyLine('Actividad no calculada automáticamente mientras se investiga el consumo de base de datos.')}
       </section>`, 'inicio');
