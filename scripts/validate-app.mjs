@@ -63,6 +63,24 @@ function checkSyntax() {
   }
 }
 
+function checkCriticalWindowDuplicates() {
+  const protectedNames = ['biblioteca', 'renderBibliotecaActual', 'filtrarBiblioteca', 'formFicha', 'guardarFicha', 'verFicha', 'buscarIdentify', 'mostrarIdentify'];
+  const owners = new Map(protectedNames.map(name => [name, []]));
+  for (const script of scriptRefs()) {
+    const file = path.join(root, script);
+    if (!fs.existsSync(file)) continue;
+    const code = fs.readFileSync(file, 'utf8');
+    for (const name of protectedNames) {
+      const directAssign = new RegExp(`window\\.${name}\\s*=`, 'g');
+      const matches = code.match(directAssign) || [];
+      if (matches.length) owners.get(name).push(`${script} (${matches.length})`);
+    }
+  }
+  for (const [name, list] of owners.entries()) {
+    if (list.length > 1) fail(`Critical window function duplicated: window.${name} in ${list.join(', ')}`);
+  }
+}
+
 function createLoadContext() {
   const elements = new Map();
   function element(id) {
@@ -78,6 +96,7 @@ function createLoadContext() {
         remove() {},
         insertAdjacentHTML() {},
         scrollIntoView() {},
+        prepend() {},
         getBoundingClientRect() { return { left: 0, top: 0, width: 640, height: 360 }; },
         style: {},
         appendChild() {},
@@ -102,9 +121,10 @@ function createLoadContext() {
     history: { replaceState() {} },
     localStorage: { getItem() { return null; }, setItem() {} },
     Notification: undefined,
-    navigator: { serviceWorker: undefined },
+    navigator: { serviceWorker: undefined, clipboard: { writeText() { return Promise.resolve(); } } },
     caches: { keys() { return Promise.resolve([]); }, delete() { return Promise.resolve(true); } },
     fetch() { return Promise.resolve({ ok: true, json() { return Promise.resolve({ build: 'test' }); } }); },
+    MutationObserver: function MutationObserver() { return { observe() {}, disconnect() {} }; },
     document: {
       getElementById: element,
       querySelector() { return null; },
@@ -176,12 +196,14 @@ async function checkLoadOrder() {
     vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), context, { filename: script });
   }
   if (typeof context.biblioteca !== 'function') fail('window.biblioteca must be available when the library module is active.');
+  if (typeof context.pasarFichaAInventario !== 'function') fail('window.pasarFichaAInventario must be available before library-v3 wrappers are active.');
 }
 
 try {
   checkRefs();
   checkBuild();
   checkSyntax();
+  checkCriticalWindowDuplicates();
   await checkLoadOrder();
 } catch (error) {
   fail(error.stack || error.message);
