@@ -47,7 +47,7 @@ function emptyLine(text) {
 
 function loadDashboardStats(_list) {
   return {
-    animals: 'No calculado',
+    animals: 'Próximamente',
     photos: 'No calculado',
     measurements: 'No calculado',
     tasks: null
