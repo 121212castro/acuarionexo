@@ -43,6 +43,7 @@ Carga activa actual:
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
+- `src/admin/admin.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -51,7 +52,7 @@ Carga activa actual:
 
 `app.js` controla la barra inferior fija.
 
-Modulos visibles:
+Modulos visibles para usuario normal:
 
 - Inicio
 - Acuarios
@@ -59,6 +60,22 @@ Modulos visibles:
 - Microfauna
 - Avisos
 - Inventario
+
+Modulo visible solo con rol activo:
+
+- Admin
+
+## Admin restringido
+
+`src/admin/admin.js` es el modulo del Panel Admin.
+
+Reglas:
+
+- El boton Admin solo aparece con `state.isAdmin` verdadero.
+- `state.isAdmin` se calcula desde `admin_roles`.
+- Roles admitidos: `owner`, `admin`, `trusted_admin`.
+- `adminPanel()` bloquea acceso sin permiso.
+- La migracion base es `supabase/migrations/20260702_admin_roles.sql`.
 
 ## Microfauna
 
@@ -105,14 +122,6 @@ Directorios de trabajo:
 - `src/library/ui/`
 - `src/library/ficha/`
 
-Responsabilidades:
-
-- `src/library/core/`: contrato y utilidades.
-- `src/library/inventory/`: importacion y enlace con inventario.
-- `src/library/images/`: imagenes.
-- `src/library/ui/`: render y UI.
-- `src/library/ficha/`: ficha, edicion, vista, auditoria y entrada desde Chat.
-
 ## Estado Biblioteca 02/07/2026
 
 - Contratos de ficha reforzados.
@@ -120,7 +129,7 @@ Responsabilidades:
 - `Pegar ficha del Chat` activo dentro de edicion.
 - `Crear ficha desde Chat` activo en Biblioteca.
 - Fuentes editables en ficha.
-- `scripts/validate-app.mjs` detecta duplicados criticos de funciones globales de Biblioteca.
+- `scripts/validate-app.mjs` detecta duplicados criticos de funciones globales de Biblioteca y Admin.
 - `scripts/prepare-mobile-bundle.mjs` esta alineado con `index.html`.
 
 Edge Functions relevantes:
@@ -146,6 +155,7 @@ Capacitor usa:
 Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
+- Admin: `src/admin/admin.js` y `supabase/migrations/20260702_admin_roles.sql`.
 - Acuarios: `src/aquariums/aquariums.js`.
 - Microfauna: `src/microfauna/microfauna.js`.
 - Biblioteca/Fichas: `src/library/library-v3.js` y submodulos de `src/library/`.
