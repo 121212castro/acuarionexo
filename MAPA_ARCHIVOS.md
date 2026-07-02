@@ -19,8 +19,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
-- `src/library/library.js` cargado por el puente `src/library/ui/library.js`
-- `src/library/ficha/ficha-identify.js`
+- `src/library/inventory/library-inventory-import.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals.js`
@@ -41,6 +40,23 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `app-version.json`
 - `manifest.webmanifest`
 - `icon-512.png`
+
+## Limpieza Biblioteca 02/07/2026
+
+Eliminados del repositorio por estar fuera de carga activa o duplicar funciones:
+
+- `src/library/library.js`
+- `src/library/ficha/ficha-identify.js`
+- `src/library/ficha/ficha-view.js`
+
+Estado corregido:
+
+- `src/library/ui/library.js` ya no carga `library.js` con `document.write`.
+- `src/library/inventory/library-inventory-import.js` contiene la importacion de fichas validadas a inventario.
+- `src/library/library-v3.js` es el dueño real de Biblioteca/Fichas.
+- `src/library/ficha/ficha-chat-import.js` crea fichas nuevas desde texto pegado del Chat.
+- `scripts/prepare-mobile-bundle.mjs` esta alineado con `index.html`.
+- `scripts/validate-app.mjs` detecta duplicados criticos de funciones `window.*` de Biblioteca.
 
 ## App movil
 
@@ -64,10 +80,9 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
 - `src/library/core/library-schema.js`: contrato oficial reforzado de Biblioteca V3/V4 expuesto como `window.ANX.LibrarySchema`; define contratos, plantillas, campos obligatorios, normalizacion de fuentes y auditoria cliente.
-- `src/library/ui/library.js`: puente de carga de Biblioteca oficial hacia `src/library/library.js`.
-- `src/library/library.js`: biblioteca/fichas heredado; sigue conservado como modulo funcional cargado por el puente UI.
-- `src/library/ficha/ficha-identify.js`: identificacion de fichas; expone funciones de identificacion separadas.
-- `src/library/library-v3.js`: flujo Biblioteca V3/V4 de identificacion, borrador, edicion, auditoria, publicacion, borrado, inventario, copiado de apartados y pegado de texto en ficha existente.
+- `src/library/ui/library.js`: marcador UI de Biblioteca; no carga modulos heredados.
+- `src/library/inventory/library-inventory-import.js`: pasar fichas validadas/publicadas a inventario general o de acuario.
+- `src/library/library-v3.js`: flujo Biblioteca V3/V4 de identificacion, borrador, edicion, auditoria, publicacion, borrado, copiado de apartados y pegado de texto en ficha existente.
 - `src/library/ficha/ficha-chat-import.js`: creador de fichas nuevas desde texto pegado del Chat; reparte apartados a campos de contrato, crea fila en `library_entries` y abre la ficha para revisar/auditar.
 - `src/animals/animals.js`: animales.
 - `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
@@ -85,53 +100,21 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 
 ## Arquitectura preparada de Biblioteca
 
-Fase 1 creada sin mover funciones ni cambiar comportamiento. Estos directorios quedan preparados para la refactorizacion modular posterior:
+Directorios activos o preparados:
 
-- `src/library/core/.gitkeep`
-- `src/library/inventory/.gitkeep`
-- `src/library/images/.gitkeep`
-- `src/library/ui/.gitkeep`
-- `src/library/ficha/.gitkeep`
+- `src/library/core/`
+- `src/library/inventory/`
+- `src/library/images/`
+- `src/library/ui/`
+- `src/library/ficha/`
 
-Responsabilidades previstas:
+Responsabilidades:
 
 - `src/library/core/`: nucleo, acceso a datos, utilidades, busqueda y esquema.
 - `src/library/inventory/`: importacion, enlace y validacion de inventario.
 - `src/library/images/`: subida, seleccion, previsualizacion y utilidades de imagen.
 - `src/library/ui/`: render, tarjetas, toolbar y filtros.
-- `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar, campos de ficha e importacion desde texto del Chat.
-
-## Fase 2 Biblioteca
-
-Primer modulo movido:
-
-- Antes: `src/library/library-schema.js`
-- Ahora: `src/library/core/library-schema.js`
-
-Segundo paso ejecutado:
-
-- `src/library/ui/library.js` creado como puente de carga controlado.
-- `index.html` carga `src/library/ui/library.js`.
-- `src/library/library.js` se mantiene conservado porque el puente lo carga de forma sincronica.
-- La ruta antigua `src/library/library.js` no se elimina en este paso.
-
-Resultado:
-
-- `index.html` carga `src/library/core/library-schema.js` antes de `src/library/ui/library.js`, `ficha-identify.js`, `library-v3.js` y `ficha-chat-import.js`.
-- La ruta antigua `src/library/library-schema.js` ha sido eliminada.
-- `src/library/ficha/ficha-view.js` no esta cargado en `index.html` para evitar duplicar y pisar `window.verFicha`.
-- No se ha movido aun todo el modulo funcional de `library-v3.js` a submodulos.
-
-## Estado Biblioteca 02/07/2026
-
-Cambios activos documentados:
-
-- `src/library/ficha/ficha-identify.js`: identificacion separada.
-- `src/library/core/library-schema.js`: contratos reforzados para fichas completas; campos obligatorios ampliados por tipo de ficha; auditoria contra campos pobres y frases genericas.
-- `src/library/library-v3.js`: boton `Copiar apartados para Chat`; boton `Pegar ficha del Chat` dentro de edicion de ficha existente; fuentes editables; control de portada/foto de ficha.
-- `src/library/ficha/ficha-chat-import.js`: boton `Crear ficha desde Chat` en Biblioteca para crear fichas nuevas desde texto pegado; requiere tipo, texto completo y fuentes con URL.
-- `library-mobile-overflow-fix.css`: prevencion de desbordamiento horizontal y ajuste movil.
-- `index.html`: carga `ficha-chat-import.js` despues de `library-v3.js`.
+- `src/library/ficha/`: generar, editar, auditar, publicar, ver, borrar, campos de ficha e importacion desde texto del Chat.
 
 ## Edge Functions Supabase Biblioteca
 
@@ -158,25 +141,13 @@ Funciones relevantes:
 ## Validacion
 
 - `package.json`: comandos `npm run check` y scripts Capacitor.
-- `scripts/validate-app.mjs`: comprueba referencias de `index.html`, build, sintaxis JS y orden de carga.
+- `scripts/validate-app.mjs`: comprueba referencias de `index.html`, build, sintaxis JS, orden de carga y duplicados criticos de `window.*`.
 - `scripts/prepare-mobile-bundle.mjs`: prepara paquete interno movil.
-
-## Nota de estabilidad 21/06/2026
-
-- Biblioteca/Fichas esta activa como modulo separado y solo consulta `library_entries` al abrir Biblioteca.
-- Mediciones completas estan aisladas en `src/parameters/measurements-advanced.js`.
-- App movil se prepara con Capacitor llevando los archivos dentro del paquete.
-- No hay parches JS cargados al final que sustituyan modulos principales.
-
-## Nota Fase 1 Biblioteca 26/06/2026
-
-- Se ha creado solo la arquitectura modular vacia bajo `src/library/`.
-- No se movio ninguna funcion en esa fase.
-- `src/library/library.js` sigue conservado como modulo heredado cargado por el puente UI.
 
 ## Nota de control 02/07/2026
 
 - Para saber que pantalla controla Biblioteca hay que revisar `index.html` y el orden de carga.
 - La vista activa de ficha la controla `src/library/library-v3.js`.
+- La importacion a inventario la controla `src/library/inventory/library-inventory-import.js`.
 - La creacion nueva desde texto pegado la controla `src/library/ficha/ficha-chat-import.js`.
 - La generacion IA real depende de Edge Functions desplegadas en Supabase, no solo del codigo en GitHub.
