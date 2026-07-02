@@ -28,7 +28,7 @@ Carga activa actual:
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
-- `src/library/ficha/ficha-identify.js`
+- `src/library/inventory/library-inventory-import.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals.js`
@@ -47,28 +47,23 @@ Carga activa actual:
 - `update-manager.js`
 - `notifications.js`
 
-## Nucleo funcional
-
-`app.js` contiene configuracion compartida, estado, helpers DOM, render, cabecera de acuario, subida de imagenes y `window.ANX`.
-
-`src/auth/auth.js` se carga al final porque ejecuta el arranque.
-
 ## Biblioteca/Fichas estado actual
 
 Modulos activos:
 
-- `src/library/core/library-schema.js`: contrato oficial reforzado de Biblioteca; expone `window.ANX.LibrarySchema`; contiene contratos por tipo, plantillas, normalizacion de fuentes y auditoria cliente.
-- `src/library/ui/library.js`: puente de carga controlado hacia `src/library/library.js`.
-- `src/library/library.js`: modulo heredado conservado, cargado por el puente UI.
-- `src/library/ficha/ficha-identify.js`: identificacion separada de fichas.
-- `src/library/library-v3.js`: vista activa de Biblioteca/Fichas; define `window.verFicha`; gestiona identificar, crear borrador, editar, auditar, publicar, borrar, pasar a inventario, copiar apartados, fuentes editables y pegar ficha del Chat en una ficha existente.
-- `src/library/ficha/ficha-chat-import.js`: crea fichas nuevas desde texto pegado del Chat desde la pantalla principal de Biblioteca.
+- `src/library/core/library-schema.js`: contrato oficial reforzado de Biblioteca.
+- `src/library/ui/library.js`: marcador UI; no carga modulos heredados.
+- `src/library/inventory/library-inventory-import.js`: importacion de fichas validadas o publicadas a inventario.
+- `src/library/library-v3.js`: dueño real de Biblioteca/Fichas.
+- `src/library/ficha/ficha-chat-import.js`: creacion de fichas nuevas desde texto pegado del Chat.
 
-Modulo excluido de carga activa:
+Eliminados por duplicados o no cargados:
 
-- `src/library/ficha/ficha-view.js`: no se carga en `index.html` para evitar duplicar y pisar `window.verFicha`.
+- `src/library/library.js`
+- `src/library/ficha/ficha-identify.js`
+- `src/library/ficha/ficha-view.js`
 
-## Arquitectura Biblioteca preparada
+## Arquitectura Biblioteca
 
 Directorios de trabajo:
 
@@ -78,31 +73,31 @@ Directorios de trabajo:
 - `src/library/ui/`
 - `src/library/ficha/`
 
-Responsabilidades previstas:
+Responsabilidades:
 
-- `src/library/core/`: nucleo, esquema, utilidades y busqueda.
+- `src/library/core/`: contrato y utilidades.
 - `src/library/inventory/`: importacion y enlace con inventario.
-- `src/library/images/`: subida y gestion de imagenes.
-- `src/library/ui/`: render, tarjetas, filtros y toolbar.
-- `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar, campos e importacion desde texto del Chat.
+- `src/library/images/`: imagenes.
+- `src/library/ui/`: render y UI.
+- `src/library/ficha/`: ficha, edicion, vista, auditoria y entrada desde Chat.
 
 ## Estado Biblioteca 02/07/2026
 
-- Contratos de ficha reforzados para evitar fichas pobres.
-- Boton `Copiar apartados para Chat` activo.
-- Boton `Pegar ficha del Chat` activo dentro de edicion de ficha existente.
-- Boton `Crear ficha desde Chat` activo en la pantalla principal de Biblioteca.
+- Contratos de ficha reforzados.
+- `Copiar apartados para Chat` activo.
+- `Pegar ficha del Chat` activo dentro de edicion.
+- `Crear ficha desde Chat` activo en Biblioteca.
 - Fuentes editables en ficha.
-- Creador desde texto exige fuentes con URL.
-- Generacion IA real depende de Edge Functions desplegadas en Supabase.
+- `scripts/validate-app.mjs` detecta duplicados criticos de funciones globales de Biblioteca.
+- `scripts/prepare-mobile-bundle.mjs` esta alineado con `index.html`.
 
 Edge Functions relevantes:
 
-- `library-identify`: identifica entidad.
-- `library-generate-draft`: genera, audita, repara y no guarda fichas pobres si la auditoria final falla.
-- `library-audit-card`: audita contra contrato reforzado.
-- `library-publish`: publica fichas validadas.
-- `supabase/functions/_shared/library-v3.ts`: contratos, fuentes, auditoria y reparacion de JSON.
+- `library-identify`
+- `library-generate-draft`
+- `library-audit-card`
+- `library-publish`
+- `supabase/functions/_shared/library-v3.ts`
 
 ## Entrada real movil
 
@@ -120,14 +115,15 @@ Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
 - Acuarios: `src/aquariums/aquariums.js`.
-- Biblioteca/Fichas: `src/library/ui/library.js`, `src/library/library.js`, `src/library/library-v3.js` y submodulos de `src/library/`.
+- Biblioteca/Fichas: `src/library/library-v3.js` y submodulos de `src/library/`.
+- Importar fichas a inventario: `src/library/inventory/library-inventory-import.js`.
 - Crear ficha nueva desde texto del Chat: `src/library/ficha/ficha-chat-import.js`.
 - Contratos frontend: `src/library/core/library-schema.js`.
-- Contratos y generacion de Edge Functions: `supabase/functions/_shared/library-v3.ts`, `supabase/functions/library-generate-draft/index.ts`, `supabase/functions/library-audit-card/index.ts`.
+- Edge Functions de Biblioteca: `supabase/functions/`.
 - Inventario: `src/inventory/inventory.js`.
 - Parametros: `src/parameters/parameters.js` y `src/parameters/measurements-advanced.js`.
-- IA/Avisos: `src/ai/ai.js`, `src/ai/ai-library-v3.js`, `src/ai/ai-alerts-extra.js`, `src/tasks/tasks.js`.
-- Mapa: `src/map/map.js` y `src/map/map-v3-model.js`.
+- IA/Avisos: `src/ai/` y `src/tasks/tasks.js`.
+- Mapa: `src/map/`.
 - Fotos: `src/photos/photos.js`.
 - Compartido: `app.js`.
 
@@ -136,7 +132,7 @@ Corregir siempre el modulo dueno real.
 
 ## Validacion oficial
 
-Antes de subir cambios debe pasar:
+Antes de cerrar cambios debe pasar:
 
 - `npm run check`
 
