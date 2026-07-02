@@ -6,15 +6,13 @@ App web publicada: `https://121212castro.github.io/acuarionexo/`.
 
 App movil: Capacitor, con archivos internos generados en `www/`.
 
-Datos y autenticacion: Supabase `vqpxhozavfzgtkqscncs`.
-
-Regla base: el checkout local no es entorno de ejecucion ni despliegue. Solo se usa de forma temporal para auditar, preparar y subir cambios a GitHub/Supabase.
+Datos y autenticacion: Supabase.
 
 ## Entrada real web
 
 `index.html` es la unica entrada web publicada por GitHub Pages.
 
-Carga activa:
+Carga activa actual:
 
 - `styles.css`
 - `aquarium-map.css`
@@ -32,6 +30,7 @@ Carga activa:
 - `src/library/ui/library.js`
 - `src/library/ficha/ficha-identify.js`
 - `src/library/library-v3.js`
+- `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
@@ -48,60 +47,30 @@ Carga activa:
 - `update-manager.js`
 - `notifications.js`
 
-## Entrada real movil
-
-Capacitor usa:
-
-- `capacitor.config.json`
-- `webDir`: `www`
-- `scripts/prepare-mobile-bundle.mjs`
-- `package.json` scripts `mobile:*`
-
-`www/`, `android/` e `ios/` son generados y no se editan a mano.
-
-Android fuera de tienda:
-
-- Workflow: `.github/workflows/android-debug-apk.yml`
-- Artefacto: `acuarionexo-debug-apk`
-
-IOS fuera de tienda:
-
-- Requiere firma Apple: Ad Hoc, TestFlight o Apple Developer Program.
-- El proyecto iOS se genera con `npm run mobile:add:ios` y se firma desde Xcode o CI con secretos Apple.
-
 ## Nucleo funcional
 
-`app.js` es el nucleo coordinador. Contiene configuracion compartida, estado, helpers DOM, render, cabecera de acuario, subida de imagenes y el objeto `window.ANX`.
+`app.js` contiene configuracion compartida, estado, helpers DOM, render, cabecera de acuario, subida de imagenes y `window.ANX`.
 
-Las pantallas y reglas de negocio viven en modulos:
+`src/auth/auth.js` se carga al final porque ejecuta el arranque.
 
-- `src/aquariums/aquariums.js`: dashboard, acuarios y panel de acuario.
-- `src/library/core/library-schema.js`: contrato oficial de Biblioteca V3/V4; expone `window.ANX.LibrarySchema`.
-- `src/library/ui/library.js`: puente de carga controlado hacia Biblioteca/Fichas.
-- `src/library/library.js`: biblioteca, fichas y borradores IA; sigue conservado como modulo funcional cargado por el puente UI.
-- `src/library/library-v3.js`: Biblioteca V3/V4, dependiente de `window.ANX.LibrarySchema`; define la vista activa de ficha `window.verFicha`.
-- `src/library/ficha/ficha-identify.js`: identificacion de fichas.
-- `src/animals/animals.js`: habitantes del acuario.
-- `src/map/map.js`: mapa IA, foto base, objetos colocables y render 3D real.
-- `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
-- `src/photos/photos.js`: galeria y subida de fotos.
-- `src/inventory/inventory.js`: inventario general y por acuario.
-- `src/microfauna/microfauna.js`: cultivos de microfauna.
-- `src/ai/ai.js`: reglas IA, interpretacion de parametros y avisos.
-- `src/ai/ai-library-v3.js`: apoyo IA para Biblioteca V3.
-- `src/ai/ai-alerts-extra.js`: aportes de revision IA diaria sin pisar la pantalla principal.
-- `src/parameters/parameters.js`: pantalla y registro de mediciones.
-- `src/parameters/measurements-advanced.js`: medicion completa.
-- `src/tasks/tasks.js`: tareas y avisos.
-- `src/auth/auth.js`: login, registro, recuperacion y arranque.
+## Biblioteca/Fichas estado actual
 
-`src/auth/auth.js` se carga despues de los demas modulos porque ejecuta `boot()`.
+Modulos activos:
 
-Ningun modulo debe crear una app paralela. Si expone funciones para botones inline, debe hacerlo de forma explicita en `window` y mantener el estado compartido en `window.ANX.state`.
+- `src/library/core/library-schema.js`: contrato oficial reforzado de Biblioteca; expone `window.ANX.LibrarySchema`; contiene contratos por tipo, plantillas, normalizacion de fuentes y auditoria cliente.
+- `src/library/ui/library.js`: puente de carga controlado hacia `src/library/library.js`.
+- `src/library/library.js`: modulo heredado conservado, cargado por el puente UI.
+- `src/library/ficha/ficha-identify.js`: identificacion separada de fichas.
+- `src/library/library-v3.js`: vista activa de Biblioteca/Fichas; define `window.verFicha`; gestiona identificar, crear borrador, editar, auditar, publicar, borrar, pasar a inventario, copiar apartados, fuentes editables y pegar ficha del Chat en una ficha existente.
+- `src/library/ficha/ficha-chat-import.js`: crea fichas nuevas desde texto pegado del Chat desde la pantalla principal de Biblioteca.
+
+Modulo excluido de carga activa:
+
+- `src/library/ficha/ficha-view.js`: no se carga en `index.html` para evitar duplicar y pisar `window.verFicha`.
 
 ## Arquitectura Biblioteca preparada
 
-Fase 1 creada para refactorizacion modular, sin mover funciones y sin alterar la carga activa de `index.html`:
+Directorios de trabajo:
 
 - `src/library/core/`
 - `src/library/inventory/`
@@ -109,60 +78,61 @@ Fase 1 creada para refactorizacion modular, sin mover funciones y sin alterar la
 - `src/library/ui/`
 - `src/library/ficha/`
 
-Estado activo tras ajuste de ficha:
-
-- `src/library/core/library-schema.js` es el primer modulo movido.
-- `src/library/ui/library.js` se carga desde `index.html` como puente controlado hacia Biblioteca/Fichas.
-- `src/library/ficha/ficha-identify.js` se carga desde `index.html`.
-- `src/library/ficha/ficha-view.js` queda fuera de la carga activa para evitar duplicar y pisar `window.verFicha`.
-- `src/library/library.js` sigue conservado y no se elimina en este paso.
-- `src/library/library-v3.js` sigue cargado desde su ubicacion original y conserva la vista activa de ficha.
-- `index.html` carga `src/library/core/library-schema.js` antes de `src/library/ui/library.js` y `library-v3.js`.
-- La ruta antigua `src/library/library-schema.js` ha sido eliminada.
-- No se ha movido ningun otro modulo funcional.
-
 Responsabilidades previstas:
 
-- `src/library/core/`: `library-core.js`, `library-db.js`, `library-utils.js`, `library-search.js`, `library-schema.js`.
-- `src/library/inventory/`: `inventory-import.js`, `inventory-link.js`, `inventory-validation.js`.
-- `src/library/images/`: `image-upload.js`, `image-picker.js`, `image-preview.js`, `image-utils.js`.
-- `src/library/ui/`: `library-ui.js`, `library-render.js`, `library-cards.js`, `library-toolbar.js`, `library-filters.js`.
-- `src/library/ficha/`: `ficha-identify.js`, `ficha-generate.js`, `ficha-edit.js`, `ficha-audit.js`, `ficha-publish.js`, `ficha-view.js`, `ficha-delete.js`, `ficha-fields.js`.
+- `src/library/core/`: nucleo, esquema, utilidades y busqueda.
+- `src/library/inventory/`: importacion y enlace con inventario.
+- `src/library/images/`: subida y gestion de imagenes.
+- `src/library/ui/`: render, tarjetas, filtros y toolbar.
+- `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar, campos e importacion desde texto del Chat.
 
-## Datos externos
+## Estado Biblioteca 02/07/2026
 
-Supabase es la fuente de:
+- Contratos de ficha reforzados para evitar fichas pobres.
+- Boton `Copiar apartados para Chat` activo.
+- Boton `Pegar ficha del Chat` activo dentro de edicion de ficha existente.
+- Boton `Crear ficha desde Chat` activo en la pantalla principal de Biblioteca.
+- Fuentes editables en ficha.
+- Creador desde texto exige fuentes con URL.
+- Generacion IA real depende de Edge Functions desplegadas en Supabase.
 
-- usuarios y sesiones
-- acuarios
-- fichas
-- fotos
-- parametros
-- tareas
-- inventario
-- avisos
-- storage de imagenes
+Edge Functions relevantes:
 
-No se debe introducir persistencia local como fuente principal de datos.
+- `library-identify`: identifica entidad.
+- `library-generate-draft`: genera, audita, repara y no guarda fichas pobres si la auditoria final falla.
+- `library-audit-card`: audita contra contrato reforzado.
+- `library-publish`: publica fichas validadas.
+- `supabase/functions/_shared/library-v3.ts`: contratos, fuentes, auditoria y reparacion de JSON.
+
+## Entrada real movil
+
+Capacitor usa:
+
+- `capacitor.config.json`
+- `scripts/prepare-mobile-bundle.mjs`
+- `package.json` scripts `mobile:*`
+
+`www/`, `android/` e `ios/` son generados y no se editan a mano.
 
 ## Regla de mantenimiento
 
 Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
-- Acuarios/navegacion de acuario: `src/aquariums/aquariums.js`.
-- Biblioteca/Fichas: `src/library/ui/library.js`, `src/library/library.js`, `src/library/library-v3.js` y submodulos de `src/library/` segun avance la refactorizacion.
+- Acuarios: `src/aquariums/aquariums.js`.
+- Biblioteca/Fichas: `src/library/ui/library.js`, `src/library/library.js`, `src/library/library-v3.js` y submodulos de `src/library/`.
+- Crear ficha nueva desde texto del Chat: `src/library/ficha/ficha-chat-import.js`.
+- Contratos frontend: `src/library/core/library-schema.js`.
+- Contratos y generacion de Edge Functions: `supabase/functions/_shared/library-v3.ts`, `supabase/functions/library-generate-draft/index.ts`, `supabase/functions/library-audit-card/index.ts`.
 - Inventario: `src/inventory/inventory.js`.
-- Parametros: `src/parameters/parameters.js`.
-- Medicion completa: `src/parameters/measurements-advanced.js`.
-- Avisos/IA: `src/ai/ai.js` y `src/tasks/tasks.js`.
-- Mapa: `src/map/map.js`.
+- Parametros: `src/parameters/parameters.js` y `src/parameters/measurements-advanced.js`.
+- IA/Avisos: `src/ai/ai.js`, `src/ai/ai-library-v3.js`, `src/ai/ai-alerts-extra.js`, `src/tasks/tasks.js`.
+- Mapa: `src/map/map.js` y `src/map/map-v3-model.js`.
 - Fotos: `src/photos/photos.js`.
 - Compartido: `app.js`.
-- Empaquetado movil: `capacitor.config.json`, `scripts/prepare-mobile-bundle.mjs`, `mobile/README.md`.
 
 No volver a meter funcionalidades grandes en `app.js`.
-No crear archivos `*-fix.js` o parches que pisen funciones al final del `index.html`; corregir siempre el modulo dueno real.
+Corregir siempre el modulo dueno real.
 
 ## Validacion oficial
 
@@ -174,8 +144,6 @@ Si el cambio afecta a movil:
 
 - `npm run mobile:prepare`
 
-Ese flujo comprueba que los archivos activos existen y que el paquete interno `www/` se puede generar.
-
 ## Regla antes de editar
 
 Antes de cambiar cualquier archivo:
@@ -183,5 +151,5 @@ Antes de cambiar cualquier archivo:
 1. Leer `ARBOL_MAESTRO.md`.
 2. Leer `REGLAS_DE_CAMBIO.md`.
 3. Leer `CHECKLIST_ANTES_DE_EDITAR.md`.
-4. Confirmar que el cambio pertenece a GitHub/Supabase, no a un entorno local.
+4. Confirmar que el cambio pertenece a GitHub/Supabase.
 5. Confirmar que `index.html` y `scripts/prepare-mobile-bundle.mjs` siguen alineados.
