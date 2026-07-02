@@ -128,7 +128,7 @@ function resumenAcuario() {
   const type = aq.aquarium_type || aq.type || 'Acuario';
   const created = aq.created_at ? new Date(aq.created_at).toLocaleDateString('es-ES') : 'Sin fecha';
   render(aqHeader('resumen') + `<section class="panel">
-    <div class="panel-head"><h2>Resumen</h2><div><button onclick="editarNotaAcuario()">Editar nota</button><button onclick="listaAcuarios()">Volver</button></div></div>
+    <div class="panel-head"><h2>Resumen</h2><div><button onclick="editarAcuario()">Editar acuario</button><button onclick="listaAcuarios()">Volver</button></div></div>
     <div class="quick-actions">
       ${dashboardStat('Tipo', type)}
       ${dashboardStat('Litros', `${liters} L`)}
@@ -138,30 +138,62 @@ function resumenAcuario() {
   </section>`, 'acuarios');
 }
 
-window.editarNotaAcuario = async function () {
+function selectTypeOptions(current) {
+  const types = [['reef','reef'],['freshwater','freshwater'],['hospital','hospital'],['quarantine','quarantine'],['other','other']];
+  return types.map(function (item) { return `<option value="${esc(item[0])}" ${String(current || '') === item[0] ? 'selected' : ''}>${esc(item[1])}</option>`; }).join('');
+}
+
+window.editarAcuario = function () {
   const aq = currentAquarium();
   if (!aq) return listaAcuarios();
-  const current = aq.notes || '';
-  const next = prompt('Editar nota del acuario', current);
-  if (next === null) return;
+  const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '';
+  render(aqHeader('resumen') + `<section class="panel">
+    <div class="panel-head"><h2>Editar acuario</h2><button onclick="openAqSection('resumen')">Cancelar</button></div>
+    <label>Nombre</label><input id="editAqName" value="${esc(aq.name || '')}">
+    <label>Tipo</label><select id="editAqType">${selectTypeOptions(aq.aquarium_type || aq.type || 'reef')}</select>
+    <label>Litros reales</label><input id="editAqLiters" type="number" step="0.1" value="${esc(liters)}">
+    <label>Nota</label><textarea id="editAqNotes">${esc(aq.notes || '')}</textarea>
+    <button class="primary" onclick="guardarAcuarioEditado()">Guardar cambios</button>
+    <div id="editAqStatus"></div>
+  </section>`, 'acuarios');
+};
+
+window.guardarAcuarioEditado = async function () {
+  const aq = currentAquarium();
+  const box = byId('editAqStatus');
+  if (!aq) return listaAcuarios();
   try {
+    const name = val('editAqName');
+    const aquarium_type = val('editAqType') || 'reef';
+    const litersRaw = val('editAqLiters');
+    const notes = val('editAqNotes');
+    if (!name) throw new Error('El nombre del acuario es obligatorio.');
+    const update = {
+      name,
+      aquarium_type,
+      manual_real_liters: litersRaw === '' ? null : Number(litersRaw),
+      notes: notes || null
+    };
+    if (box) box.innerHTML = msg('Guardando cambios...', 'notice');
     const { data, error } = await supabase
       .from('aquariums')
-      .update({ notes: next.trim() || null })
+      .update(update)
       .eq('id', aq.id)
       .eq('user_id', state.user.id)
       .select('*')
       .single();
     if (error) throw error;
-    const saved = data || { ...aq, notes: next.trim() || null };
+    const saved = data || { ...aq, ...update };
     state.aquarium = { ...aq, ...saved };
     window.q = state.aquarium;
     state.aquariums = (state.aquariums || []).map(function (item) { return String(item.id) === String(aq.id) ? { ...item, ...saved } : item; });
     resumenAcuario();
   } catch (e) {
-    render(aqHeader('resumen') + `<section class="panel">${msg(e.message, 'error')}<button onclick="openAqSection('resumen')">Volver</button></section>`, 'acuarios');
+    if (box) box.innerHTML = msg(e.message, 'error');
   }
 };
+
+window.editarNotaAcuario = window.editarAcuario;
 
 window.openA = function (id) {
   const aq = (state.aquariums || []).find(function (item) { return String(item.id) === String(id); });
