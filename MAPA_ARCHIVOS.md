@@ -41,6 +41,55 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `manifest.webmanifest`
 - `icon-512.png`
 
+## Navegacion principal
+
+`app.js` controla la barra inferior fija.
+
+Modulos visibles:
+
+- Inicio
+- Acuarios
+- Biblioteca
+- Microfauna
+- Avisos
+- Inventario
+
+## Microfauna
+
+`src/microfauna/microfauna.js` es modulo principal visible.
+
+Funciones activas:
+
+- `window.microfauna`
+- `window.formMicrofauna`
+- `window.saveMicrofauna`
+- `window.registrarMicrofauna`
+
+Cultivos incluidos:
+
+- Rotiferos
+- Copepodos
+- Fitoplancton
+- Artemia
+- Infusorios
+
+Gestiona:
+
+- cultivos activos
+- estado del cultivo
+- acuario vinculado opcional
+- volumen
+- salinidad
+- temperatura
+- densidad
+- alimento
+- tomas por dia
+- cambios de agua
+- recolecta
+- eclosion de artemia
+- notas
+- proximas tareas de alimentar, cambio y recolecta
+
 ## Limpieza Biblioteca 02/07/2026
 
 Eliminados del repositorio por estar fuera de carga activa o duplicar funciones:
@@ -73,6 +122,7 @@ Estado corregido:
 - Estado comun `window.ANX.state`.
 - Helpers DOM y render.
 - Navegacion visual compartida.
+- Barra inferior fija con Microfauna visible.
 - Cabecera de acuario.
 - Subida de imagenes compartida.
 
@@ -89,7 +139,7 @@ Estado corregido:
 - `src/map/map.js`: mapa IA y escena 3D real.
 - `src/photos/photos.js`: fotos.
 - `src/inventory/inventory.js`: inventario.
-- `src/microfauna/microfauna.js`: cultivos de microfauna.
+- `src/microfauna/microfauna.js`: cultivos de microfauna como modulo principal.
 - `src/ai/ai.js`: motor IA y avisos sugeridos.
 - `src/ai/ai-library-v3.js`: apoyo IA para Biblioteca V3.
 - `src/ai/ai-alerts-extra.js`: revision extendida de avisos sin sobrescribir pantallas.
@@ -150,4 +200,5 @@ Funciones relevantes:
 - La vista activa de ficha la controla `src/library/library-v3.js`.
 - La importacion a inventario la controla `src/library/inventory/library-inventory-import.js`.
 - La creacion nueva desde texto pegado la controla `src/library/ficha/ficha-chat-import.js`.
+- Microfauna es modulo principal visible desde la barra inferior y lo controla `src/microfauna/microfauna.js`.
 - La generacion IA real depende de Edge Functions desplegadas en Supabase, no solo del codigo en GitHub.
