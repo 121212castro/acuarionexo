@@ -1,4 +1,4 @@
--- AcuarioNexo · roles restringidos de administración
+-- AcuarioNexo · roles restringidos de administracion
 -- Aplicar en Supabase antes de usar el Panel Admin.
 
 create table if not exists public.admin_roles (
@@ -28,12 +28,14 @@ as $$
   );
 $$;
 
-create policy if not exists "admin_roles_read_own"
+drop policy if exists admin_roles_read_own on public.admin_roles;
+create policy admin_roles_read_own
   on public.admin_roles
   for select
   using (auth.uid() = user_id);
 
-create policy if not exists "admin_roles_owner_read_all"
+drop policy if exists admin_roles_owner_read_all on public.admin_roles;
+create policy admin_roles_owner_read_all
   on public.admin_roles
   for select
   using (
@@ -46,7 +48,8 @@ create policy if not exists "admin_roles_owner_read_all"
     )
   );
 
-create policy if not exists "admin_roles_owner_insert"
+drop policy if exists admin_roles_owner_insert on public.admin_roles;
+create policy admin_roles_owner_insert
   on public.admin_roles
   for insert
   with check (
@@ -59,7 +62,8 @@ create policy if not exists "admin_roles_owner_insert"
     )
   );
 
-create policy if not exists "admin_roles_owner_update"
+drop policy if exists admin_roles_owner_update on public.admin_roles;
+create policy admin_roles_owner_update
   on public.admin_roles
   for update
   using (
