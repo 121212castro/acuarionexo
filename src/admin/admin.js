@@ -9,9 +9,9 @@
     script.dataset.module = module;
     document.head.appendChild(script);
   }
-  loadScriptOnce('src/admin/admin-extra.js?v=pez-marino-contract-20260702', 'admin-extra');
-  loadScriptOnce('src/admin/report-issue.js?v=pez-marino-contract-20260702', 'report-issue');
-  loadScriptOnce('src/admin/issue-entry.js?v=pez-marino-contract-20260702', 'issue-entry');
+  loadScriptOnce('src/admin/admin-extra.js?v=admin-tools-20260702', 'admin-extra');
+  loadScriptOnce('src/admin/report-issue.js?v=incidencia-20260702-2', 'report-issue');
+  loadScriptOnce('src/admin/issue-entry.js?v=incidencia-20260702-2', 'issue-entry');
 
   const ADMIN_ROLES = new Set(['owner', 'admin', 'trusted_admin']);
 
