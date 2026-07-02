@@ -1,4 +1,5 @@
-/* AcuarioNexo · Biblioteca oficial · puente de carga Fase 2 */
+/* AcuarioNexo · Biblioteca UI · sin carga heredada */
 (function () {
-  document.write('<script src="src/library/library.js?v=' + encodeURIComponent(window.ACUARIONEXO_BUILD || 'library-v3b-20260624') + '"><\/script>');
+  window.ANX = window.ANX || {};
+  window.ANX.LibraryUI = window.ANX.LibraryUI || { active: true, owner: 'src/library/library-v3.js' };
 })();
