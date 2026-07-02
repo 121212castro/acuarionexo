@@ -1,10 +1,11 @@
 /* AcuarioNexo · inventory */
 (function () {
-  const { supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage } = window.ANX;
+  const { supabase, state, esc, byId, val, num, msg, token, isCurrent, currentAquarium, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage } = window.ANX;
 
 const generalInventoryCategories = ['Medicamentos', 'Sales', 'Aditivos', 'Alimentos', 'Tests', 'Material general'];
 const marineInventoryCategories = ['Peces marinos', 'Corales', 'Invertebrados', 'Microfauna', 'Equipos'];
 const freshwaterInventoryCategories = ['Peces', 'Invertebrados', 'Plantas', 'Equipos'];
+const liveCategories = new Set(['Peces marinos', 'Peces', 'Corales', 'Invertebrados', 'Plantas', 'Microfauna']);
 const importedSectionLabels = {
   summary: 'Resumen', identity: 'Identificacion', habitat: 'Habitat', aquarium: 'Acuario recomendado',
   parameters: 'Parametros', behavior: 'Comportamiento', feeding: 'Alimentacion', compatibility: 'Compatibilidad',
@@ -87,7 +88,7 @@ function importedFichaHtml(meta) {
 
 function inventoryCover(item) {
   const meta = inventoryMeta(item);
-  return item.photo_url || meta.cover_url || meta.image_url || '';
+  return item.photo_url || meta.library_card?.photo_url || meta.library_card?.cover_url || meta.cover_url || meta.image_url || '';
 }
 
 function inventoryExpiryStatus(item) {
@@ -110,6 +111,14 @@ function inventoryAqId(item) {
   return match ? match[1] : '';
 }
 
+function afterDeleteRoute(item) {
+  const aqId = inventoryAqId(item);
+  const aq = aqId && currentAquarium()?.id === aqId ? currentAquarium() : null;
+  if (aq && liveCategories.has(item.category || '') && typeof window.animales === 'function') return window.animales();
+  if (aq) return window.inventario('aquarium');
+  return window.inventario('general');
+}
+
 function inventoryItemHtml(item, aqName) {
   const cleanNotes = inventoryNoteText(item);
   const shortNotes = cleanNotes.length > 180 ? `${cleanNotes.slice(0, 180)}...` : cleanNotes;
@@ -120,7 +129,7 @@ function inventoryItemHtml(item, aqName) {
   const cover = inventoryCover(item);
   const hasFicha = meta.library_card ? ' · ficha completa' : '';
   return `<button class="item inventory-card inventory-ficha-card" onclick="verInventario('${esc(item.id)}')">
-    <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(item.name || 'Inventario')}" loading="lazy">` : '<span>▤</span>'}</div>
+    <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(item.name || 'Inventario')}" loading="lazy" onerror="this.replaceWith(document.createTextNode('▤'))">` : '<span>▤</span>'}</div>
     <div class="inventory-card-body">
       <div class="inventory-card-head">
         <div><b>${esc(item.name || 'Item')}</b><p class="small">${esc(item.category || 'Inventario')} · ${esc(item.quantity ?? '-')} ${esc(item.unit || '')}${hasFicha}</p></div>
@@ -243,7 +252,7 @@ window.verInventario = async function (id) {
     const cover = inventoryCover(data);
     render(head + `<section class="panel inventory-detail">
       <button onclick="${isAq && aq ? "openAqSection('inventario')" : "inventario('general')"}">← Volver</button>
-      ${cover ? `<img class="inventory-detail-cover" src="${esc(cover)}" alt="${esc(data.name || 'Inventario')}">` : '<div class="inventory-detail-cover empty">▤</div>'}
+      ${cover ? `<img class="inventory-detail-cover" src="${esc(cover)}" alt="${esc(data.name || 'Inventario')}" onerror="this.replaceWith(document.createElement('div'));this.className='inventory-detail-cover empty';this.textContent='▤';">` : '<div class="inventory-detail-cover empty">▤</div>'}
       <div class="inventory-detail-head">
         <div><small>${esc(data.category || 'Inventario')}</small><h2>${esc(data.name || 'Item')}</h2></div>
         ${status ? `<span class="${esc(status)}">${esc(status)}</span>` : ''}
@@ -259,7 +268,10 @@ window.verInventario = async function (id) {
       </div>
       ${cleanNotes ? `<section class="library-detail-section"><h3>Notas</h3><p>${esc(cleanNotes)}</p></section>` : ''}
       ${importedFichaHtml(meta)}
-      <button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button>
+      <div class="inline-actions">
+        <button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button>
+        <button class="ghost danger" onclick="eliminarInventario('${esc(data.id)}')">🗑 Eliminar</button>
+      </div>
     </section>`, active);
   } catch (e) {
     render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
@@ -335,6 +347,23 @@ window.guardarInventarioEditado = async function (id, scope) {
     verInventario(id);
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
+  }
+};
+
+window.eliminarInventario = async function (id) {
+  const t = token();
+  render(`<section class="panel">${msg('Comprobando elemento...')}</section>`, 'inventario');
+  try {
+    const { data, error } = await supabase.from('inventory_items').select('id,name,category,aquarium_id,notes').eq('id', id).eq('user_id', state.user.id).single();
+    if (error) throw error;
+    const ok = confirm(`¿Eliminar ${data.name || 'este elemento'}?\n\nSe borrará del inventario. Esta acción no se puede deshacer.`);
+    if (!ok) return verInventario(id);
+    const { error: delError } = await supabase.from('inventory_items').delete().eq('id', id).eq('user_id', state.user.id);
+    if (delError) throw delError;
+    if (!isCurrent(t)) return;
+    afterDeleteRoute(data);
+  } catch (e) {
+    render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
   }
 };
 
