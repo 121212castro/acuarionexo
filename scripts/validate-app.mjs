@@ -31,7 +31,7 @@ function checkSyntax() {
 }
 
 function checkDuplicateWindows() {
-  const names = ['biblioteca','renderBibliotecaActual','filtrarBiblioteca','formFicha','guardarFicha','verFicha','buscarIdentify','mostrarIdentify'];
+  const names = ['biblioteca','renderBibliotecaActual','filtrarBiblioteca','formFicha','guardarFicha','verFicha','buscarIdentify','mostrarIdentify','adminPanel'];
   for (const name of names) {
     const found = [];
     for (const script of scripts()) {
@@ -53,7 +53,7 @@ function mockElement(id) {
 async function checkLoad() {
   const elements = new Map();
   const el = id => elements.get(id) || (elements.set(id, mockElement(id)), elements.get(id));
-  const chain = { select(){return this}, eq(){return this}, order(){return this}, limit(){return Promise.resolve({data:[],error:null})}, single(){return Promise.resolve({data:{id:'x'},error:null})}, insert(){return Promise.resolve({error:null})}, update(){return this}, in(){return this}, or(){return this} };
+  const chain = { select(){return this}, eq(){return this}, order(){return this}, limit(){return Promise.resolve({data:[],error:null})}, single(){return Promise.resolve({data:{id:'x'},error:null})}, maybeSingle(){return Promise.resolve({data:null,error:null})}, insert(){return Promise.resolve({error:null})}, update(){return this}, in(){return this}, or(){return this} };
   const ctx = {
     console, setTimeout, clearTimeout, setInterval(){}, clearInterval(){}, requestAnimationFrame(fn){fn()}, scrollTo(){}, addEventListener(){},
     location:{origin:'https://example.com',pathname:'/acuarionexo/',hash:'',search:'',reload(){},replace(){}}, history:{replaceState(){}}, localStorage:{getItem(){return null},setItem(){}},
@@ -75,6 +75,7 @@ async function checkLoad() {
   for (const script of scripts()) vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), ctx, { filename: script });
   if (typeof ctx.biblioteca !== 'function') fail('window.biblioteca missing');
   if (typeof ctx.pasarFichaAInventario !== 'function') fail('window.pasarFichaAInventario missing');
+  if (typeof ctx.adminPanel !== 'function') fail('window.adminPanel missing');
 }
 
 try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
