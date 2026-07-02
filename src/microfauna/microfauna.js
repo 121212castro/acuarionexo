@@ -191,7 +191,7 @@ async function ensureAquariumsLoaded() {
 window.microfauna = async function () {
   if (!state.user) return login();
   const t = token();
-  render(`<section class="panel"><h2>Microfauna</h2>${msg('Cargando cultivos...')}</section>`, 'inicio');
+  render(`<section class="panel"><h2>Microfauna</h2>${msg('Cargando cultivos...')}</section>`, 'microfauna');
   try {
     await ensureAquariumsLoaded();
     const { data, error } = await supabase.from('microfauna_cultures')
@@ -213,9 +213,9 @@ window.microfauna = async function () {
           <button onclick="formMicrofauna('', 'infusorios')"><span>I</span>Infusorios</button>
         </div>
         <div class="micro-grid">${state.microfaunaRows.map(cultureCard).join('') || '<p class="small">Sin cultivos todavia.</p>'}</div>
-      </section>`, 'inicio');
+      </section>`, 'microfauna');
   } catch (e) {
-    if (isCurrent(t)) render(`<section class="panel"><h2>Microfauna</h2>${msg(e.message, 'error')}</section>`, 'inicio');
+    if (isCurrent(t)) render(`<section class="panel"><h2>Microfauna</h2>${msg(e.message, 'error')}</section>`, 'microfauna');
   }
 };
 
@@ -260,7 +260,7 @@ window.formMicrofauna = async function (id = '', forcedType = '') {
     <label>Notas</label><textarea id="microNotes" placeholder="Observaciones, olor, color, cepa, riesgos...">${esc(row.notes || '')}</textarea>
     <button class="primary" onclick="saveMicrofauna('${esc(existing?.id || '')}')">Guardar cultivo</button>
     <div id="microMsg"></div>
-  </section>`, 'inicio');
+  </section>`, 'microfauna');
 };
 
 function readMicrofaunaForm() {
@@ -338,7 +338,7 @@ window.registrarMicrofauna = async function (id, action) {
     updates.next_harvest_at = addIso(hours * HOUR);
   }
   const { error } = await supabase.from('microfauna_cultures').update(updates).eq('id', id).eq('user_id', state.user.id);
-  if (error) return render(`<section class="panel">${msg(error.message, 'error')}</section>`, 'inicio');
+  if (error) return render(`<section class="panel">${msg(error.message, 'error')}</section>`, 'microfauna');
   await microfauna();
 };
 
