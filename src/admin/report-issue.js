@@ -1,4 +1,4 @@
-/* AcuarioNexo · reporte de fallos */
+/* AcuarioNexo · incidencia de usuario */
 (function () {
   const A = () => window.ANX || {};
   const { supabase, state, esc, byId, val, msg, render } = A();
@@ -8,21 +8,14 @@
     return active || state.section || 'app';
   }
 
-  function injectReportButton() {
-    if (!state?.user || document.getElementById('reportIssueTopBtn')) return;
-    const box = document.querySelector('.top-actions');
-    if (!box) return;
-    const btn = document.createElement('button');
-    btn.id = 'reportIssueTopBtn';
-    btn.className = 'ghost hidden-mobile-label';
-    btn.textContent = 'Reportar fallo';
-    btn.onclick = window.reportIssueForm;
-    box.prepend(btn);
+  function removeTopButton() {
+    document.getElementById('reportIssueTopBtn')?.remove();
   }
 
   window.reportIssueForm = function () {
+    removeTopButton();
     if (!state?.user) return login();
-    render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Reportar fallo</h2><p>Enviar aviso al administrador</p></div></section>
+    render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Incidencia</h2><p>Enviar aviso al administrador</p></div></section>
       <section class="panel">
         <button onclick="dashboard()">← Volver</button>
         <label>Zona afectada</label>
@@ -45,7 +38,7 @@
         </select>
         <label>Título</label><input id="reportTitle" placeholder="Qué falla">
         <label>Descripción</label><textarea id="reportDetails" placeholder="Qué estabas haciendo, qué esperabas y qué ocurrió"></textarea>
-        <button class="primary" onclick="sendIssueReport()">Enviar reporte</button>
+        <button class="primary" onclick="sendIssueReport()">Enviar incidencia</button>
         <div id="reportMsg"></div>
       </section>`, 'inicio');
   };
@@ -56,9 +49,9 @@
       if (!state?.user?.id) throw new Error('Sesión no disponible.');
       const title = val('reportTitle');
       const details = val('reportDetails');
-      if (!title) throw new Error('Pon un título del fallo.');
-      if (!details) throw new Error('Describe el fallo.');
-      if (box) box.innerHTML = msg('Enviando reporte...', 'notice');
+      if (!title) throw new Error('Pon un título.');
+      if (!details) throw new Error('Describe la incidencia.');
+      if (box) box.innerHTML = msg('Enviando incidencia...', 'notice');
       const { error } = await supabase.from('admin_reports').insert({
         user_id: state.user.id,
         area: val('reportArea') || safeArea(),
@@ -69,13 +62,12 @@
         status: 'open'
       });
       if (error) throw error;
-      if (box) box.innerHTML = msg('Reporte enviado. Queda registrado para revisión.', 'success');
+      if (box) box.innerHTML = msg('Incidencia enviada. Queda registrada para revisión.', 'success');
     } catch (e) {
       if (box) box.innerHTML = msg(e.message, 'error');
     }
   };
 
-  const observer = new MutationObserver(injectReportButton);
-  observer.observe(document.body, { childList: true, subtree: true });
-  setTimeout(injectReportButton, 500);
+  removeTopButton();
+  setInterval(removeTopButton, 1000);
 })();
