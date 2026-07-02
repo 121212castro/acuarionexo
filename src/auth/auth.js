@@ -34,6 +34,15 @@ function withAuthTimeout(promise, seconds = 18) {
   });
 }
 
+async function refreshAdminSafe() {
+  try {
+    if (window.refreshAdminAccess) await window.refreshAdminAccess();
+  } catch (_) {
+    state.adminRole = null;
+    state.isAdmin = false;
+  }
+}
+
 window.recuperarPassword = function () {
   render(`<section class="auth-card"><h2>Recuperar contraseña</h2>
     <p class="small">Escribe tu email y te enviaremos un enlace para crear una contraseña nueva.</p>
@@ -78,6 +87,8 @@ window.guardarNuevaPassword = async function () {
     history.replaceState(null, '', authRedirectUrl());
     await supabase.auth.signOut();
     state.user = null;
+    state.adminRole = null;
+    state.isAdmin = false;
     updateSessionHeader();
     render(`<section class="auth-card"><h2>Contraseña actualizada</h2>
       ${msg('Ya puedes entrar con la contraseña nueva.', 'success')}
@@ -116,27 +127,16 @@ window.crear = async function () {
   }
 };
 
-window.adminPanel = function () {
-  if (!state.user) {
-    if (byId('x')) byId('x').innerHTML = msg('Primero entra con tu cuenta. Después aparecerá Admin en la barra inferior.', 'notice');
-    return;
-  }
-  render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>Panel de administración</p></div></section>
-    <section class="panel"><div class="panel-head"><h2>Accesos admin</h2></div>
-      <div class="quick-actions">
-        <button onclick="tareas()"><span>♢</span>Avisos</button>
-        <button onclick="inventario()"><span>▤</span>Inventario</button>
-        <button onclick="dashboard()"><span>⌂</span>Inicio</button>
-      </div>
-      <p class="small">Admin queda visible. Las acciones sensibles siguen protegidas por las políticas reales de Supabase.</p>
-    </section>`, 'admin');
-};
-
 async function boot() {
   try {
     const session = await withAuthTimeout(supabase.auth.getSession(), 8);
     state.user = session.data.session?.user || null;
     window.u = state.user;
+    if (state.user) await refreshAdminSafe();
+    else {
+      state.adminRole = null;
+      state.isAdmin = false;
+    }
     updateSessionHeader();
     if (isPasswordRecoveryUrl() && state.user) {
       passwordRecoveryForm();
@@ -147,6 +147,8 @@ async function boot() {
         await supabase.auth.signOut();
         state.user = null;
         state.aquarium = null;
+        state.adminRole = null;
+        state.isAdmin = false;
         window.q = null;
         updateSessionHeader();
         login();
@@ -169,9 +171,14 @@ byId('refreshAppBtn')?.addEventListener('click', function () {
   if (window.AcuarioNexoUpdate?.forceReload) window.AcuarioNexoUpdate.forceReload();
   else location.reload();
 });
-supabase.auth.onAuthStateChange(function (_event, session) {
+supabase.auth.onAuthStateChange(async function (_event, session) {
   state.user = session?.user || null;
   window.u = state.user;
+  if (state.user) await refreshAdminSafe();
+  else {
+    state.adminRole = null;
+    state.isAdmin = false;
+  }
   updateSessionHeader();
   if (_event === 'PASSWORD_RECOVERY') passwordRecoveryForm();
 });
