@@ -46,6 +46,10 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `manifest.webmanifest`
 - `icon-512.png`
 
+## Build tester
+
+Build actual: `admin-tester-20260702-2055`.
+
 ## Reportes de fallos
 
 `src/admin/report-issue.js` permite a usuarios con sesion enviar reportes a `admin_reports`.
