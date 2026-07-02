@@ -36,6 +36,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
+- `src/admin/admin-extra.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -64,19 +65,20 @@ Modulo visible solo con rol activo:
 
 ## Admin restringido
 
-`src/admin/admin.js` controla el panel Admin.
+`src/admin/admin.js` controla el panel Admin base.
 
-Funciones activas:
+`src/admin/admin-extra.js` controla herramientas avanzadas:
 
-- `window.refreshAdminAccess`
-- `window.adminPanel`
-- `window.ANX.Admin.loadAdminRole`
-- `window.ANX.Admin.adminAllowed`
+- Usuarios registrados.
+- Alta de Admin o usuario de confianza por email.
+- Reportes/fallos.
+- Historial por persona.
 
-Regla de acceso:
+Base Supabase avanzada:
 
-- El boton Admin solo aparece si `state.isAdmin` es verdadero.
-- `state.isAdmin` solo se activa si existe fila activa en `admin_roles`.
-- Roles admitidos: `owner`, `admin`, `trusted_admin`.
-- Si un usuario intenta abrir `adminPanel()` sin permiso, se bloquea.
-- Supabase oficial tiene RLS simplificado: cada usuario autenticado solo lee su propio rol.
+- `admin_reports`.
+- `admin_user_history`.
+- `admin_list_users()`.
+- `admin_set_role_by_email()`.
+- `admin_get_user_history()`.
+- Migracion GitHub: `supabase/migrations/20260702_admin_tools_foundation.sql`.
