@@ -47,6 +47,38 @@ Carga activa actual:
 - `update-manager.js`
 - `notifications.js`
 
+## Navegacion principal
+
+`app.js` controla la barra inferior fija.
+
+Modulos visibles:
+
+- Inicio
+- Acuarios
+- Biblioteca
+- Microfauna
+- Avisos
+- Inventario
+
+## Microfauna
+
+`src/microfauna/microfauna.js` es modulo principal visible.
+
+Gestiona cultivos de:
+
+- Rotiferos
+- Copepodos
+- Fitoplancton
+- Artemia
+- Infusorios
+
+Funciones globales:
+
+- `window.microfauna`
+- `window.formMicrofauna`
+- `window.saveMicrofauna`
+- `window.registrarMicrofauna`
+
 ## Biblioteca/Fichas estado actual
 
 Modulos activos:
@@ -115,6 +147,7 @@ Para cambios normales:
 
 - Auth: `src/auth/auth.js`.
 - Acuarios: `src/aquariums/aquariums.js`.
+- Microfauna: `src/microfauna/microfauna.js`.
 - Biblioteca/Fichas: `src/library/library-v3.js` y submodulos de `src/library/`.
 - Importar fichas a inventario: `src/library/inventory/library-inventory-import.js`.
 - Crear ficha nueva desde texto del Chat: `src/library/ficha/ficha-chat-import.js`.
