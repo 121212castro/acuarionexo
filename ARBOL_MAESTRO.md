@@ -43,6 +43,7 @@ Carga activa actual:
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
+- `src/admin/admin-extra.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -61,7 +62,10 @@ La barra inferior movil se ajusta desde `library-mobile-overflow-fix.css` para a
 
 ## Admin restringido
 
-`src/admin/admin.js` es el modulo del Panel Admin.
+- `src/admin/admin.js`: panel Admin base.
+- `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes y historial por persona.
+- `supabase/migrations/20260702_admin_roles.sql`: roles restringidos.
+- `supabase/migrations/20260702_admin_tools_foundation.sql`: reportes, historial y funciones RPC.
 
 Admin ya esta activo para propietario.
 
