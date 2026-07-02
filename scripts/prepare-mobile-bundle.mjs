@@ -28,6 +28,7 @@ const files = [
   'src/library/inventory/library-inventory-import.js',
   'src/library/library-v3.js',
   'src/library/ficha/ficha-chat-import.js',
+  'src/library/ficha/ficha-json.js',
   'src/animals/animals.js',
   'src/map/map-v3-model.js',
   'src/map/map.js',
