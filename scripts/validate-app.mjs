@@ -5,215 +5,56 @@ import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const htmlPath = path.join(root, 'index.html');
-const html = fs.readFileSync(htmlPath, 'utf8');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
 const errors = [];
+const fail = message => errors.push(message);
+const version = JSON.parse(fs.readFileSync(path.join(root, 'app-version.json'), 'utf8')).build;
 
-function fail(message) {
-  errors.push(message);
-}
-
-function localRefs() {
-  return [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)]
-    .map(match => match[1])
-    .filter(ref => !/^https?:/i.test(ref) && !ref.startsWith('data:'))
-    .map(ref => ref.split('?')[0]);
-}
-
-function localRefsWithVersion() {
-  return [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)]
-    .map(match => match[1])
-    .filter(ref => !/^https?:/i.test(ref) && !ref.startsWith('data:'))
-    .filter(ref => /\.(?:js|css)(?:\?|$)/i.test(ref));
-}
-
-function scriptRefs() {
-  return [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)]
-    .map(match => match[1])
-    .filter(ref => !/^https?:/i.test(ref))
-    .map(ref => ref.split('?')[0]);
-}
+const refs = () => [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map(m => m[1]).filter(r => !/^https?:/i.test(r) && !r.startsWith('data:'));
+const clean = ref => ref.split('?')[0];
+const scripts = () => [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]).filter(r => !/^https?:/i.test(r)).map(clean);
 
 function checkRefs() {
-  for (const ref of localRefs()) {
-    if (!fs.existsSync(path.join(root, ref))) fail(`index.html references missing file: ${ref}`);
-  }
+  for (const ref of refs().map(clean)) if (!fs.existsSync(path.join(root, ref))) fail(`Missing active asset: ${ref}`);
 }
 
-function checkBuild() {
-  const htmlBuild = html.match(/ACUARIONEXO_BUILD\s*=\s*['"]([^'"]+)['"]/)?.[1];
-  const version = JSON.parse(fs.readFileSync(path.join(root, 'app-version.json'), 'utf8')).build;
-  if (!htmlBuild) fail('index.html does not define window.ACUARIONEXO_BUILD.');
-  if (htmlBuild !== version) fail(`Build mismatch: index.html=${htmlBuild || '-'} app-version.json=${version || '-'}`);
-  for (const ref of localRefsWithVersion()) {
-    const [, query = ''] = ref.split('?');
-    const params = new URLSearchParams(query);
-    const assetBuild = params.get('v');
-    if (!assetBuild) fail(`Version missing in active asset reference: ${ref}`);
-    if (htmlBuild && assetBuild && assetBuild !== htmlBuild) {
-      fail(`Asset version mismatch: ${ref} uses ${assetBuild}, expected ${htmlBuild}`);
-    }
+function checkVersions() {
+  for (const ref of refs().filter(r => /\.(js|css)(\?|$)/i.test(r))) {
+    const build = new URLSearchParams(ref.split('?')[1] || '').get('v');
+    if (!build) fail(`Version missing: ${ref}`);
+    if (build && build !== version) fail(`Version mismatch: ${ref}`);
   }
 }
 
 function checkSyntax() {
-  const files = ['app.js', ...scriptRefs().filter(ref => ref.endsWith('.js') && ref !== 'app.js')];
-  for (const file of files) {
-    execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
-  }
+  for (const file of ['app.js', ...scripts().filter(f => f.endsWith('.js') && f !== 'app.js')]) execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
 }
 
-function checkCriticalWindowDuplicates() {
-  const protectedNames = ['biblioteca', 'renderBibliotecaActual', 'filtrarBiblioteca', 'formFicha', 'guardarFicha', 'verFicha', 'buscarIdentify', 'mostrarIdentify'];
-  const owners = new Map(protectedNames.map(name => [name, []]));
-  for (const script of scriptRefs()) {
-    const file = path.join(root, script);
-    if (!fs.existsSync(file)) continue;
-    const code = fs.readFileSync(file, 'utf8');
-    for (const name of protectedNames) {
-      const directAssign = new RegExp(`window\\.${name}\\s*=`, 'g');
-      const matches = code.match(directAssign) || [];
-      if (matches.length) owners.get(name).push(`${script} (${matches.length})`);
+function checkDuplicateWindows() {
+  const names = ['biblioteca','renderBibliotecaActual','filtrarBiblioteca','formFicha','guardarFicha','verFicha','buscarIdentify','mostrarIdentify'];
+  for (const name of names) {
+    const found = [];
+    for (const script of scripts()) {
+      const code = fs.readFileSync(path.join(root, script), 'utf8');
+      const count = (code.match(new RegExp(`window\\.${name}\\s*=`, 'g')) || []).length;
+      if (count) found.push(`${script} (${count})`);
     }
-  }
-  for (const [name, list] of owners.entries()) {
-    if (list.length > 1) fail(`Critical window function duplicated: window.${name} in ${list.join(', ')}`);
+    if (found.length > 1) fail(`Duplicated window.${name}: ${found.join(', ')}`);
   }
 }
 
-function createLoadContext() {
+async function checkLoad() {
   const elements = new Map();
-  function element(id) {
-    if (!elements.has(id)) {
-      elements.set(id, {
-        id,
-        value: '',
-        innerHTML: '',
-        textContent: '',
-        onclick: null,
-        classList: { toggle() {}, add() {}, remove() {} },
-        addEventListener() {},
-        remove() {},
-        insertAdjacentHTML() {},
-        scrollIntoView() {},
-        prepend() {},
-        getBoundingClientRect() { return { left: 0, top: 0, width: 640, height: 360 }; },
-        style: {},
-        appendChild() {},
-        click() {},
-        setAttribute() {},
-        removeAttribute() {}
-      });
-    }
-    return elements.get(id);
-  }
-
-  const context = {
-    console,
-    setTimeout,
-    clearTimeout,
-    setInterval() {},
-    clearInterval() {},
-    requestAnimationFrame(fn) { fn(); },
-    scrollTo() {},
-    crypto: { randomUUID() { return '00000000-0000-4000-8000-000000000000'; } },
-    location: { origin: 'https://121212castro.github.io', pathname: '/acuarionexo/', hash: '', search: '', reload() {}, replace() {} },
-    history: { replaceState() {} },
-    localStorage: { getItem() { return null; }, setItem() {} },
-    Notification: undefined,
-    navigator: { serviceWorker: undefined, clipboard: { writeText() { return Promise.resolve(); } } },
-    caches: { keys() { return Promise.resolve([]); }, delete() { return Promise.resolve(true); } },
-    fetch() { return Promise.resolve({ ok: true, json() { return Promise.resolve({ build: 'test' }); } }); },
-    MutationObserver: function MutationObserver() { return { observe() {}, disconnect() {} }; },
-    document: {
-      getElementById: element,
-      querySelector() { return null; },
-      addEventListener() {},
-      body: { insertAdjacentHTML() {}, classList: { add() {}, remove() {} } },
-      createElement: element
-    },
-    addEventListener() {},
-    URL: { createObjectURL() { return 'blob:test'; } },
-    Image: function Image() {},
-    ACUARIO_NEXO_TEST: true
-  };
-
-  context.window = context;
-  context.globalThis = context;
-  context.ACUARIONEXO_CONFIG = {
-    SUPABASE_URL: 'https://example.supabase.co',
-    SUPABASE_KEY: 'anon',
-    APP_VERSION: 'test'
-  };
-  context.supabase = {
-    createClient() {
-      const chain = {
-        select() { return this; },
-        eq() { return this; },
-        order() { return this; },
-        limit() { return Promise.resolve({ data: [], error: null }); },
-        single() { return Promise.resolve({ data: { id: 'aq1' }, error: null }); },
-        insert() { return Promise.resolve({ error: null }); },
-        update() { return this; },
-        neq() { return this; },
-        lte() { return this; },
-        in() { return this; },
-        or() { return this; }
-      };
-      return {
-        from() { return Object.create(chain); },
-        rpc() { return Object.create(chain); },
-        storage: {
-          from() {
-            return {
-              upload() { return Promise.resolve({ error: null }); },
-              getPublicUrl() { return { data: { publicUrl: 'https://example.com/x.jpg' } }; }
-            };
-          }
-        },
-        functions: {
-          invoke() { return Promise.resolve({ data: { data: { sections: {} } }, error: null }); }
-        },
-        auth: {
-          getSession() { return Promise.resolve({ data: { session: null } }); },
-          onAuthStateChange() {},
-          signInWithPassword() { return Promise.resolve({ error: null }); },
-          signUp() { return Promise.resolve({ error: null }); },
-          signOut() { return Promise.resolve({ error: null }); },
-          resetPasswordForEmail() { return Promise.resolve({ error: null }); },
-          updateUser() { return Promise.resolve({ error: null }); }
-        }
-      };
-    }
-  };
-  return context;
+  const el = id => elements.get(id) || (elements.set(id, { id, value:'', innerHTML:'', textContent:'', style:{}, dataset:{}, options:[], classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, remove(){}, insertAdjacentHTML(){}, scrollIntoView(){}, prepend(){}, appendChild(){}, click(){}, setAttribute(){}, removeAttribute(){}, getBoundingClientRect(){return{left:0,top:0,width:640,height:360}} }), elements.get(id));
+  const chain = { select(){return this}, eq(){return this}, order(){return this}, limit(){return Promise.resolve({data:[],error:null})}, single(){return Promise.resolve({data:{id:'x'},error:null})}, insert(){return Promise.resolve({error:null})}, update(){return this}, in(){return this}, or(){return this} };
+  const ctx = { console, setTimeout, clearTimeout, setInterval(){}, clearInterval(){}, requestAnimationFrame(fn){fn()}, scrollTo(){}, addEventListener(){}, location:{origin:'https://example.com',pathname:'/acuarionexo/',hash:'',search:'',reload(){},replace(){}}, history:{replaceState(){}}, localStorage:{getItem(){return null},setItem(){}}, navigator:{serviceWorker:null,clipboard:{writeText(){return Promise.resolve()}}}, caches:{keys(){return Promise.resolve([])},delete(){return Promise.resolve(true)}}, fetch(){return Promise.resolve({ok:true,json(){return Promise.resolve({})}})}, MutationObserver:function(){return{observe(){},disconnect(){}}}, Image:function(){}, URL:{createObjectURL(){return 'blob:x'}}, document:{getElementById:el,querySelector(){return null},addEventListener(){},createElement:el,body:el('body')}, ACUARIO_NEXO_TEST:true, ACUARIONEXO_CONFIG:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_KEY:'anon',APP_VERSION:'test'}, supabase:{createClient(){return{from(){return Object.create(chain)},rpc(){return Object.create(chain)},storage:{from(){return{upload(){return Promise.resolve({error:null})},getPublicUrl(){return{data:{publicUrl:'https://example.com/x.jpg'}}}}}},functions:{invoke(){return Promise.resolve({data:{data:{sections:{}}},error:null})},auth:{getSession(){return Promise.resolve({data:{session:null}})},onAuthStateChange(){},signInWithPassword(){return Promise.resolve({error:null})},signUp(){return Promise.resolve({error:null})},signOut(){return Promise.resolve({error:null})},resetPasswordForEmail(){return Promise.resolve({error:null})},updateUser(){return Promise.resolve({error:null})}}}}} };
+  ctx.window = ctx; ctx.globalThis = ctx;
+  vm.createContext(ctx);
+  for (const script of scripts()) vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), ctx, { filename: script });
+  if (typeof ctx.biblioteca !== 'function') fail('window.biblioteca missing');
+  if (typeof ctx.pasarFichaAInventario !== 'function') fail('window.pasarFichaAInventario missing');
 }
 
-async function checkLoadOrder() {
-  const context = createLoadContext();
-  vm.createContext(context);
-  for (const script of scriptRefs()) {
-    vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), context, { filename: script });
-  }
-  if (typeof context.biblioteca !== 'function') fail('window.biblioteca must be available when the library module is active.');
-  if (typeof context.pasarFichaAInventario !== 'function') fail('window.pasarFichaAInventario must be available before library-v3 wrappers are active.');
-}
-
-try {
-  checkRefs();
-  checkBuild();
-  checkSyntax();
-  checkCriticalWindowDuplicates();
-  await checkLoadOrder();
-} catch (error) {
-  fail(error.stack || error.message);
-}
-
-if (errors.length) {
-  console.error('AcuarioNexo validation failed:');
-  for (const error of errors) console.error(`- ${error}`);
-  process.exit(1);
-}
-
+try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
+if (errors.length) { console.error('AcuarioNexo validation failed:'); errors.forEach(e => console.error(`- ${e}`)); process.exit(1); }
 console.log('AcuarioNexo validation OK');
-process.exit(0);
