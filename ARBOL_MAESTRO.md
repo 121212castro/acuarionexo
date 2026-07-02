@@ -57,9 +57,13 @@ Carga activa actual:
 - Inventario
 - Admin solo con rol activo
 
+La barra inferior movil se ajusta desde `library-mobile-overflow-fix.css` para admitir 7 botones.
+
 ## Admin restringido
 
 `src/admin/admin.js` es el modulo del Panel Admin.
+
+Admin ya esta activo para propietario.
 
 ## Microfauna
 
