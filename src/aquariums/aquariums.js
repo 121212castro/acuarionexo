@@ -40,6 +40,9 @@ function aquariumCard(aq) {
 function dashboardStat(label, value) {
   return `<article class="summary-card"><div><small>${esc(label)}</small><h2>${esc(value)}</h2></div></article>`;
 }
+function calcStat(label, id) {
+  return `<article class="summary-card"><div><small>${esc(label)}</small><h2 id="${esc(id)}">0.0 L</h2></div></article>`;
+}
 
 function emptyLine(text) {
   return `<p class="small">${esc(text || 'Sin datos todavía')}</p>`;
@@ -141,7 +144,7 @@ window.editarAcuario = function () {
     ${fcheck('has_sump','Tiene sump',aq.has_sump)}${fnum('sump_length_cm','Largo sump (cm)',aq.sump_length_cm)}${fnum('sump_width_cm','Ancho sump (cm)',aq.sump_width_cm)}${fnum('sump_height_cm','Alto sump (cm)',aq.sump_height_cm)}${fnum('sump_water_height_cm','Altura agua sump (cm)',aq.sump_water_height_cm)}${fcheck('has_refugium','Tiene refugio',aq.has_refugium)}${fnum('refugium_liters','Litros refugio',aq.refugium_liters)}${fcheck('has_ato_reservoir','Tiene depósito de relleno',aq.has_ato_reservoir)}${fnum('ato_reservoir_liters','Litros depósito relleno',aq.ato_reservoir_liters)}
     <h3>Litros</h3>
     ${fnum('editAqLiters','Litros reales manuales',aq.manual_real_liters ?? aq.real_liters ?? aq.system_net_liters ?? aq.liters)}
-    <div class="quick-actions">${dashboardStat('Brutos urna','<span id="calcGross">0.0 L</span>')}${dashboardStat('Display neto','<span id="calcDisplayNet">0.0 L</span>')}${dashboardStat('Sump neto','<span id="calcSumpNet">0.0 L</span>')}${dashboardStat('Sistema neto','<span id="calcSystemNet">0.0 L</span>')}</div>
+    <div class="quick-actions">${calcStat('Brutos urna','calcGross')}${calcStat('Display neto','calcDisplayNet')}${calcStat('Sump neto','calcSumpNet')}${calcStat('Sistema neto','calcSystemNet')}</div>
     <h3>Notas</h3><label>Nota</label><textarea id="editAqNotes">${esc(aq.notes || '')}</textarea>
     <button class="primary" onclick="guardarAcuarioEditado()">Guardar cambios</button><div id="editAqStatus"></div>
   </section>`, 'acuarios');
@@ -214,7 +217,7 @@ function calcVolumesFromInputs() {
 }
 window.calcAqVolumes = function () {
   const c = calcVolumesFromInputs();
-  const set = (id, value) => { if (byId(id)) byId(id).innerHTML = `${value.toFixed(1)} L`; };
+  const set = (id, value) => { if (byId(id)) byId(id).textContent = `${value.toFixed(1)} L`; };
   set('calcGross', c.gross); set('calcDisplayNet', c.displayNet); set('calcSumpNet', c.sumpNet); set('calcSystemNet', c.systemNet);
 };
 })();
