@@ -88,7 +88,7 @@ window.dashboard = async function () {
       </section>
       <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>${emptyLine('Sin avisos importantes.')}</section>
       <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2></div>
-        ${emptyLine('Actividad no calculada automáticamente mientras se investiga el consumo de base de datos.')}
+        ${emptyLine('Sin actividad reciente.')}
       </section>`, 'inicio');
   } catch (e) {
     if (isCurrent(t)) render(msg(e.message, 'error'), 'inicio');
