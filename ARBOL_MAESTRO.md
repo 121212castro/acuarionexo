@@ -45,6 +45,7 @@ Carga activa actual:
 - `src/admin/admin.js`
 - `src/admin/admin-extra.js`
 - `src/admin/report-issue.js`
+- `src/admin/issue-entry.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -64,6 +65,7 @@ La barra inferior movil se ajusta desde `library-mobile-overflow-fix.css` para a
 ## Reportes de fallos
 
 - `src/admin/report-issue.js`: formulario para que usuarios con sesion reporten fallos.
+- `src/admin/issue-entry.js`: acceso visible a Incidencia en Inicio > Modulos.
 - Guarda en `admin_reports`.
 - Admin revisa desde Fallos.
 
