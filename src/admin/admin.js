@@ -2,6 +2,15 @@
 (function () {
   const { supabase, state, esc, byId, msg, render } = window.ANX;
 
+  function loadAdminExtra() {
+    if (document.querySelector('script[data-module="admin-extra"]')) return;
+    const script = document.createElement('script');
+    script.src = 'src/admin/admin-extra.js?v=pez-marino-contract-20260702';
+    script.dataset.module = 'admin-extra';
+    document.head.appendChild(script);
+  }
+  loadAdminExtra();
+
   const ADMIN_ROLES = new Set(['owner', 'admin', 'trusted_admin']);
 
   function adminAllowed() {
@@ -40,14 +49,15 @@
   }
 
   async function adminStats() {
-    const [libraryReview, libraryValidated, aquariums, inventory, microfauna] = await Promise.all([
+    const [libraryReview, libraryValidated, aquariums, inventory, microfauna, reports] = await Promise.all([
       countTable('library_entries', q => q.in('status', ['review', 'draft', 'identified'])),
       countTable('library_entries', q => q.in('status', ['validated', 'published'])),
       countTable('aquariums'),
       countTable('inventory_items'),
-      countTable('microfauna_cultures')
+      countTable('microfauna_cultures'),
+      countTable('admin_reports', q => q.in('status', ['open', 'reviewing']))
     ]);
-    return { libraryReview, libraryValidated, aquariums, inventory, microfauna };
+    return { libraryReview, libraryValidated, aquariums, inventory, microfauna, reports };
   }
 
   function adminBlocked() {
@@ -76,6 +86,15 @@
             <article class="summary-card"><div><small>Acuarios</small><h2>${esc(stats.aquariums)}</h2></div></article>
             <article class="summary-card"><div><small>Inventario</small><h2>${esc(stats.inventory)}</h2></div></article>
             <article class="summary-card"><div><small>Microfauna</small><h2>${esc(stats.microfauna)}</h2></div></article>
+            <article class="summary-card"><div><small>Reportes abiertos</small><h2>${esc(stats.reports)}</h2></div></article>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Gestión</h2></div>
+          <div class="quick-actions">
+            <button onclick="adminUsers()"><span>👥</span>Usuarios</button>
+            <button onclick="adminReports()"><span>⚠</span>Fallos</button>
+            <button onclick="adminGrantForm()"><span>＋</span>Dar Admin</button>
           </div>
         </section>
         <section class="panel">
