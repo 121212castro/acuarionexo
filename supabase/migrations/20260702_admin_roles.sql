@@ -28,62 +28,18 @@ as $$
   );
 $$;
 
+-- Politica segura para frontend:
+-- cada usuario autenticado solo puede leer su propio rol.
+-- La gestion de roles se hace desde SQL editor/service role, no desde la app publica.
+drop policy if exists admin_roles_owner_read_all on public.admin_roles;
+drop policy if exists admin_roles_owner_insert on public.admin_roles;
+drop policy if exists admin_roles_owner_update on public.admin_roles;
 drop policy if exists admin_roles_read_own on public.admin_roles;
+
 create policy admin_roles_read_own
   on public.admin_roles
   for select
   using (auth.uid() = user_id);
-
-drop policy if exists admin_roles_owner_read_all on public.admin_roles;
-create policy admin_roles_owner_read_all
-  on public.admin_roles
-  for select
-  using (
-    exists (
-      select 1
-      from public.admin_roles ar
-      where ar.user_id = auth.uid()
-        and ar.active = true
-        and ar.role = 'owner'
-    )
-  );
-
-drop policy if exists admin_roles_owner_insert on public.admin_roles;
-create policy admin_roles_owner_insert
-  on public.admin_roles
-  for insert
-  with check (
-    exists (
-      select 1
-      from public.admin_roles ar
-      where ar.user_id = auth.uid()
-        and ar.active = true
-        and ar.role = 'owner'
-    )
-  );
-
-drop policy if exists admin_roles_owner_update on public.admin_roles;
-create policy admin_roles_owner_update
-  on public.admin_roles
-  for update
-  using (
-    exists (
-      select 1
-      from public.admin_roles ar
-      where ar.user_id = auth.uid()
-        and ar.active = true
-        and ar.role = 'owner'
-    )
-  )
-  with check (
-    exists (
-      select 1
-      from public.admin_roles ar
-      where ar.user_id = auth.uid()
-        and ar.active = true
-        and ar.role = 'owner'
-    )
-  );
 
 -- Primer alta manual del propietario:
 -- 1. Localizar el user id en Supabase Auth.
