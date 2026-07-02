@@ -44,6 +44,7 @@ const files = [
   'src/admin/admin.js',
   'src/admin/admin-extra.js',
   'src/admin/report-issue.js',
+  'src/admin/issue-entry.js',
   'src/auth/auth.js'
 ];
 
