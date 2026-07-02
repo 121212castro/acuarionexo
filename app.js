@@ -18,7 +18,9 @@
     passwordRecovery: false,
     viewToken: 0,
     libraryRows: [],
-    libraryFilter: 'all'
+    libraryFilter: 'all',
+    adminRole: null,
+    isAdmin: false
   };
 
   window.s = supabase;
@@ -63,6 +65,7 @@
       ${item('microfauna', 'Microfauna', '◌', 'microfauna()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
       ${item('inventario', 'Inventario', '▤', 'inventario()')}
+      ${state.isAdmin ? item('admin', 'Admin', '⚙', 'adminPanel()') : ''}
     </nav>`;
   }
 
