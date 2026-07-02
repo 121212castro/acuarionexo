@@ -44,22 +44,23 @@
     return card.summary || sectionText(card.sections?.summary) || '';
   }
 
+  function animalCover(item, meta) {
+    return item.photo_url || meta.library_card?.photo_url || meta.library_card?.cover_url || meta.image_url || meta.cover_url || '';
+  }
+
   function animalCard(item) {
     const meta = inventoryMeta(item);
     const name = animalName(item, meta);
-    const cover = item.photo_url || meta.library_card?.photo_url || meta.library_card?.cover_url || meta.image_url || meta.cover_url || '';
+    const cover = animalCover(item, meta);
     const summary = animalSummary(item, meta);
     return `<article class="item inventory-card animal-inventory-card" onclick="verInventario('${esc(item.id)}')">
-      <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(name)}" loading="lazy">` : '<span>□</span>'}</div>
+      <div class="inventory-cover">${cover ? `<img src="${esc(cover)}" alt="${esc(name)}" loading="lazy" onerror="this.replaceWith(document.createTextNode('□'))">` : '<span>□</span>'}</div>
       <div class="inventory-card-body">
         <div class="inventory-card-head">
           <div><b>${esc(name)}</b><p class="small">${esc(animalScientific(item, meta) || item.category || 'Animal')} · Cantidad ${esc(item.quantity ?? 1)}</p></div>
-          <span>Vivo</span>
+          <div class="inline-actions"><span>Vivo</span><button class="ghost danger" onclick="event.stopPropagation(); eliminarAnimalInventario('${esc(item.id)}', '${esc(name)}')">🗑 Eliminar</button></div>
         </div>
         ${summary ? `<p>${esc(summary.length > 220 ? `${summary.slice(0, 220)}...` : summary)}</p>` : ''}
-        <div class="card-actions">
-          <button class="ghost danger" onclick="event.stopPropagation(); eliminarAnimalInventario('${esc(item.id)}', '${esc(name)}')">🗑 Eliminar</button>
-        </div>
       </div>
     </article>`;
   }
