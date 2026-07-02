@@ -60,6 +60,8 @@ Modulo visible solo con rol activo:
 
 - Admin
 
+`library-mobile-overflow-fix.css` corrige la barra inferior en movil para admitir 7 botones cuando Admin esta activo.
+
 ## Admin restringido
 
 `src/admin/admin.js` controla el panel Admin.
@@ -77,14 +79,4 @@ Regla de acceso:
 - `state.isAdmin` solo se activa si existe fila activa en `admin_roles`.
 - Roles admitidos: `owner`, `admin`, `trusted_admin`.
 - Si un usuario intenta abrir `adminPanel()` sin permiso, se bloquea.
-
-Base Supabase:
-
-- Migracion: `supabase/migrations/20260702_admin_roles.sql`.
-- Tabla: `admin_roles`.
-- Funcion: `is_admin`.
-- RLS: lectura propia y gestion por propietario.
-
-## Microfauna
-
-`src/microfauna/microfauna.js` es modulo principal visible.
+- Supabase oficial tiene RLS simplificado: cada usuario autenticado solo lee su propio rol.
