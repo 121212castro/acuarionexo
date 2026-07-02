@@ -38,6 +38,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/admin/admin.js`
 - `src/admin/admin-extra.js`
 - `src/admin/report-issue.js`
+- `src/admin/issue-entry.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -48,6 +49,8 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Reportes de fallos
 
 `src/admin/report-issue.js` permite a usuarios con sesion enviar reportes a `admin_reports`.
+
+`src/admin/issue-entry.js` añade acceso visible a Incidencia dentro de Inicio > Modulos.
 
 Campos guardados:
 
@@ -71,12 +74,3 @@ Los administradores los revisan desde Admin > Fallos.
 - Alta de Admin o usuario de confianza por email.
 - Reportes/fallos.
 - Historial por persona.
-
-Base Supabase avanzada:
-
-- `admin_reports`.
-- `admin_user_history`.
-- `admin_list_users()`.
-- `admin_set_role_by_email()`.
-- `admin_get_user_history()`.
-- Migracion GitHub: `supabase/migrations/20260702_admin_tools_foundation.sql`.
