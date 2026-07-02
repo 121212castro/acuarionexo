@@ -60,6 +60,7 @@
       ${item('inicio', 'Inicio', '⌂', 'dashboard()')}
       ${item('acuarios', 'Acuarios', '▣', 'acuariosHome()')}
       ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
+      ${item('microfauna', 'Microfauna', '◌', 'microfauna()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
       ${item('inventario', 'Inventario', '▤', 'inventario()')}
     </nav>`;
