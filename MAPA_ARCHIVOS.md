@@ -14,14 +14,15 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `aquariums-mobile-fix.css`
 - `mobile-form-fix.css`
 - `library-images.css`
+- `library-mobile-overflow-fix.css`
 - Supabase CDN
-- Firebase CDN
-- Three.js CDN r149
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
-- `src/library/library.js`
+- `src/library/library.js` cargado por el puente `src/library/ui/library.js`
+- `src/library/ficha/ficha-identify.js`
 - `src/library/library-v3.js`
+- `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
@@ -62,10 +63,12 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Modulos de negocio
 
 - `src/aquariums/aquariums.js`: dashboard, acuarios y rutas internas del acuario.
-- `src/library/core/library-schema.js`: contrato oficial de Biblioteca V3/V4 expuesto como `window.ANX.LibrarySchema`.
+- `src/library/core/library-schema.js`: contrato oficial reforzado de Biblioteca V3/V4 expuesto como `window.ANX.LibrarySchema`; define contratos, plantillas, campos obligatorios, normalizacion de fuentes y auditoria cliente.
 - `src/library/ui/library.js`: puente de carga de Biblioteca oficial hacia `src/library/library.js`.
-- `src/library/library.js`: biblioteca, fichas y borradores IA; sigue conservado como modulo funcional cargado por el puente UI.
-- `src/library/library-v3.js`: flujo Biblioteca V3/V4 de identificacion, borrador, edicion, auditoria, publicacion, borrado e inventario.
+- `src/library/library.js`: biblioteca/fichas heredado; sigue conservado como modulo funcional cargado por el puente UI.
+- `src/library/ficha/ficha-identify.js`: identificacion de fichas; expone funciones de identificacion separadas.
+- `src/library/library-v3.js`: flujo Biblioteca V3/V4 de identificacion, borrador, edicion, auditoria, publicacion, borrado, inventario, copiado de apartados y pegado de texto en ficha existente.
+- `src/library/ficha/ficha-chat-import.js`: creador de fichas nuevas desde texto pegado del Chat; reparte apartados a campos de contrato, crea fila en `library_entries` y abre la ficha para revisar/auditar.
 - `src/animals/animals.js`: animales.
 - `src/map/map-v3-model.js`: contrato de datos del gemelo digital.
 - `src/map/map.js`: mapa IA y escena 3D real.
@@ -96,7 +99,7 @@ Responsabilidades previstas:
 - `src/library/inventory/`: importacion, enlace y validacion de inventario.
 - `src/library/images/`: subida, seleccion, previsualizacion y utilidades de imagen.
 - `src/library/ui/`: render, tarjetas, toolbar y filtros.
-- `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar y campos de ficha.
+- `src/library/ficha/`: identificar, generar, editar, auditar, publicar, ver, borrar, campos de ficha e importacion desde texto del Chat.
 
 ## Fase 2 Biblioteca
 
@@ -108,15 +111,39 @@ Primer modulo movido:
 Segundo paso ejecutado:
 
 - `src/library/ui/library.js` creado como puente de carga controlado.
-- `index.html` carga `src/library/ui/library.js` en lugar de cargar directamente `src/library/library.js`.
-- `src/library/library.js` se mantiene conservado porque el puente lo carga de forma sincronica y no se ha copiado aun su contenido completo.
+- `index.html` carga `src/library/ui/library.js`.
+- `src/library/library.js` se mantiene conservado porque el puente lo carga de forma sincronica.
 - La ruta antigua `src/library/library.js` no se elimina en este paso.
 
 Resultado:
 
-- `index.html` carga `src/library/core/library-schema.js` antes de `src/library/ui/library.js` y `library-v3.js`.
+- `index.html` carga `src/library/core/library-schema.js` antes de `src/library/ui/library.js`, `ficha-identify.js`, `library-v3.js` y `ficha-chat-import.js`.
 - La ruta antigua `src/library/library-schema.js` ha sido eliminada.
-- No se ha movido ningun otro modulo funcional.
+- `src/library/ficha/ficha-view.js` no esta cargado en `index.html` para evitar duplicar y pisar `window.verFicha`.
+- No se ha movido aun todo el modulo funcional de `library-v3.js` a submodulos.
+
+## Estado Biblioteca 02/07/2026
+
+Cambios activos documentados:
+
+- `src/library/ficha/ficha-identify.js`: identificacion separada.
+- `src/library/core/library-schema.js`: contratos reforzados para fichas completas; campos obligatorios ampliados por tipo de ficha; auditoria contra campos pobres y frases genericas.
+- `src/library/library-v3.js`: boton `Copiar apartados para Chat`; boton `Pegar ficha del Chat` dentro de edicion de ficha existente; fuentes editables; control de portada/foto de ficha.
+- `src/library/ficha/ficha-chat-import.js`: boton `Crear ficha desde Chat` en Biblioteca para crear fichas nuevas desde texto pegado; requiere tipo, texto completo y fuentes con URL.
+- `library-mobile-overflow-fix.css`: prevencion de desbordamiento horizontal y ajuste movil.
+- `index.html`: carga `ficha-chat-import.js` despues de `library-v3.js`.
+
+## Edge Functions Supabase Biblioteca
+
+Proyecto Supabase: `vqpxhozavfzgtkqscncs`.
+
+Funciones relevantes:
+
+- `library-identify`: identifica la entidad antes de crear ficha.
+- `library-generate-draft`: generacion de borrador reforzada; audita antes de guardar; repara hasta tres veces; si sigue pobre no guarda la ficha.
+- `library-audit-card`: auditoria de ficha contra contrato reforzado.
+- `library-publish`: publicacion de fichas validadas.
+- Compartido: `supabase/functions/_shared/library-v3.ts` contiene contratos, normalizacion de fuentes, reparacion JSON, auditoria y cliente autenticado.
 
 ## Documentacion de control
 
@@ -144,6 +171,12 @@ Resultado:
 ## Nota Fase 1 Biblioteca 26/06/2026
 
 - Se ha creado solo la arquitectura modular vacia bajo `src/library/`.
-- No se ha movido ninguna funcion.
-- No se ha modificado `index.html`.
-- `src/library/library.js` sigue siendo modulo activo de Biblioteca/Fichas.
+- No se movio ninguna funcion en esa fase.
+- `src/library/library.js` sigue conservado como modulo heredado cargado por el puente UI.
+
+## Nota de control 02/07/2026
+
+- Para saber que pantalla controla Biblioteca hay que revisar `index.html` y el orden de carga.
+- La vista activa de ficha la controla `src/library/library-v3.js`.
+- La creacion nueva desde texto pegado la controla `src/library/ficha/ficha-chat-import.js`.
+- La generacion IA real depende de Edge Functions desplegadas en Supabase, no solo del codigo en GitHub.
