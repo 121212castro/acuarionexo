@@ -98,7 +98,7 @@
           <div class="quick-actions">
             <button onclick="adminUsers()"><span>👥</span>Usuarios</button>
             <button onclick="adminReports()"><span>⚠</span>Fallos</button>
-            <button onclick="adminAiUsage()"><span>◈</span>Consumo IA</button>
+            <button disabled><span>◈</span>Consumo IA</button>
             <button onclick="adminGrantForm()"><span>＋</span>Dar Admin</button>
           </div>
         </section>
