@@ -51,15 +51,16 @@
   }
 
   async function adminStats() {
-    const [libraryReview, libraryValidated, aquariums, inventory, microfauna, reports] = await Promise.all([
+    const [libraryReview, libraryValidated, aquariums, inventory, microfauna, reports, aiUsage] = await Promise.all([
       countTable('library_entries', q => q.in('status', ['review', 'draft', 'identified'])),
       countTable('library_entries', q => q.in('status', ['validated', 'published'])),
       countTable('aquariums'),
       countTable('inventory_items'),
       countTable('microfauna_cultures'),
-      countTable('admin_reports', q => q.in('status', ['open', 'reviewing']))
+      countTable('admin_reports', q => q.in('status', ['open', 'reviewing'])),
+      countTable('ai_usage_logs')
     ]);
-    return { libraryReview, libraryValidated, aquariums, inventory, microfauna, reports };
+    return { libraryReview, libraryValidated, aquariums, inventory, microfauna, reports, aiUsage };
   }
 
   function adminBlocked() {
@@ -89,6 +90,7 @@
             <article class="summary-card"><div><small>Inventario</small><h2>${esc(stats.inventory)}</h2></div></article>
             <article class="summary-card"><div><small>Microfauna</small><h2>${esc(stats.microfauna)}</h2></div></article>
             <article class="summary-card"><div><small>Reportes abiertos</small><h2>${esc(stats.reports)}</h2></div></article>
+            <article class="summary-card"><div><small>Consumos IA</small><h2>${esc(stats.aiUsage)}</h2></div></article>
           </div>
         </section>
         <section class="panel">
@@ -96,6 +98,7 @@
           <div class="quick-actions">
             <button onclick="adminUsers()"><span>👥</span>Usuarios</button>
             <button onclick="adminReports()"><span>⚠</span>Fallos</button>
+            <button onclick="adminAiUsage()"><span>◈</span>Consumo IA</button>
             <button onclick="adminGrantForm()"><span>＋</span>Dar Admin</button>
           </div>
         </section>
