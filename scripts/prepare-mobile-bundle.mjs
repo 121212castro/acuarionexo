@@ -40,6 +40,7 @@ const files = [
   'src/parameters/parameters.js',
   'src/parameters/measurements-advanced.js',
   'src/tasks/tasks.js',
+  'src/admin/admin.js',
   'src/auth/auth.js'
 ];
 
