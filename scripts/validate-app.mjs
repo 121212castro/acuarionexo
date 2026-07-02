@@ -43,11 +43,33 @@ function checkDuplicateWindows() {
   }
 }
 
+function mockElement(id) {
+  return { id, value:'', innerHTML:'', textContent:'', style:{}, dataset:{}, options:[], onclick:null,
+    classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, remove(){}, insertAdjacentHTML(){}, scrollIntoView(){}, prepend(){}, appendChild(){}, click(){}, setAttribute(){}, removeAttribute(){},
+    getBoundingClientRect(){return{left:0,top:0,width:640,height:360}}
+  };
+}
+
 async function checkLoad() {
   const elements = new Map();
-  const el = id => elements.get(id) || (elements.set(id, { id, value:'', innerHTML:'', textContent:'', style:{}, dataset:{}, options:[], classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, remove(){}, insertAdjacentHTML(){}, scrollIntoView(){}, prepend(){}, appendChild(){}, click(){}, setAttribute(){}, removeAttribute(){}, getBoundingClientRect(){return{left:0,top:0,width:640,height:360}} }), elements.get(id));
+  const el = id => elements.get(id) || (elements.set(id, mockElement(id)), elements.get(id));
   const chain = { select(){return this}, eq(){return this}, order(){return this}, limit(){return Promise.resolve({data:[],error:null})}, single(){return Promise.resolve({data:{id:'x'},error:null})}, insert(){return Promise.resolve({error:null})}, update(){return this}, in(){return this}, or(){return this} };
-  const ctx = { console, setTimeout, clearTimeout, setInterval(){}, clearInterval(){}, requestAnimationFrame(fn){fn()}, scrollTo(){}, addEventListener(){}, location:{origin:'https://example.com',pathname:'/acuarionexo/',hash:'',search:'',reload(){},replace(){}}, history:{replaceState(){}}, localStorage:{getItem(){return null},setItem(){}}, navigator:{serviceWorker:null,clipboard:{writeText(){return Promise.resolve()}}}, caches:{keys(){return Promise.resolve([])},delete(){return Promise.resolve(true)}}, fetch(){return Promise.resolve({ok:true,json(){return Promise.resolve({})}})}, MutationObserver:function(){return{observe(){},disconnect(){}}}, Image:function(){}, URL:{createObjectURL(){return 'blob:x'}}, document:{getElementById:el,querySelector(){return null},addEventListener(){},createElement:el,body:el('body')}, ACUARIO_NEXO_TEST:true, ACUARIONEXO_CONFIG:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_KEY:'anon',APP_VERSION:'test'}, supabase:{createClient(){return{from(){return Object.create(chain)},rpc(){return Object.create(chain)},storage:{from(){return{upload(){return Promise.resolve({error:null})},getPublicUrl(){return{data:{publicUrl:'https://example.com/x.jpg'}}}}}},functions:{invoke(){return Promise.resolve({data:{data:{sections:{}}},error:null})},auth:{getSession(){return Promise.resolve({data:{session:null}})},onAuthStateChange(){},signInWithPassword(){return Promise.resolve({error:null})},signUp(){return Promise.resolve({error:null})},signOut(){return Promise.resolve({error:null})},resetPasswordForEmail(){return Promise.resolve({error:null})},updateUser(){return Promise.resolve({error:null})}}}}} };
+  const ctx = {
+    console, setTimeout, clearTimeout, setInterval(){}, clearInterval(){}, requestAnimationFrame(fn){fn()}, scrollTo(){}, addEventListener(){},
+    location:{origin:'https://example.com',pathname:'/acuarionexo/',hash:'',search:'',reload(){},replace(){}}, history:{replaceState(){}}, localStorage:{getItem(){return null},setItem(){}},
+    navigator:{serviceWorker:null,clipboard:{writeText(){return Promise.resolve()}}}, Notification: undefined, crypto:{randomUUID(){return '00000000-0000-4000-8000-000000000000'}},
+    caches:{keys(){return Promise.resolve([])},delete(){return Promise.resolve(true)}}, fetch(){return Promise.resolve({ok:true,json(){return Promise.resolve({})}})}, MutationObserver:function(){return{observe(){},disconnect(){}}}, Image:function(){}, URL:{createObjectURL(){return 'blob:x'}},
+    document:{getElementById:el,querySelector(){return null},addEventListener(){},createElement:el,body:el('body')},
+    ACUARIO_NEXO_TEST:true,
+    ACUARIONEXO_CONFIG:{SUPABASE_URL:'https://example.supabase.co',SUPABASE_KEY:'anon',APP_VERSION:'test'},
+    supabase:{createClient(){return{
+      from(){return Object.create(chain)},
+      rpc(){return Object.create(chain)},
+      storage:{from(){return{upload(){return Promise.resolve({error:null})},getPublicUrl(){return{data:{publicUrl:'https://example.com/x.jpg'}}}}}},
+      functions:{invoke(){return Promise.resolve({data:{data:{sections:{}}},error:null})}},
+      auth:{getSession(){return Promise.resolve({data:{session:null}})},onAuthStateChange(){},signInWithPassword(){return Promise.resolve({error:null})},signUp(){return Promise.resolve({error:null})},signOut(){return Promise.resolve({error:null})},resetPasswordForEmail(){return Promise.resolve({error:null})},updateUser(){return Promise.resolve({error:null})}}
+    }}}
+  };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
   for (const script of scripts()) vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), ctx, { filename: script });
