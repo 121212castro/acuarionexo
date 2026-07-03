@@ -3,6 +3,7 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
+  const RELOAD_KEY = APP + ':last-forced-reload-build';
   const CHECK_INTERVAL_MS = 30 * 60 * 1000;
   const MIN_CHECK_GAP_MS = 5 * 60 * 1000;
   let checking = false;
@@ -23,8 +24,10 @@
   async function forceReload(nextBuild) {
     await clearAppCache();
     const build = nextBuild || CURRENT_BUILD || Date.now();
-    const base = location.pathname || './';
-    location.replace(base + '?v=' + encodeURIComponent(build) + '-' + Date.now());
+    const url = new URL(location.href);
+    url.searchParams.set('v', build);
+    url.searchParams.set('t', String(Date.now()));
+    location.replace(url.toString());
   }
 
   async function fetchRemoteVersion() {
@@ -41,10 +44,11 @@
     return remote && remote.build ? remote.build : null;
   }
 
-  async function checkVersion() {
+  async function checkVersion(options) {
+    const manual = !!(options && options.manual);
     if (checking) return;
     const lastCheck = Date.parse(localStorage.getItem(LAST_CHECK_KEY) || '');
-    if (Number.isFinite(lastCheck) && Date.now() - lastCheck < MIN_CHECK_GAP_MS) return;
+    if (!manual && Number.isFinite(lastCheck) && Date.now() - lastCheck < MIN_CHECK_GAP_MS) return;
     checking = true;
     try {
       localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
@@ -54,9 +58,12 @@
       const storedBuild = localStorage.getItem(KEY);
       if (!storedBuild) localStorage.setItem(KEY, remoteBuild);
 
-      if (remoteBuild !== CURRENT_BUILD || (storedBuild && storedBuild !== remoteBuild)) {
+      if (manual || remoteBuild !== CURRENT_BUILD || (storedBuild && storedBuild !== remoteBuild)) {
         localStorage.setItem(KEY, remoteBuild);
-        return;
+        const lastForcedReloadBuild = localStorage.getItem(RELOAD_KEY);
+        if (!manual && lastForcedReloadBuild === remoteBuild && remoteBuild !== CURRENT_BUILD) return;
+        localStorage.setItem(RELOAD_KEY, remoteBuild);
+        await forceReload(remoteBuild);
       }
     } catch (_) {
     } finally {
@@ -64,9 +71,22 @@
     }
   }
 
+  function bindRefreshButton() {
+    const btn = document.getElementById('refreshAppBtn');
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      checkVersion({ manual: true });
+    });
+  }
+
   window.AcuarioNexoUpdate = { checkVersion, forceReload, clearAppCache };
   window.hardRefreshAcuarioNexo = forceReload;
 
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindRefreshButton);
+  } else {
+    bindRefreshButton();
+  }
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) checkVersion();
   });
