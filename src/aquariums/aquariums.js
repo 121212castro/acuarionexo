@@ -128,6 +128,61 @@ function fcheck(id, label, value) { return `<label><input id="${esc(id)}" type="
 function nval(id) { const raw = val(id); if (raw === '') return null; const n = Number(String(raw).replace(',', '.')); return Number.isFinite(n) ? n : null; }
 function dval(id) { return val(id) || null; }
 
+window.formA = function () {
+  if (!state.user) return login();
+  render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Nuevo acuario</h2><p>Crear un sistema nuevo.</p></div></section>
+    <section class="panel aquarium-form">
+    <div class="panel-head"><h2>Nuevo acuario</h2><button onclick="acuariosHome()">Cancelar</button></div>
+    <h3>Datos generales</h3>
+    <label>Nombre</label><input id="editAqName" placeholder="Nombre del acuario">
+    <label>Tipo</label><select id="editAqType">${selectTypeOptions('reef')}</select>
+    <label>Ubicación</label><input id="editAqLocation" placeholder="Ubicación">
+    ${fdate('mounted_at','Fecha de montaje',null)}${fdate('filled_at','Fecha de llenado',null)}${fdate('cycling_start_date','Inicio de ciclado',null)}${fdate('cycling_end_date','Fin de ciclado',null)}
+    <h3>Medidas de la urna</h3>
+    ${fnum('tank_length_cm','Largo urna (cm)',null)}${fnum('tank_width_cm','Ancho urna (cm)',null)}${fnum('tank_height_cm','Alto urna (cm)',null)}${fnum('display_water_height_cm','Altura real de agua (cm)',null)}${fnum('rock_kg','Roca (kg)',null)}${fnum('sand_kg','Arena (kg)',null)}
+    <h3>Sump / refugio / relleno</h3>
+    ${fcheck('has_sump','Tiene sump',false)}${fnum('sump_length_cm','Largo sump (cm)',null)}${fnum('sump_width_cm','Ancho sump (cm)',null)}${fnum('sump_height_cm','Alto sump (cm)',null)}${fnum('sump_water_height_cm','Altura agua sump (cm)',null)}${fcheck('has_refugium','Tiene refugio',false)}${fnum('refugium_liters','Litros refugio',null)}${fcheck('has_ato_reservoir','Tiene depósito de relleno',false)}${fnum('ato_reservoir_liters','Litros depósito relleno',null)}
+    <h3>Litros</h3>
+    ${fnum('editAqLiters','Litros reales manuales',null)}
+    <div class="quick-actions">${calcStat('Brutos urna','calcGross')}${calcStat('Display neto','calcDisplayNet')}${calcStat('Sump neto','calcSumpNet')}${calcStat('Sistema neto','calcSystemNet')}</div>
+    <h3>Notas</h3><label>Nota</label><textarea id="editAqNotes"></textarea>
+    <button class="primary" onclick="guardarNuevoAcuario()">Crear acuario</button><div id="editAqStatus"></div>
+  </section>`, 'acuarios');
+  setTimeout(function () { if (window.calcAqVolumes) window.calcAqVolumes(); }, 0);
+};
+
+window.guardarNuevoAcuario = async function () {
+  const box = byId('editAqStatus');
+  if (!state.user) return login();
+  try {
+    const name = val('editAqName');
+    if (!name) throw new Error('El nombre del acuario es obligatorio.');
+    const c = calcVolumesFromInputs();
+    const manual = nval('editAqLiters');
+    const insert = {
+      user_id: state.user.id,
+      name,
+      aquarium_type: val('editAqType') || 'reef',
+      type: val('editAqType') || 'reef',
+      location: val('editAqLocation') || null,
+      tank_length_cm: nval('tank_length_cm'), tank_width_cm: nval('tank_width_cm'), tank_height_cm: nval('tank_height_cm'), display_water_height_cm: nval('display_water_height_cm'), rock_kg: nval('rock_kg'), sand_kg: nval('sand_kg'),
+      has_sump: !!byId('has_sump')?.checked, sump_length_cm: nval('sump_length_cm'), sump_width_cm: nval('sump_width_cm'), sump_height_cm: nval('sump_height_cm'), sump_water_height_cm: nval('sump_water_height_cm'),
+      has_refugium: !!byId('has_refugium')?.checked, refugium_liters: nval('refugium_liters'), has_ato_reservoir: !!byId('has_ato_reservoir')?.checked, ato_reservoir_liters: nval('ato_reservoir_liters'),
+      gross_liters: c.gross, display_water_liters: c.displayWater, display_net_liters: c.displayNet, sump_net_liters: c.sumpNet, system_net_liters: c.systemNet,
+      real_liters: manual ?? c.systemNet, manual_real_liters: manual, liters: manual ?? c.systemNet, volume_liters: c.systemNet,
+      mounted_at: dval('mounted_at'), filled_at: dval('filled_at'), cycling_start_date: dval('cycling_start_date'), cycling_end_date: dval('cycling_end_date'), notes: val('editAqNotes') || null
+    };
+    if (box) box.innerHTML = msg('Creando acuario...', 'notice');
+    const { data, error } = await supabase.from('aquariums').insert(insert).select('*').single();
+    if (error) throw error;
+    const saved = data || insert;
+    state.aquariums = [saved].concat(state.aquariums || []);
+    state.aquarium = saved;
+    window.q = saved;
+    resumenAcuario();
+  } catch (e) { if (box) box.innerHTML = msg(e.message, 'error'); }
+};
+
 window.editarAcuario = function () {
   const aq = currentAquarium();
   if (!aq) return listaAcuarios();
