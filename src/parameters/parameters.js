@@ -16,6 +16,7 @@ async function parametros() {
       <div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('weekly')">Semanal</button></div></div>
       ${paramActionPanel()}
       ${paramLatestPanel(aq, rows)}
+      ${paramAiPanel(aq, rows)}
       ${paramCyclePanel(rows)}
       <h3>Historial</h3>
       ${paramHistoryHtml(rows)}
@@ -84,6 +85,64 @@ function paramLatestPanel(aq, rows) {
     <h3>Última medición</h3>
     <div class="param-legend"><span class="ok">Bien</span><span class="warn">Precaución</span><span class="alert">Alerta</span><span class="risk">Riesgo</span></div>
     <div class="date-body param-latest-grid">${tiles}</div>
+  </div>`;
+}
+
+function paramAgeDays(row) {
+  if (!row) return null;
+  const d = new Date(row.measured_at || row.created_at || '');
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.floor((Date.now() - d.getTime()) / AI_DAY);
+}
+
+function paramAiAdviceFor(key, row, stateInfo) {
+  const label = aiParameterLabels[key] || row?.parameter_label || key;
+  const value = row ? paramDisplayValue(row) : 'pendiente';
+  if (!row) return `Falta ${label}. Regístralo antes de tomar decisiones sobre el acuario.`;
+  if (stateInfo.label === 'Riesgo') return `${label} está en riesgo (${value}). Repite la medición, confirma con otro test si puedes y revisa cambios recientes antes de corregir.`;
+  if (stateInfo.label === 'Alerta') return `${label} está en alerta (${value}). No corrijas a ciegas: confirma tendencia con una nueva medición.`;
+  if (stateInfo.label === 'Precaución') return `${label} necesita revisión (${value}). Comprueba si la medición está antigua o fuera de rutina.`;
+  return '';
+}
+
+function paramAiPanel(aq, rows) {
+  const latest = aiLatestMeasurements(rows);
+  const plan = aiMeasurementPlans[aiAquariumMode(aq)] || aiMeasurementPlans.marine;
+  const keys = paramKeysForAquarium(aq);
+  const missing = [];
+  const old = [];
+  const risk = [];
+  const alert = [];
+  const advice = [];
+
+  keys.forEach(function (key) {
+    const row = latest[key] || (key === 'salinity_ppt' ? latest.salinity_sg : null);
+    const stateInfo = paramVisualState(aq, row);
+    const label = aiParameterLabels[key] || row?.parameter_label || key;
+    const freq = plan[key] || (key === 'salinity_sg' ? plan.salinity_ppt : null);
+    const days = paramAgeDays(row);
+    if (!row) missing.push(label);
+    if (row && freq && days != null && days > freq) old.push(`${label} (${days} días)`);
+    if (stateInfo.label === 'Riesgo') risk.push(`${label}: ${paramDisplayValue(row)}`);
+    if (stateInfo.label === 'Alerta') alert.push(`${label}: ${paramDisplayValue(row)}`);
+    const text = paramAiAdviceFor(key, row, stateInfo);
+    if (text) advice.push(text);
+  });
+
+  const priority = risk.length ? 'Riesgo detectado' : alert.length ? 'Alertas pendientes' : missing.length || old.length ? 'Faltan datos para decidir' : 'Sin urgencias detectadas';
+  const priorityClass = risk.length ? 'error' : alert.length ? 'notice' : (missing.length || old.length ? 'notice' : 'success');
+  const nextChecks = [];
+  if (missing.length) nextChecks.push(`Medir pendientes: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '...' : ''}.`);
+  if (old.length) nextChecks.push(`Actualizar mediciones antiguas: ${old.slice(0, 8).join(', ')}${old.length > 8 ? '...' : ''}.`);
+  if (risk.length || alert.length) nextChecks.push('Antes de aditar o hacer cambios fuertes, repetir los parámetros marcados y anotar fecha, método/test y cambios recientes.');
+  if (!nextChecks.length) nextChecks.push('Mantener rutina semanal/mensual y registrar cualquier cambio de agua, aditivo o incidencia.');
+
+  return `<div class="param-aq-card param-ai-card">
+    <h3>Análisis IA</h3>
+    <div class="${priorityClass}"><b>${esc(priority)}</b><br>${esc(nextChecks.join(' '))}</div>
+    ${risk.length ? `<section class="param-ai-block"><h4>Riesgo</h4><p>${esc(risk.join(' · '))}</p></section>` : ''}
+    ${alert.length ? `<section class="param-ai-block"><h4>Alerta</h4><p>${esc(alert.join(' · '))}</p></section>` : ''}
+    <section class="param-ai-block"><h4>Consejos seguros</h4><ul>${advice.slice(0, 6).map(function (x) { return `<li>${esc(x)}</li>`; }).join('') || '<li>No hay acciones urgentes con los datos actuales.</li>'}</ul></section>
   </div>`;
 }
 
