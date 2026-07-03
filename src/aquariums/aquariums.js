@@ -112,9 +112,10 @@ function resumenAcuario() {
   const type = aq.aquarium_type || aq.type || 'Acuario';
   const created = aq.created_at ? new Date(aq.created_at).toLocaleDateString('es-ES') : 'Sin fecha';
   render(aqHeader('resumen') + `<section class="panel">
-    <div class="panel-head"><h2>Resumen</h2><div><button onclick="editarAcuario()">Editar acuario</button><button onclick="listaAcuarios()">Volver</button></div></div>
+    <div class="panel-head"><h2>Resumen</h2><div><button onclick="editarAcuario()">Editar acuario</button><button onclick="borrarAcuario()">Borrar acuario</button><button onclick="listaAcuarios()">Volver</button></div></div>
     <div class="quick-actions">${dashboardStat('Tipo', type)}${dashboardStat('Litros', `${liters} L`)}${dashboardStat('Alta', created)}</div>
     ${aq.notes ? `<p>${esc(aq.notes)}</p>` : '<p class="small">Sin nota del acuario.</p>'}
+    <div id="deleteAqStatus"></div>
   </section>`, 'acuarios');
 }
 
@@ -238,6 +239,25 @@ window.guardarAcuarioEditado = async function () {
 };
 
 window.editarNotaAcuario = window.editarAcuario;
+
+window.borrarAcuario = async function () {
+  const aq = currentAquarium();
+  if (!aq || !state.user) return listaAcuarios();
+  const name = aq.name || 'este acuario';
+  if (!window.confirm(`Borrar acuario "${name}"?\n\nEsta acción no se puede deshacer.`)) return;
+  const box = byId('deleteAqStatus');
+  try {
+    if (box) box.innerHTML = msg('Borrando acuario...', 'notice');
+    const { error } = await supabase.from('aquariums').delete().eq('id', aq.id).eq('user_id', state.user.id);
+    if (error) throw error;
+    state.aquariums = (state.aquariums || []).filter(function (item) { return String(item.id) !== String(aq.id); });
+    state.aquarium = null;
+    window.q = null;
+    await listaAcuarios();
+  } catch (e) {
+    if (box) box.innerHTML = msg('No se pudo borrar el acuario: ' + e.message, 'error');
+  }
+};
 
 window.openA = function (id) {
   const aq = (state.aquariums || []).find(function (item) { return String(item.id) === String(id); });
