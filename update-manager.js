@@ -3,8 +3,6 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
-  const RELOAD_KEY = APP + ':last-forced-reload-build';
-  const HOTLOAD_KEY = APP + ':hotloaded-build';
   const CHECK_INTERVAL_MS = 30 * 60 * 1000;
   const MIN_CHECK_GAP_MS = 5 * 60 * 1000;
   let checking = false;
@@ -19,38 +17,14 @@
         const regs = await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map(function (reg) { return reg.unregister(); }));
       }
+      localStorage.removeItem(APP + ':last-forced-reload-build');
+      localStorage.removeItem(APP + ':hotloaded-build');
     } catch (_) {}
   }
 
-  function loadScriptOnce(src, id) {
-    return new Promise(function (resolve) {
-      const old = document.getElementById(id);
-      if (old) old.remove();
-      const script = document.createElement('script');
-      script.id = id;
-      script.src = src;
-      script.async = false;
-      script.onload = resolve;
-      script.onerror = resolve;
-      document.body.appendChild(script);
-    });
-  }
-
-  async function hotloadChangedScripts(build) {
-    if (!build || localStorage.getItem(HOTLOAD_KEY) === build) return;
-    localStorage.setItem(HOTLOAD_KEY, build);
-    await loadScriptOnce('src/map/map.js?v=' + encodeURIComponent(build) + '&t=' + Date.now(), 'anx-hot-map');
-    await loadScriptOnce('notifications.js?v=' + encodeURIComponent(build) + '&t=' + Date.now(), 'anx-hot-notifications');
-    if (typeof window.mapaIA === 'function' && document.getElementById('map3dStage')) window.mapaIA();
-  }
-
-  async function forceReload(nextBuild) {
+  async function forceReload() {
     await clearAppCache();
-    const build = nextBuild || CURRENT_BUILD || Date.now();
-    const url = new URL(location.href);
-    url.searchParams.set('v', build);
-    url.searchParams.set('t', String(Date.now()));
-    location.replace(url.toString());
+    window.location.reload();
   }
 
   async function fetchRemoteVersion() {
@@ -76,19 +50,8 @@
     try {
       localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
       const remoteBuild = await fetchRemoteVersion();
-      if (!remoteBuild) return;
-
-      const storedBuild = localStorage.getItem(KEY);
-      if (!storedBuild) localStorage.setItem(KEY, remoteBuild);
-
-      if (manual || remoteBuild !== CURRENT_BUILD || (storedBuild && storedBuild !== remoteBuild)) {
-        localStorage.setItem(KEY, remoteBuild);
-        await hotloadChangedScripts(remoteBuild);
-        const lastForcedReloadBuild = localStorage.getItem(RELOAD_KEY);
-        if (!manual && lastForcedReloadBuild === remoteBuild && remoteBuild !== CURRENT_BUILD) return;
-        localStorage.setItem(RELOAD_KEY, remoteBuild);
-        await forceReload(remoteBuild);
-      }
+      if (remoteBuild) localStorage.setItem(KEY, remoteBuild);
+      if (manual) await forceReload();
     } catch (_) {
     } finally {
       checking = false;
@@ -103,7 +66,7 @@
     });
   }
 
-  window.AcuarioNexoUpdate = { checkVersion, forceReload, clearAppCache, hotloadChangedScripts };
+  window.AcuarioNexoUpdate = { checkVersion, forceReload, clearAppCache };
   window.hardRefreshAcuarioNexo = forceReload;
 
   if (document.readyState === 'loading') {
