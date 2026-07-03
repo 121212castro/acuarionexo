@@ -20,6 +20,11 @@ body {
 .library-picker,
 .library-picker-grid,
 .library-cover-note,
+.inventory-group,
+.inventory-card,
+.inventory-ficha-card,
+.inventory-card-body,
+.inventory-cover,
 .form-grid,
 .image-actions {
   max-width: 100%;
@@ -36,7 +41,9 @@ body {
 .library-picker,
 .library-picker *,
 .library-cover-note,
-.library-cover-note * {
+.library-cover-note *,
+.inventory-card,
+.inventory-card * {
   overflow-wrap: anywhere;
   word-break: break-word;
 }
@@ -44,11 +51,14 @@ body {
 .library-detail,
 .library-image-panel,
 .library-picker,
-.library-cover-note {
+.library-cover-note,
+.inventory-group,
+.inventory-card {
   overflow-x: hidden;
 }
 
-.library-card {
+.library-card,
+.inventory-card {
   width: 100%;
   min-width: 0;
 }
@@ -59,6 +69,7 @@ body {
 .library-cover-note img,
 .library-image-preview img,
 .library-picker-grid img,
+.inventory-cover img,
 img {
   max-width: 100%;
   height: auto;
@@ -70,11 +81,13 @@ img {
 .library-detail-photo,
 .library-cover-note img,
 .library-image-preview img,
-.library-picker-grid img {
+.library-picker-grid img,
+.inventory-cover img {
   display: block;
 }
 
-.library-card-body {
+.library-card-body,
+.inventory-card-body {
   min-width: 0;
 }
 
@@ -90,6 +103,10 @@ img {
 .library-detail-section summary,
 .library-image-panel h3,
 .library-picker-grid span,
+.inventory-card h3,
+.inventory-card p,
+.inventory-card b,
+.inventory-card span,
 input,
 textarea,
 select,
@@ -102,6 +119,88 @@ input,
 textarea,
 select {
   overflow-wrap: anywhere;
+}
+
+/* Inventario · tarjetas compactas */
+.inventory-group {
+  display: grid;
+  gap: 12px;
+}
+
+.inventory-group h3 {
+  margin-top: 12px;
+}
+
+.inventory-card.inventory-ficha-card {
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr);
+  gap: 12px;
+  align-items: stretch;
+  width: 100%;
+  min-height: 154px;
+  padding: 10px;
+  text-align: left;
+  overflow: hidden;
+}
+
+.inventory-cover {
+  width: 138px;
+  height: 138px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: rgba(255,255,255,.07);
+  display: grid;
+  place-items: center;
+  align-self: start;
+  flex-shrink: 0;
+}
+
+.inventory-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.inventory-cover span {
+  font-size: 36px;
+}
+
+.inventory-card-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 0;
+}
+
+.inventory-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.inventory-card-head b {
+  display: block;
+  font-size: 18px;
+  line-height: 1.08;
+}
+
+.inventory-card-head span {
+  flex-shrink: 0;
+  border: 1px solid rgba(125,211,252,.34);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.inventory-card .small,
+.inventory-card p {
+  font-size: 13px;
+  line-height: 1.25;
+  margin: 0;
 }
 
 /* Biblioteca · botones limpios en móvil */
@@ -251,5 +350,36 @@ select {
   .library-no-photo {
     width: 82px;
     height: 82px;
+  }
+
+  .inventory-card.inventory-ficha-card {
+    grid-template-columns: 96px minmax(0, 1fr);
+    min-height: 112px;
+    gap: 10px;
+    padding: 9px;
+  }
+
+  .inventory-cover {
+    width: 96px;
+    height: 96px;
+    border-radius: 14px;
+  }
+
+  .inventory-card-head {
+    display: block;
+  }
+
+  .inventory-card-head b {
+    font-size: 16px;
+  }
+
+  .inventory-card-head span {
+    display: inline-flex;
+    margin-top: 5px;
+  }
+
+  .inventory-card .small,
+  .inventory-card p {
+    font-size: 12px;
   }
 }
