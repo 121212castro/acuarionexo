@@ -21,6 +21,7 @@ async function parametros() {
       <h3>Historial</h3>
       ${paramHistoryHtml(rows)}
     </section>`, 'acuarios');
+    ensureParameterAlerts(aq, rows);
   } catch (e) {
     if (isCurrent(t)) render(aqHeader('parametros') + `<section class="panel">${msg(e.message, 'error')}</section>`, 'acuarios');
   }
@@ -105,6 +106,78 @@ function paramAiAdviceFor(key, row, stateInfo) {
   return '';
 }
 
+function parameterAlertCandidates(aq, rows) {
+  const latest = aiLatestMeasurements(rows);
+  const keys = paramKeysForAquarium(aq);
+  const out = [];
+  keys.forEach(function (key) {
+    const row = latest[key] || (key === 'salinity_ppt' ? latest.salinity_sg : null);
+    if (!row) return;
+    const stateInfo = paramVisualState(aq, row);
+    if (!['Riesgo', 'Alerta'].includes(stateInfo.label)) return;
+    const label = aiParameterLabels[key] || row.parameter_label || key;
+    const value = paramDisplayValue(row);
+    const alertKey = `param:${aq.id}:${key}:${stateInfo.label}:${value}`;
+    out.push({ key, label, value, stateInfo, alertKey, row });
+  });
+  return out;
+}
+
+function taskNotesPayload(notes, meta = {}) {
+  const cleanMeta = Object.fromEntries(Object.entries(meta).filter(([, value]) => value !== null && value !== undefined && value !== ''));
+  return `${Object.keys(cleanMeta).length ? `AcuarioNexoTaskMeta:${JSON.stringify(cleanMeta)}\n` : ''}${notes || ''}`.trim() || null;
+}
+
+function notifyLocalParameterAlert(title, body, tag) {
+  try {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+    new Notification(title, { body, tag, requireInteraction: true });
+  } catch (_) {}
+}
+
+async function ensureParameterAlerts(aq, rows) {
+  if (!aq || !state.user) return;
+  const candidates = parameterAlertCandidates(aq, rows);
+  if (!candidates.length) return;
+  try {
+    const existing = await supabase.from('tasks')
+      .select('id,title,notes,status')
+      .eq('user_id', state.user.id)
+      .eq('aquarium_id', aq.id)
+      .eq('task_type', 'parameter_alert')
+      .neq('status', 'done')
+      .limit(80);
+    if (existing.error) throw existing.error;
+    const existingText = (existing.data || []).map(function (t) { return String(t.notes || '') + ' ' + String(t.title || ''); }).join('\n');
+    const rowsToInsert = [];
+    candidates.forEach(function (c) {
+      if (existingText.includes(c.alertKey)) return;
+      const high = c.stateInfo.label === 'Riesgo';
+      const title = `${high ? 'Riesgo' : 'Alerta'} en ${c.label}: ${c.value}`;
+      const body = `${aq.name || 'Acuario'} · repetir medición y revisar antes de corregir.`;
+      rowsToInsert.push({
+        user_id: state.user.id,
+        aquarium_id: aq.id,
+        title,
+        task_type: 'parameter_alert',
+        type: 'parameter_alert',
+        category: 'Parámetros',
+        priority: high ? 'high' : 'medium',
+        status: 'open',
+        due_at: new Date().toISOString(),
+        notes: taskNotesPayload(`${body}\nParámetro: ${c.label}\nValor: ${c.value}\nEstado: ${c.stateInfo.label}`, {
+          route: 'parametros', source: 'parameters_ai', alert_key: c.alertKey, parameter_key: c.key, state: c.stateInfo.label, value: c.value
+        })
+      });
+      notifyLocalParameterAlert('AcuarioNexo · ' + title, body, c.alertKey);
+    });
+    if (!rowsToInsert.length) return;
+    const insert = await supabase.from('tasks').insert(rowsToInsert);
+    if (insert.error) throw insert.error;
+    if (window.AcuarioNexoNotifications?.checkDueTasks) setTimeout(function () { window.AcuarioNexoNotifications.checkDueTasks(); }, 500);
+  } catch (_) {}
+}
+
 function paramAiPanel(aq, rows) {
   const latest = aiLatestMeasurements(rows);
   const plan = aiMeasurementPlans[aiAquariumMode(aq)] || aiMeasurementPlans.marine;
@@ -134,7 +207,7 @@ function paramAiPanel(aq, rows) {
   const nextChecks = [];
   if (missing.length) nextChecks.push(`Medir pendientes: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '...' : ''}.`);
   if (old.length) nextChecks.push(`Actualizar mediciones antiguas: ${old.slice(0, 8).join(', ')}${old.length > 8 ? '...' : ''}.`);
-  if (risk.length || alert.length) nextChecks.push('Antes de aditar o hacer cambios fuertes, repetir los parámetros marcados y anotar fecha, método/test y cambios recientes.');
+  if (risk.length || alert.length) nextChecks.push('Antes de aditar o hacer cambios fuertes, repetir los parámetros marcados y anotar fecha, método/test y cambios recientes. Se creará aviso en la pantalla Avisos.');
   if (!nextChecks.length) nextChecks.push('Mantener rutina semanal/mensual y registrar cualquier cambio de agua, aditivo o incidencia.');
 
   return `<div class="param-aq-card param-ai-card">
