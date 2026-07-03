@@ -3,18 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>AcuarioNexo</title>
-  <link rel="manifest" href="manifest.webmanifest?v=cache-fijo-20260703-2119">
-  <link rel="apple-touch-icon" href="icon-512.png">
-  <link rel="icon" href="icon-512.png">
-  <link rel="stylesheet" href="styles.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="aquarium-map.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="login-reef.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="aquarium-cards.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="aquariums-mobile-fix.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="mobile-form-fix.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="library-images.css?v=cache-fijo-20260703-2119">
-  <link rel="stylesheet" href="library-mobile-overflow-fix.css?v=cache-fijo-20260703-2119">
+  <script>
+    window.ACUARIONEXO_BUILD = 'tester-dinamico-20260703-2128';
+    window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD + '-' + Date.now();
+    (function () {
+      var v = encodeURIComponent(window.ANX_ASSET_VERSION);
+      var css = ['styles.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css'];
+      document.write('<link rel="manifest" href="manifest.webmanifest?v=' + v + '">');
+      document.write('<link rel="apple-touch-icon" href="icon-512.png">');
+      document.write('<link rel="icon" href="icon-512.png">');
+      css.forEach(function (href) { document.write('<link rel="stylesheet" href="' + href + '?v=' + v + '">'); });
+    })();
+  </script>
 </head>
 <body>
   <header class="topbar premium-topbar">
@@ -25,32 +29,16 @@
     <div class="top-actions"><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
   </header>
   <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Abriendo AcuarioNexo...</p></section></main>
-  <script>window.ACUARIONEXO_BUILD="cache-fijo-20260703-2119";</script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
-  <script src="config.js?v=cache-fijo-20260703-2119"></script>
-  <script src="app.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/aquariums/aquariums.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/library/core/library-schema.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/library/ui/library.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/library/inventory/library-inventory-import.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/library/library-v3.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/library/ficha/ficha-chat-import.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/animals/animals.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/map/map-v3-model.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/map/map.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/photos/photos.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/inventory/inventory.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/microfauna/microfauna.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/ai/ai.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/ai/ai-library-v3.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/ai/ai-alerts-extra.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/parameters/parameters.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/parameters/measurements-advanced.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/tasks/tasks.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/admin/admin.js?v=cache-fijo-20260703-2119"></script>
-  <script src="src/auth/auth.js?v=cache-fijo-20260703-2119"></script>
-  <script src="update-manager.js?v=cache-fijo-20260703-2119"></script>
-  <script src="notifications.js?v=cache-fijo-20260703-2119"></script>
+  <script>
+    (function () {
+      var v = encodeURIComponent(window.ANX_ASSET_VERSION || (Date.now() + ''));
+      var scripts = [
+        'config.js','app.js','src/aquariums/aquariums.js','src/library/core/library-schema.js','src/library/ui/library.js','src/library/inventory/library-inventory-import.js','src/library/library-v3.js','src/library/ficha/ficha-chat-import.js','src/animals/animals.js','src/map/map-v3-model.js','src/map/map.js','src/photos/photos.js','src/inventory/inventory.js','src/microfauna/microfauna.js','src/ai/ai.js','src/ai/ai-library-v3.js','src/ai/ai-alerts-extra.js','src/parameters/parameters.js','src/parameters/measurements-advanced.js','src/tasks/tasks.js','src/admin/admin.js','src/auth/auth.js','update-manager.js','notifications.js'
+      ];
+      scripts.forEach(function (src) { document.write('<script src="' + src + '?v=' + v + '"><\\/script>'); });
+    })();
+  </script>
 </body>
 </html>
