@@ -2,6 +2,25 @@
 (function () {
   const { supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, render, aqHeader } = window.ANX;
 
+const PARAM_LABELS = {
+  temperature_c: 'Temperatura', salinity_ppt: 'Salinidad', salinity_sg: 'Salinidad', ph: 'pH', kh_dkh: 'KH',
+  nitrate_no3: 'NO3', phosphate_po4: 'PO4', calcium_ca: 'Calcio', magnesium_mg: 'Magnesio', potassium_k: 'Potasio',
+  iodine_i: 'Yodo', strontium_sr: 'Estroncio', ammonia_nh3: 'Amoniaco', nitrite_no2: 'NO2', gh: 'GH', tds: 'TDS'
+};
+
+function cleanParamText(text) {
+  let out = String(text || '');
+  Object.entries(PARAM_LABELS).forEach(function ([key, label]) {
+    out = out.replace(new RegExp(key, 'gi'), label);
+  });
+  return out.replace(/_/g, ' ');
+}
+
+function cleanStatus(status) {
+  const map = { open: 'Pendiente', done: 'Hecho', normal: 'Normal', medium: 'Media', high: 'Alta', low: 'Baja', critical: 'Crítica' };
+  return map[String(status || '').toLowerCase()] || status || '';
+}
+
 function taskMeta(task) {
   const text = String(task?.notes || '');
   const match = text.match(/^AcuarioNexoTaskMeta:(\{[^\n]*\})/i) || text.match(/\nAcuarioNexoTaskMeta:(\{[^\n]*\})/i);
@@ -10,7 +29,7 @@ function taskMeta(task) {
 }
 
 function taskNotes(task) {
-  return String(task?.notes || '').replace(/^AcuarioNexoTaskMeta:\{[^\n]*\}\n?/i, '').trim();
+  return cleanParamText(String(task?.notes || '').replace(/^AcuarioNexoTaskMeta:\{[^\n]*\}\n?/i, '').trim());
 }
 
 function taskNotesPayload(notes, meta = {}) {
@@ -79,9 +98,12 @@ window.tareasAcuario = tareasAcuario;
 function tareaCard(task) {
   const meta = taskMeta(task);
   const repeat = meta.repeat_days ? ` · repetir ${meta.repeat_days} días` : '';
+  const priority = cleanStatus(task.priority || 'normal');
+  const status = cleanStatus(task.status || 'open');
+  const title = cleanParamText(task.title || 'Tarea');
   return `<button class="${task.status === 'done' ? 'success' : 'item'} task-card" onclick="verAviso('${esc(task.id)}')">
-    <b>${esc(task.title || 'Tarea')}</b>
-    <p class="small">${dateText(task.due_at)} · ${esc(task.priority || 'normal')} · ${esc(task.status || 'open')}${esc(repeat)}</p>
+    <b>${esc(title)}</b>
+    <p class="small">${dateText(task.due_at)} · ${esc(priority)} · ${esc(status)}${esc(repeat)}</p>
     ${taskNotes(task) ? `<p>${esc(taskNotes(task))}</p>` : ''}
   </button>`;
 }
@@ -139,8 +161,8 @@ window.verAviso = async function (id) {
     const head = active === 'acuarios' ? aqHeader('tareas') : '';
     render(head + `<section class="panel task-detail">
       <button onclick="${active === 'acuarios' ? "openAqSection('tareas')" : 'tareas()'}">← Volver</button>
-      <small>${esc(task.task_type || task.type || 'aviso')} · ${esc(task.priority || 'normal')} · ${dateText(task.due_at)}</small>
-      <h2>${esc(task.title || 'Aviso')}</h2>
+      <small>${esc(task.task_type || task.type || 'aviso')} · ${esc(cleanStatus(task.priority || 'normal'))} · ${dateText(task.due_at)}</small>
+      <h2>${esc(cleanParamText(task.title || 'Aviso'))}</h2>
       ${taskNotes(task) ? `<p>${esc(taskNotes(task))}</p>` : ''}
       <div class="quick-actions">
         <button onclick="irAAviso('${esc(task.id)}')"><span>↪</span>Ir</button>
