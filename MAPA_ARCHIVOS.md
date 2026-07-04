@@ -2,7 +2,7 @@
 
 ## Build actual
 
-Build unificado: `phase2-inventory-ui-20260704-1350`.
+Build unificado: `phase2-notifications-css-20260704-1410`.
 
 Debe coincidir en:
 
@@ -26,6 +26,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `mobile-form-fix.css`
 - `library-images.css`
 - `library-mobile-overflow-fix.css`
+- `notifications.css`
 - Supabase CDN
 - Three.js CDN
 - Firebase CDN
@@ -101,6 +102,11 @@ Los administradores los revisan desde Admin > Fallos.
 
 - `src/inventory/inventory.js`: inventario general y por acuario.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
+
+## Notificaciones
+
+- `notifications.js`: notificaciones, fallback de IA de parametros y parche de colocacion de puntos 3D.
+- `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
 
 ## Movil
 
