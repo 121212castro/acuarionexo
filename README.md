@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `tasks-details-20260704-0245`
+- `phase2-inventory-ui-20260704-1350`
 
 Supabase oficial:
 
