@@ -8,9 +8,11 @@ App movil: Capacitor.
 
 Datos y autenticacion: Supabase.
 
+Build actual: `tasks-details-20260704-0245`.
+
 ## Entrada real web
 
-Carga activa actual:
+Carga activa directa desde `index.html`:
 
 - `styles.css`
 - `aquarium-map.css`
@@ -21,6 +23,8 @@ Carga activa actual:
 - `library-images.css`
 - `library-mobile-overflow-fix.css`
 - Supabase CDN
+- Three.js CDN
+- Firebase CDN
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
@@ -29,7 +33,6 @@ Carga activa actual:
 - `src/library/inventory/library-inventory-import.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
-- `src/library/ficha/ficha-json.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
@@ -43,12 +46,16 @@ Carga activa actual:
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
-- `src/admin/admin-extra.js`
-- `src/admin/report-issue.js`
-- `src/admin/issue-entry.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
+
+Carga activa indirecta:
+
+- `src/library/ficha/ficha-json.js`: cargado por `src/library/ui/library.js`.
+- `src/admin/admin-extra.js`: cargado por `src/admin/admin.js`.
+- `src/admin/report-issue.js`: cargado por `src/admin/admin.js`.
+- `src/admin/issue-entry.js`: cargado por `src/admin/admin.js`.
 
 ## Navegacion principal
 
@@ -90,3 +97,9 @@ Admin ya esta activo para propietario.
 - `src/library/library-v3.js`: dueño real de Biblioteca/Fichas.
 - `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
 - `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
+
+## Movil
+
+- `scripts/prepare-mobile-bundle.mjs` copia los archivos activos a `www/`.
+- `www/`, `android/` e `ios/` son generados y no se editan a mano.
+- Si se añade un archivo activo en `index.html`, debe añadirse tambien a `scripts/prepare-mobile-bundle.mjs`.
