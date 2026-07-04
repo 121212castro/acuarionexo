@@ -66,30 +66,23 @@
     if (btn) btn.onclick = forceReload;
   }
 
-  function normalizeFichaInventoryTexts() {
+  function normalizeInventoryTexts() {
     const app = document.getElementById('app');
     if (!app) return;
     const text = app.textContent || '';
     app.querySelectorAll('button').forEach(function (btn) {
       const label = (btn.textContent || '').trim();
-      if (label === 'Pasar a inventario') btn.textContent = 'Añadir a mi inventario';
       if (label === 'Desde ficha') btn.textContent = 'Añadir desde ficha existente';
     });
-    const isLibrary = /Biblioteca|Base de conocimiento|Conocimiento/.test(text);
-    const isFichaDetail = app.querySelector('.library-detail');
     const isInventory = /Inventario general|Inventario de/.test(text);
-    if ((isLibrary || isFichaDetail) && !document.getElementById('libraryInfoNotice')) {
-      const target = app.querySelector('.library-detail') || Array.from(app.querySelectorAll('.panel')).find(function (panel) { return /Conocimiento|Editar ficha|Identificar nueva entrada/.test(panel.textContent || ''); });
-      if (target) target.insertAdjacentHTML('afterbegin', '<div id="libraryInfoNotice" class="notice"><b>Ficha informativa.</b><br>Sirve para consultar compatibilidad, próximas compras, requisitos y riesgos. No se guarda en inventario salvo que pulses <b>Añadir a mi inventario</b>.</div>');
-    }
     if (isInventory && !document.getElementById('inventoryImportNotice')) {
       const target = Array.from(app.querySelectorAll('.panel')).find(function (panel) { return /Inventario/.test(panel.textContent || ''); });
       if (target) target.insertAdjacentHTML('beforeend', '<div id="inventoryImportNotice" class="notice"><b>Inventario real.</b><br>Añade aquí solo lo que tienes o quieres registrar. Las fichas informativas permanecen en Biblioteca hasta que decidas añadirlas.</div>');
     }
   }
 
-  function installFichaInventoryTextFix() {
-    const run = function () { try { normalizeFichaInventoryTexts(); } catch (_) {} };
+  function installInventoryTextFix() {
+    const run = function () { try { normalizeInventoryTexts(); } catch (_) {} };
     run();
     setInterval(run, 1200);
     document.addEventListener('click', function () { setTimeout(run, 300); }, true);
@@ -128,11 +121,11 @@
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
       bindRefreshButton();
-      installFichaInventoryTextFix();
+      installInventoryTextFix();
     });
   } else {
     bindRefreshButton();
-    installFichaInventoryTextFix();
+    installInventoryTextFix();
   }
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) checkVersion();
