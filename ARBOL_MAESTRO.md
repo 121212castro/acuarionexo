@@ -8,7 +8,7 @@ App movil: Capacitor.
 
 Datos y autenticacion: Supabase.
 
-Build actual: `tasks-details-20260704-0245`.
+Build actual: `phase2-inventory-ui-20260704-1350`.
 
 ## Entrada real web
 
@@ -38,6 +38,7 @@ Carga activa directa desde `index.html`:
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
+- `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
@@ -97,6 +98,11 @@ Admin ya esta activo para propietario.
 - `src/library/library-v3.js`: dueño real de Biblioteca/Fichas.
 - `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
 - `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
+
+## Inventario estado actual
+
+- `src/inventory/inventory.js`: inventario general y de acuario.
+- `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
 
 ## Movil
 
