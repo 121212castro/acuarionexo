@@ -3,8 +3,8 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
-  const CHECK_INTERVAL_MS = 30 * 60 * 1000;
-  const MIN_CHECK_GAP_MS = 5 * 60 * 1000;
+  const CHECK_INTERVAL_MS = 10 * 60 * 1000;
+  const MIN_CHECK_GAP_MS = 60 * 1000;
   let checking = false;
 
   async function clearAppCache() {
@@ -24,7 +24,7 @@
 
   async function forceReload() {
     await clearAppCache();
-    window.location.reload();
+    window.location.replace(window.location.pathname + '?v=' + Date.now());
   }
 
   async function fetchRemoteVersion() {
@@ -41,6 +41,31 @@
     return remote && remote.build ? remote.build : null;
   }
 
+  function showUpdateNotice(remoteBuild) {
+    if (!remoteBuild || remoteBuild === CURRENT_BUILD) return;
+    let box = document.getElementById('anxUpdateNotice');
+    if (!box) {
+      box = document.createElement('div');
+      box.id = 'anxUpdateNotice';
+      box.style.position = 'fixed';
+      box.style.left = '12px';
+      box.style.right = '12px';
+      box.style.bottom = '86px';
+      box.style.zIndex = '999999';
+      box.style.padding = '12px';
+      box.style.borderRadius = '16px';
+      box.style.background = 'rgba(5, 28, 48, .96)';
+      box.style.border = '1px solid rgba(84, 190, 255, .55)';
+      box.style.boxShadow = '0 12px 30px rgba(0,0,0,.35)';
+      box.style.color = '#fff';
+      box.style.fontWeight = '800';
+      document.body.appendChild(box);
+    }
+    box.innerHTML = '<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>Hay una versión nueva de AcuarioNexo.</span><button id="anxApplyUpdateBtn" class="primary" style="color:#fff!important">Actualizar ahora</button></div>';
+    const btn = document.getElementById('anxApplyUpdateBtn');
+    if (btn) btn.onclick = forceReload;
+  }
+
   async function checkVersion(options) {
     const manual = !!(options && options.manual);
     if (checking) return;
@@ -51,7 +76,8 @@
       localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
       const remoteBuild = await fetchRemoteVersion();
       if (remoteBuild) localStorage.setItem(KEY, remoteBuild);
-      if (manual) await forceReload();
+      if (manual) return forceReload();
+      if (remoteBuild && remoteBuild !== CURRENT_BUILD) showUpdateNotice(remoteBuild);
     } catch (_) {
     } finally {
       checking = false;
@@ -61,6 +87,7 @@
   function bindRefreshButton() {
     const btn = document.getElementById('refreshAppBtn');
     if (!btn) return;
+    btn.title = 'Actualizar AcuarioNexo';
     btn.addEventListener('click', function () {
       checkVersion({ manual: true });
     });
