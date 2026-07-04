@@ -10,7 +10,7 @@ FUENTE DE VERDAD
 - No reactivar archivos legacy ni motores que sobreescriban pantallas.
 
 BUILD ACTUAL
-- window.ACUARIONEXO_BUILD en index.html: phase2-map-interactions-20260704-1425.
+- window.ACUARIONEXO_BUILD en index.html: phase2-parameters-fallback-20260704-1440.
 - app-version.json debe declarar el mismo build.
 - manifest.webmanifest debe usar el mismo build en start_url.
 
@@ -46,6 +46,7 @@ NUCLEO WEB ACTIVO DIRECTO
 - src/ai/ai-alerts-extra.js
 - src/parameters/parameters.js
 - src/parameters/measurements-advanced.js
+- src/parameters/parameters-ai-fallback.js
 - src/tasks/tasks.js
 - src/admin/admin.js
 - src/auth/auth.js
