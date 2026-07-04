@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `phase2-notifications-css-20260704-1410`
+- `phase2-map-interactions-20260704-1425`
 
 Supabase oficial:
 
