@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `phase2-map-interactions-20260704-1425`
+- `phase2-parameters-fallback-20260704-1440`
 
 Supabase oficial:
 
