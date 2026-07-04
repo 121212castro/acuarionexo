@@ -98,11 +98,8 @@ Los administradores los revisan desde Admin > Fallos.
 
 ## Movil
 
-`script/prepare-mobile-bundle.mjs` no existe. El script correcto es:
-
-- `scripts/prepare-mobile-bundle.mjs`
-
-Ese script copia la app web activa a `www/`.
+- `scripts/prepare-mobile-bundle.mjs` copia la app web activa a `www/`.
+- Si se añade un archivo activo a `index.html`, debe añadirse tambien a `scripts/prepare-mobile-bundle.mjs`.
 
 No editar a mano:
 
