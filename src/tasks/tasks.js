@@ -86,16 +86,52 @@ function repeatOptions(selected = '') {
   return options.map(([value, label]) => `<option value="${value}" ${String(selected) === value ? 'selected' : ''}>${label}</option>`).join('');
 }
 
+function isAiAlertTask(task) {
+  const meta = taskMeta(task);
+  const text = [meta.source, task.task_type, task.type, task.category, task.title, task.notes].join(' ').toLowerCase();
+  return /parameter_alert|param|alerta ia|análisis ia|analisis ia|riesgo|alerta/.test(text);
+}
+
+function renderTaskGroup(title, tasks) {
+  if (!tasks.length) return '';
+  return `<h3>${esc(title)}</h3>${tasks.map(tareaCard).join('')}`;
+}
+
+function renderTaskSections(openTasks, doneTasks) {
+  const open = openTasks || [];
+  const done = doneTasks || [];
+  const manual = open.filter((task) => !isAiAlertTask(task));
+  const alerts = open.filter(isAiAlertTask);
+  const history = done.map(tareaCard).join('');
+  const openHtml = [
+    renderTaskGroup('Tareas manuales', manual),
+    renderTaskGroup('Alertas IA / parámetros', alerts)
+  ].join('');
+
+  return `${openHtml || msg('Sin tareas pendientes.', 'success')}${done.length ? `<h3>Historial realizado</h3>${history}` : ''}`;
+}
+
+async function refreshAfterTaskDone(task) {
+  const aq = currentAquarium();
+  if (task?.aquarium_id && aq?.id === task.aquarium_id && typeof openAqSection === 'function') {
+    return openAqSection('tareas');
+  }
+  return tareas();
+}
+
 async function tareasAcuario() {
   const aq = currentAquarium();
   const t = token();
   render(aqHeader('tareas') + `<section class="panel"><div class="panel-head"><h2>Tareas</h2><button class="primary" onclick="formTareaAcuario()">Añadir</button></div>${msg('Cargando tareas...')}</section>`, 'acuarios');
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(80);
+    const openQuery = supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(80);
+    const doneQuery = supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('aquarium_id', aq.id).eq('status', 'done').order('completed_at', { ascending: false, nullsFirst: false }).limit(30);
+    const [{ data, error }, { data: done, error: doneError }] = await Promise.all([openQuery, doneQuery]);
     if (error) throw error;
+    if (doneError) throw doneError;
     if (!isCurrent(t)) return;
-    const html = (data || []).map(tareaCard).join('');
-    render(aqHeader('tareas') + `<section class="panel"><div class="panel-head"><h2>Tareas</h2><button class="primary" onclick="formTareaAcuario()">Añadir</button></div>${html || msg('Sin tareas pendientes.')}</section>`, 'acuarios');
+    const html = renderTaskSections(data || [], done || []);
+    render(aqHeader('tareas') + `<section class="panel"><div class="panel-head"><h2>Tareas</h2><button class="primary" onclick="formTareaAcuario()">Añadir</button></div>${html}</section>`, 'acuarios');
   } catch (e) {
     if (isCurrent(t)) render(aqHeader('tareas') + `<section class="panel">${msg(e.message, 'error')}</section>`, 'acuarios');
   }
@@ -108,9 +144,10 @@ function tareaCard(task) {
   const priority = cleanStatus(task.priority || 'normal');
   const status = cleanStatus(task.status || 'open');
   const title = cleanParamText(task.title || 'Tarea');
+  const finished = task.status === 'done' && task.completed_at ? ` · realizado ${dateText(task.completed_at)}` : '';
   return `<button class="${task.status === 'done' ? 'success' : 'item'} task-card" onclick="verAviso('${esc(task.id)}')">
     <b>${esc(title)}</b>
-    <p class="small">${dateText(task.due_at)} · ${esc(priority)} · ${esc(status)}${esc(repeat)}</p>
+    <p class="small">${dateText(task.due_at)} · ${esc(priority)} · ${esc(status)}${esc(repeat)}${esc(finished)}</p>
     ${taskNotes(task) ? `<p>${esc(taskNotes(task))}</p>` : ''}
   </button>`;
 }
@@ -166,14 +203,16 @@ window.verAviso = async function (id) {
     const meta = taskMeta(task);
     const active = task.aquarium_id && currentAquarium()?.id === task.aquarium_id ? 'acuarios' : 'avisos';
     const head = active === 'acuarios' ? aqHeader('tareas') : '';
+    const done = task.status === 'done';
     render(head + `<section class="panel task-detail">
       <button onclick="${active === 'acuarios' ? "openAqSection('tareas')" : 'tareas()'}">← Volver</button>
       <small>${esc(task.task_type || task.type || 'aviso')} · ${esc(cleanStatus(task.priority || 'normal'))} · ${dateText(task.due_at)}</small>
       <h2>${esc(cleanParamText(task.title || 'Aviso'))}</h2>
+      ${done && task.completed_at ? `<p class="small">Realizado: ${dateText(task.completed_at)}</p>` : ''}
       ${taskNotes(task) ? `<p>${esc(taskNotes(task))}</p>` : ''}
       <div class="quick-actions">
         <button onclick="irAAviso('${esc(task.id)}')"><span>↪</span>Ir</button>
-        <button class="primary" onclick="completarAviso('${esc(task.id)}')"><span>✓</span>Hecho</button>
+        ${done ? '' : `<button class="primary" onclick="completarAviso('${esc(task.id)}')"><span>✓</span>Hecho</button>`}
       </div>
       <label>Repetir este aviso</label>
       <select id="taskRepeatEdit">${repeatOptions(meta.repeat_days ? String(meta.repeat_days) : '')}</select>
@@ -209,6 +248,7 @@ window.guardarRepeticionAviso = async function (id) {
 window.completarAviso = async function (id) {
   try {
     const task = await loadTask(id);
+    if (task.status === 'done') return refreshAfterTaskDone(task);
     const meta = taskMeta(task);
     const repeatDays = Number(meta.repeat_days || 0);
     const now = new Date();
@@ -233,7 +273,7 @@ window.completarAviso = async function (id) {
       const insert = await supabase.from('tasks').insert(nextRow);
       if (insert.error) throw insert.error;
     }
-    tareas();
+    refreshAfterTaskDone(task);
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
   }
@@ -244,10 +284,14 @@ window.tareas = async function () {
   const t = token();
   render(`<section class="panel"><button onclick="volverAvisos()">← Volver</button><h2>Avisos</h2>${msg('Cargando tareas...')}</section>`, 'avisos');
   try {
-    const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    const openQuery = supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(120);
+    const doneQuery = supabase.from('tasks').select('*').eq('user_id', state.user.id).eq('status', 'done').order('completed_at', { ascending: false, nullsFirst: false }).limit(40);
+    const [{ data, error }, { data: done, error: doneError }] = await Promise.all([openQuery, doneQuery]);
     if (error) throw error;
+    if (doneError) throw doneError;
     if (!isCurrent(t)) return;
-    render(`<section class="panel"><button onclick="volverAvisos()">← Volver</button><div class="panel-head"><div><h2>Avisos</h2><p class="small">Toca un aviso para abrirlo, ir al módulo, marcarlo hecho o repetirlo.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.', 'success')}</section>`, 'avisos');
+    const html = renderTaskSections(data || [], done || []);
+    render(`<section class="panel"><button onclick="volverAvisos()">← Volver</button><div class="panel-head"><div><h2>Avisos</h2><p class="small">Toca un aviso para abrirlo, ir al módulo, marcarlo hecho o repetirlo.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${html}</section>`, 'avisos');
   } catch (e) {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
