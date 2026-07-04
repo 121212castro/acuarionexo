@@ -27,6 +27,8 @@ async function loadAquariums() {
   return list;
 }
 
+window.ANX.loadAquariums = loadAquariums;
+
 function aquariumCard(aq) {
   const photo = aq.__cover_url || aq.cover_photo_url || aq.cover_url || aq.photo_url || aq.image_url || '';
   const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
