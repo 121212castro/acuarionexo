@@ -67,6 +67,13 @@ function openTaskRoute(route) {
   return tareas();
 }
 
+window.volverAvisos = function () {
+  const aq = currentAquarium();
+  if (aq && typeof openAqSection === 'function') return openAqSection('resumen');
+  if (typeof dashboard === 'function') return dashboard();
+  window.history.back();
+};
+
 function repeatOptions(selected = '') {
   const options = [
     ['', 'No repetir'],
@@ -235,12 +242,12 @@ window.completarAviso = async function (id) {
 window.tareas = async function () {
   if (!state.user) return login();
   const t = token();
-  render(`<section class="panel"><h2>Avisos</h2>${msg('Cargando tareas...')}</section>`, 'avisos');
+  render(`<section class="panel"><button onclick="volverAvisos()">← Volver</button><h2>Avisos</h2>${msg('Cargando tareas...')}</section>`, 'avisos');
   try {
     const { data, error } = await supabase.from('tasks').select('*').eq('user_id', state.user.id).neq('status', 'done').order('due_at', { ascending: true, nullsFirst: false }).limit(120);
     if (error) throw error;
     if (!isCurrent(t)) return;
-    render(`<section class="panel"><div class="panel-head"><div><h2>Avisos</h2><p class="small">Toca un aviso para abrirlo, ir al módulo, marcarlo hecho o repetirlo.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.', 'success')}</section>`, 'avisos');
+    render(`<section class="panel"><button onclick="volverAvisos()">← Volver</button><div class="panel-head"><div><h2>Avisos</h2><p class="small">Toca un aviso para abrirlo, ir al módulo, marcarlo hecho o repetirlo.</p></div><button class="primary" style="color:#fff!important;opacity:1!important;min-width:128px" onclick="iaAcuarioNexo()">Revisar IA</button></div>${(data || []).map(tareaCard).join('') || msg('No hay avisos pendientes.', 'success')}</section>`, 'avisos');
   } catch (e) {
     if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'avisos');
   }
