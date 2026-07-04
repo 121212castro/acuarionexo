@@ -2,7 +2,7 @@
 
 ## Build actual
 
-Build unificado: `phase2-map-interactions-20260704-1425`.
+Build unificado: `phase2-parameters-fallback-20260704-1440`.
 
 Debe coincidir en:
 
@@ -49,6 +49,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
+- `src/parameters/parameters-ai-fallback.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
 - `src/auth/auth.js`
@@ -110,9 +111,15 @@ Los administradores los revisan desde Admin > Fallos.
 - `src/map/map.js`: pantalla, editor, persistencia y render 3D principal.
 - `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
 
+## Parametros
+
+- `src/parameters/parameters.js`: pantalla principal y alertas de parametros.
+- `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
+- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`.
+
 ## Notificaciones
 
-- `notifications.js`: notificaciones y fallback de IA de parametros.
+- `notifications.js`: notificaciones, Firebase y avisos de tareas.
 - `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
 
 ## Movil
