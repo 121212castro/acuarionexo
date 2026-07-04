@@ -34,6 +34,7 @@ const files = [
   'src/map/map.js',
   'src/photos/photos.js',
   'src/inventory/inventory.js',
+  'src/inventory/inventory-ui.js',
   'src/microfauna/microfauna.js',
   'src/ai/ai.js',
   'src/ai/ai-library-v3.js',
@@ -56,7 +57,6 @@ function copyFile(relativePath) {
   fs.copyFileSync(from, to);
 }
 
-fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 for (const file of files) copyFile(file);
 console.log(`AcuarioNexo mobile bundle ready: ${files.length} files copied to www/`);
