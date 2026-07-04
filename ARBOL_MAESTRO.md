@@ -8,7 +8,7 @@ App movil: Capacitor.
 
 Datos y autenticacion: Supabase.
 
-Build actual: `phase2-notifications-css-20260704-1410`.
+Build actual: `phase2-map-interactions-20260704-1425`.
 
 ## Entrada real web
 
@@ -37,6 +37,7 @@ Carga activa directa desde `index.html`:
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
+- `src/map/map-interactions.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
@@ -105,9 +106,15 @@ Admin ya esta activo para propietario.
 - `src/inventory/inventory.js`: inventario general y de acuario.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
 
+## Mapa estado actual
+
+- `src/map/map-v3-model.js`: contrato/modelo de mapa V3.
+- `src/map/map.js`: pantalla, editor, persistencia y render 3D principal.
+- `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
+
 ## Notificaciones estado actual
 
-- `notifications.js`: notificaciones, fallback de IA de parametros y parche de colocacion de puntos 3D.
+- `notifications.js`: notificaciones y fallback de IA de parametros.
 - `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
 
 ## Movil
