@@ -10,7 +10,7 @@ FUENTE DE VERDAD
 - No reactivar archivos legacy ni motores que sobreescriban pantallas.
 
 BUILD ACTUAL
-- window.ACUARIONEXO_BUILD en index.html: tasks-details-20260704-0245.
+- window.ACUARIONEXO_BUILD en index.html: phase2-inventory-ui-20260704-1350.
 - app-version.json debe declarar el mismo build.
 - manifest.webmanifest debe usar el mismo build en start_url.
 
@@ -37,6 +37,7 @@ NUCLEO WEB ACTIVO DIRECTO
 - src/map/map.js
 - src/photos/photos.js
 - src/inventory/inventory.js
+- src/inventory/inventory-ui.js
 - src/microfauna/microfauna.js
 - src/ai/ai.js
 - src/ai/ai-library-v3.js
