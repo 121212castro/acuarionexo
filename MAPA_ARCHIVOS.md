@@ -1,5 +1,16 @@
 # MAPA DE ARCHIVOS
 
+## Build actual
+
+Build unificado: `tasks-details-20260704-0245`.
+
+Debe coincidir en:
+
+- `window.ACUARIONEXO_BUILD` dentro de `index.html`.
+- `app-version.json`.
+- `manifest.webmanifest` en `start_url`.
+- Documentacion de control.
+
 ## Activos web en produccion
 
 Estos archivos son cargados por `index.html` o forman parte directa de la app publicada:
@@ -16,13 +27,14 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `library-images.css`
 - `library-mobile-overflow-fix.css`
 - Supabase CDN
+- Three.js CDN
+- Firebase CDN
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
 - `src/library/inventory/library-inventory-import.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
-- `src/library/ficha/ficha-json.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
@@ -36,19 +48,24 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/parameters/measurements-advanced.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
-- `src/admin/admin-extra.js`
-- `src/admin/report-issue.js`
-- `src/admin/issue-entry.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
 - `app-version.json`
 - `manifest.webmanifest`
+- `firebase-messaging-sw.js`
 - `icon-512.png`
 
-## Build tester
+## Activos indirectos
 
-Build actual: `admin-tester-20260702-2055`.
+- `src/library/ficha/ficha-json.js`: cargado dinamicamente por `src/library/ui/library.js`.
+- `src/admin/admin-extra.js`: cargado dinamicamente por `src/admin/admin.js`.
+- `src/admin/report-issue.js`: cargado dinamicamente por `src/admin/admin.js`.
+- `src/admin/issue-entry.js`: cargado dinamicamente por `src/admin/admin.js`.
+
+## Candidato a integrar o retirar despues
+
+- `src/library/ficha/ficha-template-strict.js`: no aparece en la carga activa actual; no borrar sin decidir antes si se integra en el flujo oficial de `ficha-json.js`.
 
 ## Reportes de fallos
 
@@ -78,3 +95,18 @@ Los administradores los revisan desde Admin > Fallos.
 - Alta de Admin o usuario de confianza por email.
 - Reportes/fallos.
 - Historial por persona.
+
+## Movil
+
+`script/prepare-mobile-bundle.mjs` no existe. El script correcto es:
+
+- `scripts/prepare-mobile-bundle.mjs`
+
+Ese script copia la app web activa a `www/`.
+
+No editar a mano:
+
+- `www/`
+- `android/`
+- `ios/`
+- `node_modules/`
