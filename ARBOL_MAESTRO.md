@@ -8,7 +8,7 @@ App movil: Capacitor.
 
 Datos y autenticacion: Supabase.
 
-Build actual: `phase2-map-interactions-20260704-1425`.
+Build actual: `phase2-parameters-fallback-20260704-1440`.
 
 ## Entrada real web
 
@@ -47,6 +47,7 @@ Carga activa directa desde `index.html`:
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
+- `src/parameters/parameters-ai-fallback.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
 - `src/auth/auth.js`
@@ -112,9 +113,15 @@ Admin ya esta activo para propietario.
 - `src/map/map.js`: pantalla, editor, persistencia y render 3D principal.
 - `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
 
+## Parametros estado actual
+
+- `src/parameters/parameters.js`: pantalla principal y alertas de parametros.
+- `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
+- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`.
+
 ## Notificaciones estado actual
 
-- `notifications.js`: notificaciones y fallback de IA de parametros.
+- `notifications.js`: notificaciones, Firebase y avisos de tareas.
 - `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
 
 ## Movil
