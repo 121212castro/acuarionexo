@@ -89,12 +89,13 @@ function repeatOptions(selected = '') {
 function isAiAlertTask(task) {
   const meta = taskMeta(task);
   const text = [meta.source, task.task_type, task.type, task.category, task.title, task.notes].join(' ').toLowerCase();
-  return /parameter_alert|param|alerta ia|análisis ia|analisis ia|riesgo|alerta/.test(text);
+  return /parameter_alert|param|actualizar|temperatura|salinidad|ph|kh|no3|po4|calcio|magnesio|alerta ia|análisis ia|analisis ia|riesgo|alerta/.test(text);
 }
 
-function renderTaskGroup(title, tasks) {
+function renderTaskGroup(title, tasks, openByDefault = false) {
   if (!tasks.length) return '';
-  return `<h3>${esc(title)}</h3>${tasks.map(tareaCard).join('')}`;
+  const openAttr = openByDefault ? ' open' : '';
+  return `<details class="task-group"${openAttr}><summary><b>${esc(title)}</b> <span class="small">${tasks.length}</span></summary><div class="task-group-body">${tasks.map(tareaCard).join('')}</div></details>`;
 }
 
 function renderTaskSections(openTasks, doneTasks) {
@@ -102,13 +103,12 @@ function renderTaskSections(openTasks, doneTasks) {
   const done = doneTasks || [];
   const manual = open.filter((task) => !isAiAlertTask(task));
   const alerts = open.filter(isAiAlertTask);
-  const history = done.map(tareaCard).join('');
   const openHtml = [
-    renderTaskGroup('Tareas manuales', manual),
-    renderTaskGroup('Alertas IA / parámetros', alerts)
+    renderTaskGroup('Tareas manuales', manual, manual.length > 0 && manual.length <= 3),
+    renderTaskGroup('Alertas IA / parámetros', alerts, false)
   ].join('');
 
-  return `${openHtml || msg('Sin tareas pendientes.', 'success')}${done.length ? `<h3>Historial realizado</h3>${history}` : ''}`;
+  return `${openHtml || msg('Sin tareas pendientes.', 'success')}${renderTaskGroup('Historial realizado', done, false)}`;
 }
 
 async function refreshAfterTaskDone(task) {
