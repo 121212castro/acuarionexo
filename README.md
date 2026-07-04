@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `phase2-inventory-ui-20260704-1350`
+- `phase2-notifications-css-20260704-1410`
 
 Supabase oficial:
 
