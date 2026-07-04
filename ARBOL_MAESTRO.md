@@ -8,7 +8,7 @@ App movil: Capacitor.
 
 Datos y autenticacion: Supabase.
 
-Build actual: `phase2-inventory-ui-20260704-1350`.
+Build actual: `phase2-notifications-css-20260704-1410`.
 
 ## Entrada real web
 
@@ -22,6 +22,7 @@ Carga activa directa desde `index.html`:
 - `mobile-form-fix.css`
 - `library-images.css`
 - `library-mobile-overflow-fix.css`
+- `notifications.css`
 - Supabase CDN
 - Three.js CDN
 - Firebase CDN
@@ -103,6 +104,11 @@ Admin ya esta activo para propietario.
 
 - `src/inventory/inventory.js`: inventario general y de acuario.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
+
+## Notificaciones estado actual
+
+- `notifications.js`: notificaciones, fallback de IA de parametros y parche de colocacion de puntos 3D.
+- `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
 
 ## Movil
 
