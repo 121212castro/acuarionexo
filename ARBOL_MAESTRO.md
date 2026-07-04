@@ -89,9 +89,14 @@ La barra inferior movil se ajusta desde `library-mobile-overflow-fix.css` para a
 
 Admin ya esta activo para propietario.
 
+## Acuarios estado actual
+
+- `src/aquariums/aquariums.js`: carga, lista y seleccion de acuarios.
+- `loadAquariums()` queda expuesto en `window.ANX.loadAquariums` para que Microfauna e IA puedan cargar acuarios desde su propio modulo.
+
 ## Microfauna
 
-`src/microfauna/microfauna.js` es modulo principal visible.
+`src/microfauna/microfauna.js` es modulo principal visible y usa `window.ANX.loadAquariums` para rellenar opciones de acuario cuando falta estado cargado.
 
 ## Biblioteca/Fichas estado actual
 
