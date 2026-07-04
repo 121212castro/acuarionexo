@@ -16,6 +16,7 @@ const files = [
   'mobile-form-fix.css',
   'library-images.css',
   'library-mobile-overflow-fix.css',
+  'notifications.css',
   'update-manager.js',
   'notifications.js',
   'app-version.json',
