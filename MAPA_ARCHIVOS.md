@@ -2,7 +2,7 @@
 
 ## Build actual
 
-Build unificado: `phase2-notifications-css-20260704-1410`.
+Build unificado: `phase2-map-interactions-20260704-1425`.
 
 Debe coincidir en:
 
@@ -39,6 +39,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map.js`
+- `src/map/map-interactions.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
@@ -103,9 +104,15 @@ Los administradores los revisan desde Admin > Fallos.
 - `src/inventory/inventory.js`: inventario general y por acuario.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
 
+## Mapa
+
+- `src/map/map-v3-model.js`: contrato/modelo de mapa V3.
+- `src/map/map.js`: pantalla, editor, persistencia y render 3D principal.
+- `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
+
 ## Notificaciones
 
-- `notifications.js`: notificaciones, fallback de IA de parametros y parche de colocacion de puntos 3D.
+- `notifications.js`: notificaciones y fallback de IA de parametros.
 - `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
 
 ## Movil
