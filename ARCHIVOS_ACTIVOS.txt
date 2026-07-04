@@ -10,7 +10,7 @@ FUENTE DE VERDAD
 - No reactivar archivos legacy ni motores que sobreescriban pantallas.
 
 BUILD ACTUAL
-- window.ACUARIONEXO_BUILD en index.html: phase2-inventory-ui-20260704-1350.
+- window.ACUARIONEXO_BUILD en index.html: phase2-notifications-css-20260704-1410.
 - app-version.json debe declarar el mismo build.
 - manifest.webmanifest debe usar el mismo build en start_url.
 
@@ -26,6 +26,7 @@ NUCLEO WEB ACTIVO DIRECTO
 - mobile-form-fix.css
 - library-images.css
 - library-mobile-overflow-fix.css
+- notifications.css
 - src/aquariums/aquariums.js
 - src/library/core/library-schema.js
 - src/library/ui/library.js
