@@ -66,28 +66,6 @@
     if (btn) btn.onclick = forceReload;
   }
 
-  function normalizeInventoryTexts() {
-    const app = document.getElementById('app');
-    if (!app) return;
-    const text = app.textContent || '';
-    app.querySelectorAll('button').forEach(function (btn) {
-      const label = (btn.textContent || '').trim();
-      if (label === 'Desde ficha') btn.textContent = 'Añadir desde ficha existente';
-    });
-    const isInventory = /Inventario general|Inventario de/.test(text);
-    if (isInventory && !document.getElementById('inventoryImportNotice')) {
-      const target = Array.from(app.querySelectorAll('.panel')).find(function (panel) { return /Inventario/.test(panel.textContent || ''); });
-      if (target) target.insertAdjacentHTML('beforeend', '<div id="inventoryImportNotice" class="notice"><b>Inventario real.</b><br>Añade aquí solo lo que tienes o quieres registrar. Las fichas informativas permanecen en Biblioteca hasta que decidas añadirlas.</div>');
-    }
-  }
-
-  function installInventoryTextFix() {
-    const run = function () { try { normalizeInventoryTexts(); } catch (_) {} };
-    run();
-    setInterval(run, 1200);
-    document.addEventListener('click', function () { setTimeout(run, 300); }, true);
-  }
-
   async function checkVersion(options) {
     const manual = !!(options && options.manual);
     if (checking) return;
@@ -119,13 +97,9 @@
   window.hardRefreshAcuarioNexo = forceReload;
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      bindRefreshButton();
-      installInventoryTextFix();
-    });
+    document.addEventListener('DOMContentLoaded', bindRefreshButton);
   } else {
     bindRefreshButton();
-    installInventoryTextFix();
   }
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) checkVersion();
