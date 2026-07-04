@@ -33,6 +33,7 @@ const files = [
   'src/animals/animals.js',
   'src/map/map-v3-model.js',
   'src/map/map.js',
+  'src/map/map-interactions.js',
   'src/photos/photos.js',
   'src/inventory/inventory.js',
   'src/inventory/inventory-ui.js',
