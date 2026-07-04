@@ -161,6 +161,43 @@
   word-break: break-word;
 }
 
+.inventory-detail-cover {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
+  object-position: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, .96);
+  margin: 8px 0 14px;
+}
+
+.inventory-detail-cover.empty {
+  min-height: 160px;
+  max-height: 220px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: rgba(255, 255, 255, .06);
+  font-size: 42px;
+}
+
+.inventory-detail {
+  overflow-x: hidden;
+}
+
+.inventory-detail img {
+  max-width: 100%;
+}
+
+@media(max-width:430px) {
+  .inventory-detail-cover {
+    max-height: 240px;
+  }
+}
+
 @media(min-width:760px) {
   .library-image-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -168,5 +205,9 @@
 
   .library-picker-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .inventory-detail-cover {
+    max-height: 320px;
   }
 }
