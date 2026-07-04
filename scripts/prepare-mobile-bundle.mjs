@@ -43,6 +43,7 @@ const files = [
   'src/ai/ai-alerts-extra.js',
   'src/parameters/parameters.js',
   'src/parameters/measurements-advanced.js',
+  'src/parameters/parameters-ai-fallback.js',
   'src/tasks/tasks.js',
   'src/admin/admin.js',
   'src/admin/admin-extra.js',
