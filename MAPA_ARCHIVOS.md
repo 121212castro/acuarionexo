@@ -2,7 +2,7 @@
 
 ## Build actual
 
-Build unificado: `tasks-details-20260704-0245`.
+Build unificado: `phase2-inventory-ui-20260704-1350`.
 
 Debe coincidir en:
 
@@ -40,6 +40,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/map/map.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory.js`
+- `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
@@ -95,6 +96,11 @@ Los administradores los revisan desde Admin > Fallos.
 - Alta de Admin o usuario de confianza por email.
 - Reportes/fallos.
 - Historial por persona.
+
+## Inventario
+
+- `src/inventory/inventory.js`: inventario general y por acuario.
+- `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
 
 ## Movil
 
