@@ -6,15 +6,6 @@
   let enabling = false;
   let mapPointerStart = null;
 
-  function installFichaCss() {
-    if (document.getElementById('anx-ficha-css')) return;
-    const css = '.library-detail-cover{position:relative;width:100%;height:190px;max-height:190px;min-height:150px;overflow:hidden;border-radius:20px;margin:0 0 12px;display:block}.library-detail-cover img{width:100%;max-height:190px;height:auto;display:block}.library-cover-title{position:absolute;left:12px;right:12px;bottom:10px;z-index:2;text-shadow:0 2px 10px rgba(0,0,0,.75)}.library-cover-title h2{font-size:26px;line-height:1.03;margin:0}.ficha-maestra .library-detail-photo{width:100%;max-height:310px}.ficha-maestra .library-detail-section{margin:10px 0;padding:12px}.ficha-maestra .quick-actions{grid-template-columns:1fr 1fr}.ficha-maestra .quick-actions button{min-height:54px}.param-ai-card ul{margin:8px 0 0 18px;padding:0}.param-ai-card li{margin:5px 0;line-height:1.25}.param-ai-block{border:1px solid rgba(125,211,252,.22);border-radius:14px;background:rgba(255,255,255,.045);padding:10px;margin-top:10px}.param-ai-block h4{margin:0 0 6px;font-size:16px}';
-    const style = document.createElement('style');
-    style.id = 'anx-ficha-css';
-    style.textContent = css;
-    document.head.appendChild(style);
-  }
-
   function escText(value) {
     return String(value ?? '').replace(/[&<>"']/g, function (m) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
@@ -164,7 +155,6 @@
     }, true);
   }
 
-  installFichaCss();
   installParameterAiFallback();
   installMap3DPointPlacement();
 
@@ -260,7 +250,6 @@
   }
 
   function start() {
-    installFichaCss();
     installParameterAiFallback();
     if (!canNotify()) return;
     setTimeout(enableNotifications, 3500);
