@@ -10,7 +10,7 @@ FUENTE DE VERDAD
 - No reactivar archivos legacy ni motores que sobreescriban pantallas.
 
 BUILD ACTUAL
-- window.ACUARIONEXO_BUILD en index.html: phase2-notifications-css-20260704-1410.
+- window.ACUARIONEXO_BUILD en index.html: phase2-map-interactions-20260704-1425.
 - app-version.json debe declarar el mismo build.
 - manifest.webmanifest debe usar el mismo build en start_url.
 
@@ -36,6 +36,7 @@ NUCLEO WEB ACTIVO DIRECTO
 - src/animals/animals.js
 - src/map/map-v3-model.js
 - src/map/map.js
+- src/map/map-interactions.js
 - src/photos/photos.js
 - src/inventory/inventory.js
 - src/inventory/inventory-ui.js
