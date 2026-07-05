@@ -6,7 +6,25 @@
     });
   }
 
+  function ensureExtraParameterKeys() {
+    const ANX = window.ANX || {};
+    ANX.aiParameterLabels = ANX.aiParameterLabels || {};
+    ANX.aiMeasurementPlans = ANX.aiMeasurementPlans || {};
+    ANX.aiMeasurementPlans.marine = ANX.aiMeasurementPlans.marine || {};
+    Object.assign(ANX.aiParameterLabels, {
+      nitrite_no2: 'NO2',
+      copper_cu: 'Cobre',
+      silicon_si: 'Silicato'
+    });
+    Object.assign(ANX.aiMeasurementPlans.marine, {
+      nitrite_no2: ANX.aiMeasurementPlans.marine.nitrite_no2 || 7,
+      copper_cu: ANX.aiMeasurementPlans.marine.copper_cu || 30,
+      silicon_si: ANX.aiMeasurementPlans.marine.silicon_si || 30
+    });
+  }
+
   function injectFallbackParameterAi() {
+    ensureExtraParameterKeys();
     const screen = document.querySelector('.param-screen');
     if (!screen || screen.querySelector('.param-ai-card')) return;
     const tiles = Array.from(screen.querySelectorAll('.param-latest'));
@@ -50,7 +68,8 @@
   }
 
   function installParameterAiFallback() {
-    const run = function () { try { injectFallbackParameterAi(); } catch (_) {} };
+    ensureExtraParameterKeys();
+    const run = function () { try { ensureExtraParameterKeys(); injectFallbackParameterAi(); } catch (_) {} };
     setInterval(run, 1200);
     document.addEventListener('click', function () { setTimeout(run, 350); }, true);
     window.addEventListener('focus', run);
@@ -60,5 +79,5 @@
   installParameterAiFallback();
 
   window.ANX = window.ANX || {};
-  window.ANX.ParametersAiFallback = { injectFallbackParameterAi };
+  window.ANX.ParametersAiFallback = { injectFallbackParameterAi, ensureExtraParameterKeys };
 })();
