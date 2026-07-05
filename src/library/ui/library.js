@@ -6,7 +6,7 @@
   function loadFichaJson() {
     if (document.querySelector('script[data-module="library-ficha-json"]')) return;
     const script = document.createElement('script');
-    script.src = 'src/library/ficha/ficha-json.js?v=pez-marino-contract-20260702';
+    script.src = 'src/library/ficha/ficha-json.js?v=smart-json-quotes-20260705-1630';
     script.dataset.module = 'library-ficha-json';
     document.head.appendChild(script);
   }
