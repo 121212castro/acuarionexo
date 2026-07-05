@@ -45,13 +45,14 @@
   const SECTION_LABELS = { cover: 'Portada', photo: 'Foto principal', summary: 'Resumen', identity: 'Identificación', habitat: 'Hábitat natural', aquarium: 'Acuario recomendado', parameters: 'Parámetros', behavior: 'Comportamiento', feeding: 'Alimentación', compatibility: 'Compatibilidad', reef_safe: 'Reef safe', breeding: 'Reproducción', health: 'Salud', purchase: 'Antes de comprar', lighting: 'Iluminación', flow: 'Flujo', placement: 'Ubicación', maintenance: 'Mantenimiento', curiosities: 'Curiosidades', culture: 'Cultivo', harvest: 'Cosecha', use: 'Uso recomendado', nutrition: 'Composición', dose: 'Dosis', monitoring: 'Mediciones / seguimiento', risks: 'Riesgos', uses: 'Usos indicados', remove: 'Retirar durante tratamiento', reading: 'Lectura', range: 'Rangos', specs: 'Especificaciones', sources: 'Fuentes', ai: 'Notas para IA y usuario' };
   const TEMPLATE_ORDER = ['cover','photo','summary','identity','habitat','aquarium','parameters','behavior','compatibility','feeding','reef_safe','breeding','health','maintenance','curiosities','purchase','lighting','flow','placement','culture','harvest','use','nutrition','dose','monitoring','risks','uses','remove','reading','range','specs','ai','sources'];
   const NUMBER_FIELDS = /(_cm|_years|_liters|_min|_max|_watts|grams_per_liter|treatment_days|reading_time|sample_volume|power|flow|volume)$/;
+  const SHORT_TEXT_MIN_LENGTH = { manufacturer: 2, brand: 2, product_code: 2, parameter: 2, method: 2, range: 2, resolution: 1, scale_values: 2, sample_volume: 1, reading_time: 1, expiry: 2, storage: 2, aquarium_type: 2, source_label: 2, food_type: 2, equipment_type: 2, power: 1, flow: 1, volume: 1, warranty: 2, active_ingredient: 2 };
 
   function sectionFor(field) {
     if (field === 'sources') return 'sources';
     if (['title','scientific_name','common_names','synonyms','manufacturer','brand','product_code','family','order_name','class_name','category','equipment_type','food_type','culture_type','coral_type','plant_type','identification'].includes(field)) return 'identity';
     if (['distribution','habitat','depth_range','natural_environment'].includes(field)) return 'habitat';
     if (['minimum_tank_liters','recommended_tank_liters','tank_maturity','tank_size_recommended','aquarium_type','substrate'].includes(field)) return 'aquarium';
-    if (/temperature|ph_|gh_|kh_|salinity|nitrate|phosphate|calcium|magnesium|declared_parameters|parameter|range|resolution|scale_values|grams_per_liter/.test(field)) return 'parameters';
+    if (/temperature|ph_|gh_|kh_|salinity|nitrate|phosphate|calcium|magnesium|declared_parameters|parameter_target/.test(field)) return 'parameters';
     if (/diet|feeding|composition|analysis|particle_size|target_species/.test(field)) return 'feeding';
     if (/behavior|aggressiveness|territoriality|social|schooling|swimming|growth_form|growth_rate|photosynthetic|sweeper/.test(field)) return 'behavior';
     if (/compatibility|reef_safe/.test(field)) return field.includes('reef_safe') ? 'reef_safe' : 'compatibility';
@@ -74,7 +75,8 @@
   }
 
   function humanLabel(field) { return LABELS[field] || field.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()); }
-  function fieldRule(field) { return { label: humanLabel(field), required: true, type: NUMBER_FIELDS.test(field) ? 'number' : 'text', minLength: NUMBER_FIELDS.test(field) ? 1 : 20, ai: true, public: true, section: sectionFor(field), allowed: field === 'reef_safe' ? REEF_SAFE : undefined, validator: field === 'scientific_name' ? 'scientificName' : undefined }; }
+  function minLengthFor(field) { if (NUMBER_FIELDS.test(field)) return 1; return SHORT_TEXT_MIN_LENGTH[field] || 20; }
+  function fieldRule(field) { return { label: humanLabel(field), required: true, type: NUMBER_FIELDS.test(field) ? 'number' : 'text', minLength: minLengthFor(field), ai: true, public: true, section: sectionFor(field), allowed: field === 'reef_safe' ? REEF_SAFE : undefined, validator: field === 'scientific_name' ? 'scientificName' : undefined }; }
 
   function templateFor(type = 'general') {
     const fields = CONTRACTS[type] || ['title', 'sources'];
