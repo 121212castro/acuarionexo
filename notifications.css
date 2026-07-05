@@ -74,3 +74,71 @@
   margin: 0 0 6px;
   font-size: 16px;
 }
+
+/* Biblioteca · tarjeta compacta cuando no hay portada */
+#app {
+  padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important;
+}
+
+.library-grid .library-card.library-cover-card {
+  display: grid !important;
+  grid-template-columns: 112px minmax(0, 1fr) !important;
+  gap: 12px !important;
+  align-items: start !important;
+  min-height: 136px !important;
+  padding: 12px !important;
+  text-align: left !important;
+}
+
+.library-grid .library-cover-card .library-card-cover,
+.library-grid .library-cover-card .library-no-photo {
+  width: 112px !important;
+  height: 112px !important;
+  min-width: 112px !important;
+  min-height: 112px !important;
+  max-width: 112px !important;
+  max-height: 112px !important;
+  border-radius: 16px !important;
+  display: grid !important;
+  place-items: center !important;
+  object-fit: cover !important;
+  overflow: hidden !important;
+  font-size: 22px !important;
+  line-height: 1 !important;
+}
+
+.library-grid .library-cover-card .library-card-body {
+  display: block !important;
+  min-width: 0 !important;
+  text-align: left !important;
+}
+
+.library-grid .library-cover-card .library-card-body h3,
+.library-grid .library-cover-card .library-card-body p,
+.library-grid .library-cover-card .library-card-body small {
+  max-width: 100% !important;
+  overflow-wrap: anywhere !important;
+}
+
+@media (max-width: 430px) {
+  #app {
+    padding-bottom: calc(118px + env(safe-area-inset-bottom)) !important;
+  }
+
+  .library-grid .library-card.library-cover-card {
+    grid-template-columns: 82px minmax(0, 1fr) !important;
+    min-height: 106px !important;
+    gap: 10px !important;
+  }
+
+  .library-grid .library-cover-card .library-card-cover,
+  .library-grid .library-cover-card .library-no-photo {
+    width: 82px !important;
+    height: 82px !important;
+    min-width: 82px !important;
+    min-height: 82px !important;
+    max-width: 82px !important;
+    max-height: 82px !important;
+    font-size: 16px !important;
+  }
+}
