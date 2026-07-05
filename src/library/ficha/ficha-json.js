@@ -19,12 +19,35 @@
   const LABELS = Object.fromEntries(TYPES);
   function typeName(type) { return LABELS[type] || type || 'Ficha'; }
 
+  function normalizeJsonText(text) {
+    return String(text || '')
+      .replace(/^\uFEFF/, '')
+      .replace(/[\u201C\u201D\u2033]/g, '"')
+      .replace(/[\u2018\u2019\u2032]/g, "'")
+      .replace(/\u00A0/g, ' ')
+      .replace(/,\s*([}\]])/g, '$1')
+      .trim();
+  }
+
+  function parseStructuredJson(text) {
+    const raw = String(text || '').trim();
+    try { return JSON.parse(raw); }
+    catch (firstError) {
+      const repaired = normalizeJsonText(raw);
+      try { return JSON.parse(repaired); }
+      catch (secondError) {
+        secondError.message = `${secondError.message}. Revisa que el bloque entre ${START} y ${END} use comillas dobles rectas y no texto visible dentro del JSON.`;
+        throw secondError;
+      }
+    }
+  }
+
   function extractJsonBlock(text) {
     const raw = String(text || '');
     const start = raw.indexOf(START);
     const end = raw.indexOf(END);
     if (start === -1 || end === -1 || end <= start) return null;
-    return JSON.parse(raw.slice(start + START.length, end).trim());
+    return parseStructuredJson(raw.slice(start + START.length, end));
   }
 
   function normalizePayload(payload, selectedType) {
