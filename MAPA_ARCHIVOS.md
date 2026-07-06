@@ -30,12 +30,16 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - Supabase CDN
 - Three.js CDN
 - Firebase CDN
+- `src/aquariums/aquariums-core.js`
+- `src/aquariums/aquariums-form.js`
+- `src/aquariums/aquariums-save.js`
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
 - `src/library/inventory/library-inventory-import.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
+- `src/animals/animals-core.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map-state.js`
@@ -46,6 +50,9 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/map/map-save.js`
 - `src/map/map.js`
 - `src/map/map-interactions.js`
+- `src/photos/photos-core.js`
+- `src/photos/photos-form.js`
+- `src/photos/photos-save.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory-core.js`
 - `src/inventory/inventory-list.js`
@@ -93,6 +100,25 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/ai/ai-constants.js`: creado durante refactor IA, no activo tras restaurar IA estable.
 - `src/ai/ai-measurements.js`: creado durante refactor IA, no activo tras restaurar IA estable.
 - `src/ai/ai-chemistry.js`: creado durante refactor IA, no activo tras restaurar IA estable.
+
+## Acuarios
+
+- `src/aquariums/aquariums-core.js`: carga de acuarios, portada, tarjetas, resumen visual y estadisticas del inicio.
+- `src/aquariums/aquariums-form.js`: formulario de alta/edicion, calculos de litros y payload del acuario.
+- `src/aquariums/aquariums-save.js`: guardado de alta y edicion de acuarios.
+- `src/aquariums/aquariums.js`: dashboard, lista, resumen, borrado, seleccion de acuario y rutas internas.
+
+## Animales
+
+- `src/animals/animals-core.js`: categorias vivas, lectura de metadatos de inventario, helpers y tarjetas de animales.
+- `src/animals/animals.js`: pantalla de animales vivos y borrado desde inventario.
+
+## Fotos
+
+- `src/photos/photos-core.js`: tarjeta HTML de foto.
+- `src/photos/photos-form.js`: formulario y previsualizacion de subida de foto.
+- `src/photos/photos-save.js`: subida y guardado de foto.
+- `src/photos/photos.js`: pantalla de fotos, listado y borrado.
 
 ## Admin restringido
 
