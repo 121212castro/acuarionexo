@@ -52,6 +52,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/inventory/inventory-form.js`
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
+- `src/microfauna/microfauna-core.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
@@ -111,6 +112,11 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/inventory/inventory-form.js`: formularios de alta/edicion y guardado de inventario.
 - `src/inventory/inventory.js`: pantalla principal, detalle y borrado.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
+
+## Microfauna
+
+- `src/microfauna/microfauna-core.js`: perfiles, fechas, estados, opciones, cultivo por defecto, tarjetas y resumen.
+- `src/microfauna/microfauna.js`: pantalla, formulario, guardado, acciones rápidas y consultas Supabase.
 
 ## Mapa
 
