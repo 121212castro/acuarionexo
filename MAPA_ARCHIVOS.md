@@ -54,6 +54,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna-core.js`
 - `src/microfauna/microfauna-form.js`
+- `src/microfauna/microfauna-save.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
@@ -118,7 +119,8 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 
 - `src/microfauna/microfauna-core.js`: perfiles, fechas, estados, opciones, cultivo por defecto, tarjetas y resumen.
 - `src/microfauna/microfauna-form.js`: formulario visual de alta y edicion de cultivos.
-- `src/microfauna/microfauna.js`: pantalla, guardado, acciones rapidas y consultas Supabase.
+- `src/microfauna/microfauna-save.js`: lectura del formulario y guardado de cultivos.
+- `src/microfauna/microfauna.js`: pantalla, acciones rapidas y consultas Supabase.
 
 ## Mapa
 
