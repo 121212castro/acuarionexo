@@ -1,0 +1,41 @@
+/* AcuarioNexo · aquariums save */
+(function () {
+  const { supabase, state, byId, msg, currentAquarium } = window.ANX;
+  const { aquariumPayload } = window.ANX.AquariumsForm;
+
+  window.guardarNuevoAcuario = async function () {
+    const box = byId('editAqStatus');
+    if (!state.user) return login();
+    try {
+      const insert = Object.assign({ user_id: state.user.id }, aquariumPayload());
+      if (!insert.name) throw new Error('El nombre del acuario es obligatorio.');
+      if (box) box.innerHTML = msg('Creando acuario...', 'notice');
+      const { data, error } = await supabase.from('aquariums').insert(insert).select('*').single();
+      if (error) throw error;
+      const saved = data || insert;
+      state.aquariums = [saved, ...(state.aquariums || [])];
+      state.aquarium = saved;
+      window.q = saved;
+      if (window.resumenAcuario) window.resumenAcuario();
+    } catch (e) { if (box) box.innerHTML = msg(e.message, 'error'); }
+  };
+
+  window.guardarEdicionAcuario = async function () {
+    const box = byId('editAqStatus');
+    if (!state.user) return login();
+    const aq = currentAquarium();
+    if (!aq) return listaAcuarios();
+    try {
+      const update = aquariumPayload();
+      if (!update.name) throw new Error('El nombre del acuario es obligatorio.');
+      if (box) box.innerHTML = msg('Guardando cambios...', 'notice');
+      const { data, error } = await supabase.from('aquariums').update(update).eq('id', aq.id).eq('user_id', state.user.id).select('*').single();
+      if (error) throw error;
+      const saved = Object.assign({}, aq, data || update);
+      state.aquariums = (state.aquariums || []).map(function (item) { return String(item.id) === String(aq.id) ? saved : item; });
+      state.aquarium = saved;
+      window.q = saved;
+      if (window.resumenAcuario) window.resumenAcuario();
+    } catch (e) { if (box) box.innerHTML = msg(e.message, 'error'); }
+  };
+})();
