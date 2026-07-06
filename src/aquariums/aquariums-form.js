@@ -4,7 +4,14 @@
   const { calcStat } = window.ANX.AquariumsCore;
 
   function selectTypeOptions(current) {
-    return [['reef','reef'],['freshwater','freshwater'],['hospital','hospital'],['quarantine','quarantine'],['other','other']].map(function (item) { return `<option value="${esc(item[0])}" ${String(current || '') === item[0] ? 'selected' : ''}>${esc(item[1])}</option>`; }).join('');
+    const options = [
+      ['reef', 'Marino arrecife'],
+      ['freshwater', 'Agua dulce'],
+      ['hospital', 'Hospital'],
+      ['quarantine', 'Cuarentena'],
+      ['other', 'Otro']
+    ];
+    return options.map(function (item) { return `<option value="${esc(item[0])}" ${String(current || '') === item[0] ? 'selected' : ''}>${esc(item[1])}</option>`; }).join('');
   }
 
   function dateValue(value) { return value ? String(value).slice(0, 10) : ''; }
