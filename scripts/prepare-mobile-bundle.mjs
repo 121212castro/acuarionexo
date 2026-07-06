@@ -57,6 +57,7 @@ const files = [
   'src/parameters/measurements-advanced.js',
   'src/parameters/parameters-ai-fallback.js',
   'src/tasks/tasks-core.js',
+  'src/tasks/tasks-form.js',
   'src/tasks/tasks.js',
   'src/admin/admin.js',
   'src/admin/admin-extra.js',
