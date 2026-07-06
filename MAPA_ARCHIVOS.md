@@ -62,6 +62,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/parameters/parameters-ai-fallback.js`
+- `src/tasks/tasks-core.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
 - `src/auth/auth.js`
@@ -92,18 +93,6 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 `src/admin/report-issue.js` permite a usuarios con sesion enviar reportes a `admin_reports`.
 
 `src/admin/issue-entry.js` añade acceso visible a Incidencia dentro de Inicio > Modulos.
-
-Campos guardados:
-
-- usuario
-- zona afectada
-- gravedad
-- titulo
-- descripcion
-- user agent
-- estado abierto
-
-Los administradores los revisan desde Admin > Fallos.
 
 ## Admin restringido
 
@@ -151,6 +140,11 @@ Los administradores los revisan desde Admin > Fallos.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
 - `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga `src/parameters/parameters-extra-fields.js`.
 - `src/parameters/parameters-extra-fields.js`: añade NO2, Cobre y Silicato al plan marino, al formulario mensual y al guardado de mediciones.
+
+## Tareas / Avisos
+
+- `src/tasks/tasks-core.js`: limpieza de textos, metadatos, rutas, repeticion, tarjetas y agrupacion de avisos.
+- `src/tasks/tasks.js`: pantalla de tareas, formularios, detalle, repeticion, completar avisos y consultas Supabase.
 
 ## Notificaciones
 
