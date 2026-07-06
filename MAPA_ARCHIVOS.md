@@ -67,6 +67,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/tasks/tasks.js`
 - `src/admin/admin-core.js`
 - `src/admin/admin.js`
+- `src/auth/auth-core.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -97,6 +98,11 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes e historial por persona.
 - `src/admin/report-issue.js`: formulario de reportes a `admin_reports`.
 - `src/admin/issue-entry.js`: acceso visible a Incidencia dentro de Inicio > Modulos.
+
+## Autenticacion
+
+- `src/auth/auth-core.js`: mensajes de Auth, timeout, refresco seguro de Admin, limpieza de estado y cabecera de sesion.
+- `src/auth/auth.js`: login, alta, recuperacion de contraseña, inicio/cierre de sesion y arranque inicial.
 
 ## Inventario
 
