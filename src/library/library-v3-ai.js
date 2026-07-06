@@ -30,9 +30,18 @@
     try {
       box.innerHTML = msg('Generando borrador completo...');
       const data = await call('library-generate-draft', { identity: state.lastIdentify, entry_type: val('entryType') });
-      box.innerHTML = msg('Borrador creado.', 'success');
       await biblioteca();
       formFicha(data.data.id);
+      const saved = (state.libraryRows || []).find(x => String(x.id) === String(data.data.id));
+      const statusBox = byId('x');
+      if (saved && window.ANX.LibraryV3Ficha?.assertComplete) {
+        try {
+          window.ANX.LibraryV3Ficha.assertComplete(saved, 'La IA no puede dejar campos vacíos');
+          if (statusBox) statusBox.innerHTML = msg('Borrador completo creado por IA.', 'success');
+        } catch (auditError) {
+          if (statusBox) statusBox.innerHTML = window.ANX.LibraryV3Ficha.auditHtml(auditError.audit, 10);
+        }
+      }
     } catch (e) {
       box.innerHTML = msg(e.message, 'error');
     }
