@@ -126,9 +126,9 @@ Admin ya esta activo para propietario.
 - `src/map/map-ui.js`: helpers HTML del panel, escenario, lista y editor del mapa.
 - `src/map/map-photos.js`: preview y guardado de fotos del mapa.
 - `src/map/map-markers.js`: colocar, seleccionar, actualizar, crear y borrar marcadores.
-- `src/map/map-render-3d.js`: puente de render 3D para separar el coordinador del motor Three.js.
+- `src/map/map-render-3d.js`: motor Three.js del gemelo 3D.
 - `src/map/map-save.js`: guardado del mapa en `aquariums.ai_summary`.
-- `src/map/map.js`: coordinador principal heredado; pendiente de reducir tras comprobar cada modulo.
+- `src/map/map.js`: coordinador reducido de entrada y render de pantalla.
 - `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
 
 ## Parametros estado actual
