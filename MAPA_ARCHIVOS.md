@@ -37,6 +37,11 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
 - `src/library/inventory/library-inventory-import.js`
+- `src/library/library-v3-core.js`
+- `src/library/library-v3-template.js`
+- `src/library/library-v3-images.js`
+- `src/library/library-v3-ai.js`
+- `src/library/library-v3-ficha.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals-core.js`
@@ -107,6 +112,20 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/aquariums/aquariums-form.js`: formulario de alta/edicion, calculos de litros y payload del acuario.
 - `src/aquariums/aquariums-save.js`: guardado de alta y edicion de acuarios.
 - `src/aquariums/aquariums.js`: dashboard, lista, resumen, borrado, seleccion de acuario y rutas internas.
+
+## Biblioteca / Fichas
+
+- `src/library/core/library-schema.js`: contrato oficial reforzado de plantillas y auditoria.
+- `src/library/ui/library.js`: entrada UI y carga diferida de ficha JSON.
+- `src/library/inventory/library-inventory-import.js`: importacion de fichas a inventario.
+- `src/library/library-v3-core.js`: tipos, filtros, carga de fichas, tarjetas, listado y entrada Biblioteca.
+- `src/library/library-v3-template.js`: generación y copiado de apartados para Chat.
+- `src/library/library-v3-images.js`: subida, preview y panel de imagenes de ficha.
+- `src/library/library-v3-ai.js`: identificar, generar borrador y llamadas IA de Biblioteca.
+- `src/library/library-v3-ficha.js`: formulario de ficha, pegado desde Chat, guardado, auditoria, vista, publicar y borrar.
+- `src/library/library-v3.js`: coordinador reducido de Biblioteca V3.
+- `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
+- `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
 
 ## Animales
 
