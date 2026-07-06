@@ -60,8 +60,9 @@
   const SECTION_LABELS = { cover: 'Portada', photo: 'Foto principal', summary: 'Resumen', identity: 'Identificación', habitat: 'Hábitat natural', aquarium: 'Acuario recomendado', parameters: 'Parámetros', measurement: 'Medición', behavior: 'Comportamiento', feeding: 'Alimentación', compatibility: 'Compatibilidad', reef_safe: 'Reef safe', breeding: 'Reproducción', health: 'Salud', purchase: 'Antes de comprar', reagents: 'Reactivos', procedure: 'Procedimiento', lighting: 'Iluminación', flow: 'Flujo', placement: 'Ubicación', maintenance: 'Mantenimiento', curiosities: 'Curiosidades', culture: 'Cultivo', harvest: 'Cosecha', use: 'Uso recomendado', nutrition: 'Composición', dose: 'Dosis', monitoring: 'Mediciones / seguimiento', reading: 'Lectura', recommended_values: 'Valores recomendados', mapping: 'Mapeo AcuarioNexo', risks: 'Riesgos', uses: 'Usos indicados', remove: 'Retirar durante tratamiento', range: 'Rangos', specs: 'Especificaciones', ai: 'Notas para IA y usuario', sources: 'Fuentes' };
   const TEMPLATE_ORDER = ['cover','photo','summary','identity','habitat','aquarium','parameters','measurement','behavior','compatibility','feeding','reef_safe','breeding','health','maintenance','curiosities','purchase','reagents','procedure','lighting','flow','placement','culture','harvest','use','nutrition','dose','monitoring','reading','recommended_values','mapping','risks','uses','remove','range','specs','ai','sources'];
   const NUMBER_FIELDS = /(_cm|_years|_liters|_min|_max|_watts|grams_per_liter|treatment_days|power|flow|volume)$/;
-  const FORCED_TEXT_FIELDS = new Set(['sample_volume','final_cuvette_volume','reading_time','mixing_time','waiting_time','mixing_time','reagent_tests','device_min_limit','device_max_limit','recommended_min','recommended_max','target_value','alert_min','alert_max']);
-  const SHORT_TEXT_MIN_LENGTH = { manufacturer: 2, brand: 2, product_code: 2, parameter: 2, method: 2, range: 2, resolution: 1, accuracy: 1, scale_values: 2, sample_volume: 1, final_cuvette_volume: 1, reading_time: 1, mixing_time: 1, waiting_time: 1, expiry: 2, lot: 2, storage: 2, aquarium_type: 2, source_label: 2, food_type: 2, equipment_type: 2, power: 1, flow: 1, volume: 1, warranty: 2, active_ingredient: 2, data_type: 2, internal_unit: 1, reading_unit: 1, primary_field: 2 };
+  const FORCED_TEXT_FIELDS = new Set(['sample_volume','final_cuvette_volume','reading_time','mixing_time','waiting_time','reagent_tests','device_min_limit','device_max_limit','recommended_min','recommended_max','target_value','alert_min','alert_max']);
+  const SHORT_TEXT_FIELDS = new Set(['manufacturer','brand','product_code','parameter','method','range','resolution','accuracy','scale_values','sample_volume','final_cuvette_volume','reading_time','mixing_time','waiting_time','expiry','lot','storage','aquarium_type','source_label','food_type','equipment_type','power','flow','volume','warranty','active_ingredient','data_type','internal_unit','reading_unit','primary_field','test_type','intended_use','measured_ion_or_compound','device_min_limit','device_max_limit','led_wavelength','compatibility','freshwater_compatible','saltwater_compatible','reef_compatible','use_limitations','included_reagents','reagent_code','reagent_tests','standard_code','zero_water_required','recommended_min','recommended_max','target_value','alert_min','alert_max','related_parameters','save_date','save_time','save_reagent_lot','save_reagent_expiry','save_observations']);
+  const SHORT_TEXT_MIN_LENGTH = { manufacturer: 2, brand: 2, product_code: 2, parameter: 2, method: 2, range: 2, resolution: 1, accuracy: 1, scale_values: 2, sample_volume: 1, final_cuvette_volume: 1, reading_time: 1, mixing_time: 1, waiting_time: 1, expiry: 2, lot: 2, storage: 2, aquarium_type: 2, source_label: 2, food_type: 2, equipment_type: 2, power: 1, flow: 1, volume: 1, warranty: 2, active_ingredient: 2, data_type: 2, internal_unit: 1, reading_unit: 1, primary_field: 2, test_type: 2, intended_use: 2, measured_ion_or_compound: 2, device_min_limit: 1, device_max_limit: 1, led_wavelength: 2, compatibility: 2, freshwater_compatible: 2, saltwater_compatible: 2, reef_compatible: 2, use_limitations: 2, included_reagents: 2, reagent_code: 2, reagent_tests: 1, standard_code: 2, zero_water_required: 2, recommended_min: 1, recommended_max: 1, target_value: 1, alert_min: 1, alert_max: 1, related_parameters: 2, save_date: 2, save_time: 2, save_reagent_lot: 2, save_reagent_expiry: 2, save_observations: 2 };
 
   function sectionFor(field) {
     if (field === 'sources') return 'sources';
@@ -97,7 +98,7 @@
 
   function humanLabel(field) { return LABELS[field] || field.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()); }
   function isNumberField(field) { return !FORCED_TEXT_FIELDS.has(field) && NUMBER_FIELDS.test(field); }
-  function minLengthFor(field) { if (isNumberField(field)) return 1; return SHORT_TEXT_MIN_LENGTH[field] || 20; }
+  function minLengthFor(field) { if (isNumberField(field)) return 1; if (SHORT_TEXT_FIELDS.has(field)) return SHORT_TEXT_MIN_LENGTH[field] || 2; return SHORT_TEXT_MIN_LENGTH[field] || 20; }
   function fieldRule(field) { return { label: humanLabel(field), required: true, type: isNumberField(field) ? 'number' : 'text', minLength: minLengthFor(field), ai: true, public: true, section: sectionFor(field), allowed: field === 'reef_safe' ? REEF_SAFE : undefined, validator: field === 'scientific_name' ? 'scientificName' : undefined }; }
 
   function templateFor(type = 'general') {
@@ -125,10 +126,12 @@
     if (typeof value === 'object') Object.values(value).forEach(item => extractUrlsFromAny(item, found));
     return found;
   }
-  function hasRealUrl(value) { return extractUrlsFromAny(value).some(url => { try { const parsed = new URL(url); return ['http:', 'https:'].includes(parsed.protocol) && parsed.hostname.includes('.'); } catch (_) { return false; } }); }
-  function cleanUrl(url) { try { const parsed = new URL(url); ['utm_source','utm_medium','utm_campaign','utm_term','utm_content'].forEach(key => parsed.searchParams.delete(key)); return parsed.toString(); } catch (_) { return url || ''; } }
-  function normalizeSources(value) {
-    const raw = Array.isArray(value) ? value : [];
+  function cleanUrl(url) { return String(url || '').trim().replace(/[.,;:]+$/, ''); }
+  function hasRealUrl(url) { try { const u = new URL(cleanUrl(url)); return ['http:', 'https:'].includes(u.protocol) && u.hostname.includes('.'); } catch (_) { return false; } }
+  function normalizeSources(raw) {
+    if (!raw) return [];
+    if (typeof raw === 'string') raw = extractUrlsFromAny(raw).map(url => ({ url }));
+    if (!Array.isArray(raw)) raw = [raw];
     const seen = new Set();
     return raw.map((source, index) => { const item = typeof source === 'string' ? { url: source } : (source || {}); const url = cleanUrl(extractUrlsFromAny(item.url || item)[0] || ''); return { name: String(item.name || item.title || (url ? new URL(url).hostname : `Fuente ${index + 1}`)).trim(), url, source_type: String(item.source_type || item.type || '').trim(), original: item.original || item, used_for: String(item.used_for || '').trim(), confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null, consulted_at: item.consulted_at || new Date().toISOString() }; }).filter(source => { if (!hasRealUrl(source.url) || seen.has(source.url)) return false; seen.add(source.url); return true; });
   }
