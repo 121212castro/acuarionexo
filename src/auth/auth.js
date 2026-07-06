@@ -1,6 +1,7 @@
 /* AcuarioNexo · auth */
 (function () {
-  const { config, supabase, state, esc, byId, val, msg, isPasswordRecoveryUrl, authRedirectUrl, render } = window.ANX;
+  const { config, supabase, state, byId, val, msg, isPasswordRecoveryUrl, authRedirectUrl, render } = window.ANX;
+  const { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader } = window.ANX;
 
 function login() {
   render(`<section class="auth-card"><h2>Entrar</h2>
@@ -13,35 +14,6 @@ function login() {
   </section>`, 'inicio', false);
 }
 window.login = login;
-
-function authMessage(error) {
-  const text = String(error?.message || error || '');
-  if (/load failed|failed to fetch|network|timeout|522/i.test(text)) {
-    return 'Supabase no está respondiendo ahora mismo. El proyecto recibe la petición, pero Auth/Postgres termina en timeout 522.';
-  }
-  return text || 'No se pudo completar la operación.';
-}
-
-function withAuthTimeout(promise, seconds = 18) {
-  let timeoutId;
-  const timeout = new Promise(function (_resolve, reject) {
-    timeoutId = setTimeout(function () {
-      reject(new Error('timeout'));
-    }, seconds * 1000);
-  });
-  return Promise.race([promise, timeout]).finally(function () {
-    clearTimeout(timeoutId);
-  });
-}
-
-async function refreshAdminSafe() {
-  try {
-    if (window.refreshAdminAccess) await window.refreshAdminAccess();
-  } catch (_) {
-    state.adminRole = null;
-    state.isAdmin = false;
-  }
-}
 
 window.recuperarPassword = function () {
   render(`<section class="auth-card"><h2>Recuperar contraseña</h2>
@@ -86,9 +58,7 @@ window.guardarNuevaPassword = async function () {
     state.passwordRecovery = false;
     history.replaceState(null, '', authRedirectUrl());
     await supabase.auth.signOut();
-    state.user = null;
-    state.adminRole = null;
-    state.isAdmin = false;
+    clearAuthState();
     updateSessionHeader();
     render(`<section class="auth-card"><h2>Contraseña actualizada</h2>
       ${msg('Ya puedes entrar con la contraseña nueva.', 'success')}
@@ -115,11 +85,7 @@ window.crear = async function () {
     const password = val('password');
     if (!email) throw new Error('Pon el email de la cuenta.');
     if (!password) throw new Error('Pon la contraseña.');
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: authRedirectUrl() }
-    });
+    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
     if (error) throw error;
     byId('x').innerHTML = msg('Cuenta creada. Si Supabase pide confirmación, revisa el email.', 'success');
   } catch (e) {
@@ -145,10 +111,8 @@ async function boot() {
     if (byId('logoutBtn')) {
       byId('logoutBtn').onclick = async function () {
         await supabase.auth.signOut();
-        state.user = null;
+        clearAuthState();
         state.aquarium = null;
-        state.adminRole = null;
-        state.isAdmin = false;
         window.q = null;
         updateSessionHeader();
         login();
@@ -158,12 +122,6 @@ async function boot() {
   } catch (e) {
     render(msg(authMessage(e), 'error'), 'inicio', false);
   }
-}
-
-function updateSessionHeader() {
-  byId('logoutBtn')?.classList.toggle('hidden', !state.user);
-  const text = byId('connectionText');
-  if (text) text.textContent = state.user ? 'Conectado a Supabase' : 'Sin sesión';
 }
 
 byId('version').textContent = config.APP_VERSION || 'AcuarioNexo';
