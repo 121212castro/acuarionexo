@@ -2,7 +2,7 @@
 (function () {
   const { supabase, state, esc, byId, val, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
   const { AI_DAY, aiMeasurementPlans, aiParameterLabels, aiAquariumMode, normalizeMeasurementKey, measurementNumber, aiLatestMeasurements } = window.ANX;
-  const { paramKeysForAquarium, paramActionPanel, paramDisplayValue, paramVisualState, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml } = window.ANX;
+  const { paramKeysForAquarium, paramActionPanel, paramDisplayValue, paramVisualState, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml, taskNotesPayload, notifyLocalParameterAlert } = window.ANX;
 
 async function parametros() {
   const aq = currentAquarium();
@@ -45,18 +45,6 @@ function parameterAlertCandidates(aq, rows) {
     out.push({ key, label, value, stateInfo, alertKey, row });
   });
   return out;
-}
-
-function taskNotesPayload(notes, meta = {}) {
-  const cleanMeta = Object.fromEntries(Object.entries(meta).filter(([, value]) => value !== null && value !== undefined && value !== ''));
-  return `${Object.keys(cleanMeta).length ? `AcuarioNexoTaskMeta:${JSON.stringify(cleanMeta)}\n` : ''}${notes || ''}`.trim() || null;
-}
-
-function notifyLocalParameterAlert(title, body, tag) {
-  try {
-    if (!('Notification' in window) || Notification.permission !== 'granted') return;
-    new Notification(title, { body, tag, requireInteraction: true });
-  } catch (_) {}
 }
 
 async function ensureParameterAlerts(aq, rows) {
