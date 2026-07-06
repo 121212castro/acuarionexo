@@ -1,7 +1,7 @@
 /* AcuarioNexo · parameters */
 (function () {
-  const { supabase, state, esc, byId, val, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
-  const { AI_DAY, aiMeasurementPlans, aiParameterLabels, aiAquariumMode, normalizeMeasurementKey, measurementNumber, aiLatestMeasurements } = window.ANX;
+  const { supabase, state, esc, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
+  const { aiMeasurementPlans, aiParameterLabels, aiAquariumMode, aiLatestMeasurements } = window.ANX;
   const { paramKeysForAquarium, paramActionPanel, paramDisplayValue, paramVisualState, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml, taskNotesPayload, notifyLocalParameterAlert } = window.ANX;
 
 async function parametros() {
@@ -130,55 +130,4 @@ function paramAiPanel(aq, rows) {
     <section class="param-ai-block"><h4>Consejos seguros</h4><ul>${advice.slice(0, 6).map(function (x) { return `<li>${esc(x)}</li>`; }).join('') || '<li>No hay acciones urgentes con los datos actuales.</li>'}</ul></section>
   </div>`;
 }
-
-window.parametrosAdmin = function () {
-  formParametro('__manual');
-};
-
-window.formParametro = function (preset = '') {
-  if (!preset) return formMedicionCompleta('weekly');
-  const manualPreset = preset === '__manual' ? '' : preset;
-  render(aqHeader('parametros') + `<section class="panel">
-    <button onclick="openAqSection('parametros')">← Volver</button>
-    <h2>Registro manual</h2>
-    <div class="param-actions param-profile-actions">
-      <button type="button" onclick="formMedicionCompleta('weekly')">Semanal</button>
-      <button type="button" onclick="formMedicionCompleta('monthly')">Mensual</button>
-      <button type="button" onclick="formMedicionCompleta('icp')">ICP</button>
-    </div>
-    ${msg('Usa este formulario solo para una medición puntual fuera de los ciclos.', 'notice')}
-    <label>Parámetro</label><input id="parName" value="${esc(manualPreset)}" placeholder="KH, NO3, PO4, pH...">
-    <label>Valor</label><input id="parValue" placeholder="Ej. 8.2">
-    <label>Fecha</label><input id="parDate" type="datetime-local" value="${new Date().toISOString().slice(0, 16)}">
-    <label>Notas</label><textarea id="parNotes"></textarea>
-    <button class="primary" onclick="saveParametro()">Guardar</button>
-    <div id="x"></div>
-  </section>`, 'acuarios');
-};
-
-window.saveParametro = async function () {
-  try {
-    const aq = currentAquarium();
-    if (!val('parName')) throw new Error('Indica el parámetro.');
-    const key = normalizeMeasurementKey({ parameter_key: val('parName') });
-    const rawValue = measurementNumber({ raw_text: val('parValue') });
-    const row = {
-      user_id: state.user.id,
-      aquarium_id: aq.id,
-      parameter_key: key,
-      parameter_label: aiParameterLabels[key] || val('parName'),
-      display_value: val('parValue'),
-      raw_text: val('parValue'),
-      raw_value: rawValue,
-      normalized_value: rawValue,
-      measured_at: val('parDate') ? new Date(val('parDate')).toISOString() : new Date().toISOString(),
-      notes: val('parNotes') || null
-    };
-    const { error } = await supabase.from('aquarium_measurements').insert(row);
-    if (error) throw error;
-    parametros();
-  } catch (e) {
-    if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');
-  }
-};
 })();
