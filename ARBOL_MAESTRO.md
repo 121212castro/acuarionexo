@@ -47,6 +47,7 @@ Carga activa directa desde `index.html`:
 - `src/photos/photos.js`
 - `src/inventory/inventory-core.js`
 - `src/inventory/inventory-list.js`
+- `src/inventory/inventory-form.js`
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
@@ -120,7 +121,8 @@ Admin ya esta activo para propietario.
 
 - `src/inventory/inventory-core.js`: categorias, etiquetas de ficha importada, metadatos, portada, caducidad y relacion con acuario.
 - `src/inventory/inventory-list.js`: agrupacion, tarjetas/listado e HTML de ficha tecnica importada.
-- `src/inventory/inventory.js`: pantalla, formulario, detalle, edicion, guardado y borrado.
+- `src/inventory/inventory-form.js`: formularios de alta/edicion y guardado de inventario.
+- `src/inventory/inventory.js`: pantalla principal, detalle y borrado.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
 
 ## Mapa estado actual
