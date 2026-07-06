@@ -2,6 +2,20 @@
 (function () {
   const { supabase, state, esc, aquariumIcon, photoUrl } = window.ANX;
 
+  function aquariumTypeLabel(value) {
+    const key = String(value || '').toLowerCase();
+    const labels = {
+      reef: 'Marino arrecife',
+      marine: 'Marino',
+      saltwater: 'Marino',
+      freshwater: 'Agua dulce',
+      hospital: 'Hospital',
+      quarantine: 'Cuarentena',
+      other: 'Otro'
+    };
+    return labels[key] || value || 'Acuario';
+  }
+
   async function loadAquariums() {
     const { data, error } = await supabase.from('aquariums').select('*').eq('user_id', state.user.id).order('created_at', { ascending: false });
     if (error) throw error;
@@ -30,9 +44,10 @@
   function aquariumCard(aq) {
     const photo = aq.__cover_url || aq.cover_photo_url || aq.cover_url || aq.photo_url || aq.image_url || '';
     const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
+    const type = aquariumTypeLabel(aq.aquarium_type || aq.type || 'Acuario');
     return `<article class="tank-card" onclick="openA('${esc(aq.id)}')">
       <div class="tank-art">${photo ? `<img src="${esc(photo)}" alt="${esc(aq.name)}" loading="lazy">` : aquariumIcon(aq)}</div>
-      <div class="tank-info"><h3>${esc(aq.name || 'Acuario')}</h3><p>${esc(aq.aquarium_type || 'Acuario')} · ${esc(liters)} L</p></div>
+      <div class="tank-info"><h3>${esc(aq.name || 'Acuario')}</h3><p>${esc(type)} · ${esc(liters)} L</p></div>
       <b>›</b>
     </article>`;
   }
@@ -59,6 +74,7 @@
 
   window.ANX.loadAquariums = loadAquariums;
   window.ANX.AquariumsCore = {
+    aquariumTypeLabel,
     loadAquariums,
     aquariumCard,
     dashboardStat,
