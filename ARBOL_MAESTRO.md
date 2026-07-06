@@ -60,6 +60,7 @@ Carga activa indirecta:
 - `src/admin/admin-extra.js`: cargado por `src/admin/admin.js`.
 - `src/admin/report-issue.js`: cargado por `src/admin/admin.js`.
 - `src/admin/issue-entry.js`: cargado por `src/admin/admin.js`.
+- `src/parameters/parameters-extra-fields.js`: cargado por `src/parameters/parameters-ai-fallback.js`.
 
 ## Navegacion principal
 
@@ -122,7 +123,8 @@ Admin ya esta activo para propietario.
 
 - `src/parameters/parameters.js`: pantalla principal y alertas de parametros.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
-- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`.
+- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga el modulo extra de parametros.
+- `src/parameters/parameters-extra-fields.js`: añade NO2, Cobre y Silicato al plan marino, al formulario mensual y al guardado de mediciones.
 
 ## Notificaciones estado actual
 
