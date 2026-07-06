@@ -53,6 +53,7 @@ Carga activa directa desde `index.html`:
 - `src/tasks/tasks.js`
 - `src/admin/admin-core.js`
 - `src/admin/admin.js`
+- `src/auth/auth-core.js`
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
@@ -139,6 +140,11 @@ Carga activa directa desde `index.html`:
 - `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes y historial por persona.
 - `src/admin/report-issue.js`: reportes de fallos.
 - `src/admin/issue-entry.js`: acceso visible a Incidencia.
+
+## Autenticacion
+
+- `src/auth/auth-core.js`: mensajes de Auth, timeout, refresco seguro de Admin, limpieza de estado y cabecera de sesion.
+- `src/auth/auth.js`: login, alta, recuperacion de contraseña, inicio/cierre de sesion y arranque inicial.
 
 ## Microfauna
 
