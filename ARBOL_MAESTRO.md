@@ -48,9 +48,6 @@ Carga activa directa desde `index.html`:
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
-- `src/ai/ai-constants.js`
-- `src/ai/ai-measurements.js`
-- `src/ai/ai-chemistry.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
@@ -136,12 +133,10 @@ Admin ya esta activo para propietario.
 
 ## IA estado actual
 
-- `src/ai/ai-constants.js`: constantes, planes de medicion y etiquetas de parametros.
-- `src/ai/ai-measurements.js`: modo de acuario, normalizacion de claves, lectura numerica y ultimas mediciones.
-- `src/ai/ai-chemistry.js`: interpretacion quimica marina y estados de riesgo.
-- `src/ai/ai.js`: coordinador IA; conserva revision de inventario, microfauna, creacion de avisos y UI.
+- `src/ai/ai.js`: modulo IA estable activo. Contiene revision de mediciones, quimica, inventario, microfauna, creacion de avisos y UI.
 - `src/ai/ai-library-v3.js`: integracion IA con Biblioteca V3.
 - `src/ai/ai-alerts-extra.js`: revision extra de avisos IA.
+- `src/ai/ai-constants.js`, `src/ai/ai-measurements.js` y `src/ai/ai-chemistry.js`: archivos creados durante refactor, no activos tras restaurar IA estable.
 
 ## Parametros estado actual
 
