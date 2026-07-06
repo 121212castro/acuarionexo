@@ -23,6 +23,11 @@ Carga activa directa desde `index.html`:
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
 - `src/library/inventory/library-inventory-import.js`
+- `src/library/library-v3-core.js`
+- `src/library/library-v3-template.js`
+- `src/library/library-v3-images.js`
+- `src/library/library-v3-ai.js`
+- `src/library/library-v3-ficha.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals-core.js`
@@ -99,7 +104,12 @@ Carga activa directa desde `index.html`:
 - `src/library/core/library-schema.js`: contrato oficial reforzado.
 - `src/library/ui/library.js`: marcador UI y carga diferida de ficha JSON.
 - `src/library/inventory/library-inventory-import.js`: importacion a inventario.
-- `src/library/library-v3.js`: dueño real de Biblioteca/Fichas.
+- `src/library/library-v3-core.js`: carga de fichas, filtros, tarjetas, listado y estado base.
+- `src/library/library-v3-template.js`: plantillas y copiado de apartados para Chat.
+- `src/library/library-v3-images.js`: imagenes de portada, foto de ficha, preview y subida.
+- `src/library/library-v3-ai.js`: identificación, borrador IA y llamadas de edge functions de Biblioteca.
+- `src/library/library-v3-ficha.js`: editor de ficha, pegado desde Chat, guardado, auditoria, vista, publicación y borrado.
+- `src/library/library-v3.js`: coordinador reducido de Biblioteca V3.
 - `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
 - `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
 
