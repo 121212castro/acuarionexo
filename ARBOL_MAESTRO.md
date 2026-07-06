@@ -54,6 +54,7 @@ Carga activa directa desde `index.html`:
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
+- `src/parameters/parameters-core.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/parameters/parameters-ai-fallback.js`
@@ -146,7 +147,8 @@ Admin ya esta activo para propietario.
 
 ## Parametros estado actual
 
-- `src/parameters/parameters.js`: pantalla principal y alertas de parametros.
+- `src/parameters/parameters-core.js`: helpers visuales, ultimas mediciones, estado visual, ciclos e historial.
+- `src/parameters/parameters.js`: pantalla principal, analisis IA, alertas de parametros y registro manual.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
 - `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga el modulo extra de parametros.
 - `src/parameters/parameters-extra-fields.js`: añade NO2, Cobre y Silicato al plan marino, al formulario mensual y al guardado de mediciones.
