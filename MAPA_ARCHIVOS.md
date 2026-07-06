@@ -66,6 +66,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/admin/admin-extra.js`: cargado dinamicamente por `src/admin/admin.js`.
 - `src/admin/report-issue.js`: cargado dinamicamente por `src/admin/admin.js`.
 - `src/admin/issue-entry.js`: cargado dinamicamente por `src/admin/admin.js`.
+- `src/parameters/parameters-extra-fields.js`: cargado dinamicamente por `src/parameters/parameters-ai-fallback.js`.
 
 ## Candidato a integrar o retirar despues
 
@@ -115,7 +116,8 @@ Los administradores los revisan desde Admin > Fallos.
 
 - `src/parameters/parameters.js`: pantalla principal y alertas de parametros.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
-- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`.
+- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga `src/parameters/parameters-extra-fields.js`.
+- `src/parameters/parameters-extra-fields.js`: añade NO2, Cobre y Silicato al plan marino, al formulario mensual y al guardado de mediciones.
 
 ## Notificaciones
 
