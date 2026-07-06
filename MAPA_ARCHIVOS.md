@@ -47,6 +47,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/map/map.js`
 - `src/map/map-interactions.js`
 - `src/photos/photos.js`
+- `src/inventory/inventory-core.js`
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
@@ -112,7 +113,8 @@ Los administradores los revisan desde Admin > Fallos.
 
 ## Inventario
 
-- `src/inventory/inventory.js`: inventario general y por acuario.
+- `src/inventory/inventory-core.js`: categorias, etiquetas de ficha importada, metadatos, portada, caducidad y relacion con acuario.
+- `src/inventory/inventory.js`: pantalla, listado, formulario, detalle, edicion, guardado y borrado.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
 
 ## Mapa
