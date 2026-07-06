@@ -36,6 +36,12 @@ Carga activa directa desde `index.html`:
 - `src/library/ficha/ficha-chat-import.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
+- `src/map/map-state.js`
+- `src/map/map-ui.js`
+- `src/map/map-photos.js`
+- `src/map/map-markers.js`
+- `src/map/map-render-3d.js`
+- `src/map/map-save.js`
 - `src/map/map.js`
 - `src/map/map-interactions.js`
 - `src/photos/photos.js`
@@ -116,7 +122,13 @@ Admin ya esta activo para propietario.
 ## Mapa estado actual
 
 - `src/map/map-v3-model.js`: contrato/modelo de mapa V3.
-- `src/map/map.js`: pantalla, editor, persistencia y render 3D principal.
+- `src/map/map-state.js`: estado, normalizacion, lectura, fotos normalizadas y seleccion de marcadores.
+- `src/map/map-ui.js`: helpers HTML del panel, escenario, lista y editor del mapa.
+- `src/map/map-photos.js`: preview y guardado de fotos del mapa.
+- `src/map/map-markers.js`: colocar, seleccionar, actualizar, crear y borrar marcadores.
+- `src/map/map-render-3d.js`: puente de render 3D para separar el coordinador del motor Three.js.
+- `src/map/map-save.js`: guardado del mapa en `aquariums.ai_summary`.
+- `src/map/map.js`: coordinador principal heredado; pendiente de reducir tras comprobar cada modulo.
 - `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
 
 ## Parametros estado actual
