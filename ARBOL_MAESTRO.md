@@ -16,12 +16,16 @@ Carga activa directa desde `index.html`:
 
 - `config.js`
 - `app.js`
+- `src/aquariums/aquariums-core.js`
+- `src/aquariums/aquariums-form.js`
+- `src/aquariums/aquariums-save.js`
 - `src/aquariums/aquariums.js`
 - `src/library/core/library-schema.js`
 - `src/library/ui/library.js`
 - `src/library/inventory/library-inventory-import.js`
 - `src/library/library-v3.js`
 - `src/library/ficha/ficha-chat-import.js`
+- `src/animals/animals-core.js`
 - `src/animals/animals.js`
 - `src/map/map-v3-model.js`
 - `src/map/map-state.js`
@@ -32,6 +36,9 @@ Carga activa directa desde `index.html`:
 - `src/map/map-save.js`
 - `src/map/map.js`
 - `src/map/map-interactions.js`
+- `src/photos/photos-core.js`
+- `src/photos/photos-form.js`
+- `src/photos/photos-save.js`
 - `src/photos/photos.js`
 - `src/inventory/inventory-core.js`
 - `src/inventory/inventory-list.js`
@@ -81,7 +88,10 @@ Carga activa directa desde `index.html`:
 
 ## Acuarios
 
-- `src/aquariums/aquariums.js`: carga, lista y seleccion de acuarios.
+- `src/aquariums/aquariums-core.js`: carga acuarios, portadas, tarjetas y helpers visuales.
+- `src/aquariums/aquariums-form.js`: formulario, calculos de litros y payload.
+- `src/aquariums/aquariums-save.js`: alta y edicion de acuarios.
+- `src/aquariums/aquariums.js`: dashboard, lista, resumen, borrado y rutas internas.
 - `loadAquariums()` queda expuesto en `window.ANX.loadAquariums`.
 
 ## Biblioteca/Fichas
@@ -92,6 +102,18 @@ Carga activa directa desde `index.html`:
 - `src/library/library-v3.js`: dueño real de Biblioteca/Fichas.
 - `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
 - `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
+
+## Animales
+
+- `src/animals/animals-core.js`: categorias vivas, metadatos, helpers y tarjetas.
+- `src/animals/animals.js`: pantalla de animales vivos y borrado desde inventario.
+
+## Fotos
+
+- `src/photos/photos-core.js`: tarjeta de foto.
+- `src/photos/photos-form.js`: formulario y previsualizacion.
+- `src/photos/photos-save.js`: subida y guardado.
+- `src/photos/photos.js`: pantalla, listado y borrado.
 
 ## Inventario
 
