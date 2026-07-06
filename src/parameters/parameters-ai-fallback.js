@@ -6,6 +6,17 @@
     });
   }
 
+  function loadParametersExtraFields() {
+    if (window.ANX?.ParametersExtraFields) return;
+    if (document.querySelector('script[data-anx-module="parameters-extra-fields"]')) return;
+    var script = document.createElement('script');
+    var v = encodeURIComponent(window.ANX_ASSET_VERSION || (Date.now() + ''));
+    script.src = 'src/parameters/parameters-extra-fields.js?v=' + v;
+    script.async = false;
+    script.dataset.anxModule = 'parameters-extra-fields';
+    document.body.appendChild(script);
+  }
+
   function ensureExtraParameterKeys() {
     const ANX = window.ANX || {};
     ANX.aiParameterLabels = ANX.aiParameterLabels || {};
@@ -68,6 +79,7 @@
   }
 
   function installParameterAiFallback() {
+    loadParametersExtraFields();
     ensureExtraParameterKeys();
     const run = function () { try { ensureExtraParameterKeys(); injectFallbackParameterAi(); } catch (_) {} };
     setInterval(run, 1200);
@@ -79,5 +91,5 @@
   installParameterAiFallback();
 
   window.ANX = window.ANX || {};
-  window.ANX.ParametersAiFallback = { injectFallbackParameterAi, ensureExtraParameterKeys };
+  window.ANX.ParametersAiFallback = { injectFallbackParameterAi, ensureExtraParameterKeys, loadParametersExtraFields };
 })();
