@@ -51,6 +51,7 @@ const files = [
   'src/ai/ai-library-v3.js',
   'src/ai/ai-alerts-extra.js',
   'src/parameters/parameters-core.js',
+  'src/parameters/parameters-alert-helpers.js',
   'src/parameters/parameters.js',
   'src/parameters/measurements-advanced.js',
   'src/parameters/parameters-ai-fallback.js',
