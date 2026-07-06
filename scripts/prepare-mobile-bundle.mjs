@@ -46,6 +46,7 @@ const files = [
   'src/inventory/inventory-form.js',
   'src/inventory/inventory.js',
   'src/inventory/inventory-ui.js',
+  'src/microfauna/microfauna-core.js',
   'src/microfauna/microfauna.js',
   'src/ai/ai.js',
   'src/ai/ai-library-v3.js',
