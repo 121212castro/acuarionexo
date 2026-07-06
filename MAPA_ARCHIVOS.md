@@ -58,6 +58,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters-core.js`
 - `src/parameters/parameters-alert-helpers.js`
+- `src/parameters/parameters-manual.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/parameters/parameters-ai-fallback.js`
@@ -145,7 +146,8 @@ Los administradores los revisan desde Admin > Fallos.
 
 - `src/parameters/parameters-core.js`: helpers visuales, ultimas mediciones, estado visual, ciclos e historial.
 - `src/parameters/parameters-alert-helpers.js`: helpers de notas y notificacion local para alertas de parametros.
-- `src/parameters/parameters.js`: pantalla principal, analisis IA, alertas de parametros y registro manual.
+- `src/parameters/parameters-manual.js`: registro manual puntual de parametros.
+- `src/parameters/parameters.js`: pantalla principal, analisis IA y alertas de parametros.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
 - `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga `src/parameters/parameters-extra-fields.js`.
 - `src/parameters/parameters-extra-fields.js`: añade NO2, Cobre y Silicato al plan marino, al formulario mensual y al guardado de mediciones.
