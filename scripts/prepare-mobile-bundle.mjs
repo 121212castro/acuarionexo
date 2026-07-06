@@ -59,6 +59,7 @@ const files = [
   'src/tasks/tasks-core.js',
   'src/tasks/tasks-form.js',
   'src/tasks/tasks.js',
+  'src/admin/admin-core.js',
   'src/admin/admin.js',
   'src/admin/admin-extra.js',
   'src/admin/report-issue.js',
