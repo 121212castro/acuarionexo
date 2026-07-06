@@ -50,9 +50,6 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
-- `src/ai/ai-constants.js`
-- `src/ai/ai-measurements.js`
-- `src/ai/ai-chemistry.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
@@ -80,6 +77,9 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Candidato a integrar o retirar despues
 
 - `src/library/ficha/ficha-template-strict.js`: no aparece en la carga activa actual; no borrar sin decidir antes si se integra en el flujo oficial de `ficha-json.js`.
+- `src/ai/ai-constants.js`: creado durante refactor IA, no activo tras restaurar IA estable.
+- `src/ai/ai-measurements.js`: creado durante refactor IA, no activo tras restaurar IA estable.
+- `src/ai/ai-chemistry.js`: creado durante refactor IA, no activo tras restaurar IA estable.
 
 ## Reportes de fallos
 
@@ -129,10 +129,7 @@ Los administradores los revisan desde Admin > Fallos.
 
 ## IA
 
-- `src/ai/ai-constants.js`: constantes, planes de medicion y etiquetas de parametros.
-- `src/ai/ai-measurements.js`: modo de acuario, normalizacion de claves, lectura numerica y ultimas mediciones.
-- `src/ai/ai-chemistry.js`: interpretacion quimica marina y estados de riesgo.
-- `src/ai/ai.js`: coordinador IA; conserva revision de inventario, microfauna, creacion de avisos y UI.
+- `src/ai/ai.js`: modulo IA estable activo. Contiene revision de mediciones, quimica, inventario, microfauna, creacion de avisos y UI.
 - `src/ai/ai-library-v3.js`: integracion IA con Biblioteca V3.
 - `src/ai/ai-alerts-extra.js`: revision extra de avisos IA.
 
