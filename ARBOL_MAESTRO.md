@@ -51,6 +51,7 @@ Carga activa directa desde `index.html`:
 - `src/tasks/tasks-core.js`
 - `src/tasks/tasks-form.js`
 - `src/tasks/tasks.js`
+- `src/admin/admin-core.js`
 - `src/admin/admin.js`
 - `src/auth/auth.js`
 - `update-manager.js`
@@ -133,7 +134,8 @@ Carga activa directa desde `index.html`:
 
 ## Admin y reportes
 
-- `src/admin/admin.js`: panel Admin base.
+- `src/admin/admin-core.js`: roles, permisos, carga de rol, conteos y bloqueo de acceso.
+- `src/admin/admin.js`: panel Admin base y Consumo IA.
 - `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes y historial por persona.
 - `src/admin/report-issue.js`: reportes de fallos.
 - `src/admin/issue-entry.js`: acceso visible a Incidencia.
