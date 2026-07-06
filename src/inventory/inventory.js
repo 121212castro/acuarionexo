@@ -1,30 +1,7 @@
 /* AcuarioNexo · inventory */
 (function () {
-  const { supabase, state, esc, byId, val, num, msg, token, isCurrent, currentAquarium, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage } = window.ANX;
-
-const generalInventoryCategories = ['Medicamentos', 'Sales', 'Aditivos', 'Alimentos', 'Tests', 'Material general'];
-const marineInventoryCategories = ['Peces marinos', 'Corales', 'Invertebrados', 'Microfauna', 'Equipos'];
-const freshwaterInventoryCategories = ['Peces', 'Invertebrados', 'Plantas', 'Equipos'];
-const liveCategories = new Set(['Peces marinos', 'Peces', 'Corales', 'Invertebrados', 'Plantas', 'Microfauna']);
-const importedSectionLabels = {
-  summary: 'Resumen', identity: 'Identificacion', habitat: 'Habitat', aquarium: 'Acuario recomendado',
-  parameters: 'Parametros', behavior: 'Comportamiento', feeding: 'Alimentacion', compatibility: 'Compatibilidad',
-  reef_safe: 'Reef safe', health: 'Salud', purchase: 'Antes de comprar', mistakes: 'Errores frecuentes',
-  breeding: 'Reproduccion', lighting: 'Iluminacion', flow: 'Flujo', placement: 'Ubicacion', co2: 'CO2 / nutrientes',
-  maintenance: 'Mantenimiento', uses: 'Usos', dose: 'Dosis', remove: 'Retirar durante tratamiento', risks: 'Riesgos',
-  aftercare: 'Seguimiento', inventory_logic: 'Logica AcuarioNexo', mixing: 'Preparacion', use: 'Uso', nutrition: 'Composicion',
-  acuarionexo_plan: 'Plan AcuarioNexo', specs: 'Especificaciones', installation: 'Instalacion', reading: 'Lectura',
-  range: 'Rangos', storage: 'Conservacion', sources: 'Fuentes', culture: 'Cultivo', harvest: 'Recolecta'
-};
-
-function inventoryMode(aq) {
-  const type = String(aq?.aquarium_type || aq?.type || '').toLowerCase();
-  return /fresh|dulce|plant|gamb|betta|discus/.test(type) ? 'freshwater' : 'marine';
-}
-
-function aquariumInventoryCategoriesFor(aq) {
-  return inventoryMode(aq) === 'freshwater' ? freshwaterInventoryCategories : marineInventoryCategories;
-}
+  const { supabase, state, esc, byId, val, num, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
+  const { generalInventoryCategories, liveCategories, importedSectionLabels, aquariumInventoryCategoriesFor, inventoryNoteText, inventoryMeta, sectionText, inventoryCover, inventoryExpiryStatus, inventoryAqId } = window.ANX;
 
 function groupedInventoryHtml(rows, aqName) {
   if (!rows.length) return msg('Sin inventario todavía.');
@@ -35,34 +12,6 @@ function groupedInventoryHtml(rows, aqName) {
     groups[key].push(item);
   });
   return Object.keys(groups).sort().map(category => `<section class="inventory-group"><h3>${esc(category)}</h3>${groups[category].map(item => inventoryItemHtml(item, aqName)).join('')}</section>`).join('');
-}
-
-function inventoryNoteText(item) {
-  return String(item.notes || '')
-    .replace(/^AcuarioNexoAcuario:[^|\n]+[|\n]\s*/i, '')
-    .replace(/^AcuarioNexoMeta:\{[^\n]*\}\n?/i, '')
-    .replace(/^AcuarioNexoLibrary:[^\n]*\n?/i, '')
-    .trim();
-}
-
-function inventoryMeta(item) {
-  const text = String(item.notes || '');
-  const match = text.match(/^AcuarioNexoMeta:(\{[^\n]*\})/i) || text.match(/\nAcuarioNexoMeta:(\{[^\n]*\})/i);
-  if (!match) return {};
-  try { return JSON.parse(match[1]); } catch (_) { return {}; }
-}
-
-function sectionText(value) {
-  if (value == null) return '';
-  if (typeof value === 'string') return value;
-  if (Array.isArray(value)) return value.map(sectionText).filter(Boolean).join('\n');
-  if (typeof value === 'object') {
-    return Object.entries(value).map(([key, val]) => {
-      const text = sectionText(val);
-      return text ? `${key}: ${text}` : '';
-    }).filter(Boolean).join('\n');
-  }
-  return String(value);
 }
 
 function importedFichaHtml(meta) {
@@ -84,31 +33,6 @@ function importedFichaHtml(meta) {
     ${rows || (card.summary ? `<section class="library-detail-section inventory-imported-section"><h3>Resumen</h3><p>${esc(card.summary)}</p></section>` : '')}
     ${source}
   </section>`;
-}
-
-function inventoryCover(item) {
-  const meta = inventoryMeta(item);
-  return item.photo_url || meta.library_card?.photo_url || meta.library_card?.cover_url || meta.cover_url || meta.image_url || '';
-}
-
-function inventoryExpiryStatus(item) {
-  const exp = item.expiry_date || inventoryMeta(item).expires_at || '';
-  if (!exp) return '';
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const date = new Date(`${exp}T00:00:00`);
-  if (Number.isNaN(date.getTime())) return '';
-  const days = Math.round((date - today) / 86400000);
-  if (days < 0) return 'caducado';
-  if (days <= 30) return 'caduca pronto';
-  return 'ok';
-}
-
-function inventoryAqId(item) {
-  if (item.aquarium_id) return String(item.aquarium_id);
-  const note = String(item.notes || '');
-  const match = note.match(/^AcuarioNexoAcuario:([^|\n]+)/i);
-  return match ? match[1] : '';
 }
 
 function afterDeleteRoute(item) {
@@ -156,17 +80,13 @@ window.inventario = async function (scope = 'general') {
     if (error) throw error;
     if (!isCurrent(t)) return;
     const rows = data || [];
-    const filtered = isAq
-      ? rows.filter(item => inventoryAqId(item) === String(aq.id))
-      : rows.filter(item => !inventoryAqId(item));
+    const filtered = isAq ? rows.filter(item => inventoryAqId(item) === String(aq.id)) : rows.filter(item => !inventoryAqId(item));
     const html = groupedInventoryHtml(filtered, isAq ? aq.name : '');
     const tabs = `<div class="inventory-tabs">
       <button class="${isAq ? 'active' : ''}" ${aq ? `onclick="openAqSection('inventario')"` : 'disabled'}>Este acuario</button>
       <button class="${!isAq ? 'active' : ''}" onclick="inventario('general')">General compartido</button>
     </div>`;
-    const hint = isAq
-      ? '<p class="small inventory-hint">Aqui van los habitantes, microfauna y equipos que pertenecen solo a este acuario.</p>'
-      : '<p class="small inventory-hint">Aqui van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.</p>';
+    const hint = isAq ? '<p class="small inventory-hint">Aqui van los habitantes, microfauna y equipos que pertenecen solo a este acuario.</p>' : '<p class="small inventory-hint">Aqui van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.</p>';
     render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">Desde ficha</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir manual</button></div></div>${tabs}${hint}${html || msg('Sin inventario todavía.')}</section>`, active);
   } catch (e) {
     if (isCurrent(t)) render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
@@ -201,26 +121,10 @@ window.saveInventario = async function () {
     if (!val('invName')) throw new Error('Pon un nombre.');
     const aq = currentAquarium();
     const scope = val('invScope') || 'general';
-    const meta = {
-      source: 'manual',
-      scope,
-      purchase_date: val('invPurchaseDate'),
-      purchase_place: val('invPurchasePlace'),
-      purchase_price: val('invPurchasePrice'),
-      batch: val('invBatch')
-    };
+    const meta = { source: 'manual', scope, purchase_date: val('invPurchaseDate'), purchase_place: val('invPurchasePlace'), purchase_price: val('invPurchasePrice'), batch: val('invBatch') };
     const metaHasValue = Object.values(meta).some(Boolean);
     const notes = [metaHasValue ? `AcuarioNexoMeta:${JSON.stringify(meta)}` : '', val('invNotes') || ''].filter(Boolean).join('\n');
-    const row = {
-      user_id: state.user.id,
-      name: val('invName'),
-      category: val('invCategory') || (scope === 'aquarium' ? 'Equipos' : 'Material general'),
-      quantity: num('invQty') ?? 1,
-      unit: val('invUnit') || 'unidad',
-      expiry_date: val('invExpiry') || null,
-      photo_url: val('invCover') || null,
-      notes: notes || null
-    };
+    const row = { user_id: state.user.id, name: val('invName'), category: val('invCategory') || (scope === 'aquarium' ? 'Equipos' : 'Material general'), quantity: num('invQty') ?? 1, unit: val('invUnit') || 'unidad', expiry_date: val('invExpiry') || null, photo_url: val('invCover') || null, notes: notes || null };
     if (scope === 'aquarium') {
       if (!aq) throw new Error('Abre un acuario para guardar inventario del acuario.');
       row.aquarium_id = aq.id;
@@ -253,10 +157,7 @@ window.verInventario = async function (id) {
     render(head + `<section class="panel inventory-detail">
       <button onclick="${isAq && aq ? "openAqSection('inventario')" : "inventario('general')"}">← Volver</button>
       ${cover ? `<img class="inventory-detail-cover" src="${esc(cover)}" alt="${esc(data.name || 'Inventario')}" onerror="this.replaceWith(document.createElement('div'));this.className='inventory-detail-cover empty';this.textContent='▤';">` : '<div class="inventory-detail-cover empty">▤</div>'}
-      <div class="inventory-detail-head">
-        <div><small>${esc(data.category || 'Inventario')}</small><h2>${esc(data.name || 'Item')}</h2></div>
-        ${status ? `<span class="${esc(status)}">${esc(status)}</span>` : ''}
-      </div>
+      <div class="inventory-detail-head"><div><small>${esc(data.category || 'Inventario')}</small><h2>${esc(data.name || 'Item')}</h2></div>${status ? `<span class="${esc(status)}">${esc(status)}</span>` : ''}</div>
       <div class="inventory-fields">
         <div><small>Cantidad</small><b>${esc(data.quantity ?? '-')} ${esc(data.unit || '')}</b></div>
         <div><small>Ámbito</small><b>${esc(isAq ? (aq?.name || 'Acuario') : 'General compartido')}</b></div>
@@ -268,10 +169,7 @@ window.verInventario = async function (id) {
       </div>
       ${cleanNotes ? `<section class="library-detail-section"><h3>Notas</h3><p>${esc(cleanNotes)}</p></section>` : ''}
       ${importedFichaHtml(meta)}
-      <div class="inline-actions">
-        <button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button>
-        <button class="ghost danger" onclick="eliminarInventario('${esc(data.id)}')">🗑 Eliminar</button>
-      </div>
+      <div class="inline-actions"><button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button><button class="ghost danger" onclick="eliminarInventario('${esc(data.id)}')">🗑 Eliminar</button></div>
     </section>`, active);
   } catch (e) {
     render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
@@ -294,8 +192,7 @@ window.editarInventario = async function (id) {
     const categoryOptions = categories.map(c => `<option value="${esc(c)}" ${data.category === c ? 'selected' : ''}>${esc(c)}</option>`).join('');
     const meta = inventoryMeta(data);
     render(head + `<section class="panel">
-      <button onclick="verInventario('${esc(data.id)}')">← Volver</button>
-      <h2>Editar ficha</h2>
+      <button onclick="verInventario('${esc(data.id)}')">← Volver</button><h2>Editar ficha</h2>
       <label>Nombre</label><input id="invEditName" value="${esc(data.name || '')}">
       <label>Categoría</label><select id="invEditCategory">${categoryOptions}</select>
       <label>Cantidad</label><input id="invEditQty" type="number" step="0.1" value="${esc(data.quantity ?? 1)}">
@@ -308,8 +205,7 @@ window.editarInventario = async function (id) {
       <label>Caducidad</label><input id="invEditExpiry" type="date" value="${esc(data.expiry_date || meta.expires_at || '')}">
       <label>Portada</label><input id="invEditCover" value="${esc(inventoryCover(data))}" placeholder="URL de imagen o portada">
       <label>Notas</label><textarea id="invEditNotes">${esc(inventoryNoteText(data))}</textarea>
-      <button class="primary" onclick="guardarInventarioEditado('${esc(data.id)}','${isAq ? 'aquarium' : 'general'}')">Guardar cambios</button>
-      <div id="x"></div>
+      <button class="primary" onclick="guardarInventarioEditado('${esc(data.id)}','${isAq ? 'aquarium' : 'general'}')">Guardar cambios</button><div id="x"></div>
     </section>`, active);
   } catch (e) {
     render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
@@ -321,26 +217,10 @@ window.guardarInventarioEditado = async function (id, scope) {
     const aq = currentAquarium();
     let previousMeta = {};
     try { previousMeta = JSON.parse(val('invEditExistingMeta') || '{}'); } catch (_) { previousMeta = {}; }
-    const meta = {
-      ...previousMeta,
-      source: 'manual',
-      scope,
-      purchase_date: val('invEditPurchaseDate'),
-      purchase_place: val('invEditPurchasePlace'),
-      purchase_price: val('invEditPurchasePrice'),
-      batch: val('invEditBatch')
-    };
+    const meta = { ...previousMeta, source: 'manual', scope, purchase_date: val('invEditPurchaseDate'), purchase_place: val('invEditPurchasePlace'), purchase_price: val('invEditPurchasePrice'), batch: val('invEditBatch') };
     const metaHasValue = Object.values(meta).some(Boolean);
     const notes = [metaHasValue ? `AcuarioNexoMeta:${JSON.stringify(meta)}` : '', val('invEditNotes') || ''].filter(Boolean).join('\n');
-    const row = {
-      name: val('invEditName'),
-      category: val('invEditCategory') || (scope === 'aquarium' ? 'Equipos' : 'Material general'),
-      quantity: num('invEditQty') ?? 1,
-      unit: val('invEditUnit') || 'unidad',
-      expiry_date: val('invEditExpiry') || null,
-      photo_url: val('invEditCover') || null,
-      notes: notes || null
-    };
+    const row = { name: val('invEditName'), category: val('invEditCategory') || (scope === 'aquarium' ? 'Equipos' : 'Material general'), quantity: num('invEditQty') ?? 1, unit: val('invEditUnit') || 'unidad', expiry_date: val('invEditExpiry') || null, photo_url: val('invEditCover') || null, notes: notes || null };
     if (scope === 'aquarium' && aq) row.aquarium_id = aq.id;
     const { error } = await supabase.from('inventory_items').update(row).eq('id', id).eq('user_id', state.user.id);
     if (error) throw error;
@@ -366,7 +246,4 @@ window.eliminarInventario = async function (id) {
     render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
   }
 };
-
-  window.ANX.inventoryMeta = inventoryMeta;
-  window.ANX.inventoryExpiryStatus = inventoryExpiryStatus;
 })();
