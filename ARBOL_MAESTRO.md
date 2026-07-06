@@ -48,6 +48,9 @@ Carga activa directa desde `index.html`:
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna.js`
+- `src/ai/ai-constants.js`
+- `src/ai/ai-measurements.js`
+- `src/ai/ai-chemistry.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
@@ -130,6 +133,15 @@ Admin ya esta activo para propietario.
 - `src/map/map-save.js`: guardado del mapa en `aquariums.ai_summary`.
 - `src/map/map.js`: coordinador reducido de entrada y render de pantalla.
 - `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
+
+## IA estado actual
+
+- `src/ai/ai-constants.js`: constantes, planes de medicion y etiquetas de parametros.
+- `src/ai/ai-measurements.js`: modo de acuario, normalizacion de claves, lectura numerica y ultimas mediciones.
+- `src/ai/ai-chemistry.js`: interpretacion quimica marina y estados de riesgo.
+- `src/ai/ai.js`: coordinador IA; conserva revision de inventario, microfauna, creacion de avisos y UI.
+- `src/ai/ai-library-v3.js`: integracion IA con Biblioteca V3.
+- `src/ai/ai-alerts-extra.js`: revision extra de avisos IA.
 
 ## Parametros estado actual
 
