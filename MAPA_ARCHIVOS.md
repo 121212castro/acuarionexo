@@ -57,6 +57,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters-core.js`
+- `src/parameters/parameters-alert-helpers.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/parameters/parameters-ai-fallback.js`
@@ -143,6 +144,7 @@ Los administradores los revisan desde Admin > Fallos.
 ## Parametros
 
 - `src/parameters/parameters-core.js`: helpers visuales, ultimas mediciones, estado visual, ciclos e historial.
+- `src/parameters/parameters-alert-helpers.js`: helpers de notas y notificacion local para alertas de parametros.
 - `src/parameters/parameters.js`: pantalla principal, analisis IA, alertas de parametros y registro manual.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
 - `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga `src/parameters/parameters-extra-fields.js`.
