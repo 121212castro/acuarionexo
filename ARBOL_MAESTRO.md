@@ -14,18 +14,6 @@ Build actual: `phase2-parameters-fallback-20260704-1440`.
 
 Carga activa directa desde `index.html`:
 
-- `styles.css`
-- `aquarium-map.css`
-- `login-reef.css`
-- `aquarium-cards.css`
-- `aquariums-mobile-fix.css`
-- `mobile-form-fix.css`
-- `library-images.css`
-- `library-mobile-overflow-fix.css`
-- `notifications.css`
-- Supabase CDN
-- Three.js CDN
-- Firebase CDN
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums.js`
@@ -56,6 +44,7 @@ Carga activa directa desde `index.html`:
 - `src/ai/ai-alerts-extra.js`
 - `src/parameters/parameters-core.js`
 - `src/parameters/parameters-alert-helpers.js`
+- `src/parameters/parameters-manual.js`
 - `src/parameters/parameters.js`
 - `src/parameters/measurements-advanced.js`
 - `src/parameters/parameters-ai-fallback.js`
@@ -65,7 +54,7 @@ Carga activa directa desde `index.html`:
 - `update-manager.js`
 - `notifications.js`
 
-Carga activa indirecta:
+## Carga activa indirecta
 
 - `src/library/ficha/ficha-json.js`: cargado por `src/library/ui/library.js`.
 - `src/admin/admin-extra.js`: cargado por `src/admin/admin.js`.
@@ -83,34 +72,12 @@ Carga activa indirecta:
 - Inventario
 - Admin solo con rol activo
 
-La barra inferior movil se ajusta desde `library-mobile-overflow-fix.css` para admitir 7 botones.
-
-## Reportes de fallos
-
-- `src/admin/report-issue.js`: formulario para que usuarios con sesion reporten fallos.
-- `src/admin/issue-entry.js`: acceso visible a Incidencia en Inicio > Modulos.
-- Guarda en `admin_reports`.
-- Admin revisa desde Fallos.
-
-## Admin restringido
-
-- `src/admin/admin.js`: panel Admin base.
-- `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes y historial por persona.
-- `supabase/migrations/20260702_admin_roles.sql`: roles restringidos.
-- `supabase/migrations/20260702_admin_tools_foundation.sql`: reportes, historial y funciones RPC.
-
-Admin ya esta activo para propietario.
-
-## Acuarios estado actual
+## Acuarios
 
 - `src/aquariums/aquariums.js`: carga, lista y seleccion de acuarios.
-- `loadAquariums()` queda expuesto en `window.ANX.loadAquariums` para que Microfauna e IA puedan cargar acuarios desde su propio modulo.
+- `loadAquariums()` queda expuesto en `window.ANX.loadAquariums`.
 
-## Microfauna
-
-`src/microfauna/microfauna.js` es modulo principal visible y usa `window.ANX.loadAquariums` para rellenar opciones de acuario cuando falta estado cargado.
-
-## Biblioteca/Fichas estado actual
+## Biblioteca/Fichas
 
 - `src/library/core/library-schema.js`: contrato oficial reforzado.
 - `src/library/ui/library.js`: marcador UI y carga diferida de ficha JSON.
@@ -119,15 +86,15 @@ Admin ya esta activo para propietario.
 - `src/library/ficha/ficha-chat-import.js`: creacion desde texto pegado.
 - `src/library/ficha/ficha-json.js`: JSON estructurado para fichas pegadas desde Chat.
 
-## Inventario estado actual
+## Inventario
 
 - `src/inventory/inventory-core.js`: categorias, etiquetas de ficha importada, metadatos, portada, caducidad y relacion con acuario.
 - `src/inventory/inventory-list.js`: agrupacion, tarjetas/listado e HTML de ficha tecnica importada.
 - `src/inventory/inventory-form.js`: formularios de alta/edicion y guardado de inventario.
 - `src/inventory/inventory.js`: pantalla principal, detalle y borrado.
-- `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario dentro del dominio de Inventario.
+- `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario.
 
-## Mapa estado actual
+## Mapa
 
 - `src/map/map-v3-model.js`: contrato/modelo de mapa V3.
 - `src/map/map-state.js`: estado, normalizacion, lectura, fotos normalizadas y seleccion de marcadores.
@@ -137,31 +104,49 @@ Admin ya esta activo para propietario.
 - `src/map/map-render-3d.js`: motor Three.js del gemelo 3D.
 - `src/map/map-save.js`: guardado del mapa en `aquariums.ai_summary`.
 - `src/map/map.js`: coordinador reducido de entrada y render de pantalla.
-- `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D, movida fuera de `notifications.js`.
+- `src/map/map-interactions.js`: interaccion de colocacion de puntos 3D.
 
-## IA estado actual
+## IA
 
-- `src/ai/ai.js`: modulo IA estable activo. Contiene revision de mediciones, quimica, inventario, microfauna, creacion de avisos y UI.
+- `src/ai/ai.js`: modulo IA estable activo.
 - `src/ai/ai-library-v3.js`: integracion IA con Biblioteca V3.
 - `src/ai/ai-alerts-extra.js`: revision extra de avisos IA.
-- `src/ai/ai-constants.js`, `src/ai/ai-measurements.js` y `src/ai/ai-chemistry.js`: archivos creados durante refactor, no activos tras restaurar IA estable.
+- `src/ai/ai-constants.js`, `src/ai/ai-measurements.js` y `src/ai/ai-chemistry.js`: creados durante refactor IA, no activos.
 
-## Parametros estado actual
+## Parametros
 
 - `src/parameters/parameters-core.js`: helpers visuales, ultimas mediciones, estado visual, ciclos e historial.
 - `src/parameters/parameters-alert-helpers.js`: helpers de notas y notificacion local para alertas de parametros.
-- `src/parameters/parameters.js`: pantalla principal, analisis IA, alertas de parametros y registro manual.
+- `src/parameters/parameters-manual.js`: registro manual puntual de parametros.
+- `src/parameters/parameters.js`: pantalla principal, analisis IA y alertas de parametros.
 - `src/parameters/measurements-advanced.js`: mediciones avanzadas por perfil.
-- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros, movido fuera de `notifications.js`; carga el modulo extra de parametros.
-- `src/parameters/parameters-extra-fields.js`: añade NO2, Cobre y Silicato al plan marino, al formulario mensual y al guardado de mediciones.
+- `src/parameters/parameters-ai-fallback.js`: fallback visual de IA de parametros.
+- `src/parameters/parameters-extra-fields.js`: NO2, Cobre y Silicato para plan marino, formulario mensual y guardado.
 
-## Notificaciones estado actual
+## Admin y reportes
+
+- `src/admin/admin.js`: panel Admin base.
+- `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes y historial por persona.
+- `src/admin/report-issue.js`: reportes de fallos.
+- `src/admin/issue-entry.js`: acceso visible a Incidencia.
+
+## Microfauna
+
+- `src/microfauna/microfauna.js`: modulo principal visible.
+
+## Notificaciones
 
 - `notifications.js`: notificaciones, Firebase y avisos de tareas.
-- `notifications.css`: estilos antes inyectados desde `notifications.js`, ahora cargados como CSS real.
+- `notifications.css`: estilos de notificaciones.
 
 ## Movil
 
 - `scripts/prepare-mobile-bundle.mjs` copia los archivos activos a `www/`.
 - `www/`, `android/` e `ios/` son generados y no se editan a mano.
-- Si se añade un archivo activo en `index.html`, debe añadirse tambien a `scripts/prepare-mobile-bundle.mjs`.
+
+## No editar a mano
+
+- `www/`
+- `android/`
+- `ios/`
+- `node_modules/`
