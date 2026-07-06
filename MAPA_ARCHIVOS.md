@@ -63,6 +63,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/parameters/measurements-advanced.js`
 - `src/parameters/parameters-ai-fallback.js`
 - `src/tasks/tasks-core.js`
+- `src/tasks/tasks-form.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
 - `src/auth/auth.js`
@@ -144,7 +145,8 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 ## Tareas / Avisos
 
 - `src/tasks/tasks-core.js`: limpieza de textos, metadatos, rutas, repeticion, tarjetas y agrupacion de avisos.
-- `src/tasks/tasks.js`: pantalla de tareas, formularios, detalle, repeticion, completar avisos y consultas Supabase.
+- `src/tasks/tasks-form.js`: formulario visual para crear tareas de acuario; el guardado sigue en `src/tasks/tasks.js`.
+- `src/tasks/tasks.js`: pantalla de tareas, guardado, detalle, repeticion, completar avisos y consultas Supabase.
 
 ## Notificaciones
 
