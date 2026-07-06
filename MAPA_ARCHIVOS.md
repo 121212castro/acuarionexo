@@ -65,6 +65,7 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/tasks/tasks-core.js`
 - `src/tasks/tasks-form.js`
 - `src/tasks/tasks.js`
+- `src/admin/admin-core.js`
 - `src/admin/admin.js`
 - `src/auth/auth.js`
 - `update-manager.js`
@@ -89,22 +90,13 @@ Estos archivos son cargados por `index.html` o forman parte directa de la app pu
 - `src/ai/ai-measurements.js`: creado durante refactor IA, no activo tras restaurar IA estable.
 - `src/ai/ai-chemistry.js`: creado durante refactor IA, no activo tras restaurar IA estable.
 
-## Reportes de fallos
-
-`src/admin/report-issue.js` permite a usuarios con sesion enviar reportes a `admin_reports`.
-
-`src/admin/issue-entry.js` añade acceso visible a Incidencia dentro de Inicio > Modulos.
-
 ## Admin restringido
 
-`src/admin/admin.js` controla el panel Admin base.
-
-`src/admin/admin-extra.js` controla herramientas avanzadas:
-
-- Usuarios registrados.
-- Alta de Admin o usuario de confianza por email.
-- Reportes/fallos.
-- Historial por persona.
+- `src/admin/admin-core.js`: roles, permisos, carga de rol, conteos y bloqueo de acceso.
+- `src/admin/admin.js`: panel Admin base y Consumo IA.
+- `src/admin/admin-extra.js`: usuarios, alta de Admin, reportes e historial por persona.
+- `src/admin/report-issue.js`: formulario de reportes a `admin_reports`.
+- `src/admin/issue-entry.js`: acceso visible a Incidencia dentro de Inicio > Modulos.
 
 ## Inventario
 
