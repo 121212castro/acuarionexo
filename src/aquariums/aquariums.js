@@ -1,7 +1,7 @@
 /* AcuarioNexo · aquariums */
 (function () {
   const { supabase, state, esc, byId, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
-  const { loadAquariums, aquariumCard, dashboardStat, emptyLine, loadDashboardStats, refreshAdminForDashboard } = window.ANX.AquariumsCore;
+  const { loadAquariums, aquariumCard, dashboardStat, emptyLine, loadDashboardStats, refreshAdminForDashboard, aquariumTypeLabel } = window.ANX.AquariumsCore;
 
   window.dashboard = async function () {
     if (!state.user) return login();
@@ -56,7 +56,7 @@
     const aq = currentAquarium();
     if (!aq) return listaAcuarios();
     const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
-    const type = aq.aquarium_type || aq.type || 'Acuario';
+    const type = aquariumTypeLabel(aq.aquarium_type || aq.type || 'Acuario');
     const created = aq.created_at ? new Date(aq.created_at).toLocaleDateString('es-ES') : 'Sin fecha';
     render(aqHeader('resumen') + `<section class="panel">
       <div class="panel-head"><h2>Resumen</h2><div><button onclick="editarAcuario()">Editar acuario</button><button onclick="borrarAcuario()">Borrar acuario</button><button onclick="listaAcuarios()">Volver</button></div></div>
