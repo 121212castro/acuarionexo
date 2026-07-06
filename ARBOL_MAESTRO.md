@@ -39,6 +39,7 @@ Carga activa directa desde `index.html`:
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
 - `src/microfauna/microfauna-core.js`
+- `src/microfauna/microfauna-form.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
@@ -102,7 +103,8 @@ Carga activa directa desde `index.html`:
 ## Microfauna
 
 - `src/microfauna/microfauna-core.js`: perfiles, fechas, estados, opciones, cultivo por defecto, tarjetas y resumen.
-- `src/microfauna/microfauna.js`: pantalla, formulario, guardado, acciones rápidas y consultas Supabase.
+- `src/microfauna/microfauna-form.js`: formulario visual de alta y edicion de cultivos.
+- `src/microfauna/microfauna.js`: pantalla, guardado, acciones rapidas y consultas Supabase.
 
 ## Mapa
 
