@@ -48,6 +48,22 @@
     };
   }
 
+  function auditHtml(audit, limit = 8) {
+    const errors = audit.errors || [];
+    if (!errors.length) return msg('Ficha completa. No quedan campos obligatorios vacíos.', 'success');
+    return `${msg(`Ficha bloqueada: quedan ${errors.length} campos obligatorios o reglas sin cumplir.`, 'error')}<ul class="small">${errors.slice(0, limit).map(error => `<li>${esc(error)}</li>`).join('')}</ul>${errors.length > limit ? `<p class="small">Y ${errors.length - limit} incidencias más.</p>` : ''}`;
+  }
+
+  function assertComplete(entry, actionLabel) {
+    const audit = S.audit(entry);
+    if (!audit.approved) {
+      const error = new Error(`${actionLabel}: la ficha tiene campos obligatorios vacíos o inválidos.`);
+      error.audit = audit;
+      throw error;
+    }
+    return audit;
+  }
+
   function norm(s) {
     return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[*#`_\[\](){}]/g, '').replace(/[:：]+$/, '').replace(/\s+/g, ' ').trim();
   }
@@ -65,7 +81,7 @@
       ['Acuario recomendado','recommended_tank_liters'],['Litros recomendados','recommended_tank_liters'],['Tamaño adulto','adult_size_cm'],['Tamano adulto','adult_size_cm'],
       ['Hábitat natural','habitat'],['Habitat natural','habitat'],['Hábitat','habitat'],['Habitat','habitat'],['Entorno natural','natural_environment'],['Distribución','distribution'],['Distribucion','distribution'],['Profundidad','depth_range'],
       ['Alimentación','diet'],['Alimentacion','diet'],['Dieta','diet'],['Comportamiento','behavior'],['Compatibilidad','compatibility'],['Compatibilidad con peces','fish_compatibility'],['Compatibilidad con corales','coral_compatibility'],['Compatibilidad con invertebrados','invertebrate_compatibility'],
-      ['Reef safe','reef_safe'],['Salud','health_notes'],['Enfermedades','common_diseases'],['Problemas frecuentes','common_problems'],['Errores frecuentes','common_mistakes'],['Antes de comprar','purchase_recommendations'],['Curiosidades','curiosities'],['Notas para IA','ai_notes'],['Notas para la IA','ai_notes'],['Resumen para usuario','user_summary'],['Agresividad','aggressiveness'],['Territorialidad','territoriality'],['Reproducción','reproduction'],['Reproduccion','reproduction']
+      ['Reef safe','reef_safe'],['Salud','health_notes'],['Enfermedades','common_diseases'],['Problemas frecuentes','common_problems'],['Errores frecuentes','common_mistakes'],['Antes de comprar','purchase_recommendations'],['Curiosidades','curiosities'],['Notas para IA','ai_notes'],['Notas para la IA','ai_notes'],['Resumen para usuario','user_summary'],['Agresividad','aggressiveness'],['Territorialidad','territoriality'],['Reproducción','reproduction'],['Reproduccion','reproduction'],['Etiqueta de fuente','source_label'],['Manual / fuente técnica','source_manual']
     ].forEach(([a, b]) => add(a, b));
     try { S.templateFor(x.entry_type).forEach(sec => sec.fields.forEach(f => { add(f.id, f.id); add(f.label, f.id); })); } catch (_) {}
     return map;
@@ -186,31 +202,36 @@
   window.formFicha = function (id) {
     const x = row(id);
     if (!x) return biblioteca();
-    render(`<section class="panel">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><h2>Editar ficha</h2><button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}"><label>Fuentes editables</label><textarea id="libSourcesRaw" placeholder="Nombre | URL | dato que justifica">${esc(sourceText(x.sources))}</textarea>${!S.normalizeSources(x.sources).length ? emptyHint() : ''}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
+    const audit = S.audit(x);
+    render(`<section class="panel">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}"><label>Fuentes editables</label><textarea id="libSourcesRaw" placeholder="Nombre | URL | dato que justifica">${esc(sourceText(x.sources))}</textarea>${S.normalizeSources(x.sources).length < 2 ? emptyHint() : ''}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
   };
 
   window.guardarFicha = async function (id) {
     const x = row(id), box = byId('x');
     try {
       const payload = read(x);
+      const merged = { ...x, ...payload };
+      assertComplete(merged, 'No se puede guardar');
       const { error } = await supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', state.user.id);
       if (error) throw error;
       Object.assign(x, payload);
-      box.innerHTML = msg('Ficha guardada.', 'success');
+      box.innerHTML = msg('Ficha guardada completa.', 'success');
     } catch (e) {
-      box.innerHTML = msg(e.message, 'error');
+      box.innerHTML = e.audit ? auditHtml(e.audit) : msg(e.message, 'error');
     }
   };
 
   window.auditarFicha = async function (id) {
-    const box = byId('x') || byId('aiBox');
+    const x = row(id), box = byId('x') || byId('aiBox');
     try {
+      if (!x) throw new Error('Ficha no encontrada.');
+      assertComplete(x, 'No se puede auditar');
       box.innerHTML = msg('Auditando ficha...');
       const data = await call('library-audit-card', { entry_id: id });
       box.innerHTML = `${data.result?.approved ? msg('Ficha aprobada.', 'success') : msg('Ficha requiere revisión.', 'error')}<pre>${esc(JSON.stringify(data.result, null, 2))}</pre>`;
       await load();
     } catch (e) {
-      box.innerHTML = msg(e.message, 'error');
+      box.innerHTML = e.audit ? auditHtml(e.audit) : msg(e.message, 'error');
     }
   };
 
@@ -218,13 +239,22 @@
     const x = row(id);
     if (!x) return biblioteca();
     const audit = S.audit(x);
-    render(`<section class="library-detail">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small><h2>${esc(x.title || 'Ficha')}</h2>${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}${x.cover_url ? `<img class="library-detail-photo" src="${esc(x.cover_url)}" alt="${esc(x.title || 'Portada')}">` : ''}${x.photo_url ? `<img class="library-detail-photo" src="${esc(x.photo_url)}" alt="${esc(x.title || 'Foto')}">` : ''}<p>${esc(x.summary || '')}</p>${imageBox(x)}${audit.approved ? msg('Ficha completa y lista para publicar.', 'success') : msg('Ficha pendiente: ' + audit.errors.slice(0,3).join(' · '), 'error')}<div class="image-actions"><button onclick="formFicha('${esc(id)}')">Editar</button><button onclick="pasarFichaAInventario('${esc(id)}')">Añadir a mi inventario</button><button onclick="publicarFicha('${esc(id)}')">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button></div><h3>Fuentes</h3>${sources(x.sources)}</section>`, 'biblioteca');
+    const actionButtons = audit.approved
+      ? `<button onclick="formFicha('${esc(id)}')">Editar</button><button onclick="pasarFichaAInventario('${esc(id)}')">Añadir a mi inventario</button><button onclick="publicarFicha('${esc(id)}')">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`
+      : `<button onclick="formFicha('${esc(id)}')">Editar</button><button disabled title="Completa todos los campos obligatorios antes de añadir a inventario">Añadir a mi inventario</button><button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`;
+    render(`<section class="library-detail">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small><h2>${esc(x.title || 'Ficha')}</h2>${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}${x.cover_url ? `<img class="library-detail-photo" src="${esc(x.cover_url)}" alt="${esc(x.title || 'Portada')}">` : ''}${x.photo_url ? `<img class="library-detail-photo" src="${esc(x.photo_url)}" alt="${esc(x.title || 'Foto')}">` : ''}<p>${esc(x.summary || '')}</p>${imageBox(x)}${auditHtml(audit, 6)}<div class="image-actions">${actionButtons}</div><h3>Fuentes</h3>${sources(x.sources)}</section>`, 'biblioteca');
   };
 
   window.publicarFicha = async function (id) {
-    const box = byId('x') || byId('aiBox');
-    try { await call('library-publish', { entry_id: id }); await biblioteca(); }
-    catch (e) { if (box) box.innerHTML = msg(e.message, 'error'); }
+    const x = row(id), box = byId('x') || byId('aiBox');
+    try {
+      if (!x) throw new Error('Ficha no encontrada.');
+      assertComplete(x, 'No se puede publicar');
+      await call('library-publish', { entry_id: id });
+      await biblioteca();
+    } catch (e) {
+      if (box) box.innerHTML = e.audit ? auditHtml(e.audit) : msg(e.message, 'error');
+    }
   };
 
   window.borrarFicha = async function (id) {
@@ -235,7 +265,15 @@
   };
 
   const legacyPass = window.pasarFichaAInventario, legacyForm = window.formImportarFichaInventario, legacySave = window.guardarImportacionFichaInventario;
-  if (typeof legacyPass === 'function') window.pasarFichaAInventario = legacyPass;
+  if (typeof legacyPass === 'function') window.pasarFichaAInventario = function (id) {
+    const x = row(id);
+    try {
+      if (x) assertComplete(x, 'No se puede añadir a inventario');
+      return legacyPass(id);
+    } catch (e) {
+      alert((e.audit?.errors || [e.message]).slice(0, 8).join('\n'));
+    }
+  };
   if (typeof legacyForm === 'function') window.formImportarFichaInventario = legacyForm;
   if (typeof legacySave === 'function') window.guardarImportacionFichaInventario = legacySave;
 
@@ -244,6 +282,8 @@
     sourceText,
     parseSourcesRaw,
     read,
+    auditHtml,
+    assertComplete,
     norm,
     fieldAliasMap,
     splitPastedFicha,
