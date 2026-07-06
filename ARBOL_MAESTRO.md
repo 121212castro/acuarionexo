@@ -38,6 +38,7 @@ Carga activa directa desde `index.html`:
 - `src/inventory/inventory-form.js`
 - `src/inventory/inventory.js`
 - `src/inventory/inventory-ui.js`
+- `src/microfauna/microfauna-core.js`
 - `src/microfauna/microfauna.js`
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
@@ -98,6 +99,11 @@ Carga activa directa desde `index.html`:
 - `src/inventory/inventory.js`: pantalla principal, detalle y borrado.
 - `src/inventory/inventory-ui.js`: textos y aviso visual de Inventario.
 
+## Microfauna
+
+- `src/microfauna/microfauna-core.js`: perfiles, fechas, estados, opciones, cultivo por defecto, tarjetas y resumen.
+- `src/microfauna/microfauna.js`: pantalla, formulario, guardado, acciones rápidas y consultas Supabase.
+
 ## Mapa
 
 - `src/map/map-v3-model.js`: contrato/modelo de mapa V3.
@@ -145,10 +151,6 @@ Carga activa directa desde `index.html`:
 
 - `src/auth/auth-core.js`: mensajes de Auth, timeout, refresco seguro de Admin, limpieza de estado y cabecera de sesion.
 - `src/auth/auth.js`: login, alta, recuperacion de contraseña, inicio/cierre de sesion y arranque inicial.
-
-## Microfauna
-
-- `src/microfauna/microfauna.js`: modulo principal visible.
 
 ## Notificaciones
 
