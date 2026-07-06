@@ -42,6 +42,7 @@ const files = [
   'src/map/map-interactions.js',
   'src/photos/photos.js',
   'src/inventory/inventory-core.js',
+  'src/inventory/inventory-list.js',
   'src/inventory/inventory.js',
   'src/inventory/inventory-ui.js',
   'src/microfauna/microfauna.js',
