@@ -2,6 +2,7 @@
 (function () {
   const { supabase, state, byId, msg, currentAquarium } = window.ANX;
   const { aquariumPayload } = window.ANX.AquariumsForm;
+  const { loadAquariums } = window.ANX.AquariumsCore || {};
 
   window.guardarNuevoAcuario = async function () {
     const box = byId('editAqStatus');
@@ -13,10 +14,12 @@
       const { data, error } = await supabase.from('aquariums').insert(insert).select('*').single();
       if (error) throw error;
       const saved = data || insert;
-      state.aquariums = [saved, ...(state.aquariums || [])];
+      if (typeof loadAquariums === 'function') await loadAquariums();
+      else state.aquariums = [saved, ...(state.aquariums || [])];
       state.aquarium = saved;
       window.q = saved;
-      if (window.resumenAcuario) window.resumenAcuario();
+      if (window.listaAcuarios) window.listaAcuarios();
+      else if (window.resumenAcuario) window.resumenAcuario();
     } catch (e) { if (box) box.innerHTML = msg(e.message, 'error'); }
   };
 
