@@ -118,7 +118,21 @@
   function templatePrompt(type, sectionId) {
     const section = templateFor(type).find(item => item.id === sectionId);
     if (!section) return '';
-    return [`Completa solo el apartado: ${section.label}.`, 'No rellenes otros apartados.', 'No inventes datos.', 'No uses bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.', 'Usa valores concretos cuando existan.', 'No incluyas JSON, claves internas, nombres de campos internos ni URLs dentro del texto.', `Campos obligatorios: ${section.fields.map(field => field.label).join(', ')}.`, 'Las fuentes deben ir separadas en sources.'].join('\n');
+    return [
+      `Completa solo el apartado: ${section.label}.`,
+      'No rellenes otros apartados.',
+      'No inventes datos.',
+      'No uses bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.',
+      'Usa valores concretos cuando existan.',
+      'Redacta los campos visibles con una frase natural y útil, no solo con el número seco, cuando el dato lo permita.',
+      'Ejemplo correcto: su hábitat se encuentra entre 1 y 15 m de profundidad, en zonas de arrecife con refugios entre corales.',
+      'Ejemplo incorrecto: 1-15 m.',
+      'Mantén siempre el número o rango dentro del texto para que la validación pueda comprobarlo.',
+      'No adornes con información no contrastada; solo contextualiza lo que esté respaldado por fuentes.',
+      'No incluyas JSON, claves internas, nombres de campos internos ni URLs dentro del texto.',
+      `Campos obligatorios: ${section.fields.map(field => field.label).join(', ')}.`,
+      'Las fuentes deben ir separadas en sources.'
+    ].join('\n');
   }
 
   function extractUrlsFromAny(value, found = []) {
