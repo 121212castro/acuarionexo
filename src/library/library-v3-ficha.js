@@ -125,6 +125,56 @@
     return false;
   }
 
+  function extractStructuredJson(text) {
+    const raw = String(text || '');
+    const marked = raw.match(/ACUARIONEXO_JSON_START\s*([\s\S]*?)\s*ACUARIONEXO_JSON_END/i);
+    const jsonText = marked ? marked[1] : (raw.trim().startsWith('{') ? raw.trim() : '');
+    if (!jsonText) return null;
+    try {
+      const parsed = JSON.parse(jsonText);
+      return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function structuredPayload(parsed, fallback) {
+    const entryType = String(parsed.entry_type || fallback.entry_type || '').trim();
+    if (!entryType || !S.CONTRACTS[entryType]) throw new Error(`Tipo de ficha no permitido: ${entryType || 'vacío'}.`);
+    const sources = S.normalizeSources(parsed.sources || []);
+    const payload = {
+      entry_type: entryType,
+      title: String(parsed.title || fallback.title || '').trim(),
+      scientific_name: biologicalTypes.has(entryType) ? (parsed.scientific_name || null) : null,
+      summary: String(parsed.summary || parsed.sections?.summary || '').trim(),
+      tags: Array.isArray(parsed.tags) ? parsed.tags.map(tag => String(tag).trim()).filter(Boolean) : [],
+      data: parsed.data && typeof parsed.data === 'object' ? parsed.data : {},
+      sections: parsed.sections && typeof parsed.sections === 'object' ? parsed.sections : {},
+      sources,
+      identity_confirmed: true,
+      status: fallback.status || 'review',
+      updated_at: new Date().toISOString()
+    };
+    if (!payload.sections.summary && payload.summary) payload.sections.summary = payload.summary;
+    return payload;
+  }
+
+  async function applyStructuredJson(id, parsed, x, box) {
+    const payload = structuredPayload(parsed, x);
+    const merged = { ...x, ...payload };
+    const { error } = await supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', state.user.id);
+    if (error) throw error;
+    Object.assign(x, payload);
+    await load();
+    formFicha(id);
+    const refreshed = row(id) || merged;
+    const audit = S.audit(refreshed);
+    const statusBox = byId('x') || box;
+    if (statusBox) statusBox.innerHTML = audit.approved
+      ? msg(`JSON importado como ${typeName(payload.entry_type)}. Ficha completa.`, 'success')
+      : `${msg(`JSON importado como ${typeName(payload.entry_type)}, pero quedan campos pendientes.`, 'error')}${auditHtml(audit, 10)}`;
+  }
+
   function splitPastedFicha(text, x) {
     const aliases = fieldAliasMap(x), blocks = {}, urls = [];
     let current = '';
@@ -152,14 +202,21 @@
   window.mostrarPegadoFichaChat = function (id) {
     const target = byId('chatPasteBox');
     if (!target) return;
-    target.innerHTML = `<section class="panel"><h3>Pegar ficha creada por ChatGPT</h3><p class="small">Pega la ficha completa con los apartados copiados. Se intentará repartir cada dato en su campo.</p><textarea id="chatPasteText" placeholder="Pega aquí la ficha completa"></textarea><button class="primary" onclick="aplicarFichaChat('${esc(id)}')">Repartir en campos</button><button onclick="document.getElementById('chatPasteBox').innerHTML=''">Cerrar</button><div id="chatPasteStatus"></div></section>`;
+    target.innerHTML = `<section class="panel"><h3>Pegar ficha creada por ChatGPT</h3><p class="small">Pega la ficha completa con el bloque JSON de AcuarioNexo. Si el JSON trae entry_type, se actualizará el tipo de ficha.</p><textarea id="chatPasteText" placeholder="Pega aquí la ficha completa"></textarea><button class="primary" onclick="aplicarFichaChat('${esc(id)}')">Importar ficha</button><button onclick="document.getElementById('chatPasteBox').innerHTML=''">Cerrar</button><div id="chatPasteStatus"></div></section>`;
   };
 
-  window.aplicarFichaChat = function (id) {
+  window.aplicarFichaChat = async function (id) {
     const x = row(id), box = byId('chatPasteStatus');
     try {
       if (!x) throw new Error('Ficha no encontrada.');
-      const { blocks, urls } = splitPastedFicha(val('chatPasteText'), x);
+      const pasted = val('chatPasteText');
+      const parsed = extractStructuredJson(pasted);
+      if (parsed) {
+        if (box) box.innerHTML = msg('Importando JSON estructurado...');
+        await applyStructuredJson(id, parsed, x, box);
+        return;
+      }
+      const { blocks, urls } = splitPastedFicha(pasted, x);
       let count = 0;
       Object.entries(blocks).forEach(([key, value]) => {
         if (key === 'title' && setText('libTitle', value)) count++;
@@ -175,7 +232,7 @@
         setText('libSourcesRaw', [existing, extra].filter(Boolean).join('\n'));
         count++;
       }
-      if (!count) throw new Error('No pude reconocer apartados. Usa títulos como Nombre común:, Producto:, Temperatura:, Fuentes:.');
+      if (!count) throw new Error('No pude reconocer apartados. Pega el bloque ACUARIONEXO_JSON_START completo o usa títulos como Nombre común:, Producto:, Temperatura:, Fuentes:.');
       if (box) box.innerHTML = msg(`Ficha repartida: ${count} campos rellenados. Revisa, guarda y audita.`, 'success');
     } catch (e) {
       if (box) box.innerHTML = msg(e.message, 'error');
@@ -286,6 +343,8 @@
     assertComplete,
     norm,
     fieldAliasMap,
+    extractStructuredJson,
+    structuredPayload,
     splitPastedFicha,
     formFields
   };
