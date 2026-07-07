@@ -45,13 +45,32 @@
     return `<div class="library-clean-filters"><button class="${f === 'all' ? 'active' : ''}" onclick="filtrarBiblioteca('all')">Todo</button>${types.filter(([k]) => k !== 'all').map(([k,n]) => `<button class="${f === k ? 'active' : ''}" onclick="filtrarBiblioteca('${k}')">${esc(n)}</button>`).join('')}</div>`;
   }
 
+  function groupRows(rows) {
+    const groups = new Map(types.filter(([k]) => k !== 'all').map(([k, n]) => [k, { key: k, label: n, rows: [] }]));
+    rows.forEach(item => {
+      const key = item.entry_type || 'producto';
+      if (!groups.has(key)) groups.set(key, { key, label: typeName(key), rows: [] });
+      groups.get(key).rows.push(item);
+    });
+    return Array.from(groups.values()).filter(group => group.rows.length);
+  }
+
+  function groupedList(rows, q, f) {
+    if (!rows.length) return msg('No hay fichas para este filtro.', 'notice');
+    if (f !== 'all' || q) return `<div class="library-grid">${rows.map(card).join('')}</div>`;
+    return `<div class="library-sections">${groupRows(rows).map((group, index) => `<details class="library-section" ${index === 0 ? 'open' : ''}>
+      <summary><span>${esc(group.label)}</span><b>${group.rows.length}</b></summary>
+      <div class="library-grid">${group.rows.map(card).join('')}</div>
+    </details>`).join('')}</div>`;
+  }
+
   function list() {
     const q = val('librarySearch').toLowerCase();
     const f = state.libraryFilter || 'all';
     const rows = (state.libraryRows || []).filter(x => (f === 'all' || x.entry_type === f) && (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q)));
     const published = rows.filter(x => isAdminLibrary() || ['published', 'validated'].includes(String(x.status || '').toLowerCase()));
     render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${published.length} fichas</p></div></section>
-      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}<div class="library-grid">${published.map(card).join('') || msg('No hay fichas para este filtro.', 'notice')}</div></section>
+      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(published, q, f)}</section>
       ${libraryAdminTools(f)}`, 'biblioteca');
   }
 
