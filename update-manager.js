@@ -22,6 +22,10 @@
     } catch (_) {}
   }
 
+  function softReload() {
+    window.location.reload();
+  }
+
   async function forceReload() {
     await clearAppCache();
     window.location.replace(window.location.pathname + '?v=' + Date.now());
@@ -76,9 +80,13 @@
       localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
       const remoteBuild = await fetchRemoteVersion();
       if (remoteBuild) localStorage.setItem(KEY, remoteBuild);
-      if (manual) return forceReload();
+      if (manual) {
+        if (remoteBuild && remoteBuild !== CURRENT_BUILD) return forceReload();
+        return softReload();
+      }
       if (remoteBuild && remoteBuild !== CURRENT_BUILD) showUpdateNotice(remoteBuild);
     } catch (_) {
+      if (manual) softReload();
     } finally {
       checking = false;
     }
@@ -87,14 +95,15 @@
   function bindRefreshButton() {
     const btn = document.getElementById('refreshAppBtn');
     if (!btn) return;
-    btn.title = 'Actualizar AcuarioNexo';
+    btn.title = 'Refrescar AcuarioNexo';
     btn.addEventListener('click', function () {
       checkVersion({ manual: true });
     });
   }
 
-  window.AcuarioNexoUpdate = { checkVersion, forceReload, clearAppCache };
+  window.AcuarioNexoUpdate = { checkVersion, forceReload, softReload, clearAppCache };
   window.hardRefreshAcuarioNexo = forceReload;
+  window.softRefreshAcuarioNexo = softReload;
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', bindRefreshButton);
