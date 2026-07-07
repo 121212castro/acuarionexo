@@ -8,33 +8,27 @@
   const originalMissingFields = S.missingFields;
 
   const UNKNOWN_PATTERN = /^(no\s+(localizado|encontrado|indicado|declarado|disponible)|sin\s+(dato|datos|informaci[oó]n)|no\s+consta|no\s+aplica)/i;
+  const EMPTY_ERROR_PATTERN = /Campo obligatorio vacío\./i;
   const MIN_LENGTH_ERROR_PATTERN = /Debe tener al menos\s+\d+\s+caracteres\./i;
-  const NUMBER_ERROR_PATTERN = /Debe ser un valor numérico\./i;
+  const NUMBER_ERROR_PATTERN = /Debe ser un valor numérico\.|Debe incluir un valor numérico válido\./i;
   const INTERNAL_FIELDS_ERROR_PATTERN = /campos internos o trazas técnicas/i;
   const FLEXIBLE_NUMBER_PATTERN = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|a|hasta)\s*\d+(?:[.,]\d+)?)?/i;
 
-  const CRITICAL_FIELDS = new Set([
-    'title',
-    'scientific_name',
-    'manufacturer',
-    'brand',
-    'product_code',
-    'entry_type',
-    'summary',
-    'sources',
-    'dose',
-    'dose_calculation',
-    'use',
-    'instructions',
-    'warnings',
-    'risks',
-    'parameter',
-    'method',
-    'procedure',
-    'reading_time',
-    'sample_volume',
-    'test_type'
-  ]);
+  const REQUIRED_BY_TYPE = {
+    pez_marino: ['title','scientific_name','summary','habitat','adult_size_cm','minimum_tank_liters','temperature_min','temperature_max','ph_min','ph_max','salinity_min','salinity_max','diet','behavior','compatibility','reef_safe','sources'],
+    pez_dulce: ['title','scientific_name','summary','habitat','adult_size_cm','minimum_tank_liters','temperature_min','temperature_max','ph_min','ph_max','diet','behavior','compatibility','sources'],
+    coral: ['title','scientific_name','summary','habitat','coral_type','lighting','flow','placement','temperature_min','temperature_max','salinity_min','salinity_max','ph_min','ph_max','kh_min','kh_max','compatibility','reef_safe','sources'],
+    invertebrado: ['title','scientific_name','summary','habitat','adult_size_cm','minimum_tank_liters','temperature_min','temperature_max','ph_min','ph_max','salinity_min','salinity_max','diet','behavior','reef_safe','compatibility','sources'],
+    planta: ['title','scientific_name','summary','habitat','plant_type','height_cm','placement','temperature_min','temperature_max','ph_min','ph_max','lighting','maintenance','compatibility','sources'],
+    microfauna: ['title','scientific_name','summary','culture_type','identification','use_in_aquarium','culture_method','temperature_min','temperature_max','feeding','maintenance','sources'],
+    producto: ['title','summary','manufacturer','brand','category','intended_use','use','compatibility','risks','sources'],
+    aditivo: ['title','summary','manufacturer','brand','what_corrects','parameter_target','dose','instructions','monitoring','compatibility','risks','sources'],
+    sal: ['title','summary','manufacturer','brand','salinity_reference','grams_per_liter','mixing','dose','use','risks','sources'],
+    alimento: ['title','summary','manufacturer','brand','food_type','composition','target_species','feeding_frequency','use','risks','sources'],
+    medicamento: ['title','summary','manufacturer','brand','active_ingredient','indications','dose','treatment_days','instructions','risks','warnings','sources'],
+    test: ['title','summary','manufacturer','brand','test_type','parameter','reading_unit','range','procedure','reading_time','interpretation','sources'],
+    equipamiento: ['title','summary','manufacturer','brand','equipment_type','specifications','power','installation','maintenance','compatibility','risks','sources']
+  };
 
   const SOFT_UNKNOWN_FIELDS = new Set([
     'common_names','synonyms','family','order_name','class_name','distribution','habitat','depth_range','natural_environment',
@@ -42,52 +36,27 @@
     'aggressiveness','territoriality','social_behavior','schooling','swimming_zone','reproduction','breeding_notes','common_diseases','health_notes',
     'coral_type','growth_form','sweeper_tentacles','growth_rate','fragging','propagation','pests','adult_size_cm',
     'plant_type','height_cm','substrate','algae_risk','culture_type','target_animals','container','density_control','crash_risks','contamination_risks',
-    'composition','active_components','declared_parameters','salinity_reference','maximum_dose','expiry','lot','accuracy','scale_values','device_min_limit','device_max_limit','led_wavelength','standard_code','warranty','spare_parts','source_label','source_manual'
+    'composition','active_components','declared_parameters','salinity_reference','maximum_dose','expiry','lot','accuracy','scale_values','device_min_limit','device_max_limit','led_wavelength','standard_code','warranty','spare_parts','source_label','source_manual',
+    'manufacturer','brand','product_code','category','what_corrects','aquarium_type','active_components','parameter_target','monitoring','warnings','storage','use','instructions','dose_calculation'
   ]);
 
   const FLEXIBLE_MIN_LENGTH_FIELDS = new Map([
-    ['title', 2],
-    ['scientific_name', 2],
-    ['common_names', 2],
-    ['synonyms', 2],
-    ['family', 2],
-    ['order_name', 2],
-    ['class_name', 2],
-    ['depth_range', 1],
-    ['par_range', 1],
-    ['nitrate_range', 1],
-    ['phosphate_range', 1],
-    ['category', 2],
-    ['coral_type', 2],
-    ['plant_type', 2],
-    ['culture_type', 2],
-    ['care_level', 2],
-    ['beginner_suitable', 2],
-    ['reef_safe', 2],
-    ['aggressiveness', 2],
-    ['territoriality', 2],
-    ['schooling', 2],
-    ['swimming_zone', 2],
-    ['growth_form', 2],
-    ['growth_rate', 2],
-    ['photosynthetic', 2],
-    ['fragging', 2],
-    ['propagation', 2],
-    ['placement', 2],
-    ['lighting', 2],
-    ['flow', 1],
-    ['co2', 2],
-    ['fertilization', 2],
-    ['substrate', 2],
-    ['trimming', 2],
-    ['algae_risk', 2],
-    ['molting', 2],
-    ['iodine_sensitivity', 2],
-    ['copper_sensitivity', 2],
-    ['storage', 2],
-    ['expiry', 2],
-    ['lot', 2]
+    ['title', 2],['scientific_name', 2],['summary', 10],['common_names', 2],['synonyms', 2],['family', 2],['order_name', 2],['class_name', 2],
+    ['depth_range', 1],['par_range', 1],['nitrate_range', 1],['phosphate_range', 1],['category', 2],['coral_type', 2],['plant_type', 2],['culture_type', 2],
+    ['care_level', 2],['beginner_suitable', 2],['reef_safe', 2],['aggressiveness', 2],['territoriality', 2],['schooling', 2],['swimming_zone', 2],
+    ['growth_form', 2],['growth_rate', 2],['photosynthetic', 2],['fragging', 2],['propagation', 2],['placement', 2],['lighting', 2],['flow', 1],
+    ['co2', 2],['fertilization', 2],['substrate', 2],['trimming', 2],['algae_risk', 2],['molting', 2],['iodine_sensitivity', 2],['copper_sensitivity', 2],
+    ['storage', 2],['expiry', 2],['lot', 2],['manufacturer', 2],['brand', 2],['product_code', 2],['parameter', 2],['method', 2],['test_type', 2]
   ]);
+
+  function requiredSet(entry) {
+    const type = String(entry?.entry_type || '').trim();
+    return new Set(REQUIRED_BY_TYPE[type] || ['title','summary','sources']);
+  }
+
+  function isRequired(entry, field) {
+    return requiredSet(entry).has(field);
+  }
 
   function isUnknown(value) {
     return UNKNOWN_PATTERN.test(String(value || '').trim());
@@ -129,8 +98,8 @@
     return hasNumericValue(value);
   }
 
-  function isCritical(field) {
-    return CRITICAL_FIELDS.has(field);
+  function isEmptyOptionalError(entry, field, text) {
+    return field && !isRequired(entry, field) && (EMPTY_ERROR_PATTERN.test(text) || MIN_LENGTH_ERROR_PATTERN.test(text) || NUMBER_ERROR_PATTERN.test(text));
   }
 
   function filterAudit(entry, audit) {
@@ -147,6 +116,10 @@
       const label = matched ? matched[1].trim() : '';
       const fieldId = label ? fieldIdFromLabel(entry, label) : '';
 
+      if (isEmptyOptionalError(entry, fieldId, text)) {
+        next.warnings.push(`${label}: campo opcional según el tipo de ficha.`);
+        return;
+      }
       if (fieldId && isSoftAcceptable(entry, fieldId)) {
         next.warnings.push(`${label}: aceptado como no localizado en fuente fiable.`);
         return;
@@ -167,6 +140,10 @@
     });
 
     (audit.missing_fields || []).forEach(field => {
+      if (!isRequired(entry, field)) {
+        next.warnings.push(`${field}: campo opcional según el tipo de ficha.`);
+        return;
+      }
       if (isSoftAcceptable(entry, field)) {
         next.warnings.push(`${field}: aceptado como no localizado en fuente fiable.`);
         return;
@@ -194,28 +171,25 @@
     const template = originalValidateTemplate(entry);
     return template.map(section => {
       const fields = section.fields.map(field => {
-        if (field.valid) return field;
-        if (isSoftAcceptable(entry, field.id)) {
-          return { ...field, valid: true, error: '' };
-        }
-        if (MIN_LENGTH_ERROR_PATTERN.test(String(field.error || '')) && isMinLengthAcceptable(entry, field.id)) {
-          return { ...field, valid: true, error: '' };
-        }
-        if (NUMBER_ERROR_PATTERN.test(String(field.error || '')) && isNumberErrorAcceptable(entry, field.id)) {
-          return { ...field, valid: true, error: '' };
-        }
-        return field;
+        const required = isRequired(entry, field.id);
+        if (!required && !field.valid) return { ...field, required: false, valid: true, error: '' };
+        if (field.valid) return { ...field, required };
+        if (isSoftAcceptable(entry, field.id)) return { ...field, required, valid: true, error: '' };
+        if (MIN_LENGTH_ERROR_PATTERN.test(String(field.error || '')) && isMinLengthAcceptable(entry, field.id)) return { ...field, required, valid: true, error: '' };
+        if (NUMBER_ERROR_PATTERN.test(String(field.error || '')) && isNumberErrorAcceptable(entry, field.id)) return { ...field, required, valid: true, error: '' };
+        return { ...field, required };
       });
       return { ...section, fields, valid: fields.every(field => field.valid) };
     });
   };
 
   S.missingFields = function (entry) {
-    return originalMissingFields(entry).filter(field => !isSoftAcceptable(entry, field) && !isMinLengthAcceptable(entry, field) && !isNumberErrorAcceptable(entry, field));
+    return originalMissingFields(entry).filter(field => isRequired(entry, field) && !isSoftAcceptable(entry, field) && !isMinLengthAcceptable(entry, field) && !isNumberErrorAcceptable(entry, field));
   };
 
   S.hasNumericValue = hasNumericValue;
-  S.isCriticalField = isCritical;
+  S.requiredFieldsForType = type => Array.from(requiredSet({ entry_type: type }));
+  S.isRequiredFieldForEntry = isRequired;
   S.isSoftUnknownField = field => SOFT_UNKNOWN_FIELDS.has(field);
   S.isFlexibleMinLengthField = field => FLEXIBLE_MIN_LENGTH_FIELDS.has(field);
   S.__flexRulesApplied = true;
