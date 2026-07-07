@@ -11,6 +11,33 @@ function afterDeleteRoute(item) {
   return window.inventario('general');
 }
 
+function inventorySearchBar(scope) {
+  return `<div class="inventory-search-bar">
+    <input id="inventorySearch" type="search" placeholder="Buscar por nombre, categoría, ficha, lote, notas o caducidad">
+    <button class="primary" onclick="buscarInventarioActual()">Buscar</button>
+    <button onclick="limpiarBusquedaInventario()">Limpiar</button>
+  </div>`;
+}
+
+function setInventoryContext(rows, aqName) {
+  state.inventoryCurrentRows = rows || [];
+  state.inventoryCurrentAquariumName = aqName || '';
+}
+
+window.buscarInventarioActual = function () {
+  const box = document.getElementById('inventoryList');
+  const input = document.getElementById('inventorySearch');
+  if (!box) return;
+  const query = input ? input.value.trim() : '';
+  box.innerHTML = groupedInventoryHtml(state.inventoryCurrentRows || [], state.inventoryCurrentAquariumName || '', { query });
+};
+
+window.limpiarBusquedaInventario = function () {
+  const input = document.getElementById('inventorySearch');
+  if (input) input.value = '';
+  window.buscarInventarioActual();
+};
+
 window.inventario = async function (scope = 'general') {
   if (!state.user) return login();
   const t = token();
@@ -26,13 +53,14 @@ window.inventario = async function (scope = 'general') {
     if (!isCurrent(t)) return;
     const rows = data || [];
     const filtered = isAq ? rows.filter(item => inventoryAqId(item) === String(aq.id)) : rows.filter(item => !inventoryAqId(item));
+    setInventoryContext(filtered, isAq ? aq.name : '');
     const html = groupedInventoryHtml(filtered, isAq ? aq.name : '');
     const tabs = `<div class="inventory-tabs">
       <button class="${isAq ? 'active' : ''}" ${aq ? `onclick="openAqSection('inventario')"` : 'disabled'}>Este acuario</button>
       <button class="${!isAq ? 'active' : ''}" onclick="inventario('general')">General compartido</button>
     </div>`;
     const hint = isAq ? '<p class="small inventory-hint">Aqui van los habitantes, microfauna y equipos que pertenecen solo a este acuario.</p>' : '<p class="small inventory-hint">Aqui van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.</p>';
-    render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">Desde ficha</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir manual</button></div></div>${tabs}${hint}${html || msg('Sin inventario todavía.')}</section>`, active);
+    render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">Desde ficha</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir manual</button></div></div>${tabs}${hint}${inventorySearchBar(isAq ? 'aquarium' : 'general')}<div id="inventoryList">${html || msg('Sin inventario todavía.')}</div></section>`, active);
   } catch (e) {
     if (isCurrent(t)) render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
   }
@@ -68,7 +96,7 @@ window.verInventario = async function (id) {
         <div><small>Precio</small><b>${esc(meta.purchase_price || 'Sin dato')}</b></div>
         <div><small>Lote / SKU</small><b>${esc(meta.batch || 'Sin dato')}</b></div>
       </div>
-      ${cleanNotes ? `<section class="library-detail-section"><h3>Notas</h3><p>${esc(cleanNotes)}</p></section>` : ''}
+      ${cleanNotes ? `<details class="library-detail-section inventory-answer-detail"><summary>Notas</summary><p>${esc(cleanNotes)}</p></details>` : ''}
       ${importedFichaHtml(meta)}
       <div class="inline-actions"><button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button><button class="ghost danger" onclick="eliminarInventario('${esc(data.id)}')">🗑 Eliminar</button></div>
     </section>`, active);
