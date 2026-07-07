@@ -9,6 +9,8 @@
 
   const UNKNOWN_PATTERN = /^(no\s+(localizado|encontrado|indicado|declarado|disponible)|sin\s+(dato|datos|informaci[oó]n)|no\s+consta|no\s+aplica)/i;
   const MIN_LENGTH_ERROR_PATTERN = /Debe tener al menos\s+\d+\s+caracteres\./i;
+  const NUMBER_ERROR_PATTERN = /Debe ser un valor numérico\./i;
+  const FLEXIBLE_NUMBER_PATTERN = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|a|hasta)\s*\d+(?:[.,]\d+)?)?/i;
 
   const CRITICAL_FIELDS = new Set([
     'title',
@@ -86,6 +88,11 @@
     return UNKNOWN_PATTERN.test(String(value || '').trim());
   }
 
+  function hasNumericValue(value) {
+    if (value === null || value === undefined || Array.isArray(value)) return false;
+    return FLEXIBLE_NUMBER_PATTERN.test(String(value).trim());
+  }
+
   function valueFor(entry, field) {
     return entry?.data?.[field] ?? entry?.[field];
   }
@@ -110,6 +117,11 @@
     const value = valueFor(entry, field);
     if (value == null || Array.isArray(value)) return false;
     return String(value).trim().length >= FLEXIBLE_MIN_LENGTH_FIELDS.get(field);
+  }
+
+  function isNumberErrorAcceptable(entry, field) {
+    const value = valueFor(entry, field);
+    return hasNumericValue(value);
   }
 
   function isCritical(field) {
@@ -138,6 +150,10 @@
         next.warnings.push(`${label}: aceptado con texto corto porque el dato real no requiere 20 caracteres.`);
         return;
       }
+      if (fieldId && NUMBER_ERROR_PATTERN.test(text) && isNumberErrorAcceptable(entry, fieldId)) {
+        next.warnings.push(`${label}: aceptado con número, rango o unidad.`);
+        return;
+      }
       next.errors.push(error);
     });
 
@@ -148,6 +164,10 @@
       }
       if (isMinLengthAcceptable(entry, field)) {
         next.warnings.push(`${field}: aceptado con texto corto porque el dato real no requiere 20 caracteres.`);
+        return;
+      }
+      if (isNumberErrorAcceptable(entry, field)) {
+        next.warnings.push(`${field}: aceptado con número, rango o unidad.`);
         return;
       }
       next.missing_fields.push(field);
@@ -172,6 +192,9 @@
         if (MIN_LENGTH_ERROR_PATTERN.test(String(field.error || '')) && isMinLengthAcceptable(entry, field.id)) {
           return { ...field, valid: true, error: '' };
         }
+        if (NUMBER_ERROR_PATTERN.test(String(field.error || '')) && isNumberErrorAcceptable(entry, field.id)) {
+          return { ...field, valid: true, error: '' };
+        }
         return field;
       });
       return { ...section, fields, valid: fields.every(field => field.valid) };
@@ -179,9 +202,10 @@
   };
 
   S.missingFields = function (entry) {
-    return originalMissingFields(entry).filter(field => !isSoftAcceptable(entry, field) && !isMinLengthAcceptable(entry, field));
+    return originalMissingFields(entry).filter(field => !isSoftAcceptable(entry, field) && !isMinLengthAcceptable(entry, field) && !isNumberErrorAcceptable(entry, field));
   };
 
+  S.hasNumericValue = hasNumericValue;
   S.isCriticalField = isCritical;
   S.isSoftUnknownField = field => SOFT_UNKNOWN_FIELDS.has(field);
   S.isFlexibleMinLengthField = field => FLEXIBLE_MIN_LENGTH_FIELDS.has(field);
