@@ -28,6 +28,7 @@ const files = [
   'src/aquariums/aquariums-save.js',
   'src/aquariums/aquariums.js',
   'src/library/core/library-schema.js',
+  'src/library/core/library-schema-rules.js',
   'src/library/ui/library.js',
   'src/library/inventory/library-inventory-import.js',
   'src/library/library-v3-core.js',
