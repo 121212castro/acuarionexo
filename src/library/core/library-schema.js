@@ -136,7 +136,14 @@
     return raw.map((source, index) => { const item = typeof source === 'string' ? { url: source } : (source || {}); const url = cleanUrl(extractUrlsFromAny(item.url || item)[0] || ''); return { name: String(item.name || item.title || (url ? new URL(url).hostname : `Fuente ${index + 1}`)).trim(), url, source_type: String(item.source_type || item.type || '').trim(), original: item.original || item, used_for: String(item.used_for || '').trim(), confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null, consulted_at: item.consulted_at || new Date().toISOString() }; }).filter(source => { if (!hasRealUrl(source.url) || seen.has(source.url)) return false; seen.add(source.url); return true; });
   }
   function isConcreteScientificName(value) { const name = String(value || '').trim(); return /^[A-Z][a-z-]+ [a-z][a-z-]+(?:\s+var\.\s+[a-z-]+)?$/.test(name) && !UNCERTAIN_TAXONOMY.test(name); }
-  function valueFor(entry, field) { return entry.data?.[field] ?? entry[field]; }
+  function valueFor(entry, field) {
+    const value = entry.data?.[field] ?? entry[field];
+    if ((field === 'source_label' || field === 'source_manual') && (value == null || value === '')) {
+      const sourceList = normalizeSources(entry.sources);
+      if (sourceList.length) return sourceList.map(source => source.name || source.url).filter(Boolean).slice(0, 3).join(', ');
+    }
+    return value;
+  }
   function invalidFieldReason(entry, field) {
     const rule = fieldRule(field);
     if (field === 'sources') return normalizeSources(entry.sources).length >= 2 ? '' : 'Se requieren al menos 2 fuentes reales.';
