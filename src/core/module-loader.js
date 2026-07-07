@@ -18,6 +18,7 @@
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
       'src/library/library-v3.js',
+      'src/library/ficha/ficha-type-tools.js',
       'src/library/ficha/ficha-chat-import.js',
       'src/library/core/library-admin-policy.js'
     ],
