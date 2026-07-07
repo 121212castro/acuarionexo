@@ -299,7 +299,7 @@
     const actionButtons = audit.approved
       ? `<button onclick="formFicha('${esc(id)}')">Editar</button><button onclick="pasarFichaAInventario('${esc(id)}')">Añadir a mi inventario</button><button onclick="publicarFicha('${esc(id)}')">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`
       : `<button onclick="formFicha('${esc(id)}')">Editar</button><button disabled title="Completa todos los campos obligatorios antes de añadir a inventario">Añadir a mi inventario</button><button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`;
-    render(`<section class="library-detail">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small><h2>${esc(x.title || 'Ficha')}</h2>${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}${x.cover_url ? `<img class="library-detail-photo" src="${esc(x.cover_url)}" alt="${esc(x.title || 'Portada')}">` : ''}${x.photo_url ? `<img class="library-detail-photo" src="${esc(x.photo_url)}" alt="${esc(x.title || 'Foto')}">` : ''}<p>${esc(x.summary || '')}</p>${imageBox(x)}${auditHtml(audit, 6)}<div class="image-actions">${actionButtons}</div><h3>Fuentes</h3>${sources(x.sources)}</section>`, 'biblioteca');
+    render(`<section class="library-detail">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small><h2>${esc(x.title || 'Ficha')}</h2>${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}${x.cover_url ? `<img class="library-detail-photo" src="${esc(x.cover_url)}" alt="${esc(x.title || 'Portada')}">` : ''}${x.photo_url ? `<img class="library-detail-photo" src="${esc(x.photo_url)}" alt="${esc(x.title || 'Ficha original')}">` : ''}<p>${esc(x.summary || '')}</p>${auditHtml(audit, 6)}<div class="image-actions">${actionButtons}</div><h3>Fuentes</h3>${sources(x.sources)}</section>`, 'biblioteca');
   };
 
   window.publicarFicha = async function (id) {
@@ -319,33 +319,5 @@
     const { error } = await supabase.from('library_entries').delete().eq('id', id).eq('user_id', state.user.id);
     if (error) return alert(error.message);
     await biblioteca();
-  };
-
-  const legacyPass = window.pasarFichaAInventario, legacyForm = window.formImportarFichaInventario, legacySave = window.guardarImportacionFichaInventario;
-  if (typeof legacyPass === 'function') window.pasarFichaAInventario = function (id) {
-    const x = row(id);
-    try {
-      if (x) assertComplete(x, 'No se puede añadir a inventario');
-      return legacyPass(id);
-    } catch (e) {
-      alert((e.audit?.errors || [e.message]).slice(0, 8).join('\n'));
-    }
-  };
-  if (typeof legacyForm === 'function') window.formImportarFichaInventario = legacyForm;
-  if (typeof legacySave === 'function') window.guardarImportacionFichaInventario = legacySave;
-
-  window.ANX.LibraryV3Ficha = {
-    numberFrom,
-    sourceText,
-    parseSourcesRaw,
-    read,
-    auditHtml,
-    assertComplete,
-    norm,
-    fieldAliasMap,
-    extractStructuredJson,
-    structuredPayload,
-    splitPastedFicha,
-    formFields
   };
 })();
