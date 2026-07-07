@@ -21,6 +21,7 @@
   ];
   const UNCERTAIN_TAXONOMY = /\b(?:spp?|cf|aff)\.?\b/i;
   const INTERNAL_FIELD_PATTERN = /\b(entry_type|order_name|class_name|family|data|sections|identity_confirmed|source_context|utm_source)\b/i;
+  const FLEXIBLE_NUMBER_PATTERN = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|a|hasta)\s*\d+(?:[.,]\d+)?)?/i;
 
   const CONTRACTS = {
     pez_marino: ['title','scientific_name','common_names','synonyms','family','order_name','class_name','distribution','habitat','depth_range','natural_environment','adult_size_cm','life_expectancy_years','minimum_tank_liters','recommended_tank_liters','tank_maturity','temperature_min','temperature_max','ph_min','ph_max','kh_min','kh_max','salinity_min','salinity_max','nitrate_max','phosphate_max','diet','feeding_frequency','feeding_notes','behavior','aggressiveness','territoriality','social_behavior','compatibility','fish_compatibility','coral_compatibility','invertebrate_compatibility','reef_safe','reef_safe_notes','care_level','beginner_suitable','acclimation','common_diseases','health_notes','reproduction','purchase_recommendations','common_mistakes','curiosities','ai_notes','user_summary','sources'],
@@ -98,6 +99,7 @@
 
   function humanLabel(field) { return LABELS[field] || field.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase()); }
   function isNumberField(field) { return !FORCED_TEXT_FIELDS.has(field) && NUMBER_FIELDS.test(field); }
+  function hasNumericValue(value) { return value != null && !Array.isArray(value) && FLEXIBLE_NUMBER_PATTERN.test(String(value).trim()); }
   function minLengthFor(field) { if (isNumberField(field)) return 1; if (SHORT_TEXT_FIELDS.has(field)) return SHORT_TEXT_MIN_LENGTH[field] || 2; return SHORT_TEXT_MIN_LENGTH[field] || 20; }
   function fieldRule(field) { return { label: humanLabel(field), required: true, type: isNumberField(field) ? 'number' : 'text', minLength: minLengthFor(field), ai: true, public: true, section: sectionFor(field), allowed: field === 'reef_safe' ? REEF_SAFE : undefined, validator: field === 'scientific_name' ? 'scientificName' : undefined }; }
 
@@ -149,7 +151,7 @@
     if (field === 'sources') return normalizeSources(entry.sources).length >= 2 ? '' : 'Se requieren al menos 2 fuentes reales.';
     const value = valueFor(entry, field);
     if (value == null || value === '' || (Array.isArray(value) && !value.length)) return 'Campo obligatorio vacío.';
-    if (rule.type === 'number' && !Number.isFinite(Number(value))) return 'Debe ser un valor numérico.';
+    if (rule.type === 'number' && !hasNumericValue(value)) return 'Debe incluir un valor numérico válido.';
     if (rule.allowed && !rule.allowed.includes(value)) return `Valor no permitido: ${value}.`;
     if (rule.validator === 'scientificName' && !isConcreteScientificName(value)) return 'Debe ser una especie concreta.';
     const text = String(value);
@@ -175,5 +177,5 @@
     return { approved: errors.length === 0, errors, warnings, missing_fields: missingFields({ ...entry, sources }), source_count: sources.length, sources, template };
   }
 
-  return { STATUSES, BIOLOGICAL_TYPES, PRODUCT_TYPES, REEF_SAFE, FIELD_RULES: {}, CONTRACTS, SECTION_LABELS, templateFor, templatePrompt, extractUrlsFromAny, hasRealUrl, normalizeSources, isConcreteScientificName, missingFields, validateTemplate, audit };
+  return { STATUSES, BIOLOGICAL_TYPES, PRODUCT_TYPES, REEF_SAFE, FIELD_RULES: {}, CONTRACTS, SECTION_LABELS, templateFor, templatePrompt, extractUrlsFromAny, hasRealUrl, normalizeSources, isConcreteScientificName, missingFields, validateTemplate, audit, hasNumericValue };
 });
