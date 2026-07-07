@@ -125,10 +125,6 @@ async function boot() {
 }
 
 byId('version').textContent = config.APP_VERSION || 'AcuarioNexo';
-byId('refreshAppBtn')?.addEventListener('click', function () {
-  if (window.AcuarioNexoUpdate?.forceReload) window.AcuarioNexoUpdate.forceReload();
-  else location.reload();
-});
 supabase.auth.onAuthStateChange(async function (_event, session) {
   state.user = session?.user || null;
   window.u = state.user;
