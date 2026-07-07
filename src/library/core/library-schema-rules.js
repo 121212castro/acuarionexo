@@ -10,6 +10,7 @@
   const UNKNOWN_PATTERN = /^(no\s+(localizado|encontrado|indicado|declarado|disponible)|sin\s+(dato|datos|informaci[oó]n)|no\s+consta|no\s+aplica)/i;
   const MIN_LENGTH_ERROR_PATTERN = /Debe tener al menos\s+\d+\s+caracteres\./i;
   const NUMBER_ERROR_PATTERN = /Debe ser un valor numérico\./i;
+  const INTERNAL_FIELDS_ERROR_PATTERN = /campos internos o trazas técnicas/i;
   const FLEXIBLE_NUMBER_PATTERN = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|a|hasta)\s*\d+(?:[.,]\d+)?)?/i;
 
   const CRITICAL_FIELDS = new Set([
@@ -52,6 +53,10 @@
     ['family', 2],
     ['order_name', 2],
     ['class_name', 2],
+    ['depth_range', 1],
+    ['par_range', 1],
+    ['nitrate_range', 1],
+    ['phosphate_range', 1],
     ['category', 2],
     ['coral_type', 2],
     ['plant_type', 2],
@@ -152,6 +157,10 @@
       }
       if (fieldId && NUMBER_ERROR_PATTERN.test(text) && isNumberErrorAcceptable(entry, fieldId)) {
         next.warnings.push(`${label}: aceptado con número, rango o unidad.`);
+        return;
+      }
+      if (!fieldId && INTERNAL_FIELDS_ERROR_PATTERN.test(text)) {
+        next.warnings.push('Trazas técnicas: no se bloquea la ficha por claves internas del contrato.');
         return;
       }
       next.errors.push(error);
