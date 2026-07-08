@@ -3,6 +3,7 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
+  const LAST_FORCED_KEY = APP + ':last-forced-reload-build';
   const CHECK_INTERVAL_MS = 10 * 60 * 1000;
   const MIN_CHECK_GAP_MS = 60 * 1000;
   let checking = false;
@@ -17,7 +18,6 @@
         const regs = await navigator.serviceWorker.getRegistrations();
         await Promise.all(regs.map(function (reg) { return reg.unregister(); }));
       }
-      localStorage.removeItem(APP + ':last-forced-reload-build');
       localStorage.removeItem(APP + ':hotloaded-build');
     } catch (_) {}
   }
@@ -26,7 +26,8 @@
     window.location.reload();
   }
 
-  async function forceReload() {
+  async function forceReload(remoteBuild) {
+    if (remoteBuild) localStorage.setItem(LAST_FORCED_KEY, remoteBuild);
     await clearAppCache();
     window.location.replace(window.location.pathname + '?v=' + Date.now());
   }
@@ -43,6 +44,13 @@
     if (!res.ok) return null;
     const remote = await res.json();
     return remote && remote.build ? remote.build : null;
+  }
+
+  async function applyRemoteVersion(remoteBuild) {
+    if (!remoteBuild || remoteBuild === CURRENT_BUILD) return false;
+    if (localStorage.getItem(LAST_FORCED_KEY) === remoteBuild) return false;
+    await forceReload(remoteBuild);
+    return true;
   }
 
   function showUpdateNotice(remoteBuild) {
@@ -67,7 +75,7 @@
     }
     box.innerHTML = '<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>Hay una versión nueva de AcuarioNexo.</span><button id="anxApplyUpdateBtn" class="primary" style="color:#fff!important">Actualizar ahora</button></div>';
     const btn = document.getElementById('anxApplyUpdateBtn');
-    if (btn) btn.onclick = forceReload;
+    if (btn) btn.onclick = function () { forceReload(remoteBuild); };
   }
 
   async function checkVersion(options) {
@@ -80,11 +88,12 @@
       localStorage.setItem(LAST_CHECK_KEY, new Date().toISOString());
       const remoteBuild = await fetchRemoteVersion();
       if (remoteBuild) localStorage.setItem(KEY, remoteBuild);
-      if (manual) {
-        if (remoteBuild && remoteBuild !== CURRENT_BUILD) return forceReload();
-        return softReload();
+      if (remoteBuild && remoteBuild !== CURRENT_BUILD) {
+        if (await applyRemoteVersion(remoteBuild)) return;
+        if (manual) return forceReload(remoteBuild);
+        return showUpdateNotice(remoteBuild);
       }
-      if (remoteBuild && remoteBuild !== CURRENT_BUILD) showUpdateNotice(remoteBuild);
+      if (manual) return softReload();
     } catch (_) {
       if (manual) softReload();
     } finally {
