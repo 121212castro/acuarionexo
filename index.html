@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
-    window.ACUARIONEXO_BUILD = 'library-ficha-cover-20260708-0224';
+    window.ACUARIONEXO_BUILD = 'library-ficha-text-20260708-0228';
     window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD;
     (function () {
       var v = encodeURIComponent(window.ANX_ASSET_VERSION);
@@ -42,7 +42,7 @@
     (async function () {
       var app = document.getElementById('app');
       var v = encodeURIComponent(window.ANX_ASSET_VERSION || window.ACUARIONEXO_BUILD || 'dev');
-      var scripts = ['config.js','app.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/core/module-loader.js','src/auth/auth-core.js','src/auth/auth.js','update-manager.js','notifications.js'];
+      var scripts = ['config.js','app.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/core/module-loader.js','src/auth/auth-core.js','src/auth/auth.js','update-manager.js','notifications.js','src/library/ficha/ficha-ui-text-patch.js'];
       function showError(text) {
         if (!app) return;
         app.innerHTML = '<section class="auth-card"><h2>Error de carga</h2><p class="small">' + String(text || 'No se pudo cargar AcuarioNexo.') + '</p></section>';
