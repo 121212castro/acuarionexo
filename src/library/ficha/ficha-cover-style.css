@@ -1,0 +1,36 @@
+/* AcuarioNexo · portada ficha detalle */
+.library-cover-fixed {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.library-cover-fixed .library-detail-photo {
+  display: block;
+  width: 100%;
+}
+
+.library-cover-fixed-title,
+.library-cover-fixed-subtitle {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  text-align: center;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.95);
+  pointer-events: none;
+}
+
+.library-cover-fixed-title {
+  top: 8%;
+  font-size: clamp(24px, 5vw, 48px);
+  font-weight: 800;
+  color: #f8c84a;
+}
+
+.library-cover-fixed-subtitle {
+  bottom: 10%;
+  font-size: clamp(18px, 3.6vw, 36px);
+  font-style: italic;
+  color: #ffffff;
+}
