@@ -6,26 +6,36 @@
 
   function isInventoryScreen(app) {
     const text = app?.textContent || '';
-    return /Inventario general|Inventario de/.test(text);
+    return /Inventario general|Inventario de|Registro del acuario|Registro de/.test(text);
+  }
+
+  function isAquariumInventoryScreen(app) {
+    const text = app?.textContent || '';
+    return /Aqui van los habitantes|Aquí van los habitantes|Este acuario|Registro del acuario|Registro de/.test(text);
   }
 
   function normalizeInventoryTexts() {
     const app = byId('app');
     if (!app || !isInventoryScreen(app)) return;
+    const aquariumScope = isAquariumInventoryScreen(app);
     app.querySelectorAll('button').forEach(function (btn) {
       const label = (btn.textContent || '').trim();
-      if (label === 'Desde ficha') btn.textContent = 'Añadir desde ficha existente';
+      if (label === 'Desde ficha') btn.textContent = aquariumScope ? 'Añadir copia desde Biblioteca' : 'Añadir desde ficha existente';
     });
   }
 
   function ensureInventoryNotice() {
     const app = byId('app');
     if (!app || !isInventoryScreen(app) || byId('inventoryImportNotice')) return;
+    const aquariumScope = isAquariumInventoryScreen(app);
     const target = Array.from(app.querySelectorAll('.panel')).find(function (panel) {
-      return /Inventario/.test(panel.textContent || '');
+      return /Inventario|Registro/.test(panel.textContent || '');
     });
     if (!target) return;
-    target.insertAdjacentHTML('beforeend', '<div id="inventoryImportNotice" class="notice"><b>Inventario real.</b><br>Añade aquí solo lo que tienes o quieres registrar. Las fichas informativas permanecen en Biblioteca hasta que decidas añadirlas.</div>');
+    const html = aquariumScope
+      ? '<div id="inventoryImportNotice" class="notice"><b>Registro real del acuario.</b><br>Añade aquí solo habitantes, microfauna y equipos que tienes en este acuario. Al añadir desde Biblioteca se crea una copia; la ficha original sigue en Biblioteca para poder usarla en otros acuarios.</div>'
+      : '<div id="inventoryImportNotice" class="notice"><b>Inventario real.</b><br>Añade aquí solo lo que tienes o quieres registrar. Las fichas informativas permanecen en Biblioteca hasta que decidas añadirlas.</div>';
+    target.insertAdjacentHTML('beforeend', html);
   }
 
   function ensureCreateLibraryOption() {
@@ -173,7 +183,7 @@
         meta.source_title = card.title || row.name;
         meta.library_card = libraryCardMeta(card);
         row.notes = notesFromMeta(meta, val('invNotes'), card.id);
-        if (box) box.innerHTML = msg('Guardando inventario vinculado a Biblioteca...', 'notice');
+        if (box) box.innerHTML = msg('Guardando registro vinculado a Biblioteca...', 'notice');
         const { error } = await supabase.from('inventory_items').insert(row);
         if (error) throw error;
         scope === 'aquarium' ? window.inventario('aquarium') : window.inventario('general');
