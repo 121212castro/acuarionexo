@@ -17,8 +17,6 @@
       'src/library/library-v3-images.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
-      'src/library/ficha/ficha-display-hotfix.js',
-      'src/library/ficha/ficha-display-hotfix-2.js',
       'src/library/ficha/ficha-display-hotfix-3.js',
       'src/library/ficha/ficha-actions.js',
       'src/library/library-v3.js',
@@ -176,7 +174,7 @@
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
   proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
   proxy('adminPanel', 'admin', 'Admin', 'admin');
-  proxy('adminUsers', 'admin', 'Admin', 'admin');
+  proxy('adminUsers', 'admin', 'Admin', 'Admin');
   proxy('adminReports', 'admin', 'Admin', 'admin');
   proxy('adminAiUsage', 'admin', 'Admin', 'admin');
   proxy('adminGrantForm', 'admin', 'Admin', 'admin');
