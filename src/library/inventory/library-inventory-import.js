@@ -80,6 +80,7 @@
   function importMetaFromForm(row, scope) {
     return {
       source: 'library',
+      copied_from_library: true,
       library_id: row.id,
       library_type: row.entry_type || 'general',
       scope,
@@ -133,8 +134,8 @@
       const rows = importableRowsForScope(realScope);
       render(head + `<section class="panel">
         <button onclick="${inventoryBackAction(realScope)}">← Volver</button>
-        <div class="panel-head"><h2>${realScope === 'aquarium' ? 'Añadir al acuario desde Biblioteca' : 'Añadir producto desde Biblioteca'}</h2></div>
-        <p class="small">${realScope === 'aquarium' ? 'Elige una ficha completa de animal, coral, planta, microfauna o equipo y crea su registro real en este acuario.' : 'Elige una ficha completa de producto y crea su registro real compartido.'}</p>
+        <div class="panel-head"><h2>${realScope === 'aquarium' ? 'Añadir copia al acuario desde Biblioteca' : 'Añadir producto desde Biblioteca'}</h2></div>
+        <p class="small">${realScope === 'aquarium' ? 'Elige una ficha completa de animal, coral, planta, microfauna o equipo. Se creará una copia real para este acuario y la ficha original seguirá en Biblioteca.' : 'Elige una ficha completa de producto y crea su registro real compartido.'}</p>
         <div class="library-grid">${rows.map(row => `<button class="library-card library-cover-card" onclick="formImportarFichaInventario('${esc(row.id)}','${realScope}')">
           ${(row.cover_url || row.photo_url) ? `<img class="library-card-cover" src="${esc(row.cover_url || row.photo_url)}" alt="${esc(row.title || 'Ficha')}" loading="lazy">` : `<div class="library-card-cover library-no-photo">${esc(typeName(row.entry_type).slice(0, 1))}</div>`}
           <div class="library-card-body"><h3>${esc(row.title || 'Ficha')}</h3><p class="scientific">${esc(row.scientific_name || typeName(row.entry_type))}</p><small>${esc(typeName(row.entry_type))}</small></div>
@@ -175,7 +176,7 @@
       ${isProduct ? '<label>Caducidad</label><input id="importExpiry" type="date">' : ''}
       <label>Lote / SKU / referencia</label><input id="importBatch" placeholder="Opcional">
       <label>Notas de este registro</label><textarea id="importNotes" placeholder="Aclimatacion, observaciones, dosificacion real, estado al llegar..."></textarea>
-      <button class="primary" onclick="guardarImportacionFichaInventario('${esc(row.id)}','${realScope}')">${realScope === 'aquarium' ? 'Guardar en acuario' : 'Guardar producto'}</button>
+      <button class="primary" onclick="guardarImportacionFichaInventario('${esc(row.id)}','${realScope}')">${realScope === 'aquarium' ? 'Guardar copia en acuario' : 'Guardar producto'}</button>
       <div id="x"></div>
     </section>`, active);
   };
@@ -203,7 +204,7 @@
         quantity: Number(val('importQty')) || 1,
         unit: val('importUnit') || 'unidad',
         expiry_date: val('importExpiry') || null,
-        photo_url: row.photo_url || row.cover_url || null,
+        photo_url: row.cover_url || row.photo_url || null,
         notes: inventoryNotesFromImport(row, meta),
         updated_at: new Date().toISOString()
       };
