@@ -17,7 +17,6 @@
       'src/library/library-v3-images.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
-      'src/library/ficha/ficha-display-hotfix-3.js',
       'src/library/ficha/ficha-actions.js',
       'src/library/library-v3.js',
       'src/library/ficha/ficha-type-tools.js',
