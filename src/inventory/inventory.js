@@ -45,8 +45,9 @@ window.inventario = async function (scope = 'general') {
   const isAq = scope === 'aquarium' && aq;
   const active = isAq ? 'acuarios' : 'inventario';
   const head = isAq ? aqHeader('inventario') : '';
-  const title = isAq ? `Inventario de ${aq.name || 'acuario'}` : 'Inventario general';
-  render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir manual</button></div>${msg('Cargando inventario...')}</section>`, active);
+  const title = isAq ? `Registro de ${aq.name || 'este acuario'}` : 'Inventario general';
+  const addLabel = isAq ? 'Añadir manual al acuario' : 'Añadir manual';
+  render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">${esc(addLabel)}</button></div>${msg(isAq ? 'Cargando registros del acuario...' : 'Cargando inventario...')}</section>`, active);
   try {
     const { data, error } = await supabase.from('inventory_items').select('id,name,category,quantity,unit,photo_url,aquarium_id,expiry_date,notes,created_at').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(120);
     if (error) throw error;
@@ -60,7 +61,7 @@ window.inventario = async function (scope = 'general') {
       <button class="${!isAq ? 'active' : ''}" onclick="inventario('general')">General compartido</button>
     </div>`;
     const hint = isAq ? '<p class="small inventory-hint">Aqui van los habitantes, microfauna y equipos que pertenecen solo a este acuario.</p>' : '<p class="small inventory-hint">Aqui van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.</p>';
-    render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">Desde ficha</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">Añadir manual</button></div></div>${tabs}${hint}${inventorySearchBar(isAq ? 'aquarium' : 'general')}<div id="inventoryList">${html || msg('Sin inventario todavía.')}</div></section>`, active);
+    render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">${isAq ? 'Añadir copia desde Biblioteca' : 'Desde ficha'}</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">${esc(addLabel)}</button></div></div>${tabs}${hint}${inventorySearchBar(isAq ? 'aquarium' : 'general')}<div id="inventoryList">${html || msg(isAq ? 'Sin registros en este acuario todavía.' : 'Sin inventario todavía.')}</div></section>`, active);
   } catch (e) {
     if (isCurrent(t)) render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
   }
@@ -68,7 +69,7 @@ window.inventario = async function (scope = 'general') {
 
 window.verInventario = async function (id) {
   const t = token();
-  render(`<section class="panel">${msg('Abriendo ficha de inventario...')}</section>`, 'inventario');
+  render(`<section class="panel">${msg('Abriendo ficha de registro...')}</section>`, 'inventario');
   try {
     const { data, error } = await supabase.from('inventory_items').select('*').eq('id', id).eq('user_id', state.user.id).single();
     if (error) throw error;
@@ -85,8 +86,8 @@ window.verInventario = async function (id) {
     const cover = inventoryCover(data);
     render(head + `<section class="panel inventory-detail">
       <button onclick="${isAq && aq ? "openAqSection('inventario')" : "inventario('general')"}">← Volver</button>
-      ${cover ? `<img class="inventory-detail-cover" src="${esc(cover)}" alt="${esc(data.name || 'Inventario')}" onerror="this.replaceWith(document.createElement('div'));this.className='inventory-detail-cover empty';this.textContent='▤';">` : '<div class="inventory-detail-cover empty">▤</div>'}
-      <div class="inventory-detail-head"><div><small>${esc(data.category || 'Inventario')}</small><h2>${esc(data.name || 'Item')}</h2></div>${status ? `<span class="${esc(status)}">${esc(status)}</span>` : ''}</div>
+      ${cover ? `<img class="inventory-detail-cover" src="${esc(cover)}" alt="${esc(data.name || 'Registro')}" onerror="this.replaceWith(document.createElement('div'));this.className='inventory-detail-cover empty';this.textContent='▤';">` : '<div class="inventory-detail-cover empty">▤</div>'}
+      <div class="inventory-detail-head"><div><small>${esc(data.category || 'Registro')}</small><h2>${esc(data.name || 'Item')}</h2></div>${status ? `<span class="${esc(status)}">${esc(status)}</span>` : ''}</div>
       <div class="inventory-fields">
         <div><small>Cantidad</small><b>${esc(data.quantity ?? '-')} ${esc(data.unit || '')}</b></div>
         <div><small>Ámbito</small><b>${esc(isAq ? (aq?.name || 'Acuario') : 'General compartido')}</b></div>
@@ -98,7 +99,7 @@ window.verInventario = async function (id) {
       </div>
       ${cleanNotes ? `<details class="library-detail-section inventory-answer-detail"><summary>Notas</summary><p>${esc(cleanNotes)}</p></details>` : ''}
       ${importedFichaHtml(meta)}
-      <div class="inline-actions"><button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar ficha</button><button class="ghost danger" onclick="eliminarInventario('${esc(data.id)}')">🗑 Eliminar</button></div>
+      <div class="inline-actions"><button class="primary" onclick="editarInventario('${esc(data.id)}')">Editar registro</button><button class="ghost danger" onclick="eliminarInventario('${esc(data.id)}')">🗑 Eliminar</button></div>
     </section>`, active);
   } catch (e) {
     render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'inventario');
@@ -111,7 +112,7 @@ window.eliminarInventario = async function (id) {
   try {
     const { data, error } = await supabase.from('inventory_items').select('id,name,category,aquarium_id,notes').eq('id', id).eq('user_id', state.user.id).single();
     if (error) throw error;
-    const ok = confirm(`¿Eliminar ${data.name || 'este elemento'}?\n\nSe borrará del inventario. Esta acción no se puede deshacer.`);
+    const ok = confirm(`¿Eliminar ${data.name || 'este elemento'}?\n\nSe borrará solo el registro real. La ficha original de Biblioteca no se borra.`);
     if (!ok) return verInventario(id);
     const { error: delError } = await supabase.from('inventory_items').delete().eq('id', id).eq('user_id', state.user.id);
     if (delError) throw delError;
