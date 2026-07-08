@@ -1,4 +1,4 @@
-/* AcuarioNexo · Biblioteca · importacion a inventario */
+/* AcuarioNexo · Biblioteca · importacion a acuario/inventario */
 (function(){
   const { supabase, state, esc, byId, val, msg, render } = window.ANX;
 
@@ -133,12 +133,12 @@
       const rows = importableRowsForScope(realScope);
       render(head + `<section class="panel">
         <button onclick="${inventoryBackAction(realScope)}">← Volver</button>
-        <div class="panel-head"><h2>${realScope === 'aquarium' ? 'Añadir desde Biblioteca' : 'Añadir producto desde Biblioteca'}</h2></div>
-        <p class="small">${realScope === 'aquarium' ? 'Elige una ficha completa de animal, coral, microfauna o equipo y crea su registro real en este acuario.' : 'Elige una ficha completa de producto y crea su registro real compartido.'}</p>
+        <div class="panel-head"><h2>${realScope === 'aquarium' ? 'Añadir al acuario desde Biblioteca' : 'Añadir producto desde Biblioteca'}</h2></div>
+        <p class="small">${realScope === 'aquarium' ? 'Elige una ficha completa de animal, coral, planta, microfauna o equipo y crea su registro real en este acuario.' : 'Elige una ficha completa de producto y crea su registro real compartido.'}</p>
         <div class="library-grid">${rows.map(row => `<button class="library-card library-cover-card" onclick="formImportarFichaInventario('${esc(row.id)}','${realScope}')">
           ${(row.cover_url || row.photo_url) ? `<img class="library-card-cover" src="${esc(row.cover_url || row.photo_url)}" alt="${esc(row.title || 'Ficha')}" loading="lazy">` : `<div class="library-card-cover library-no-photo">${esc(typeName(row.entry_type).slice(0, 1))}</div>`}
           <div class="library-card-body"><h3>${esc(row.title || 'Ficha')}</h3><p class="scientific">${esc(row.scientific_name || typeName(row.entry_type))}</p><small>${esc(typeName(row.entry_type))}</small></div>
-        </button>`).join('') || msg('No hay fichas completas compatibles para este inventario.', 'notice')}</div>
+        </button>`).join('') || msg(realScope === 'aquarium' ? 'No hay fichas completas compatibles para añadir al acuario.' : 'No hay fichas completas compatibles para añadir como producto.', 'notice')}</div>
       </section>`, active);
     } catch (e) {
       render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
@@ -175,7 +175,7 @@
       ${isProduct ? '<label>Caducidad</label><input id="importExpiry" type="date">' : ''}
       <label>Lote / SKU / referencia</label><input id="importBatch" placeholder="Opcional">
       <label>Notas de este registro</label><textarea id="importNotes" placeholder="Aclimatacion, observaciones, dosificacion real, estado al llegar..."></textarea>
-      <button class="primary" onclick="guardarImportacionFichaInventario('${esc(row.id)}','${realScope}')">Guardar en inventario</button>
+      <button class="primary" onclick="guardarImportacionFichaInventario('${esc(row.id)}','${realScope}')">${realScope === 'aquarium' ? 'Guardar en acuario' : 'Guardar producto'}</button>
       <div id="x"></div>
     </section>`, active);
   };
