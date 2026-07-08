@@ -174,7 +174,7 @@
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
   proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
   proxy('adminPanel', 'admin', 'Admin', 'admin');
-  proxy('adminUsers', 'admin', 'Admin', 'Admin');
+  proxy('adminUsers', 'admin', 'Admin', 'admin');
   proxy('adminReports', 'admin', 'Admin', 'admin');
   proxy('adminAiUsage', 'admin', 'Admin', 'admin');
   proxy('adminGrantForm', 'admin', 'Admin', 'admin');
