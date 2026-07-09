@@ -4,91 +4,41 @@ import { fileURLToPath } from 'node:url';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const out = path.join(root, 'www');
-const files = [
+
+const fixedAssets = [
   'index.html',
   'config.js',
   'app.js',
-  'styles.css',
-  'aquarium-map.css',
-  'login-reef.css',
-  'aquarium-cards.css',
-  'aquariums-mobile-fix.css',
-  'mobile-form-fix.css',
-  'library-images.css',
-  'library-mobile-overflow-fix.css',
-  'library-clean.css',
-  'inventory-accordion.css',
-  'notifications.css',
-  'update-manager.js',
-  'notifications.js',
   'app-version.json',
   'manifest.webmanifest',
   'firebase-messaging-sw.js',
   'icon-512.png',
-  'src/core/module-loader.js',
-  'src/aquariums/aquariums-core.js',
-  'src/aquariums/aquariums-form.js',
-  'src/aquariums/aquariums-save.js',
-  'src/aquariums/aquariums.js',
-  'src/library/core/library-schema.js',
-  'src/library/core/library-schema-rules.js',
-  'src/library/ui/library.js',
-  'src/library/inventory/library-inventory-import.js',
-  'src/library/library-v3-core.js',
-  'src/library/library-v3-template.js',
-  'src/library/library-v3-images.js',
-  'src/library/library-v3-ai.js',
-  'src/library/library-v3-ficha.js',
-  'src/library/ficha/ficha-actions.js',
-  'src/library/library-v3.js',
-  'src/library/ficha/ficha-type-tools.js',
-  'src/library/ficha/ficha-chat-import.js',
-  'src/library/ficha/ficha-json.js',
-  'src/library/core/library-admin-policy.js',
-  'src/animals/animals-core.js',
-  'src/animals/animals.js',
-  'src/map/map-v3-model.js',
-  'src/map/map-state.js',
-  'src/map/map-ui.js',
-  'src/map/map-photos.js',
-  'src/map/map-markers.js',
-  'src/map/map-render-3d.js',
-  'src/map/map-save.js',
-  'src/map/map.js',
-  'src/map/map-interactions.js',
-  'src/photos/photos-core.js',
-  'src/photos/photos-form.js',
-  'src/photos/photos-save.js',
-  'src/photos/photos.js',
-  'src/inventory/inventory-core.js',
-  'src/inventory/inventory-list.js',
-  'src/inventory/inventory-form.js',
-  'src/inventory/inventory.js',
-  'src/inventory/inventory-ui.js',
-  'src/microfauna/microfauna-core.js',
-  'src/microfauna/microfauna-form.js',
-  'src/microfauna/microfauna-save.js',
-  'src/microfauna/microfauna.js',
-  'src/ai/ai.js',
-  'src/ai/ai-library-v3.js',
-  'src/ai/ai-alerts-extra.js',
-  'src/parameters/parameters-core.js',
-  'src/parameters/parameters-alert-helpers.js',
-  'src/parameters/parameters-manual.js',
-  'src/parameters/parameters.js',
-  'src/parameters/measurements-advanced.js',
-  'src/parameters/parameters-ai-fallback.js',
-  'src/tasks/tasks-core.js',
-  'src/tasks/tasks-form.js',
-  'src/tasks/tasks.js',
-  'src/admin/admin-core.js',
-  'src/admin/admin.js',
-  'src/admin/admin-extra.js',
-  'src/admin/report-issue.js',
-  'src/admin/issue-entry.js',
-  'src/auth/auth-core.js',
-  'src/auth/auth.js'
+  'src/core/module-loader.js'
 ];
+
+function read(relativePath) {
+  return fs.readFileSync(path.join(root, relativePath), 'utf8');
+}
+
+function quotedFiles(text) {
+  const files = new Set();
+  const re = /['"]([^'"]+\.(?:js|css|png|webmanifest|json))['"]/g;
+  let match;
+  while ((match = re.exec(text))) {
+    const file = match[1];
+    if (/^https?:\/\//i.test(file)) continue;
+    files.add(file);
+  }
+  return files;
+}
+
+function activeFiles() {
+  const files = new Set(fixedAssets);
+  for (const file of quotedFiles(read('index.html'))) files.add(file);
+  for (const file of quotedFiles(read('src/core/module-loader.js'))) files.add(file);
+  return [...files].sort((a, b) => a.localeCompare(b));
+}
+
 function copyFile(relativePath) {
   const from = path.join(root, relativePath);
   const to = path.join(out, relativePath);
@@ -96,6 +46,11 @@ function copyFile(relativePath) {
   fs.mkdirSync(path.dirname(to), { recursive: true });
   fs.copyFileSync(from, to);
 }
+
+fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
+
+const files = activeFiles();
 for (const file of files) copyFile(file);
-console.log(`AcuarioNexo mobile bundle ready: ${files.length} files copied to www/`);
+
+console.log(`AcuarioNexo mobile bundle ready: ${files.length} active files copied to www/`);
