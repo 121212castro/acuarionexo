@@ -6,9 +6,10 @@
   "scripts": {
     "check": "node scripts/validate-app.mjs",
     "mobile:prepare": "node scripts/prepare-mobile-bundle.mjs",
-    "mobile:sync": "npm run mobile:prepare && npx cap sync",
-    "mobile:add:android": "npm run mobile:prepare && npx cap add android",
-    "mobile:add:ios": "npm run mobile:prepare && npx cap add ios",
+    "mobile:check": "node scripts/validate-mobile-bundle.mjs",
+    "mobile:sync": "npm run mobile:prepare && npm run mobile:check && npx cap sync",
+    "mobile:add:android": "npm run mobile:prepare && npm run mobile:check && npx cap add android",
+    "mobile:add:ios": "npm run mobile:prepare && npm run mobile:check && npx cap add ios",
     "mobile:open:android": "npx cap open android",
     "mobile:open:ios": "npx cap open ios"
   },
