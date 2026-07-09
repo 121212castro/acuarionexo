@@ -69,10 +69,26 @@ function copyFile(relativePath) {
   fs.copyFileSync(from, to);
 }
 
+function buildVersion() {
+  const file = path.join(root, 'app-version.json');
+  return JSON.parse(fs.readFileSync(file, 'utf8')).build || 'dev';
+}
+
+function writeBundleManifest(files) {
+  const manifest = {
+    build: buildVersion(),
+    generated_at: new Date().toISOString(),
+    source: 'scripts/prepare-mobile-bundle.mjs',
+    files
+  };
+  fs.writeFileSync(path.join(out, 'mobile-bundle-manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
+}
+
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 
 const files = activeFiles();
 for (const file of files) copyFile(file);
+writeBundleManifest(files);
 
 console.log(`AcuarioNexo mobile bundle ready: ${files.length} active files copied to www/`);
