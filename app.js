@@ -69,12 +69,37 @@
     </nav>`;
   }
 
+  function sanitizeBibliotecaHtml(html) {
+    return String(html || '')
+      .replace(/Añadir\s+a\s+mi\s+inventario/gi, 'Añadir a mi acuario')
+      .replace(/Añadir\s+al\s+inventario/gi, 'Añadir a mi acuario')
+      .replace(/Añadir\s+al\s+acuario/gi, 'Añadir a mi acuario');
+  }
+
+  function sanitizeBibliotecaDom() {
+    const root = document.getElementById('app');
+    if (!root) return;
+    root.querySelectorAll('button').forEach(function (button) {
+      const text = (button.textContent || '').replace(/\s+/g, ' ').trim();
+      if (/^Añadir (a mi inventario|al inventario|al acuario)$/i.test(text)) button.textContent = 'Añadir a mi acuario';
+      const title = button.getAttribute('title') || '';
+      if (/inventario/i.test(title) || /añadir al acuario/i.test(title)) button.setAttribute('title', 'Completa todos los campos obligatorios antes de añadir a mi acuario');
+    });
+    root.querySelectorAll('.library-detail').forEach(function (section) {
+      const imgs = Array.from(section.querySelectorAll('img.library-detail-photo'));
+      if (imgs.length > 1) imgs.slice(0, -1).forEach(function (img) { img.remove(); });
+    });
+  }
+
   function render(html, active = 'inicio', showNav = true) {
     document.querySelector('.bottom-nav')?.remove();
-    app.innerHTML = html + (showNav ? '<div style="height:140px"></div>' : '');
+    const safeHtml = active === 'biblioteca' ? sanitizeBibliotecaHtml(html) : html;
+    app.innerHTML = safeHtml + (showNav ? '<div style="height:140px"></div>' : '');
     if (showNav) document.body.insertAdjacentHTML('beforeend', bottomNav(active));
+    if (active === 'biblioteca') sanitizeBibliotecaDom();
     window.scrollTo(0, 0);
     requestAnimationFrame(function () {
+      if (active === 'biblioteca') sanitizeBibliotecaDom();
       const el = document.querySelector('.tank-tabs .active');
       if (el) el.scrollIntoView({ block: 'nearest', inline: 'center' });
     });
