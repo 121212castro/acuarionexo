@@ -3,7 +3,6 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
-  const LAST_FORCED_KEY = APP + ':last-forced-reload-build';
   const CHECK_INTERVAL_MS = 10 * 60 * 1000;
   const MIN_CHECK_GAP_MS = 60 * 1000;
   let checking = false;
@@ -19,17 +18,24 @@
         await Promise.all(regs.map(function (reg) { return reg.unregister(); }));
       }
       localStorage.removeItem(APP + ':hotloaded-build');
+      localStorage.removeItem(APP + ':last-forced-reload-build');
     } catch (_) {}
   }
 
+  function reloadUrl(build) {
+    const params = new URLSearchParams(window.location.search || '');
+    params.set('v', build || CURRENT_BUILD || 'reload');
+    params.set('t', String(Date.now()));
+    return window.location.pathname + '?' + params.toString();
+  }
+
   function softReload() {
-    window.location.reload();
+    window.location.replace(reloadUrl(CURRENT_BUILD));
   }
 
   async function forceReload(remoteBuild) {
-    if (remoteBuild) localStorage.setItem(LAST_FORCED_KEY, remoteBuild);
     await clearAppCache();
-    window.location.replace(window.location.pathname + '?v=' + Date.now());
+    window.location.replace(reloadUrl(remoteBuild || CURRENT_BUILD));
   }
 
   async function fetchRemoteVersion() {
@@ -47,8 +53,8 @@
   }
 
   async function applyRemoteVersion(remoteBuild) {
-    if (!remoteBuild || remoteBuild === CURRENT_BUILD) return false;
-    if (localStorage.getItem(LAST_FORCED_KEY) === remoteBuild) return false;
+    if (!remoteBuild) return false;
+    if (remoteBuild === CURRENT_BUILD) return false;
     await forceReload(remoteBuild);
     return true;
   }
@@ -89,13 +95,12 @@
       const remoteBuild = await fetchRemoteVersion();
       if (remoteBuild) localStorage.setItem(KEY, remoteBuild);
       if (remoteBuild && remoteBuild !== CURRENT_BUILD) {
-        if (await applyRemoteVersion(remoteBuild)) return;
-        if (manual) return forceReload(remoteBuild);
-        return showUpdateNotice(remoteBuild);
+        await applyRemoteVersion(remoteBuild);
+        return;
       }
-      if (manual) return softReload();
+      if (manual) return forceReload(remoteBuild || CURRENT_BUILD);
     } catch (_) {
-      if (manual) softReload();
+      if (manual) return forceReload(CURRENT_BUILD);
     } finally {
       checking = false;
     }
