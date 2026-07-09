@@ -18,7 +18,8 @@
     "@capacitor/app": "latest",
     "@capacitor/core": "latest",
     "@capacitor/ios": "latest",
-    "@capacitor/preferences": "latest"
+    "@capacitor/preferences": "latest",
+    "@capacitor/push-notifications": "latest"
   },
   "devDependencies": {
     "@capacitor/cli": "latest"
