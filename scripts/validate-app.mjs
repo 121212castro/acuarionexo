@@ -10,12 +10,51 @@ const errors = [];
 const fail = message => errors.push(message);
 const version = JSON.parse(fs.readFileSync(path.join(root, 'app-version.json'), 'utf8')).build;
 
-const refs = () => [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map(m => m[1]).filter(r => !/^https?:/i.test(r) && !r.startsWith('data:'));
-const clean = ref => ref.split('?')[0];
-const scripts = () => [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]).filter(r => !/^https?:/i.test(r)).map(clean);
+const clean = ref => String(ref || '').split('?')[0].replace(/^\.\//, '');
+const isLocal = ref => ref && !/^https?:/i.test(ref) && !ref.startsWith('data:');
+const refs = () => [...html.matchAll(/(?:src|href)=["']([^"']+)["']/g)].map(m => m[1]).filter(isLocal);
+const scripts = () => [...html.matchAll(/<script\b[^>]*\bsrc=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]).filter(isLocal).map(clean);
+
+function exists(file) {
+  return fs.existsSync(path.join(root, file));
+}
+
+function read(file) {
+  return fs.readFileSync(path.join(root, file), 'utf8');
+}
+
+function quotedLocalAssets(text) {
+  const files = new Set();
+  const re = /['"]([^'"]+\.(?:html|js|css|png|webmanifest|json)(?:\?[^'"]*)?)['"]/g;
+  let match;
+  while ((match = re.exec(text))) {
+    const file = clean(match[1]);
+    if (isLocal(file)) files.add(file);
+  }
+  return files;
+}
+
+function activeFiles() {
+  const files = new Set(['index.html', ...refs().map(clean), 'src/core/module-loader.js'].filter(Boolean));
+  const queue = [...files];
+  while (queue.length) {
+    const current = queue.shift();
+    if (!exists(current) || !/\.(?:html|js)$/i.test(current)) continue;
+    for (const file of quotedLocalAssets(read(current))) {
+      if (!exists(file) || files.has(file)) continue;
+      files.add(file);
+      queue.push(file);
+    }
+  }
+  return [...files].sort((a, b) => a.localeCompare(b));
+}
+
+function activeScripts() {
+  return activeFiles().filter(file => file.endsWith('.js'));
+}
 
 function checkRefs() {
-  for (const ref of refs().map(clean)) if (!fs.existsSync(path.join(root, ref))) fail(`Missing active asset: ${ref}`);
+  for (const ref of refs().map(clean)) if (!exists(ref)) fail(`Missing active asset: ${ref}`);
 }
 
 function checkVersions() {
@@ -27,20 +66,37 @@ function checkVersions() {
 }
 
 function checkSyntax() {
-  for (const file of ['app.js', ...scripts().filter(f => f.endsWith('.js') && f !== 'app.js')]) execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
+  for (const file of activeScripts()) execFileSync(process.execPath, ['--check', path.join(root, file)], { stdio: 'pipe' });
 }
 
 function checkDuplicateWindows() {
   const names = ['biblioteca','renderBibliotecaActual','filtrarBiblioteca','formFicha','guardarFicha','verFicha','buscarIdentify','mostrarIdentify','adminPanel'];
+  const scriptsToCheck = activeScripts();
   for (const name of names) {
     const found = [];
-    for (const script of scripts()) {
-      const code = fs.readFileSync(path.join(root, script), 'utf8');
+    for (const script of scriptsToCheck) {
+      const code = read(script);
       const count = (code.match(new RegExp(`window\\.${name}\\s*=`, 'g')) || []).length;
       if (count) found.push(`${script} (${count})`);
     }
     if (found.length > 1) fail(`Duplicated window.${name}: ${found.join(', ')}`);
   }
+}
+
+function checkFichaOwnership() {
+  const actions = 'src/library/ficha/ficha-actions.js';
+  const ficha = 'src/library/library-v3-ficha.js';
+  const images = 'src/library/library-v3-images.js';
+  if (!exists(actions) || !exists(ficha) || !exists(images)) return;
+  const actionsCode = read(actions);
+  const fichaCode = read(ficha);
+  const imagesCode = read(images);
+  if (!actionsCode.includes('Añadir a mi acuario')) fail('La vista de ficha debe usar el texto Añadir a mi acuario.');
+  if (actionsCode.includes('Añadir a mi inventario')) fail('Texto prohibido en vista de ficha: Añadir a mi inventario.');
+  if (actionsCode.includes('cover_url')) fail('La vista de ficha no debe renderizar cover_url; solo photo_url.');
+  if (fichaCode.includes('window.verFicha')) fail('library-v3-ficha.js no debe definir window.verFicha.');
+  if (!imagesCode.includes("'cover_url','coverFile'")) fail('library-v3-images.js debe mantener Foto portada.');
+  if (!imagesCode.includes("'photo_url','photoFile'")) fail('library-v3-images.js debe mantener Foto al abrir ficha.');
 }
 
 function mockElement(id) {
@@ -72,12 +128,12 @@ async function checkLoad() {
   };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  for (const script of scripts()) vm.runInContext(fs.readFileSync(path.join(root, script), 'utf8'), ctx, { filename: script });
+  for (const script of scripts()) vm.runInContext(read(script), ctx, { filename: script });
   if (typeof ctx.biblioteca !== 'function') fail('window.biblioteca missing');
   if (typeof ctx.pasarFichaAInventario !== 'function') fail('window.pasarFichaAInventario missing');
   if (typeof ctx.adminPanel !== 'function') fail('window.adminPanel missing');
 }
 
-try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
+try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
 if (errors.length) { console.error('AcuarioNexo validation failed:'); errors.forEach(e => console.error(`- ${e}`)); process.exit(1); }
 console.log('AcuarioNexo validation OK');
