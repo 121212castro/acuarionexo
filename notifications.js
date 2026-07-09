@@ -3,18 +3,31 @@
   const TOKEN_KEY = 'acuarionexo:fcm-token';
   let checking = false;
   let enabling = false;
+  let nativeAndroidStarted = false;
 
   function canNotify() {
     return 'Notification' in window;
   }
 
-  async function saveDeviceToken(token) {
+  function capacitorPlatform() {
+    try {
+      return window.Capacitor?.getPlatform ? window.Capacitor.getPlatform() : '';
+    } catch (_) {
+      return '';
+    }
+  }
+
+  function isAndroidNative() {
+    return capacitorPlatform() === 'android' && !!window.Capacitor?.Plugins?.PushNotifications;
+  }
+
+  async function saveDeviceToken(token, platformOverride) {
     if (!token || !window.s || !window.state?.user) return;
     const row = {
       user_id: window.state.user.id,
       provider: 'fcm',
       token,
-      platform: /iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : /android/i.test(navigator.userAgent) ? 'android' : 'web',
+      platform: platformOverride || (/iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : /android/i.test(navigator.userAgent) ? 'android' : 'web'),
       user_agent: navigator.userAgent || null,
       enabled: true,
       last_seen_at: new Date().toISOString(),
@@ -25,6 +38,34 @@
       .upsert(row, { onConflict: 'user_id,provider,token' });
     if (error) throw error;
     localStorage.setItem(TOKEN_KEY, token);
+  }
+
+  async function registerNativeAndroidPush() {
+    if (!isAndroidNative() || nativeAndroidStarted) return null;
+    nativeAndroidStarted = true;
+    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+    const permission = await PushNotifications.requestPermissions();
+    if (permission.receive !== 'granted') return null;
+
+    await PushNotifications.addListener('registration', async function (token) {
+      const value = token?.value || token?.token || '';
+      if (value) await saveDeviceToken(value, 'android-app');
+    });
+
+    await PushNotifications.addListener('registrationError', function (error) {
+      console.warn('AcuarioNexo push registration error', error);
+    });
+
+    await PushNotifications.addListener('pushNotificationReceived', function (notification) {
+      console.info('AcuarioNexo push received', notification);
+    });
+
+    await PushNotifications.addListener('pushNotificationActionPerformed', function () {
+      try { window.tareas ? window.tareas() : location.assign(location.pathname + '?avisos=1'); } catch (_) {}
+    });
+
+    await PushNotifications.register();
+    return true;
   }
 
   async function registerFirebaseMessaging() {
@@ -38,7 +79,7 @@
       vapidKey: cfg.FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration
     });
-    if (token) await saveDeviceToken(token);
+    if (token) await saveDeviceToken(token, 'web-fcm');
     messaging.onMessage(function (payload) {
       const title = payload?.notification?.title || 'AcuarioNexo';
       const body = payload?.notification?.body || payload?.data?.title || 'Aviso pendiente';
@@ -82,9 +123,14 @@
   }
 
   async function enableNotifications() {
-    if (enabling || !canNotify()) return false;
+    if (enabling) return false;
     enabling = true;
     try {
+      if (isAndroidNative()) {
+        await registerNativeAndroidPush();
+        return true;
+      }
+      if (!canNotify()) return false;
       if (Notification.permission === 'default') await Notification.requestPermission();
       if (Notification.permission !== 'granted') return false;
       try { await registerFirebaseMessaging(); } catch (_) {}
@@ -96,7 +142,6 @@
   }
 
   function start() {
-    if (!canNotify()) return;
     setTimeout(enableNotifications, 3500);
     setTimeout(checkDueTasks, 30000);
     setInterval(checkDueTasks, CHECK_INTERVAL_MS);
@@ -112,7 +157,7 @@
     });
   }
 
-  window.AcuarioNexoNotifications = { enable: enableNotifications, checkDueTasks };
+  window.AcuarioNexoNotifications = { enable: enableNotifications, checkDueTasks, registerNativeAndroidPush, registerFirebaseMessaging };
   window.addEventListener('load', start);
 })();
 
