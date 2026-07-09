@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
-    window.ACUARIONEXO_BUILD = 'library-render-sanitize-20260709-1015';
-    window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD;
+    window.ACUARIONEXO_BUILD = 'library-live-assets-20260709-1030';
+    window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD + '-' + Date.now();
     (function () {
       var v = encodeURIComponent(window.ANX_ASSET_VERSION);
       var css = ['styles.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css','library-clean.css','inventory-accordion.css','notifications.css'];
@@ -41,7 +41,7 @@
   <script>
     (async function () {
       var app = document.getElementById('app');
-      var v = encodeURIComponent(window.ANX_ASSET_VERSION || window.ACUARIONEXO_BUILD || 'dev');
+      var v = encodeURIComponent(window.ANX_ASSET_VERSION || (window.ACUARIONEXO_BUILD + '-' + Date.now()) || 'dev');
       var scripts = ['config.js','app.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/core/module-loader.js','src/auth/auth-core.js','src/auth/auth.js','update-manager.js','notifications.js'];
       function showError(text) {
         if (!app) return;
