@@ -15,6 +15,7 @@
       'src/library/library-v3-core.js',
       'src/library/library-v3-template.js',
       'src/library/library-v3-images.js',
+      'src/library/ficha/ficha-image-clean.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
       'src/library/ficha/ficha-actions.js',
@@ -148,36 +149,24 @@
       try {
         loadingPanel(label || groupName, active || groupName);
         await loadModuleGroup(groupName);
-        const fn = window[globalName];
-        if (typeof fn === 'function' && fn !== proxyFn) return fn.apply(window, args);
-        throw new Error('El módulo ' + label + ' cargó, pero no registró ' + globalName + '().');
+        const real = window[globalName];
+        if (real === proxyFn || typeof real !== 'function') throw new Error(globalName + ' no quedó disponible.');
+        return real.apply(window, args);
       } catch (error) {
         moduleError(error, active || groupName);
       }
     };
-    if (typeof window[globalName] !== 'function') window[globalName] = proxyFn;
+    window[globalName] = window[globalName] || proxyFn;
   }
 
-  window.refreshAdminAccess = async function () {
-    if (typeof ANX.loadAdminRole === 'function') await ANX.loadAdminRole();
-  };
-
   proxy('biblioteca', 'biblioteca', 'Biblioteca', 'biblioteca');
-  proxy('nuevaFichaV3', 'biblioteca', 'Biblioteca', 'biblioteca');
-  proxy('animales', 'animales', 'Animales', 'acuarios');
-  proxy('mapaIA', 'mapa', 'Mapa IA', 'acuarios');
+  proxy('acuariosHome', 'animales', 'Acuarios', 'acuarios');
+  proxy('mapa3D', 'mapa', 'Mapa', 'acuarios');
   proxy('fotos', 'fotos', 'Fotos', 'acuarios');
   proxy('inventario', 'inventario', 'Inventario', 'inventario');
   proxy('microfauna', 'microfauna', 'Microfauna', 'microfauna');
-  proxy('parametros', 'parametros', 'Parámetros', 'acuarios');
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
-  proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
   proxy('adminPanel', 'admin', 'Admin', 'admin');
-  proxy('adminUsers', 'admin', 'Admin', 'admin');
-  proxy('adminReports', 'admin', 'Admin', 'admin');
-  proxy('adminAiUsage', 'admin', 'Admin', 'admin');
-  proxy('adminGrantForm', 'admin', 'Admin', 'admin');
 
-  ANX.ModuleLoader = { GROUPS, loadedGroups, pendingGroups, loadedScripts, loadScript, loadModuleGroup };
   ANX.loadModuleGroup = loadModuleGroup;
 })();
