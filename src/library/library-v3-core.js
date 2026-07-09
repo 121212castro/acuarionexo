@@ -11,6 +11,11 @@
   function statusName(s) { return ({ review: 'Revisión', validated: 'Validada', published: 'Publicada', archived: 'Archivada' }[s] || s || 'Revisión'); }
   function row(id) { return (state.libraryRows || []).find(x => String(x.id) === String(id)); }
   function isAdminLibrary() { return !!state.isAdmin; }
+  function isOwnLibraryEntry(x) { return !!state.user?.id && String(x.user_id || '') === String(state.user.id); }
+  function canSeeLibraryEntry(x) {
+    const status = String(x.status || '').toLowerCase();
+    return isAdminLibrary() || isOwnLibraryEntry(x) || ['published', 'validated'].includes(status);
+  }
 
   async function load() {
     const { data, error } = await supabase.from('library_entries').select('*').order('updated_at', { ascending: false }).limit(300);
@@ -68,9 +73,9 @@
     const q = val('librarySearch').toLowerCase();
     const f = state.libraryFilter || 'all';
     const rows = (state.libraryRows || []).filter(x => (f === 'all' || x.entry_type === f) && (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q)));
-    const published = rows.filter(x => isAdminLibrary() || ['published', 'validated'].includes(String(x.status || '').toLowerCase()));
-    render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${published.length} fichas</p></div></section>
-      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(published, q, f)}</section>
+    const visible = rows.filter(canSeeLibraryEntry);
+    render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section>
+      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>
       ${libraryAdminTools(f)}`, 'biblioteca');
   }
 
@@ -98,6 +103,8 @@
     card,
     libraryInfoNotice,
     list,
-    isAdminLibrary
+    isAdminLibrary,
+    isOwnLibraryEntry,
+    canSeeLibraryEntry
   };
 })();
