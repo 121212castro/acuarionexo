@@ -3,34 +3,99 @@
   const { byId, val, msg, esc } = window.ANX;
   const { S, typeName } = window.ANX.LibraryV3Core;
 
+  function fieldRuleText(field) {
+    const rules = [];
+    rules.push(`clave JSON: data.${field.id}`);
+    if (field.type === 'number') rules.push('debe incluir valor numérico concreto');
+    else rules.push(`mínimo ${field.minLength || 20} caracteres`);
+    if (field.allowed && field.allowed.length) rules.push(`valores permitidos: ${field.allowed.join(' | ')}`);
+    if (field.validator === 'scientificName') rules.push('debe ser especie concreta, no sp., spp., cf. ni aff.');
+    rules.push('sin URLs dentro del texto');
+    return rules.join('; ');
+  }
+
+  function jsonSkeleton(type, template) {
+    const data = {};
+    template.forEach(section => section.fields.forEach(field => {
+      if (field.id === 'sources') return;
+      if (['title', 'scientific_name'].includes(field.id)) return;
+      data[field.id] = field.type === 'number' ? null : '';
+    }));
+    return JSON.stringify({
+      entry_type: type,
+      title: '',
+      scientific_name: '',
+      summary: '',
+      tags: [],
+      data,
+      sections: { summary: '' },
+      sources: [
+        { name: '', url: 'https://...', used_for: '' },
+        { name: '', url: 'https://...', used_for: '' }
+      ]
+    }, null, 2);
+  }
+
   function templateText(type) {
     const template = S.templateFor(type);
     const lines = [
       `Crea una ficha completa de ${typeName(type)} para AcuarioNexo.`,
       '',
-      'Reglas obligatorias:',
+      'SALIDA OBLIGATORIA:',
+      '1. Primero escribe la ficha visible para una persona, con apartados claros.',
+      '2. Al final añade un bloque JSON estructurado entre estos marcadores exactos:',
+      'ACUARIONEXO_JSON_START',
+      '{ JSON válido aquí }',
+      'ACUARIONEXO_JSON_END',
+      '',
+      'REGLAS OBLIGATORIAS:',
       '- No inventes datos.',
       '- Contrasta cada dato importante con fuentes fiables.',
       '- Usa valores concretos cuando existan.',
       '- No uses: bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.',
-      '- No incluyas JSON ni nombres de campos internos.',
-      '- No pongas URLs dentro de los apartados de texto.',
-      '- El apartado Fuentes es obligatorio y debe ir al final.',
-      '- Fuentes debe tener minimo 2 fuentes reales con URL completa.',
-      '- Formato obligatorio de cada fuente: Nombre de fuente | URL completa | dato que justifica.',
+      '- No pongas URLs dentro de los apartados de texto visible.',
+      '- El apartado Fuentes es obligatorio y debe ir al final de la ficha visible.',
+      '- Fuentes debe tener mínimo 2 fuentes reales con URL completa.',
+      '- Formato visible obligatorio de cada fuente: Nombre de fuente | URL completa | dato que justifica.',
+      '- El JSON estructurado debe repetir esas mismas fuentes en sources[].',
       '- Si no encuentras URL real para una fuente, no la uses.',
+      '- No elimines campos obligatorios.',
+      '- No añadas claves internas fuera del JSON.',
+      '- Cada campo de texto debe cumplir su mínimo de caracteres.',
+      '- Cada campo numérico debe incluir un número o rango concreto.',
+      '- Si un campo tiene valores permitidos, usa exactamente uno de esos valores.',
       '',
-      'Formato obligatorio del apartado final:',
+      'VALIDACIÓN QUE NO DEBE BLOQUEAR:',
+      '- Comportamiento / behavior: mínimo 20 caracteres, texto concreto.',
+      '- Alimentación / diet o feeding: mínimo 20 caracteres, texto concreto.',
+      '- Reef safe / reef_safe: usar exactamente Sí, Sí con precaución o No.',
+      '- Fuentes / sources: mínimo 2 URLs reales.',
+      '',
+      'FORMATO OBLIGATORIO DEL APARTADO FINAL VISIBLE:',
       'Fuentes:',
       '- Nombre de fuente | https://... | dato concreto que justifica',
       '- Nombre de fuente | https://... | dato concreto que justifica',
       '',
-      'Apartados obligatorios:'
+      'APARTADOS Y CAMPOS OBLIGATORIOS CON REGLAS:'
     ];
     template.forEach(section => {
       lines.push('', section.label);
-      section.fields.forEach(field => lines.push(`- ${field.label}`));
+      section.fields.forEach(field => lines.push(`- ${field.label} (${fieldRuleText(field)})`));
     });
+    lines.push(
+      '',
+      'JSON OBLIGATORIO:',
+      '- Debe ser JSON válido.',
+      '- Debe ir solo entre ACUARIONEXO_JSON_START y ACUARIONEXO_JSON_END.',
+      '- Debe usar entry_type exactamente como se indica.',
+      '- Debe rellenar data con todas las claves indicadas.',
+      '- No dejes null ni cadenas vacías salvo que un dato no exista en fuentes fiables; en ese caso explica la limitación en el campo visible correspondiente.',
+      '',
+      'ESQUELETO JSON:',
+      'ACUARIONEXO_JSON_START',
+      jsonSkeleton(type, template),
+      'ACUARIONEXO_JSON_END'
+    );
     return lines.join('\n');
   }
 
@@ -40,13 +105,15 @@
     const box = byId('templateCopyStatus');
     try {
       await navigator.clipboard.writeText(text);
-      if (box) box.innerHTML = msg(`Apartados de ${typeName(selected)} copiados. Pégalos en el chat.`, 'success');
+      if (box) box.innerHTML = msg(`Apartados de ${typeName(selected)} copiados con reglas de validación. Pégalos en el chat.`, 'success');
     } catch (e) {
       if (box) box.innerHTML = `<div class="notice"><b>No se pudo copiar automáticamente.</b><br>Selecciona y copia este texto:<textarea readonly>${esc(text)}</textarea></div>`;
     }
   };
 
   window.ANX.LibraryV3Template = {
-    templateText
+    templateText,
+    fieldRuleText,
+    jsonSkeleton
   };
 })();
