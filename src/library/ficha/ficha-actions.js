@@ -7,7 +7,7 @@
   const { row, sources, typeName, statusName, libraryInfoNotice } = Core;
 
   function actionLabel() {
-    return 'Añadir al acuario';
+    return 'Añadir a mi acuario';
   }
 
   function fichaPhoto(x) {
@@ -23,7 +23,7 @@
     const label = actionLabel(x.entry_type);
     const actionButtons = audit.approved
       ? `<button onclick="formFicha('${esc(id)}')">Editar</button><button onclick="pasarFichaAInventario('${esc(id)}')">${esc(label)}</button><button onclick="publicarFicha('${esc(id)}')">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`
-      : `<button onclick="formFicha('${esc(id)}')">Editar</button><button disabled title="Completa todos los campos obligatorios antes de añadir al acuario">${esc(label)}</button><button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`;
+      : `<button onclick="formFicha('${esc(id)}')">Editar</button><button disabled title="Completa todos los campos obligatorios antes de añadir a mi acuario">${esc(label)}</button><button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button><button onclick="borrarFicha('${esc(id)}')">Borrar</button>`;
     render(`<section class="library-detail">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small><h2>${esc(x.title || 'Ficha')}</h2>${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}${fichaPhoto(x)}<p>${esc(x.summary || '')}</p>${Ficha.auditHtml(audit, 6)}<div class="image-actions">${actionButtons}</div><h3>Fuentes</h3>${sources(x.sources)}</section>`, 'biblioteca');
   };
 
