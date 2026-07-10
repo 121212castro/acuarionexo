@@ -1,4 +1,4 @@
-name: Build Android APK
+name: Build and validate Android APK
 
 on:
   push:
@@ -12,9 +12,9 @@ permissions:
   contents: write
 
 jobs:
-  build-apk:
+  build-test-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -24,6 +24,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -32,21 +33,23 @@ jobs:
           java-version: '21'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci
 
-      - name: Prepare mobile web bundle
-        run: npm run mobile:prepare
+      - name: Validate complete web application
+        run: npm run check
 
-      - name: Create Android project
+      - name: Prepare and validate mobile bundle
+        run: |
+          npm run mobile:prepare
+          npm run mobile:check
+
+      - name: Create Android project and official assets
         shell: bash
         run: |
           set -o pipefail
+          rm -rf android
           npx cap add android 2>&1 | tee android-build-error.log
-
-      - name: Sync Android project
-        shell: bash
-        run: |
-          set -o pipefail
+          npm run mobile:assets:android 2>&1 | tee -a android-build-error.log
           npx cap sync android 2>&1 | tee -a android-build-error.log
 
       - name: Build debug APK
@@ -55,30 +58,66 @@ jobs:
         run: |
           set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon 2>&1 | tee -a ../android-build-error.log
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a ../android-build-error.log
+
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -e
+            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell monkey -p com.acuarionexo.app -c android.intent.category.LAUNCHER 1
+            sleep 15
+            adb shell pidof com.acuarionexo.app > app-pid.txt
+            test -s app-pid.txt
+            adb exec-out screencap -p > android-launch.png
+            adb logcat -d > android-logcat.txt
+            if grep -E "FATAL EXCEPTION|Process: com\.acuarionexo\.app.*has died|AndroidRuntime:.*FATAL" android-logcat.txt; then
+              exit 1
+            fi
+
+      - name: Verify generated launcher resources
+        run: |
+          test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+          find android/app/src/main/res -type f -name 'ic_launcher*' | tee android-launcher-files.txt
+          test -s android-launcher-files.txt
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk AcuarioNexo-Android-Test.apk
 
-      - name: Upload workflow artifact
+      - name: Upload audit evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: AcuarioNexo-Android-Test
-          path: AcuarioNexo-Android-Test.apk
-          if-no-files-found: error
+          name: AcuarioNexo-Android-Audit
+          path: |
+            AcuarioNexo-Android-Test.apk
+            android-launch.png
+            android-logcat.txt
+            app-pid.txt
+            android-launcher-files.txt
+            android-build-error.log
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Publish tester release
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release delete android-test-latest --cleanup-tag --yes || true
           gh release create android-test-latest AcuarioNexo-Android-Test.apk \
-            --title "AcuarioNexo Android Test" \
-            --notes "APK de prueba generada automáticamente desde ${GITHUB_SHA}." \
+            --title "AcuarioNexo Android validada" \
+            --notes "APK compilada, instalada y abierta correctamente en Android API 35 desde ${GITHUB_SHA}." \
             --prerelease
 
-      - name: Record build result
+      - name: Record validation result
         if: always()
         run: |
           STATUS="${{ job.status }}"
@@ -92,12 +131,13 @@ jobs:
             "status": "$STATUS",
             "commit": "${GITHUB_SHA}",
             "run_id": "${GITHUB_RUN_ID}",
-            "apk": "$APK_URL"
+            "apk": "$APK_URL",
+            "validated_on_emulator": $([ "$STATUS" = "success" ] && echo true || echo false)
           }
           EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add android-build-status.json
           if [ -f android-build-error.log ]; then git add android-build-error.log; fi
-          git commit -m "Registra resultado APK Android [skip ci]" || exit 0
+          git commit -m "Registra validación Android [skip ci]" || exit 0
           git push
