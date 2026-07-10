@@ -23,7 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: npm
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -70,18 +69,24 @@ jobs:
             --notes "APK de prueba generada automáticamente desde ${GITHUB_SHA}." \
             --prerelease
 
-      - name: Record successful build
+      - name: Record build result
+        if: always()
         run: |
+          STATUS="${{ job.status }}"
+          APK_URL=""
+          if [ "$STATUS" = "success" ]; then
+            APK_URL="https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk"
+          fi
           cat > android-build-status.json <<EOF
           {
-            "status": "success",
+            "status": "$STATUS",
             "commit": "${GITHUB_SHA}",
             "run_id": "${GITHUB_RUN_ID}",
-            "apk": "https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk"
+            "apk": "$APK_URL"
           }
           EOF
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add android-build-status.json
-          git commit -m "Registra APK Android generada [skip ci]"
+          git commit -m "Registra resultado APK Android [skip ci]" || exit 0
           git push
