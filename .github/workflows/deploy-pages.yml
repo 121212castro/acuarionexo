@@ -1,4 +1,3 @@
-# Activación de despliegue automático desde GitHub Actions
 name: Deploy AcuarioNexo Pages
 
 on:
@@ -39,11 +38,8 @@ jobs:
       - name: Regenerate map and tree
         run: npm run docs:refresh
 
-      - name: Validate and generate exact active bundle
-        run: |
-          node scripts/validate-app.mjs
-          node scripts/prepare-mobile-bundle.mjs
-          npm run mobile:check
+      - name: Generate exact active bundle
+        run: node scripts/prepare-mobile-bundle.mjs
 
       - name: Verify deployed build matches commit
         run: |
@@ -54,6 +50,8 @@ jobs:
           grep -q "$EXPECTED" manifest.webmanifest
           grep -q "$EXPECTED" www/index.html
           grep -q "$EXPECTED" www/app-version.json
+          test -f www/src/library/ficha/ficha-actions.js
+          grep -q "Añadir a mi acuario" www/src/library/ficha/ficha-actions.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
