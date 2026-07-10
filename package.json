@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node scripts/validate-app.mjs",
-    "mobile:prepare": "node scripts/prepare-mobile-bundle.mjs",
+    "docs:refresh": "node scripts/refresh-project-docs.mjs",
+    "check": "npm run docs:refresh && node scripts/validate-app.mjs",
+    "mobile:prepare": "npm run docs:refresh && node scripts/prepare-mobile-bundle.mjs",
     "mobile:check": "node scripts/validate-mobile-bundle.mjs",
     "mobile:sync": "npm run mobile:prepare && npm run mobile:check && npx cap sync",
     "mobile:add:android": "npm run mobile:prepare && npm run mobile:check && npx cap add android",
