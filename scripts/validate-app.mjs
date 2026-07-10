@@ -55,14 +55,31 @@ function activeScripts() {
 
 function checkRefs() {
   for (const ref of refs().map(clean)) if (!exists(ref)) fail(`Missing active asset: ${ref}`);
+  const visited = new Set();
+  const queue = ['index.html', 'src/core/module-loader.js'];
+  while (queue.length) {
+    const current = queue.shift();
+    if (visited.has(current) || !exists(current)) continue;
+    visited.add(current);
+    if (!/\.(?:html|js)$/i.test(current)) continue;
+    for (const ref of quotedLocalAssets(read(current))) {
+      if (!exists(ref)) {
+        fail(`Missing referenced asset: ${current} -> ${ref}`);
+        continue;
+      }
+      if (!visited.has(ref)) queue.push(ref);
+    }
+  }
 }
 
 function checkVersions() {
-  for (const ref of refs().filter(r => /\.(js|css)(\?|$)/i.test(r))) {
-    const build = new URLSearchParams(ref.split('?')[1] || '').get('v');
-    if (!build) fail(`Version missing: ${ref}`);
-    if (build && build !== version) fail(`Version mismatch: ${ref}`);
-  }
+  const indexMatch = html.match(/window\.ACUARIONEXO_BUILD\s*=\s*['"]([^'"]+)['"]/);
+  const manifest = JSON.parse(read('manifest.webmanifest'));
+  const manifestMatch = String(manifest.start_url || '').match(/[?&]v=([^&]+)/);
+  const indexBuild = indexMatch ? indexMatch[1] : '';
+  const manifestBuild = manifestMatch ? decodeURIComponent(manifestMatch[1]) : '';
+  if (indexBuild !== version) fail(`Build mismatch: index=${indexBuild}, app-version=${version}`);
+  if (manifestBuild !== version) fail(`Build mismatch: manifest=${manifestBuild}, app-version=${version}`);
 }
 
 function checkSyntax() {
@@ -93,10 +110,25 @@ function checkFichaOwnership() {
   const imagesCode = read(images);
   if (!actionsCode.includes('Añadir a mi acuario')) fail('La vista de ficha debe usar el texto Añadir a mi acuario.');
   if (actionsCode.includes('Añadir a mi inventario')) fail('Texto prohibido en vista de ficha: Añadir a mi inventario.');
-  if (actionsCode.includes('cover_url')) fail('La vista de ficha no debe renderizar cover_url; solo photo_url.');
+  if (!actionsCode.includes('cover_url') || !actionsCode.includes('photo_url')) fail('La vista de ficha debe mostrar portada y foto al abrir.');
+  if (!actionsCode.includes('fichaInformation')) fail('La vista de ficha debe mostrar la información estructurada.');
+  for (const label of ['Editar', 'Publicar', 'Borrar']) if (!actionsCode.includes(label)) fail(`Falta botón de ficha: ${label}.`);
   if (fichaCode.includes('window.verFicha')) fail('library-v3-ficha.js no debe definir window.verFicha.');
   if (!imagesCode.includes("'cover_url','coverFile'")) fail('library-v3-images.js debe mantener Foto portada.');
   if (!imagesCode.includes("'photo_url','photoFile'")) fail('library-v3-images.js debe mantener Foto al abrir ficha.');
+  const loaderCode = read('src/core/module-loader.js');
+  if (loaderCode.includes('ficha-image-clean.js')) fail('El cargador no puede incluir ficha-image-clean.js.');
+}
+
+function checkDocs() {
+  const map = read('MAPA_ARCHIVOS.md');
+  const tree = read('ARBOL_MAESTRO.md');
+  if (!map.includes(version)) fail('MAPA_ARCHIVOS.md no contiene el build actual.');
+  if (!tree.includes(version)) fail('ARBOL_MAESTRO.md no contiene el build actual.');
+  for (const required of ['src/library/ficha/ficha-actions.js', 'src/library/library-v3-images.js', 'src/library/library-v3-ficha.js']) {
+    if (!map.includes(required)) fail(`MAPA_ARCHIVOS.md no documenta ${required}.`);
+    if (!tree.includes(required)) fail(`ARBOL_MAESTRO.md no documenta ${required}.`);
+  }
 }
 
 function mockElement(id) {
@@ -134,6 +166,6 @@ async function checkLoad() {
   if (typeof ctx.adminPanel !== 'function') fail('window.adminPanel missing');
 }
 
-try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
+try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
 if (errors.length) { console.error('AcuarioNexo validation failed:'); errors.forEach(e => console.error(`- ${e}`)); process.exit(1); }
 console.log('AcuarioNexo validation OK');
