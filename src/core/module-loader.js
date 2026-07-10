@@ -15,7 +15,6 @@
       'src/library/library-v3-core.js',
       'src/library/library-v3-template.js',
       'src/library/library-v3-images.js',
-      'src/library/ficha/ficha-image-clean.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
       'src/library/ficha/ficha-actions.js',
