@@ -1,0 +1,15 @@
+
+> acuarionexo@0.2.0 check
+> npm run docs:refresh && node scripts/validate-app.mjs
+
+
+> acuarionexo@0.2.0 docs:refresh
+> node scripts/refresh-project-docs.mjs
+
+MAPA_ARCHIVOS.md y ARBOL_MAESTRO.md regenerados para library-structure-clean-20260710-1005
+AcuarioNexo validation failed:
+- Duplicated window.formFicha: src/library/core/library-admin-policy.js (1), src/library/ficha/ficha-type-tools.js (2), src/library/library-v3-ficha.js (1)
+- Duplicated window.guardarFicha: notifications.js (1), src/library/core/library-admin-policy.js (1), src/library/library-v3-ficha.js (1)
+- window.biblioteca missing
+- window.pasarFichaAInventario missing
+- window.adminPanel missing
