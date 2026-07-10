@@ -35,19 +35,24 @@ jobs:
         run: npm install
 
       - name: Validate complete web application
-        run: npm run check
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee android-build-error.log
 
       - name: Prepare and validate mobile bundle
+        shell: bash
         run: |
-          npm run mobile:prepare
-          npm run mobile:check
+          set -o pipefail
+          npm run mobile:prepare 2>&1 | tee -a android-build-error.log
+          npm run mobile:check 2>&1 | tee -a android-build-error.log
 
       - name: Create Android project and official assets
         shell: bash
         run: |
           set -o pipefail
           rm -rf android
-          npx cap add android 2>&1 | tee android-build-error.log
+          npx cap add android 2>&1 | tee -a android-build-error.log
           npm run mobile:assets:android 2>&1 | tee -a android-build-error.log
           npx cap sync android 2>&1 | tee -a android-build-error.log
 
