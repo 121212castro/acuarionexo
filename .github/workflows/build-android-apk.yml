@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - android-build-status.json
+      - android-build-error.log
   workflow_dispatch:
 
 permissions:
@@ -22,7 +23,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -37,16 +38,24 @@ jobs:
         run: npm run mobile:prepare
 
       - name: Create Android project
-        run: npx cap add android
+        shell: bash
+        run: |
+          set -o pipefail
+          npx cap add android 2>&1 | tee android-build-error.log
 
       - name: Sync Android project
-        run: npx cap sync android
+        shell: bash
+        run: |
+          set -o pipefail
+          npx cap sync android 2>&1 | tee -a android-build-error.log
 
       - name: Build debug APK
         working-directory: android
+        shell: bash
         run: |
+          set -o pipefail
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleDebug --no-daemon 2>&1 | tee -a ../android-build-error.log
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk AcuarioNexo-Android-Test.apk
@@ -76,6 +85,7 @@ jobs:
           APK_URL=""
           if [ "$STATUS" = "success" ]; then
             APK_URL="https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk"
+            rm -f android-build-error.log
           fi
           cat > android-build-status.json <<EOF
           {
@@ -88,5 +98,6 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add android-build-status.json
+          if [ -f android-build-error.log ]; then git add android-build-error.log; fi
           git commit -m "Registra resultado APK Android [skip ci]" || exit 0
           git push
