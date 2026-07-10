@@ -7,9 +7,20 @@
 > node scripts/refresh-project-docs.mjs
 
 MAPA_ARCHIVOS.md y ARBOL_MAESTRO.md regenerados para library-structure-clean-20260710-1005
-AcuarioNexo validation failed:
-- Duplicated window.formFicha: src/library/core/library-admin-policy.js (1), src/library/ficha/ficha-type-tools.js (2), src/library/library-v3-ficha.js (1)
-- Duplicated window.guardarFicha: src/library/core/library-admin-policy.js (1), src/library/library-v3-ficha.js (1)
-- window.biblioteca missing
-- window.pasarFichaAInventario missing
-- window.adminPanel missing
+AcuarioNexo validation OK
+
+> acuarionexo@0.2.0 mobile:prepare
+> npm run docs:refresh && node scripts/prepare-mobile-bundle.mjs
+
+
+> acuarionexo@0.2.0 docs:refresh
+> node scripts/refresh-project-docs.mjs
+
+MAPA_ARCHIVOS.md y ARBOL_MAESTRO.md regenerados para library-structure-clean-20260710-1005
+AcuarioNexo mobile bundle ready: 84 active files copied to www/
+
+> acuarionexo@0.2.0 mobile:check
+> node scripts/validate-mobile-bundle.mjs
+
+AcuarioNexo mobile bundle validation failed:
+- La vista de ficha movil no debe renderizar cover_url; solo photo_url.
