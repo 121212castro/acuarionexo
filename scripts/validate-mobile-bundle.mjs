@@ -53,7 +53,8 @@ function checkFichaRules() {
 
   if (!actions.includes('Añadir a mi acuario')) fail('Boton de ficha incorrecto en movil: debe decir Añadir a mi acuario.');
   if (actions.includes('Añadir a mi inventario')) fail('Texto prohibido en vista de ficha movil: Añadir a mi inventario.');
-  if (actions.includes('cover_url')) fail('La vista de ficha movil no debe renderizar cover_url; solo photo_url.');
+  if (!actions.includes('cover_url')) fail('La vista de ficha movil debe incluir la portada.');
+  if (!actions.includes('photo_url')) fail('La vista de ficha movil debe incluir la foto al abrir.');
   if ((actions.match(/window\.verFicha\s*=/g) || []).length !== 1) fail('src/library/ficha/ficha-actions.js debe definir una sola vez window.verFicha.');
   if (ficha.includes('window.verFicha')) fail('src/library/library-v3-ficha.js no debe definir window.verFicha.');
   if (!images.includes("'cover_url','coverFile'")) fail('Panel de imagenes movil sin campo Foto portada.');
