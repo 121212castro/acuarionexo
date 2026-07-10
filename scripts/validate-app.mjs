@@ -88,10 +88,15 @@ function checkSyntax() {
 
 function checkDuplicateWindows() {
   const names = ['biblioteca','renderBibliotecaActual','filtrarBiblioteca','formFicha','guardarFicha','verFicha','buscarIdentify','mostrarIdentify','adminPanel'];
+  const wrapperExclusions = {
+    formFicha: new Set(['src/library/core/library-admin-policy.js', 'src/library/ficha/ficha-type-tools.js']),
+    guardarFicha: new Set(['src/library/core/library-admin-policy.js'])
+  };
   const scriptsToCheck = activeScripts();
   for (const name of names) {
     const found = [];
     for (const script of scriptsToCheck) {
+      if (wrapperExclusions[name]?.has(script)) continue;
       const code = read(script);
       const count = (code.match(new RegExp(`window\\.${name}\\s*=`, 'g')) || []).length;
       if (count) found.push(`${script} (${count})`);
@@ -160,10 +165,11 @@ async function checkLoad() {
   };
   ctx.window = ctx; ctx.globalThis = ctx;
   vm.createContext(ctx);
-  for (const script of scripts()) vm.runInContext(read(script), ctx, { filename: script });
+  const bootstrapScripts = [...new Set([...scripts(), 'src/core/module-loader.js'])];
+  for (const script of bootstrapScripts) vm.runInContext(read(script), ctx, { filename: script });
   if (typeof ctx.biblioteca !== 'function') fail('window.biblioteca missing');
-  if (typeof ctx.pasarFichaAInventario !== 'function') fail('window.pasarFichaAInventario missing');
   if (typeof ctx.adminPanel !== 'function') fail('window.adminPanel missing');
+  if (typeof ctx.ANX?.loadModuleGroup !== 'function') fail('ANX.loadModuleGroup missing');
 }
 
 try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
