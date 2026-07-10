@@ -2,8 +2,7 @@
 (function () {
   const ANX = window.ANX;
   const Core = ANX.LibraryV3Core;
-  const Ficha = ANX.LibraryV3Ficha;
-  const { esc, render } = ANX;
+  const { esc, render, byId, msg } = ANX;
   const { row, sources, typeName, statusName, libraryInfoNotice } = Core;
 
   function actionLabel() {
@@ -42,17 +41,33 @@
     return html || '<div class="notice">La ficha todavía no contiene información estructurada visible.</div>';
   }
 
+  async function addToAquarium(id) {
+    const box = byId('libraryActionStatus');
+    try {
+      if (typeof window.pasarFichaAInventario !== 'function') throw new Error('El módulo de acuario no está disponible.');
+      if (box) box.innerHTML = msg('Cargando acuarios disponibles...');
+      await window.pasarFichaAInventario(id);
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo abrir el formulario del acuario.', 'error');
+    }
+  }
+
   function actionButtons(x, audit) {
     const id = esc(x.id);
     const label = esc(actionLabel(x.entry_type));
+    const canManage = !!ANX.LibraryAdminPolicy?.canManageEntry?.(x.id) || !!ANX.state?.isAdmin;
     const addButton = audit.approved
-      ? `<button onclick="pasarFichaAInventario('${id}')">${label}</button>`
+      ? `<button class="primary" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
       : `<button disabled title="Completa todos los campos obligatorios antes de añadir a mi acuario">${label}</button>`;
-    const publishButton = audit.approved
-      ? `<button onclick="publicarFicha('${id}')">Publicar</button>`
-      : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`;
-    return `<button onclick="formFicha('${id}')">Editar</button>${addButton}${publishButton}<button onclick="borrarFicha('${id}')">Borrar</button>`;
+    const editButton = canManage ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
+    const publishButton = ANX.state?.isAdmin
+      ? (audit.approved ? `<button onclick="publicarFicha('${id}')">Publicar</button>` : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`)
+      : '';
+    const deleteButton = canManage ? `<button onclick="borrarFicha('${id}')">Borrar</button>` : '';
+    return `${addButton}${editButton}${publishButton}${deleteButton}`;
   }
+
+  window.anadirFichaAlAcuario = addToAquarium;
 
   window.verFicha = function (id) {
     const x = row(id);
@@ -67,11 +82,12 @@
       ${fichaImages(x)}
       ${x.summary ? `<p class="library-detail-summary">${esc(x.summary)}</p>` : ''}
       <div class="image-actions">${actionButtons(x, audit)}</div>
+      <div id="libraryActionStatus"></div>
       <div class="library-detail-information">${fichaInformation(x)}</div>
       <h3>Fuentes</h3>
       ${sources(x.sources)}
     </section>`, 'biblioteca');
   };
 
-  ANX.LibraryFichaActions = { actionLabel, fichaImages, fichaInformation, actionButtons };
+  ANX.LibraryFichaActions = { actionLabel, fichaImages, fichaInformation, actionButtons, addToAquarium };
 })();
