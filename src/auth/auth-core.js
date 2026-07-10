@@ -17,12 +17,24 @@
   }
 
   async function refreshAdminSafe() {
-    const { state } = window.ANX;
+    const ANX = window.ANX || {};
+    const { state } = ANX;
     try {
-      if (window.refreshAdminAccess) await window.refreshAdminAccess();
+      if (typeof ANX.loadAdminRole === 'function') {
+        await ANX.loadAdminRole();
+        return state.adminRole;
+      }
+      if (typeof window.refreshAdminAccess === 'function') {
+        await window.refreshAdminAccess();
+        return state.adminRole;
+      }
+      state.adminRole = null;
+      state.isAdmin = false;
+      return null;
     } catch (_) {
       state.adminRole = null;
       state.isAdmin = false;
+      return null;
     }
   }
 
