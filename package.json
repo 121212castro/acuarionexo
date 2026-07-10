@@ -8,8 +8,10 @@
     "check": "npm run docs:refresh && node scripts/validate-app.mjs",
     "mobile:prepare": "npm run docs:refresh && node scripts/prepare-mobile-bundle.mjs",
     "mobile:check": "node scripts/validate-mobile-bundle.mjs",
-    "mobile:sync": "npm run mobile:prepare && npm run mobile:check && npx cap sync",
-    "mobile:add:android": "npm run mobile:prepare && npm run mobile:check && npx cap add android",
+    "mobile:assets:prepare": "node scripts/prepare-mobile-assets.mjs",
+    "mobile:assets:android": "npm run mobile:assets:prepare && npx --yes @capacitor/assets@3.0.5 generate --android --iconBackgroundColor '#02111f' --iconBackgroundColorDark '#02111f' --splashBackgroundColor '#02111f' --splashBackgroundColorDark '#02111f'",
+    "mobile:sync": "npm run mobile:prepare && npm run mobile:check && npx cap sync && npm run mobile:assets:android",
+    "mobile:add:android": "npm run mobile:prepare && npm run mobile:check && npx cap add android && npm run mobile:assets:android",
     "mobile:add:ios": "npm run mobile:prepare && npm run mobile:check && npx cap add ios",
     "mobile:open:android": "npx cap open android",
     "mobile:open:ios": "npx cap open ios"
