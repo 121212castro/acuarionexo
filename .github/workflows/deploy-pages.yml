@@ -18,8 +18,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout main
+      - name: Checkout latest main
         uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,11 +33,27 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Validate and generate active bundle
+      - name: Stamp exact commit version
+        run: node scripts/stamp-release.mjs "$GITHUB_SHA"
+
+      - name: Regenerate map and tree
+        run: npm run docs:refresh
+
+      - name: Validate and generate exact active bundle
         run: |
-          npm run check
-          npm run mobile:prepare
+          node scripts/validate-app.mjs
+          node scripts/prepare-mobile-bundle.mjs
           npm run mobile:check
+
+      - name: Verify deployed build matches commit
+        run: |
+          EXPECTED="release-${GITHUB_SHA::12}"
+          ACTUAL=$(node -p "require('./app-version.json').build")
+          test "$ACTUAL" = "$EXPECTED"
+          grep -q "$EXPECTED" index.html
+          grep -q "$EXPECTED" manifest.webmanifest
+          grep -q "$EXPECTED" www/index.html
+          grep -q "$EXPECTED" www/app-version.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
