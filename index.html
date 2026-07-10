@@ -12,6 +12,37 @@
   <script>
     window.ACUARIONEXO_BUILD = 'library-structure-clean-20260710-1005';
     window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD + '-' + Date.now();
+    window.ANX_BOOT_READY = (async function () {
+      try {
+        var response = await fetch('app-version.json?boot=' + Date.now(), {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' }
+        });
+        if (!response.ok) return true;
+        var remote = await response.json();
+        var remoteBuild = String(remote && remote.build || '');
+        if (remoteBuild && remoteBuild !== window.ACUARIONEXO_BUILD) {
+          try {
+            if ('caches' in window) {
+              var keys = await caches.keys();
+              await Promise.all(keys.map(function (key) { return caches.delete(key); }));
+            }
+            if ('serviceWorker' in navigator) {
+              var registrations = await navigator.serviceWorker.getRegistrations();
+              await Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+            }
+          } catch (_) {}
+          var params = new URLSearchParams(location.search || '');
+          params.set('v', remoteBuild);
+          params.set('t', String(Date.now()));
+          location.replace(location.pathname + '?' + params.toString());
+          return false;
+        }
+        return true;
+      } catch (_) {
+        return true;
+      }
+    })();
     (function () {
       var v = encodeURIComponent(window.ANX_ASSET_VERSION);
       var css = ['styles.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css','library-clean.css','inventory-accordion.css','notifications.css'];
@@ -36,13 +67,15 @@
     </div>
     <div class="top-actions"><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
   </header>
-  <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Abriendo AcuarioNexo...</p></section></main>
+  <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Comprobando la última versión...</p></section></main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
   <script>
     (async function () {
       var app = document.getElementById('app');
+      var ready = await window.ANX_BOOT_READY;
+      if (!ready) return;
       var v = encodeURIComponent(window.ANX_ASSET_VERSION || (window.ACUARIONEXO_BUILD + '-' + Date.now()) || 'dev');
       var scripts = ['config.js','app.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/core/module-loader.js','src/auth/auth-core.js','src/auth/auth.js','update-manager.js','notifications.js'];
       function showError(text) {
