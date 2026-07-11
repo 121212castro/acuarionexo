@@ -1,6 +1,6 @@
 name: Build and validate Android APK
 
-# Validación final Android: diagnóstico y arranque directo
+# Validación final Android: arranque no bloqueante y diagnóstico completo
 on:
   push:
     branches: [main]
@@ -88,7 +88,7 @@ jobs:
             INSTALL_STATUS=$?
             adb logcat -c
             adb shell am force-stop com.acuarionexo.app
-            adb shell am start -W -n com.acuarionexo.app/.MainActivity > android-start.txt 2>&1
+            adb shell am start -n com.acuarionexo.app/.MainActivity > android-start.txt 2>&1
             START_STATUS=$?
             : > app-pid.txt
             for attempt in $(seq 1 30); do
@@ -107,7 +107,7 @@ jobs:
             test "$START_STATUS" -eq 0
             test -s app-pid.txt
             grep -qE 'com\.acuarionexo\.app/(\.MainActivity|com\.acuarionexo\.app\.MainActivity)' android-activities.txt
-            if grep -A 12 'FATAL EXCEPTION' android-logcat.txt | grep -q 'Process: com.acuarionexo.app'; then
+            if grep -A 20 'FATAL EXCEPTION' android-logcat.txt | grep -q 'Process: com.acuarionexo.app'; then
               exit 1
             fi
             if grep -qE 'Process: com\.acuarionexo\.app.*has died|Force finishing activity com\.acuarionexo\.app' android-logcat.txt; then
