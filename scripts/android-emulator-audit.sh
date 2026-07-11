@@ -40,6 +40,9 @@ AVD_INI="$(find "$HOME" -type f -path '*/.android/avd/AcuarioNexoTest.ini' 2>/de
 printf 'AVD_INI=%s\n' "$AVD_INI" | tee -a android-sdk-paths.txt
 test -f "$AVD_INI" || exit 27
 
+export ANDROID_AVD_HOME="$(dirname "$AVD_INI")"
+printf 'ANDROID_AVD_HOME=%s\n' "$ANDROID_AVD_HOME" | tee -a android-sdk-paths.txt
+
 "$ADB_BIN" kill-server >/dev/null 2>&1 || true
 nohup "$EMULATOR_BIN" -avd AcuarioNexoTest -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -no-metrics > android-emulator.log 2>&1 &
 EMULATOR_PID=$!
