@@ -22,6 +22,22 @@ function buildFromManifest() {
   return match ? decodeURIComponent(match[1]) : '';
 }
 
+function androidValidation() {
+  const fallback = {
+    status: 'unknown',
+    commit: '',
+    run_id: '',
+    apk: '',
+    validated_on_emulator: false
+  };
+
+  try {
+    return { ...fallback, ...JSON.parse(read('android-build-status.json')) };
+  } catch {
+    return fallback;
+  }
+}
+
 function quotedLocalAssets(text) {
   const found = new Set();
   const re = /['"]([^'"]+\.(?:js|css|json|webmanifest|png)(?:\?[^'"]*)?)['"]/g;
@@ -40,10 +56,38 @@ if (build !== versionBuild || build !== manifestBuild) {
   throw new Error(`Build desincronizado: index=${build}, app-version=${versionBuild}, manifest=${manifestBuild}`);
 }
 
+const android = androidValidation();
 const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
 const indirect = ['src/library/ficha/ficha-json.js'];
 const active = [...new Set([...direct, ...modules, ...indirect])].sort();
+
+const androidSummary = `## Android
+
+- Workflow único de validación y publicación: \`.github/workflows/build-android-apk.yml\`.
+- Auditoría real del emulador: \`scripts/android-emulator-audit.sh\`.
+- Resultado persistente: \`android-build-status.json\`.
+- Estado registrado: \`${android.status}\`.
+- Commit validado: \`${android.commit || 'sin registrar'}\`.
+- Run ID: \`${android.run_id || 'sin registrar'}\`.
+- Validado en emulador: \`${Boolean(android.validated_on_emulator)}\`.
+- APK: ${android.apk ? `\`${android.apk}\`` : '`sin publicar`'}.
+
+### Criterio obligatorio de cierre Android
+
+Android solo puede declararse terminado cuando, en una misma ejecución:
+
+1. la aplicación web y el paquete móvil pasan;
+2. el proyecto Android y los iconos se generan;
+3. el APK compila y se instala en el emulador;
+4. el proceso de \`com.acuarionexo.app\` permanece activo;
+5. \`MainActivity\` queda visible;
+6. se genera captura y \`logcat\`;
+7. no existe \`FATAL EXCEPTION\`, ANR ni cierre del proceso;
+8. la release publica el APK;
+9. \`android-build-status.json\` registra \`status: success\` y \`validated_on_emulator: true\`.
+
+No se acepta como cierre una ejecución iniciada, una compilación aislada ni un APK generado sin instalación y arranque comprobados.`;
 
 const map = `# MAPA DE ARCHIVOS
 
@@ -68,10 +112,13 @@ ${active.map(file => `- \`${file}\``).join('\n')}
 - \`src/library/inventory/library-inventory-import.js\`: importación de la ficha al acuario o inventario general según el tipo.
 - No se permiten archivos \`hotfix\`, \`patch\` o \`clean\` que redefinan la vista o las imágenes de ficha.
 
+${androidSummary}
+
 ## Regla de actualización
 
-- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades o build.
+- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades, build o el sistema Android.
 - \`npm run check\` y \`npm run mobile:prepare\` regeneran este documento antes de continuar.
+- Después de una validación Android, comprobar que MAPA y ÁRBOL contienen el commit, run ID, estado y enlace vigentes.
 - \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan a mano.
 `;
 
@@ -113,6 +160,29 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 - Editor de imágenes: \`src/library/library-v3-images.js\`.
 - Editor y persistencia de ficha: \`src/library/library-v3-ficha.js\`.
 - Ningún otro archivo puede redefinir \`window.verFicha\` ni \`LibraryV3Images.imageBox\`.
+
+${androidSummary}
+
+## Flujo de trabajo Android para futuras intervenciones
+
+\`.github/workflows/build-android-apk.yml\`
+→ valida web y paquete móvil
+→ crea el proyecto Android y recursos oficiales
+→ compila y renombra el APK
+→ habilita KVM
+→ ejecuta \`scripts/android-emulator-audit.sh\`
+→ instala y abre \`MainActivity\`
+→ verifica PID, actividad visible, captura y \`logcat\`
+→ publica \`android-test-latest\`
+→ actualiza \`android-build-status.json\`
+
+Ante un fallo:
+→ abrir el job exacto
+→ descargar \`AcuarioNexo-Android-Audit\`
+→ leer primero los archivos de estado y después los logs
+→ corregir la causa en \`main\`
+→ repetir hasta \`status: success\`
+→ no detenerse en informes intermedios
 
 ## Automatización
 
