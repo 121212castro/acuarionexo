@@ -1,6 +1,6 @@
 name: Build and validate Android APK
 
-# Validación final Android: ADB acotado y diagnóstico siempre conservado
+# Validación final Android: emulador estable y diagnóstico completo
 on:
   push:
     branches: [main]
@@ -78,10 +78,11 @@ jobs:
       - name: Install and launch on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 35
+          api-level: 34
           arch: x86_64
           profile: pixel_6
           disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
           script: |
             set +e
             : > android-install.txt
@@ -91,10 +92,21 @@ jobs:
             : > app-pid.txt
             : > android-adb-status.txt
 
-            timeout 20s adb wait-for-device >> android-adb-status.txt 2>&1
-            WAIT_STATUS=$?
+            adb devices -l >> android-adb-status.txt 2>&1
+            DEVICE_STATUS=$?
 
-            timeout 45s adb install -r AcuarioNexo-Android-Test.apk > android-install.txt 2>&1
+            BOOT_STATUS=1
+            for attempt in $(seq 1 60); do
+              BOOT_VALUE="$(timeout 5s adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
+              if [ "$BOOT_VALUE" = "1" ]; then
+                BOOT_STATUS=0
+                break
+              fi
+              sleep 2
+            done
+            printf 'DEVICE_STATUS=%s\nBOOT_STATUS=%s\n' "$DEVICE_STATUS" "$BOOT_STATUS" >> android-adb-status.txt
+
+            timeout 60s adb install -r AcuarioNexo-Android-Test.apk > android-install.txt 2>&1
             INSTALL_STATUS=$?
 
             timeout 10s adb logcat -c >> android-adb-status.txt 2>&1 || true
@@ -102,28 +114,34 @@ jobs:
             timeout 15s adb shell am start -n com.acuarionexo.app/.MainActivity > android-start.txt 2>&1
             START_STATUS=$?
 
+            PID_STATUS=1
             for attempt in $(seq 1 30); do
               timeout 5s adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
-              if test -s app-pid.txt; then break; fi
+              if test -s app-pid.txt; then
+                PID_STATUS=0
+                break
+              fi
               sleep 2
             done
 
             sleep 15
             timeout 5s adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
+            test -s app-pid.txt || PID_STATUS=1
             timeout 15s adb shell dumpsys activity activities > android-activities.txt 2>&1 || true
             timeout 15s adb exec-out screencap -p > android-launch.png 2>/dev/null || true
             timeout 20s adb logcat -d > android-logcat.txt 2>&1 || true
 
-            printf 'WAIT_STATUS=%s\nINSTALL_STATUS=%s\nSTART_STATUS=%s\n' "$WAIT_STATUS" "$INSTALL_STATUS" "$START_STATUS" >> android-adb-status.txt
+            printf 'INSTALL_STATUS=%s\nSTART_STATUS=%s\nPID_STATUS=%s\n' "$INSTALL_STATUS" "$START_STATUS" "$PID_STATUS" >> android-adb-status.txt
             cat android-install.txt
             cat android-start.txt
             cat android-adb-status.txt
 
             FAILURE=0
-            test "$WAIT_STATUS" -eq 0 || FAILURE=1
+            test "$DEVICE_STATUS" -eq 0 || FAILURE=1
+            test "$BOOT_STATUS" -eq 0 || FAILURE=1
             test "$INSTALL_STATUS" -eq 0 || FAILURE=1
             test "$START_STATUS" -eq 0 || FAILURE=1
-            test -s app-pid.txt || FAILURE=1
+            test "$PID_STATUS" -eq 0 || FAILURE=1
             grep -qE 'com\.acuarionexo\.app/(\.MainActivity|com\.acuarionexo\.app\.MainActivity)' android-activities.txt || FAILURE=1
             if grep -A 20 'FATAL EXCEPTION' android-logcat.txt | grep -q 'Process: com.acuarionexo.app'; then
               FAILURE=1
@@ -160,7 +178,7 @@ jobs:
           gh release delete android-test-latest --cleanup-tag --yes || true
           gh release create android-test-latest AcuarioNexo-Android-Test.apk \
             --title "AcuarioNexo Android validada" \
-            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo, MainActivity visible y ausencia de cierres fatales en Android API 35 desde ${GITHUB_SHA}." \
+            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo, MainActivity visible y ausencia de cierres fatales en Android API 34 desde ${GITHUB_SHA}." \
             --prerelease
 
       - name: Record validation result
