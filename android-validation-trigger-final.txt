@@ -1,0 +1,1 @@
+Validación Android final completa tras estabilizar emulador API 34.
