@@ -35,8 +35,10 @@ printf 'EMULATOR=%s\n' "$EMULATOR_BIN" | tee -a android-sdk-paths.txt
 export PATH="$(dirname "$EMULATOR_BIN"):$PATH"
 
 echo no | "$AVDMANAGER" create avd --force --name AcuarioNexoTest --package "system-images;android-34;google_apis;x86_64" --device "pixel_6" > android-avd-create.txt 2>&1 || exit 25
-"$EMULATOR_BIN" -list-avds > android-avd-list.txt 2>&1 || exit 26
-grep -qx 'AcuarioNexoTest' android-avd-list.txt || exit 27
+"$AVDMANAGER" list avd > android-avd-list.txt 2>&1 || exit 26
+AVD_INI="$(find "$HOME" -type f -path '*/.android/avd/AcuarioNexoTest.ini' 2>/dev/null | head -n 1)"
+printf 'AVD_INI=%s\n' "$AVD_INI" | tee -a android-sdk-paths.txt
+test -f "$AVD_INI" || exit 27
 
 "$ADB_BIN" kill-server >/dev/null 2>&1 || true
 nohup "$EMULATOR_BIN" -avd AcuarioNexoTest -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none -no-metrics > android-emulator.log 2>&1 &
