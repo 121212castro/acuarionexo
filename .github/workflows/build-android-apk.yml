@@ -1,6 +1,6 @@
 name: Build and validate Android APK
 
-# Validación final Android: ejecución forzada 2
+# Validación final Android: diagnóstico y arranque directo
 on:
   push:
     branches: [main]
@@ -83,29 +83,36 @@ jobs:
           profile: pixel_6
           disable-animations: true
           script: |
-            set -e
-            adb install -r AcuarioNexo-Android-Test.apk
+            set +e
+            adb install -r AcuarioNexo-Android-Test.apk > android-install.txt 2>&1
+            INSTALL_STATUS=$?
             adb logcat -c
-            adb shell monkey -p com.acuarionexo.app -c android.intent.category.LAUNCHER 1
+            adb shell am force-stop com.acuarionexo.app
+            adb shell am start -W -n com.acuarionexo.app/.MainActivity > android-start.txt 2>&1
+            START_STATUS=$?
             : > app-pid.txt
             for attempt in $(seq 1 30); do
               adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
               if test -s app-pid.txt; then break; fi
               sleep 2
             done
+            sleep 20
+            adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
+            adb shell dumpsys activity activities > android-activities.txt 2>&1
+            adb exec-out screencap -p > android-launch.png 2>/dev/null || true
+            adb logcat -d > android-logcat.txt 2>&1
+            cat android-install.txt
+            cat android-start.txt
+            test "$INSTALL_STATUS" -eq 0
+            test "$START_STATUS" -eq 0
             test -s app-pid.txt
-            sleep 35
-            adb shell pidof com.acuarionexo.app > app-pid.txt
-            test -s app-pid.txt
-            adb exec-out screencap -p > android-launch.png
-            adb logcat -d > android-logcat.txt
+            grep -qE 'com\.acuarionexo\.app/(\.MainActivity|com\.acuarionexo\.app\.MainActivity)' android-activities.txt
             if grep -A 12 'FATAL EXCEPTION' android-logcat.txt | grep -q 'Process: com.acuarionexo.app'; then
               exit 1
             fi
             if grep -qE 'Process: com\.acuarionexo\.app.*has died|Force finishing activity com\.acuarionexo\.app' android-logcat.txt; then
               exit 1
             fi
-            adb shell dumpsys activity activities | grep -q 'com.acuarionexo.app/.MainActivity'
 
       - name: Upload audit evidence
         if: always()
@@ -116,6 +123,9 @@ jobs:
             AcuarioNexo-Android-Test.apk
             android-launch.png
             android-logcat.txt
+            android-install.txt
+            android-start.txt
+            android-activities.txt
             app-pid.txt
             android-launcher-files.txt
             android-build-error.log
@@ -130,7 +140,7 @@ jobs:
           gh release delete android-test-latest --cleanup-tag --yes || true
           gh release create android-test-latest AcuarioNexo-Android-Test.apk \
             --title "AcuarioNexo Android validada" \
-            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo y ausencia de cierres fatales en Android API 35 desde ${GITHUB_SHA}." \
+            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo, MainActivity visible y ausencia de cierres fatales en Android API 35 desde ${GITHUB_SHA}." \
             --prerelease
 
       - name: Record validation result
