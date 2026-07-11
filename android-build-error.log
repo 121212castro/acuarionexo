@@ -23,18 +23,18 @@ AcuarioNexo mobile bundle ready: 84 active files copied to www/
 > node scripts/validate-mobile-bundle.mjs
 
 AcuarioNexo mobile bundle validation OK
-✔ Adding native android project in android in 46.28ms
-✔ add in 47.07ms
-✔ Copying web assets from www to android/app/src/main/assets/public in 19.86ms
-✔ Creating capacitor.config.json in android/app/src/main/assets in 493.44μs
-✔ copy android in 27.87ms
-✔ Updating Android plugins in 1.43ms
+✔ Adding native android project in android in 44.01ms
+✔ add in 44.80ms
+✔ Copying web assets from www to android/app/src/main/assets/public in 17.22ms
+✔ Creating capacitor.config.json in android/app/src/main/assets in 378.84μs
+✔ copy android in 24.66ms
+✔ Updating Android plugins in 927.64μs
 [info] Found 3 Capacitor plugins for android:
        @capacitor/app@8.1.0
        @capacitor/preferences@8.0.1
        @capacitor/push-notifications@8.1.1
-✔ update android in 23.60ms
-✔ Syncing Gradle in 210.62μs
+✔ update android in 19.39ms
+✔ Syncing Gradle in 166.58μs
 [success] android platform added!
 Follow the Developer Workflow guide to get building:
 https://capacitorjs.com/docs/basics/workflow
@@ -47,16 +47,16 @@ https://capacitorjs.com/docs/basics/workflow
 > node scripts/prepare-mobile-assets.mjs
 
 Official AcuarioNexo icon prepared for native Android generation.
-npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
 npm warn deprecated git-semver-tags@4.1.1: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
 npm warn deprecated git-raw-commits@2.0.11: Deprecated and no longer maintained. Use @conventional-changelog/git-client instead.
-npm warn deprecated conventional-changelog-eslint@3.0.9: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
+npm warn deprecated prebuild-install@7.1.3: No longer maintained. Please contact the author of the relevant native addon; alternatives are available.
 npm warn deprecated conventional-changelog-jquery@3.0.11: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
-npm warn deprecated conventional-changelog-core@4.2.4: Deprecated and no longer maintained. Please use conventional-changelog instead.
-npm warn deprecated conventional-changelog-express@2.0.6: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 npm warn deprecated conventional-changelog-ember@2.0.9: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 npm warn deprecated conventional-changelog-codemirror@2.0.8: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 npm warn deprecated conventional-changelog-atom@2.0.8: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
+npm warn deprecated conventional-changelog-core@4.2.4: Deprecated and no longer maintained. Please use conventional-changelog instead.
+npm warn deprecated conventional-changelog-eslint@3.0.9: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
+npm warn deprecated conventional-changelog-express@2.0.6: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 npm warn deprecated conventional-changelog-jshint@2.0.9: This preset is deprecated. Please use conventional-changelog-conventionalcommits or conventional-changelog-angular instead.
 npm warn deprecated q@1.5.1: You or someone you depend on is using Q, the JavaScript Promise library that gave JavaScript developers strong feelings about promises. They can almost certainly migrate to the native JavaScript promise now. Thank you literally everyone for joining me in this bet against the odds. Be excellent to each other.
 npm warn deprecated
@@ -145,16 +145,16 @@ CREATE android splash-dark /home/runner/work/acuarionexo/acuarionexo/android/app
 
 Totals:
 android: 74 generated, 2.83 MB total
-✔ Copying web assets from www to android/app/src/main/assets/public in 22.60ms
-✔ Creating capacitor.config.json in android/app/src/main/assets in 659.45μs
-✔ copy android in 30.94ms
-✔ Updating Android plugins in 972.39μs
+✔ Copying web assets from www to android/app/src/main/assets/public in 22.43ms
+✔ Creating capacitor.config.json in android/app/src/main/assets in 637.74μs
+✔ copy android in 30.86ms
+✔ Updating Android plugins in 902.85μs
 [info] Found 3 Capacitor plugins for android:
        @capacitor/app@8.1.0
        @capacitor/preferences@8.0.1
        @capacitor/push-notifications@8.1.1
-✔ update android in 26.88ms
-[info] Sync finished in 0.074s
+✔ update android in 25.08ms
+[info] Sync finished in 0.073s
 Downloading https://services.gradle.org/distributions/gradle-8.14.3-all.zip
 .....................10%.....................20%......................30%.....................40%......................50%.....................60%.....................70%......................80%.....................90%......................100%
 
@@ -186,12 +186,12 @@ WARNING: Using flatDir should be avoided because it doesn't support any meta-dat
 > Task :capacitor-app:preDebugBuild UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:preBuild UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:preDebugBuild UP-TO-DATE
+> Task :capacitor-app:writeDebugAarMetadata
 > Task :app:javaPreCompileDebug
 > Task :capacitor-android:writeDebugAarMetadata
-> Task :capacitor-app:writeDebugAarMetadata
 > Task :capacitor-preferences:preBuild UP-TO-DATE
-> Task :capacitor-preferences:preDebugBuild UP-TO-DATE
 > Task :capacitor-cordova-android-plugins:writeDebugAarMetadata
+> Task :capacitor-preferences:preDebugBuild UP-TO-DATE
 > Task :capacitor-push-notifications:preBuild UP-TO-DATE
 > Task :capacitor-push-notifications:preDebugBuild UP-TO-DATE
 > Task :capacitor-preferences:writeDebugAarMetadata
@@ -200,8 +200,8 @@ WARNING: Using flatDir should be avoided because it doesn't support any meta-dat
 > Task :capacitor-app:processDebugNavigationResources
 > Task :capacitor-cordova-android-plugins:processDebugNavigationResources
 > Task :capacitor-preferences:processDebugNavigationResources
-> Task :capacitor-push-notifications:processDebugNavigationResources
 > Task :app:checkDebugAarMetadata
+> Task :capacitor-push-notifications:processDebugNavigationResources
 > Task :app:processDebugNavigationResources
 > Task :app:generateDebugResValues
 > Task :capacitor-android:generateDebugResValues
@@ -229,10 +229,10 @@ WARNING: Using flatDir should be avoided because it doesn't support any meta-dat
 > Task :capacitor-android:extractDeepLinksDebug
 > Task :capacitor-app:extractDeepLinksDebug
 > Task :capacitor-cordova-android-plugins:extractDeepLinksDebug
-> Task :app:parseDebugLocalResources
+> Task :capacitor-android:processDebugManifest
 > Task :capacitor-app:processDebugManifest
 > Task :capacitor-cordova-android-plugins:processDebugManifest
-> Task :capacitor-android:processDebugManifest
+> Task :app:parseDebugLocalResources
 > Task :capacitor-preferences:extractDeepLinksDebug
 > Task :capacitor-preferences:processDebugManifest
 > Task :capacitor-push-notifications:extractDeepLinksDebug
@@ -241,20 +241,20 @@ WARNING: Using flatDir should be avoided because it doesn't support any meta-dat
 > Task :app:processDebugMainManifest
 > Task :app:processDebugManifest
 > Task :capacitor-app:compileDebugLibraryResources
-> Task :capacitor-android:parseDebugLocalResources
 > Task :app:processDebugManifestForPackage
+> Task :capacitor-android:parseDebugLocalResources
 > Task :capacitor-cordova-android-plugins:compileDebugLibraryResources
 > Task :capacitor-app:parseDebugLocalResources
-> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
 > Task :capacitor-preferences:compileDebugLibraryResources
-> Task :capacitor-android:generateDebugRFile
+> Task :capacitor-cordova-android-plugins:parseDebugLocalResources
 > Task :capacitor-app:generateDebugRFile
+> Task :capacitor-android:generateDebugRFile
+> Task :capacitor-preferences:parseDebugLocalResources
 > Task :capacitor-cordova-android-plugins:generateDebugRFile
 > Task :capacitor-push-notifications:compileDebugLibraryResources
-> Task :capacitor-preferences:parseDebugLocalResources
+> Task :capacitor-preferences:generateDebugRFile
 > Task :capacitor-android:javaPreCompileDebug
 > Task :capacitor-app:javaPreCompileDebug
-> Task :capacitor-preferences:generateDebugRFile
 > Task :capacitor-push-notifications:parseDebugLocalResources
 
 > Task :capacitor-android:compileDebugJavaWithJavac
@@ -262,18 +262,18 @@ Note: Some input files use unchecked or unsafe operations.
 Note: Recompile with -Xlint:unchecked for details.
 
 > Task :capacitor-push-notifications:generateDebugRFile
-> Task :capacitor-cordova-android-plugins:javaPreCompileDebug
 > Task :capacitor-android:bundleLibCompileToJarDebug
 > Task :capacitor-app:compileDebugJavaWithJavac
-> Task :capacitor-cordova-android-plugins:compileDebugJavaWithJavac NO-SOURCE
 > Task :capacitor-app:bundleLibCompileToJarDebug
+> Task :capacitor-cordova-android-plugins:javaPreCompileDebug
 > Task :app:processDebugResources
-> Task :capacitor-cordova-android-plugins:bundleLibCompileToJarDebug
 > Task :capacitor-preferences:javaPreCompileDebug
-> Task :capacitor-push-notifications:javaPreCompileDebug
-> Task :app:mergeDebugShaders
+> Task :capacitor-cordova-android-plugins:compileDebugJavaWithJavac NO-SOURCE
+> Task :capacitor-cordova-android-plugins:bundleLibCompileToJarDebug
 > Task :capacitor-preferences:compileDebugJavaWithJavac
 > Task :capacitor-preferences:bundleLibCompileToJarDebug
+> Task :capacitor-push-notifications:javaPreCompileDebug
+> Task :app:mergeDebugShaders
 
 > Task :capacitor-push-notifications:compileDebugJavaWithJavac
 Note: /home/runner/work/acuarionexo/acuarionexo/node_modules/@capacitor/push-notifications/android/src/main/java/com/capacitorjs/plugins/pushnotifications/PushNotificationsPlugin.java uses or overrides a deprecated API.
@@ -321,16 +321,16 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :capacitor-app:bundleLibRuntimeToDirDebug
 > Task :app:checkDebugDuplicateClasses
 > Task :app:mergeDebugJavaResource
-> Task :app:mergeDebugGlobalSynthetics
 > Task :capacitor-preferences:bundleLibRuntimeToDirDebug
+> Task :app:mergeDebugGlobalSynthetics
 > Task :capacitor-push-notifications:bundleLibRuntimeToDirDebug
 > Task :capacitor-android:bundleLibRuntimeToDirDebug
 > Task :capacitor-cordova-android-plugins:bundleLibRuntimeToDirDebug
 > Task :app:mergeDebugJniLibFolders
 > Task :capacitor-android:mergeDebugJniLibFolders
 > Task :capacitor-android:mergeDebugNativeLibs NO-SOURCE
-> Task :capacitor-android:copyDebugJniLibsProjectOnly
 > Task :app:mergeProjectDexDebug
+> Task :capacitor-android:copyDebugJniLibsProjectOnly
 > Task :capacitor-app:mergeDebugJniLibFolders
 > Task :capacitor-app:mergeDebugNativeLibs NO-SOURCE
 > Task :capacitor-app:copyDebugJniLibsProjectOnly
@@ -344,17 +344,17 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :capacitor-push-notifications:mergeDebugNativeLibs NO-SOURCE
 > Task :capacitor-push-notifications:copyDebugJniLibsProjectOnly
 > Task :app:validateSigningDebug
-> Task :app:writeDebugAppMetadata
-> Task :app:writeDebugSigningConfigVersions
 > Task :app:mergeLibDexDebug
 > Task :app:mergeDebugNativeLibs
-> Task :capacitor-android:checkDebugAarMetadata
-> Task :capacitor-android:stripDebugDebugSymbols NO-SOURCE
-> Task :capacitor-android:copyDebugJniLibsProjectAndLocalJars
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
 
 > Task :app:stripDebugDebugSymbols
 Unable to strip the following libraries, packaging them as they are: libdatastore_shared_counter.so. Run with --info option to learn more.
 
+> Task :capacitor-android:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-android:checkDebugAarMetadata
+> Task :capacitor-android:copyDebugJniLibsProjectAndLocalJars
 > Task :app:mergeExtDexDebug
 > Task :capacitor-android:extractDebugAnnotations
 > Task :capacitor-android:extractDeepLinksForAarDebug
@@ -389,11 +389,14 @@ Unable to strip the following libraries, packaging them as they are: libdatastor
 > Task :capacitor-cordova-android-plugins:prepareDebugArtProfile
 > Task :capacitor-cordova-android-plugins:prepareLintJarForPublish
 > Task :capacitor-cordova-android-plugins:mergeDebugJavaResource
-> Task :capacitor-preferences:checkDebugAarMetadata
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
 > Task :capacitor-cordova-android-plugins:syncDebugLibJars
 > Task :capacitor-cordova-android-plugins:bundleDebugAar
 > Task :capacitor-cordova-android-plugins:assembleDebug
 > Task :capacitor-preferences:stripDebugDebugSymbols NO-SOURCE
+> Task :capacitor-preferences:checkDebugAarMetadata
 > Task :capacitor-preferences:copyDebugJniLibsProjectAndLocalJars
 > Task :capacitor-preferences:extractDebugAnnotations
 > Task :capacitor-preferences:extractDeepLinksForAarDebug
@@ -412,9 +415,6 @@ Unable to strip the following libraries, packaging them as they are: libdatastor
 > Task :capacitor-push-notifications:extractDeepLinksForAarDebug
 > Task :capacitor-push-notifications:mergeDebugGeneratedProguardFiles
 > Task :capacitor-push-notifications:mergeDebugConsumerProguardFiles
-> Task :app:packageDebug
-> Task :app:createDebugApkListingFileRedirect
-> Task :app:assembleDebug
 > Task :capacitor-push-notifications:prepareDebugArtProfile
 > Task :capacitor-push-notifications:prepareLintJarForPublish
 > Task :capacitor-push-notifications:mergeDebugJavaResource
@@ -424,5 +424,5 @@ Unable to strip the following libraries, packaging them as they are: libdatastor
 
 [Incubating] Problems report is available at: file:///home/runner/work/acuarionexo/acuarionexo/android/build/reports/problems/problems-report.html
 
-BUILD SUCCESSFUL in 1m 42s
+BUILD SUCCESSFUL in 1m 37s
 185 actionable tasks: 185 executed
