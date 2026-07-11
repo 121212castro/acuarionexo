@@ -1,6 +1,6 @@
 name: Build and validate Android APK
 
-# Validación final Android: arranque no bloqueante y diagnóstico completo
+# Validación final Android: ADB acotado y diagnóstico siempre conservado
 on:
   push:
     branches: [main]
@@ -84,35 +84,54 @@ jobs:
           disable-animations: true
           script: |
             set +e
-            adb install -r AcuarioNexo-Android-Test.apk > android-install.txt 2>&1
-            INSTALL_STATUS=$?
-            adb logcat -c
-            adb shell am force-stop com.acuarionexo.app
-            adb shell am start -n com.acuarionexo.app/.MainActivity > android-start.txt 2>&1
-            START_STATUS=$?
+            : > android-install.txt
+            : > android-start.txt
+            : > android-activities.txt
+            : > android-logcat.txt
             : > app-pid.txt
+            : > android-adb-status.txt
+
+            timeout 20s adb wait-for-device >> android-adb-status.txt 2>&1
+            WAIT_STATUS=$?
+
+            timeout 45s adb install -r AcuarioNexo-Android-Test.apk > android-install.txt 2>&1
+            INSTALL_STATUS=$?
+
+            timeout 10s adb logcat -c >> android-adb-status.txt 2>&1 || true
+            timeout 10s adb shell am force-stop com.acuarionexo.app >> android-adb-status.txt 2>&1 || true
+            timeout 15s adb shell am start -n com.acuarionexo.app/.MainActivity > android-start.txt 2>&1
+            START_STATUS=$?
+
             for attempt in $(seq 1 30); do
-              adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
+              timeout 5s adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
               if test -s app-pid.txt; then break; fi
               sleep 2
             done
-            sleep 20
-            adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
-            adb shell dumpsys activity activities > android-activities.txt 2>&1
-            adb exec-out screencap -p > android-launch.png 2>/dev/null || true
-            adb logcat -d > android-logcat.txt 2>&1
+
+            sleep 15
+            timeout 5s adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
+            timeout 15s adb shell dumpsys activity activities > android-activities.txt 2>&1 || true
+            timeout 15s adb exec-out screencap -p > android-launch.png 2>/dev/null || true
+            timeout 20s adb logcat -d > android-logcat.txt 2>&1 || true
+
+            printf 'WAIT_STATUS=%s\nINSTALL_STATUS=%s\nSTART_STATUS=%s\n' "$WAIT_STATUS" "$INSTALL_STATUS" "$START_STATUS" >> android-adb-status.txt
             cat android-install.txt
             cat android-start.txt
-            test "$INSTALL_STATUS" -eq 0
-            test "$START_STATUS" -eq 0
-            test -s app-pid.txt
-            grep -qE 'com\.acuarionexo\.app/(\.MainActivity|com\.acuarionexo\.app\.MainActivity)' android-activities.txt
+            cat android-adb-status.txt
+
+            FAILURE=0
+            test "$WAIT_STATUS" -eq 0 || FAILURE=1
+            test "$INSTALL_STATUS" -eq 0 || FAILURE=1
+            test "$START_STATUS" -eq 0 || FAILURE=1
+            test -s app-pid.txt || FAILURE=1
+            grep -qE 'com\.acuarionexo\.app/(\.MainActivity|com\.acuarionexo\.app\.MainActivity)' android-activities.txt || FAILURE=1
             if grep -A 20 'FATAL EXCEPTION' android-logcat.txt | grep -q 'Process: com.acuarionexo.app'; then
-              exit 1
+              FAILURE=1
             fi
-            if grep -qE 'Process: com\.acuarionexo\.app.*has died|Force finishing activity com\.acuarionexo\.app' android-logcat.txt; then
-              exit 1
+            if grep -qE 'Process: com\.acuarionexo\.app.*has died|Force finishing activity com\.acuarionexo\.app|ANR in com\.acuarionexo\.app' android-logcat.txt; then
+              FAILURE=1
             fi
+            exit "$FAILURE"
 
       - name: Upload audit evidence
         if: always()
@@ -126,6 +145,7 @@ jobs:
             android-install.txt
             android-start.txt
             android-activities.txt
+            android-adb-status.txt
             app-pid.txt
             android-launcher-files.txt
             android-build-error.log
