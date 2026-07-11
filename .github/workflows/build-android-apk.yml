@@ -95,6 +95,7 @@ jobs:
             DEVICE_STATUS=$?
 
             BOOT_STATUS=1
+            BOOT_COMPLETED=""
             for attempt in $(seq 1 30); do
               BOOT_COMPLETED="$(timeout 5s adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
               if [ "$BOOT_COMPLETED" = "1" ]; then
