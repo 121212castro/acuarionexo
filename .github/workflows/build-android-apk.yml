@@ -1,6 +1,6 @@
 name: Build and validate Android APK
 
-# Validación final Android: ejecución forzada
+# Validación final Android: ejecución forzada 2
 on:
   push:
     branches: [main]
