@@ -1,0 +1,1 @@
+Ejecución final Android con comandos ADB acotados y diagnóstico completo.
