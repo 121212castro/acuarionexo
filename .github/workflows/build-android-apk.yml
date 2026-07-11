@@ -86,6 +86,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
+          command -v sdkmanager
+          command -v avdmanager
+          command -v emulator
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64" 2>&1 | tee android-emulator-setup.txt
           echo no | avdmanager create avd --force --name AcuarioNexoTest --package "system-images;android-34;google_apis;x86_64" --device "pixel_6" 2>&1 | tee android-avd-create.txt
@@ -96,6 +100,7 @@ jobs:
         shell: bash
         run: |
           set +e
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$PATH"
           : > android-install.txt
           : > android-start.txt
           : > android-activities.txt
