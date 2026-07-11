@@ -14,7 +14,7 @@ permissions:
 jobs:
   build-test-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 55
 
     steps:
       - name: Checkout
@@ -64,27 +64,6 @@ jobs:
           chmod +x gradlew
           ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee -a ../android-build-error.log
 
-      - name: Install and launch on Android emulator
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 35
-          arch: x86_64
-          profile: pixel_6
-          disable-animations: true
-          script: |
-            set -e
-            adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-            adb logcat -c
-            adb shell monkey -p com.acuarionexo.app -c android.intent.category.LAUNCHER 1
-            sleep 15
-            adb shell pidof com.acuarionexo.app > app-pid.txt
-            test -s app-pid.txt
-            adb exec-out screencap -p > android-launch.png
-            adb logcat -d > android-logcat.txt
-            if grep -E "FATAL EXCEPTION|Process: com\.acuarionexo\.app.*has died|AndroidRuntime:.*FATAL" android-logcat.txt; then
-              exit 1
-            fi
-
       - name: Verify generated launcher resources
         run: |
           test -f android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
@@ -94,6 +73,38 @@ jobs:
 
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk AcuarioNexo-Android-Test.apk
+
+      - name: Install and launch on Android emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          arch: x86_64
+          profile: pixel_6
+          disable-animations: true
+          script: |
+            set -e
+            adb install -r AcuarioNexo-Android-Test.apk
+            adb logcat -c
+            adb shell monkey -p com.acuarionexo.app -c android.intent.category.LAUNCHER 1
+            : > app-pid.txt
+            for attempt in $(seq 1 30); do
+              adb shell pidof com.acuarionexo.app > app-pid.txt 2>/dev/null || true
+              if test -s app-pid.txt; then break; fi
+              sleep 2
+            done
+            test -s app-pid.txt
+            sleep 35
+            adb shell pidof com.acuarionexo.app > app-pid.txt
+            test -s app-pid.txt
+            adb exec-out screencap -p > android-launch.png
+            adb logcat -d > android-logcat.txt
+            if grep -A 12 'FATAL EXCEPTION' android-logcat.txt | grep -q 'Process: com.acuarionexo.app'; then
+              exit 1
+            fi
+            if grep -qE 'Process: com\.acuarionexo\.app.*has died|Force finishing activity com\.acuarionexo\.app' android-logcat.txt; then
+              exit 1
+            fi
+            adb shell dumpsys activity activities | grep -q 'com.acuarionexo.app/.MainActivity'
 
       - name: Upload audit evidence
         if: always()
@@ -118,7 +129,7 @@ jobs:
           gh release delete android-test-latest --cleanup-tag --yes || true
           gh release create android-test-latest AcuarioNexo-Android-Test.apk \
             --title "AcuarioNexo Android validada" \
-            --notes "APK compilada, instalada y abierta correctamente en Android API 35 desde ${GITHUB_SHA}." \
+            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo y ausencia de cierres fatales en Android API 35 desde ${GITHUB_SHA}." \
             --prerelease
 
       - name: Record validation result
