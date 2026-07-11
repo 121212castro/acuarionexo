@@ -15,21 +15,24 @@ set -u
 
 SDKMANAGER="$(find "$ANDROID_HOME" -type f -name sdkmanager 2>/dev/null | head -n 1)"
 AVDMANAGER="$(find "$ANDROID_HOME" -type f -name avdmanager 2>/dev/null | head -n 1)"
-EMULATOR_BIN="$(find "$ANDROID_HOME" -type f -path '*/emulator/emulator' 2>/dev/null | head -n 1)"
 ADB_BIN="$(find "$ANDROID_HOME" -type f -path '*/platform-tools/adb' 2>/dev/null | head -n 1)"
 
-printf 'ANDROID_HOME=%s\nSDKMANAGER=%s\nAVDMANAGER=%s\nEMULATOR=%s\nADB=%s\n' \
-  "$ANDROID_HOME" "$SDKMANAGER" "$AVDMANAGER" "$EMULATOR_BIN" "$ADB_BIN" | tee android-sdk-paths.txt
+printf 'ANDROID_HOME=%s\nSDKMANAGER=%s\nAVDMANAGER=%s\nADB=%s\n' \
+  "$ANDROID_HOME" "$SDKMANAGER" "$AVDMANAGER" "$ADB_BIN" | tee android-sdk-paths.txt
 
 test -x "$SDKMANAGER" || exit 20
 test -x "$AVDMANAGER" || exit 21
-test -x "$EMULATOR_BIN" || exit 22
 test -x "$ADB_BIN" || exit 23
 
-export PATH="$(dirname "$SDKMANAGER"):$(dirname "$EMULATOR_BIN"):$(dirname "$ADB_BIN"):$PATH"
+export PATH="$(dirname "$SDKMANAGER"):$(dirname "$ADB_BIN"):$PATH"
 
 yes | "$SDKMANAGER" --licenses >/dev/null 2>&1 || true
 "$SDKMANAGER" "platform-tools" "emulator" "system-images;android-34;google_apis;x86_64" > android-emulator-setup.txt 2>&1 || exit 24
+
+EMULATOR_BIN="$ANDROID_HOME/emulator/emulator"
+test -x "$EMULATOR_BIN" || exit 22
+printf 'EMULATOR=%s\n' "$EMULATOR_BIN" | tee -a android-sdk-paths.txt
+export PATH="$(dirname "$EMULATOR_BIN"):$PATH"
 
 echo no | "$AVDMANAGER" create avd --force --name AcuarioNexoTest --package "system-images;android-34;google_apis;x86_64" --device "pixel_6" > android-avd-create.txt 2>&1 || exit 25
 "$EMULATOR_BIN" -list-avds > android-avd-list.txt 2>&1 || exit 26
