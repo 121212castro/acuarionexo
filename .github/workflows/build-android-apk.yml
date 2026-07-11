@@ -14,7 +14,7 @@ permissions:
 jobs:
   build-test-publish:
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 65
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -73,14 +73,26 @@ jobs:
       - name: Rename APK
         run: cp android/app/build/outputs/apk/debug/app-debug.apk AcuarioNexo-Android-Test.apk
 
+      - name: Enable KVM
+        shell: bash
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+          ls -l /dev/kvm
+
       - name: Install and launch on Android emulator
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 34
           arch: x86_64
           profile: pixel_6
+          cores: 2
+          ram-size: 2048M
+          emulator-boot-timeout: 900
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot
+          disable-linux-hw-accel: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -no-snapshot -camera-back none
           script: |
             set +e
             : > android-install.txt
@@ -96,7 +108,7 @@ jobs:
 
             BOOT_STATUS=1
             BOOT_COMPLETED=""
-            for attempt in $(seq 1 30); do
+            for attempt in $(seq 1 60); do
               BOOT_COMPLETED="$(timeout 5s adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r')"
               if [ "$BOOT_COMPLETED" = "1" ]; then
                 BOOT_STATUS=0
