@@ -13,9 +13,11 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/library/library-v3-core.js`: carga, filtros, tarjetas y listado de Biblioteca.
 - `src/library/library-v3-images.js`: único responsable del editor de `cover_url` y `photo_url`.
 - `src/library/library-v3-ficha.js`: formulario, guardado, auditoría, publicación y borrado.
+- `src/library/library-v3-template.js`: genera el texto que se copia al Chat con el contrato exacto de cada tipo, mínimos de longitud, valores permitidos, claves JSON y comprobación final obligatoria antes de responder.
+- `src/library/ficha/ficha-chat-import.js`: crea fichas desde texto del Chat y ejecuta la auditoría completa antes de insertar; una ficha inválida se rechaza y no se guarda.
 - `src/library/ficha/ficha-actions.js`: único responsable de la vista abierta, información, fuentes y acciones; conecta la acción «Añadir a mi acuario» con la API estructural del importador.
 - `src/library/inventory/library-inventory-import.js`: único responsable de seleccionar acuario, mostrar el formulario y copiar una ficha válida al inventario correspondiente. Expone sus operaciones mediante `window.ANX.LibraryInventoryImport` y conserva alias globales para la interfaz existente.
-- No se permiten archivos `hotfix`, `patch` o `clean` que redefinan la vista, las imágenes o la importación de ficha.
+- No se permiten archivos `hotfix`, `patch` o `clean` que redefinan la vista, las imágenes, la importación o el contrato de ficha.
 
 ## Acuarios / Resumen
 
