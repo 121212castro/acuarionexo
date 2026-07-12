@@ -14,20 +14,45 @@ Build actual: `library-structure-clean-20260710-1005`.
 → muestra `cover_url` y `photo_url`
 → muestra datos estructurados y fuentes
 → ofrece Editar / Añadir a mi acuario / Publicar / Borrar
+→ «Añadir a mi acuario» llama a `ANX.LibraryInventoryImport.pasarFichaAInventario`
+→ `library-inventory-import.js`
+→ recarga la ficha desde `library_entries`
+→ determina si el destino es acuario o inventario general
+→ carga los acuarios del usuario cuando corresponde
+→ muestra el formulario de alta con acuario, cantidad, unidad, fecha, procedencia, precio, lote y notas
+→ guarda una copia real en `inventory_items`
 
 `library-v3-ficha.js`
 → edición y guardado
 → usa `library-v3-images.js` para las dos imágenes
 
-`library-inventory-import.js`
-→ copia la ficha al acuario o al inventario correspondiente
+## Acuarios / Animales
+
+`aquariums.js`
+→ abre un acuario
+→ `openAqSection('animales')`
+→ `module-loader.js`
+→ carga `animals-core.js` y `animals.js`
+→ `animals.js`
+→ consulta `inventory_items` del acuario
+→ filtra categorías vivas y organismos no dados de baja
+→ muestra los animales del acuario
+
+`dashboard()`
+→ `loadAquariums()`
+→ `loadDashboardStats(list)`
+→ consulta `inventory_items` vinculados a todos los acuarios del usuario
+→ aplica las mismas reglas de categorías vivas y estado
+→ suma `quantity`
+→ muestra el total en «Animales registrados»
 
 ## Propiedad única
 
-- Vista abierta: `src/library/ficha/ficha-actions.js`.
+- Vista abierta y acciones de ficha: `src/library/ficha/ficha-actions.js`.
+- Importación desde Biblioteca: `src/library/inventory/library-inventory-import.js` mediante `window.ANX.LibraryInventoryImport`.
 - Editor de imágenes: `src/library/library-v3-images.js`.
 - Editor y persistencia de ficha: `src/library/library-v3-ficha.js`.
-- Ningún otro archivo puede redefinir `window.verFicha` ni `LibraryV3Images.imageBox`.
+- Ningún otro archivo puede redefinir `window.verFicha`, `LibraryV3Images.imageBox` ni el flujo de importación de Biblioteca.
 
 ## Android
 
@@ -82,4 +107,5 @@ Ante un fallo:
 - `npm run docs:refresh`: regenera MAPA y ÁRBOL.
 - `npm run check`: regenera documentación y valida la app.
 - `npm run mobile:prepare`: regenera documentación y prepara `www/` desde los activos reales.
+- Después de cada cambio funcional, MAPA y ÁRBOL deben reflejar el flujo vigente y comprobarse desde GitHub.
 - Después de una validación Android, MAPA y ÁRBOL deben conservar commit, run ID, estado y enlace vigentes.
