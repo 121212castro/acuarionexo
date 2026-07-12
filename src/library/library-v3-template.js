@@ -8,7 +8,7 @@
     rules.push(`clave JSON: data.${field.id}`);
     if (field.type === 'number') rules.push('debe incluir valor numérico concreto');
     else rules.push(`mínimo ${field.minLength || 20} caracteres`);
-    if (field.allowed && field.allowed.length) rules.push(`valores permitidos: ${field.allowed.join(' | ')}`);
+    if (field.allowed && field.allowed.length) rules.push(`valores permitidos exactos: ${field.allowed.join(' | ')}`);
     if (field.validator === 'scientificName') rules.push('debe ser especie concreta, no sp., spp., cf. ni aff.');
     rules.push('sin URLs dentro del texto');
     return rules.join('; ');
@@ -41,6 +41,12 @@
     const lines = [
       `Crea una ficha completa de ${typeName(type)} para AcuarioNexo.`,
       '',
+      'CONDICIÓN DE ENTREGA OBLIGATORIA:',
+      '- No entregues la respuesta hasta comprobar internamente que TODOS los campos obligatorios cumplen exactamente las reglas indicadas.',
+      '- Si un campo incumple longitud, formato, valor permitido o tipo numérico, corrígelo antes de responder.',
+      '- La respuesta se importará y auditará automáticamente. Un solo campo inválido hará que AcuarioNexo rechace toda la ficha.',
+      '- No sustituyas un valor permitido por sinónimos. Usa literalmente uno de los valores autorizados.',
+      '',
       'SALIDA OBLIGATORIA:',
       '1. Primero escribe la ficha visible para una persona, con apartados claros.',
       '2. Al final añade un bloque JSON estructurado entre estos marcadores exactos:',
@@ -68,8 +74,16 @@
       'VALIDACIÓN QUE NO DEBE BLOQUEAR:',
       '- Comportamiento / behavior: mínimo 20 caracteres, texto concreto.',
       '- Alimentación / diet o feeding: mínimo 20 caracteres, texto concreto.',
-      '- Reef safe / reef_safe: usar exactamente Sí, Sí con precaución o No.',
+      '- Reef safe / reef_safe: usar exactamente Sí, Sí con precaución o No. No usar "Con precaución".',
       '- Fuentes / sources: mínimo 2 URLs reales.',
+      '',
+      'COMPROBACIÓN FINAL OBLIGATORIA ANTES DE RESPONDER:',
+      '- Verifica que behavior tenga 20 caracteres o más.',
+      '- Verifica que diet o feeding tenga 20 caracteres o más.',
+      '- Verifica que reef_safe coincida literalmente con un valor permitido.',
+      '- Verifica que todas las claves numéricas tengan números reales.',
+      '- Verifica que sources[] contenga como mínimo 2 URLs completas reales.',
+      '- Verifica que no quede ningún null ni cadena vacía en campos obligatorios.',
       '',
       'FORMATO OBLIGATORIO DEL APARTADO FINAL VISIBLE:',
       'Fuentes:',
@@ -89,7 +103,8 @@
       '- Debe ir solo entre ACUARIONEXO_JSON_START y ACUARIONEXO_JSON_END.',
       '- Debe usar entry_type exactamente como se indica.',
       '- Debe rellenar data con todas las claves indicadas.',
-      '- No dejes null ni cadenas vacías salvo que un dato no exista en fuentes fiables; en ese caso explica la limitación en el campo visible correspondiente.',
+      '- No dejes null ni cadenas vacías en campos obligatorios.',
+      '- Si una fuente fiable no ofrece un dato opcional, escribe una explicación concreta admitida por el contrato; nunca inventes.',
       '',
       'ESQUELETO JSON:',
       'ACUARIONEXO_JSON_START',
@@ -105,7 +120,7 @@
     const box = byId('templateCopyStatus');
     try {
       await navigator.clipboard.writeText(text);
-      if (box) box.innerHTML = msg(`Apartados de ${typeName(selected)} copiados con reglas de validación. Pégalos en el chat.`, 'success');
+      if (box) box.innerHTML = msg(`Apartados de ${typeName(selected)} copiados con contrato y validación obligatoria. Pégalos en el chat.`, 'success');
     } catch (e) {
       if (box) box.innerHTML = `<div class="notice"><b>No se pudo copiar automáticamente.</b><br>Selecciona y copia este texto:<textarea readonly>${esc(text)}</textarea></div>`;
     }
