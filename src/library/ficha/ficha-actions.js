@@ -44,9 +44,10 @@
   async function addToAquarium(id) {
     const box = byId('libraryActionStatus');
     try {
-      if (typeof window.pasarFichaAInventario !== 'function') throw new Error('El módulo de acuario no está disponible.');
+      const importer = ANX.LibraryInventoryImport;
+      if (!importer || typeof importer.pasarFichaAInventario !== 'function') throw new Error('El importador de Biblioteca no está disponible.');
       if (box) box.innerHTML = msg('Cargando acuarios disponibles...');
-      await window.pasarFichaAInventario(id);
+      await importer.pasarFichaAInventario(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo abrir el formulario del acuario.', 'error');
     }
