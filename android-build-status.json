@@ -1,7 +1,7 @@
 {
-  "status": "success",
-  "commit": "d1177eb0a6766784671a7b4f673376eb889481c8",
-  "run_id": "29196583955",
-  "apk": "https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk",
-  "validated_on_emulator": true
+  "status": "cancelled",
+  "commit": "719719c6e4c68cb9636240f7a9c3a543483f1e72",
+  "run_id": "29198326792",
+  "apk": "",
+  "validated_on_emulator": false
 }
