@@ -64,8 +64,28 @@
     return `<p class="small">${esc(text || 'Sin datos todavía')}</p>`;
   }
 
-  function loadDashboardStats(_list) {
-    return { animals: 'Próximamente', photos: 'No calculado', measurements: 'No calculado', tasks: null };
+  async function loadDashboardStats(list) {
+    const aquariumIds = (list || []).map(function (aq) { return aq.id; }).filter(Boolean);
+    if (!aquariumIds.length) return { animals: 0, photos: 'No calculado', measurements: 'No calculado', tasks: null };
+
+    if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('animales');
+    const animalsCore = window.ANX.AnimalsCore;
+    if (!animalsCore) throw new Error('No se pudo cargar el contador de animales.');
+
+    const { data, error } = await supabase.from('inventory_items')
+      .select('category,quantity,notes,aquarium_id')
+      .eq('user_id', state.user.id)
+      .in('aquarium_id', aquariumIds)
+      .limit(2000);
+    if (error) throw error;
+
+    const animals = (data || []).reduce(function (total, item) {
+      if (!animalsCore.liveCategories.has(item.category || '') || !animalsCore.isAlive(item)) return total;
+      const quantity = Number(item.quantity ?? 1);
+      return total + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
+    }, 0);
+
+    return { animals, photos: 'No calculado', measurements: 'No calculado', tasks: null };
   }
 
   async function refreshAdminForDashboard() {
