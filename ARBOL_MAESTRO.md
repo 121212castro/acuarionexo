@@ -22,6 +22,20 @@ Build actual: `library-structure-clean-20260710-1005`.
 → muestra el formulario de alta con acuario, cantidad, unidad, fecha, procedencia, precio, lote y notas
 → guarda una copia real en `inventory_items`
 
+`library-v3-template.js`
+→ obtiene el contrato real mediante `LibrarySchema.templateFor(type)`
+→ genera el texto «Copiar apartados» con cada clave JSON, mínimo, tipo y valor permitido
+→ exige comprobación final antes de que ChatGPT responda
+→ advierte que cualquier incumplimiento hará que AcuarioNexo rechace la ficha
+
+`ficha-chat-import.js`
+→ recibe el texto y el bloque `ACUARIONEXO_JSON_START/END`
+→ detecta y valida el `entry_type`
+→ construye la fila candidata sin guardarla
+→ ejecuta `LibrarySchema.audit(entry)`
+→ si existe un campo inválido, muestra todos los errores y no inserta nada
+→ solo una ficha aprobada se guarda en `library_entries`
+
 `library-v3-ficha.js`
 → edición y guardado
 → usa `library-v3-images.js` para las dos imágenes
@@ -49,10 +63,12 @@ Build actual: `library-structure-clean-20260710-1005`.
 ## Propiedad única
 
 - Vista abierta y acciones de ficha: `src/library/ficha/ficha-actions.js`.
+- Contrato copiado al Chat: `src/library/library-v3-template.js`.
+- Creación y validación previa desde texto del Chat: `src/library/ficha/ficha-chat-import.js`.
 - Importación desde Biblioteca: `src/library/inventory/library-inventory-import.js` mediante `window.ANX.LibraryInventoryImport`.
 - Editor de imágenes: `src/library/library-v3-images.js`.
 - Editor y persistencia de ficha: `src/library/library-v3-ficha.js`.
-- Ningún otro archivo puede redefinir `window.verFicha`, `LibraryV3Images.imageBox` ni el flujo de importación de Biblioteca.
+- Ningún otro archivo puede redefinir `window.verFicha`, `LibraryV3Images.imageBox`, el contrato del Chat ni el flujo de importación de Biblioteca.
 
 ## Android
 
