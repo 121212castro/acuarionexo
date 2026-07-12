@@ -13,6 +13,8 @@
   function detectType(text, selected){
     const structured=extractStructuredJson(text);
     if(structured?.entry_type&&S()?.CONTRACTS?.[structured.entry_type])return structured.entry_type;
+    const selectedType=String(selected||'').trim();
+    if(selectedType&&S()?.CONTRACTS?.[selectedType])return selectedType;
     const t=norm(text);
     if(/clasificar\s+como\s+aditivo|\bentry_type\s*[:=]\s*["']?aditivo|aditivo|buffer|suplemento|adsorbente|removedor\s+de\s+fosfato|phosphate\s+remover|fosfato|\bpo4\b|alcalinidad/.test(t))return'aditivo';
     if(/clasificar\s+como\s+test|\bentry_type\s*[:=]\s*["']?test|\btest\b|checker|fotometro|fotómetro|colorimetro|colorímetro|reactivo|reagent|medidor\s+de\s+ph|\bph\b/.test(t))return'test';
@@ -21,13 +23,15 @@
     if(/clasificar\s+como\s+alimento|alimento|comida|granulo|gránulo|escama|pellet|nori/.test(t))return'alimento';
     if(/clasificar\s+como\s+equipamiento|equipo|bomba|skimmer|filtro|uv|luz|lampara|lámpara|calentador/.test(t))return'equipamiento';
     if(/clasificar\s+como\s+producto|producto/.test(t))return'producto';
-    return selected||'pez_marino';
+    return'pez_marino';
   }
   function parseSourcesRaw(text){
     const rows=String(text||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);
     return rows.map((line,i)=>{const url=(line.match(/https?:\/\/[^\s|]+/i)||[])[0]||'';const parts=line.split('|').map(s=>s.trim());let name=parts[0]&&!/^https?:\/\//i.test(parts[0])?parts[0]:'';if(!name&&url){try{name=new URL(url).hostname}catch(_){name=`Fuente ${i+1}`}}return{url,name:name||`Fuente ${i+1}`,used_for:parts[2]||'Ficha creada desde texto del Chat',pending_url:!url};});
   }
-  function aliasMap(type){const map=new Map();const add=(name,key)=>{const n=norm(name);if(n&&!map.has(n))map.set(n,key)};
+  function aliasMap(type){
+    const map=new Map();
+    const add=(name,key)=>{const n=norm(name);if(n&&!map.has(n))map.set(n,key)};
     [['Nombre común','title'],['Nombre comun','title'],['Nombre','title'],['Producto','title'],['Modelo','title'],['Referencia','title'],['Nombre científico','scientific_name'],['Nombre cientifico','scientific_name'],['Resumen','summary'],['Descripción','summary'],['Descripcion','summary'],['Etiquetas','tags'],['Tags','tags'],['Fuentes','sources'],['Fuente','sources'],['Bibliografía','sources'],['Bibliografia','sources'],['Temperatura','temperature'],['pH','ph'],['GH','gh'],['KH','kh'],['Salinidad','salinity'],['Nitrato','nitrate'],['Nitratos','nitrate'],['Fosfato','phosphate'],['Fosfatos','phosphate'],['Calcio','calcium'],['Magnesio','magnesium'],['Acuario mínimo','minimum_tank_liters'],['Acuario minimo','minimum_tank_liters'],['Litros mínimos','minimum_tank_liters'],['Litros minimos','minimum_tank_liters'],['Acuario recomendado','recommended_tank_liters'],['Litros recomendados','recommended_tank_liters'],['Tamaño adulto','adult_size_cm'],['Tamano adulto','adult_size_cm'],['Hábitat natural','habitat'],['Habitat natural','habitat'],['Hábitat','habitat'],['Habitat','habitat'],['Entorno natural','natural_environment'],['Distribución','distribution'],['Distribucion','distribution'],['Profundidad','depth_range'],['Alimentación','diet'],['Alimentacion','diet'],['Dieta','diet'],['Comportamiento','behavior'],['Compatibilidad','compatibility'],['Compatibilidad con peces','fish_compatibility'],['Compatibilidad con corales','coral_compatibility'],['Compatibilidad con invertebrados','invertebrate_compatibility'],['Reef safe','reef_safe'],['Salud','health_notes'],['Enfermedades','common_diseases'],['Problemas frecuentes','common_problems'],['Errores frecuentes','common_mistakes'],['Antes de comprar','purchase_recommendations'],['Curiosidades','curiosities'],['Notas para IA','ai_notes'],['Notas para la IA','ai_notes'],['Resumen para usuario','user_summary'],['Agresividad','aggressiveness'],['Territorialidad','territoriality'],['Reproducción','reproduction'],['Reproduccion','reproduction']].forEach(([a,b])=>add(a,b));
     try{S().templateFor(type).forEach(sec=>sec.fields.forEach(f=>{add(f.id,f.id);add(f.label,f.id)}))}catch(_){ }
     return map;
@@ -43,12 +47,22 @@
     const sources=S().normalizeSources(parsed.sources||[]);
     return{title:String(parsed.title||'').trim(),scientific_name:parsed.scientific_name||'',summary:String(parsed.summary||sections.summary||'').trim(),tags:Array.isArray(parsed.tags)?parsed.tags.map(s=>String(s).trim()).filter(Boolean):[],data,sections:{...sections,summary:String(parsed.summary||sections.summary||'').trim()},sources,entry_type:type};
   }
-  function parseFicha(text,type){const structured=extractStructuredJson(text);if(structured)return parseStructuredFicha(structured,type);const aliases=aliasMap(type), blocks={}, urls=[];let current='';String(text||'').split(/\n/).forEach(raw=>{const line=raw.trim();const found=line.match(/https?:\/\/\S+/gi);if(found)found.forEach(u=>urls.push(u.replace(/[.,;]+$/,'')));if(!line||line.startsWith('```'))return;const clean=line.replace(/^[-*•]\s*/,'').trim();const parts=clean.split(/[:：]/);let head='',body='';if(parts.length>1){head=norm(parts.shift());body=parts.join(':').trim()}else head=norm(clean);const key=aliases.get(head);if(key){current=key;if(body)blocks[current]=[blocks[current],body].filter(Boolean).join('\n');return}if(current)blocks[current]=[blocks[current],clean].filter(Boolean).join('\n')});
-    const data={}, sections={};let title='',scientific='',summary='',tags=[],sourceLines='';Object.entries(blocks).forEach(([key,value])=>{if(key==='title')title=value;else if(key==='scientific_name')scientific=value;else if(key==='summary')summary=value;else if(key==='tags')tags=String(value).split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);else if(key==='sources')sourceLines=value;else assignData(data,key,value)});
+  function parseFicha(text,type){
+    const structured=extractStructuredJson(text);
+    if(structured)return parseStructuredFicha(structured,type);
+    const aliases=aliasMap(type), blocks={}, urls=[];
+    let current='';
+    String(text||'').split(/\n/).forEach(raw=>{const line=raw.trim();const found=line.match(/https?:\/\/\S+/gi);if(found)found.forEach(u=>urls.push(u.replace(/[.,;]+$/,'')));if(!line||line.startsWith('```'))return;const clean=line.replace(/^[-*•]\s*/,'').trim();const parts=clean.split(/[:：]/);let head='',body='';if(parts.length>1){head=norm(parts.shift());body=parts.join(':').trim()}else head=norm(clean);const key=aliases.get(head);if(key){current=key;if(body)blocks[current]=[blocks[current],body].filter(Boolean).join('\n');return}if(current)blocks[current]=[blocks[current],clean].filter(Boolean).join('\n')});
+    const data={}, sections={};
+    let title='',scientific='',summary='',tags=[],sourceLines='';
+    Object.entries(blocks).forEach(([key,value])=>{if(key==='title')title=value;else if(key==='scientific_name')scientific=value;else if(key==='summary')summary=value;else if(key==='tags')tags=String(value).split(/[,;\n]/).map(s=>s.trim()).filter(Boolean);else if(key==='sources')sourceLines=value;else assignData(data,key,value)});
     if(!title)title=extractInline(text,'Producto')||extractInline(text,'Nombre')||'';
     if(!summary){const first=String(text||'').split(/\n/).map(s=>s.trim()).find(s=>s&&!/^fuentes?$/i.test(s));summary=first||data.user_summary||data.description||''}
-    sections.summary=summary;let sources=parseSourcesRaw(sourceLines);if(urls.length){sources=sources.concat(urls.map((u,i)=>({name:`Fuente ${i+1}`,url:u,used_for:'Ficha creada desde texto del Chat',pending_url:false})))}
-    const normalized=S().normalizeSources(sources.filter(x=>x.url));const pending=sources.filter(x=>!x.url).map(x=>({name:x.name,url:'',used_for:x.used_for,pending_url:true}));
+    sections.summary=summary;
+    let sources=parseSourcesRaw(sourceLines);
+    if(urls.length){sources=sources.concat(urls.map((u,i)=>({name:`Fuente ${i+1}`,url:u,used_for:'Ficha creada desde texto del Chat',pending_url:false})))}
+    const normalized=S().normalizeSources(sources.filter(x=>x.url));
+    const pending=sources.filter(x=>!x.url).map(x=>({name:x.name,url:'',used_for:x.used_for,pending_url:true}));
     return{title,scientific_name:scientific,summary,tags,data,sections,sources:normalized.concat(pending),entry_type:type};
   }
   function auditText(audit){return(audit?.errors||[]).map(error=>String(error)).join('\n')}
