@@ -159,7 +159,7 @@
   }
 
   proxy('biblioteca', 'biblioteca', 'Biblioteca', 'biblioteca');
-  proxy('acuariosHome', 'animales', 'Acuarios', 'acuarios');
+  proxy('animales', 'animales', 'Animales', 'acuarios');
   proxy('mapa3D', 'mapa', 'Mapa', 'acuarios');
   proxy('fotos', 'fotos', 'Fotos', 'acuarios');
   proxy('inventario', 'inventario', 'Inventario', 'inventario');
