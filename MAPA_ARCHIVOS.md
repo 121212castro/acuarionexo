@@ -13,9 +13,17 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/library/library-v3-core.js`: carga, filtros, tarjetas y listado de Biblioteca.
 - `src/library/library-v3-images.js`: único responsable del editor de `cover_url` y `photo_url`.
 - `src/library/library-v3-ficha.js`: formulario, guardado, auditoría, publicación y borrado.
-- `src/library/ficha/ficha-actions.js`: único responsable de la vista abierta, información, fuentes y acciones.
-- `src/library/inventory/library-inventory-import.js`: importación al acuario o inventario correspondiente.
-- No se permiten archivos `hotfix`, `patch` o `clean` que redefinan la vista o las imágenes de ficha.
+- `src/library/ficha/ficha-actions.js`: único responsable de la vista abierta, información, fuentes y acciones; conecta la acción «Añadir a mi acuario» con la API estructural del importador.
+- `src/library/inventory/library-inventory-import.js`: único responsable de seleccionar acuario, mostrar el formulario y copiar una ficha válida al inventario correspondiente. Expone sus operaciones mediante `window.ANX.LibraryInventoryImport` y conserva alias globales para la interfaz existente.
+- No se permiten archivos `hotfix`, `patch` o `clean` que redefinan la vista, las imágenes o la importación de ficha.
+
+## Acuarios / Resumen
+
+- `src/aquariums/aquariums-core.js`: carga acuarios, tarjetas y estadísticas generales. El contador «Animales registrados» suma las cantidades vivas del inventario vinculadas a todos los acuarios del usuario.
+- `src/aquariums/aquariums.js`: navegación y vista de cada acuario.
+- `src/animals/animals-core.js`: categorías vivas, estado del organismo y tarjetas de animales.
+- `src/animals/animals.js`: listado de animales vivos por acuario.
+- `src/core/module-loader.js`: carga bajo demanda el grupo `animales` mediante `window.animales`.
 
 ## Android
 
@@ -48,5 +56,6 @@ No se acepta como cierre una ejecución iniciada, una compilación aislada ni un
 
 - Ejecutar `npm run docs:refresh` después de modificar cargas, módulos, responsabilidades, build o el sistema Android.
 - `npm run check` y `npm run mobile:prepare` regeneran este documento.
+- Después de cada cambio funcional, comprobar en GitHub que `MAPA_ARCHIVOS.md` y `ARBOL_MAESTRO.md` reflejan la responsabilidad y el flujo vigentes.
 - Después de una validación Android, comprobar que MAPA y ÁRBOL contienen el commit, run ID, estado y enlace vigentes.
 - `www/`, `android/`, `ios/` y `node_modules/` no se editan a mano.
