@@ -3,9 +3,6 @@ name: Build and validate Android APK
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - android-build-status.json
-      - android-build-error.log
   workflow_dispatch:
 
 permissions:
@@ -89,13 +86,46 @@ jobs:
           chmod +x scripts/android-emulator-audit.sh
           scripts/android-emulator-audit.sh
 
-      - name: Upload audit evidence
+      - name: Publish tester release
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete android-test-latest --cleanup-tag --yes || true
+          gh release create android-test-latest AcuarioNexo-Android-Test.apk \
+            --title "AcuarioNexo Android validada" \
+            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo, MainActivity visible y ausencia de cierres fatales en Android API 34 desde ${GITHUB_SHA}." \
+            --prerelease
+
+      - name: Generate validation result
+        if: always()
+        shell: bash
+        run: |
+          STATUS="${{ job.status }}"
+          APK_URL=""
+          VALIDATED=false
+          if [ "$STATUS" = "success" ]; then
+            APK_URL="https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk"
+            VALIDATED=true
+          fi
+          cat > android-build-status.json <<EOF_STATUS
+          {
+            "status": "$STATUS",
+            "commit": "${GITHUB_SHA}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "apk": "$APK_URL",
+            "validated_on_emulator": $VALIDATED
+          }
+          EOF_STATUS
+
+      - name: Upload audit evidence and validation result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AcuarioNexo-Android-Audit
           path: |
             AcuarioNexo-Android-Test.apk
+            android-build-status.json
             android-launch.png
             android-logcat.txt
             android-install.txt
@@ -113,40 +143,3 @@ jobs:
             android-sdk-paths.txt
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Publish tester release
-        if: success()
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release delete android-test-latest --cleanup-tag --yes || true
-          gh release create android-test-latest AcuarioNexo-Android-Test.apk \
-            --title "AcuarioNexo Android validada" \
-            --notes "APK validada: código web, paquete móvil, compilación, iconos, instalación, proceso activo, MainActivity visible y ausencia de cierres fatales en Android API 34 desde ${GITHUB_SHA}." \
-            --prerelease
-
-      - name: Record validation result
-        if: always()
-        shell: bash
-        run: |
-          STATUS="${{ job.status }}"
-          APK_URL=""
-          if [ "$STATUS" = "success" ]; then
-            APK_URL="https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk"
-            rm -f android-build-error.log
-          fi
-          cat > android-build-status.json <<EOF_STATUS
-          {
-            "status": "$STATUS",
-            "commit": "${GITHUB_SHA}",
-            "run_id": "${GITHUB_RUN_ID}",
-            "apk": "$APK_URL",
-            "validated_on_emulator": $([ "$STATUS" = "success" ] && echo true || echo false)
-          }
-          EOF_STATUS
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add android-build-status.json
-          if [ -f android-build-error.log ]; then git add android-build-error.log; fi
-          git commit -m "Registra validación Android [skip ci]" || exit 0
-          git push
