@@ -43,7 +43,7 @@
 
   function libraryAdminTools(f) {
     if (!isAdminLibrary()) return '';
-    return `<section class="panel library-admin-tools"><div class="panel-head"><h2>Herramientas Admin</h2><button class="primary" onclick="nuevaFichaV3()">Crear ficha</button></div><div class="form-grid"><div><label>Plantilla para el chat</label><select id="templateCopyType">${types.map(([k,n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div><div><label>&nbsp;</label><button class="primary" onclick="copiarApartadosFicha()">Copiar apartados para Chat</button></div></div><div id="templateCopyStatus"></div></section>`;
+    return `<section class="panel library-admin-tools"><div class="panel-head"><h2>Herramientas Admin</h2><button class="primary" onclick="nuevaFichaV3()">Crear ficha</button></div><div class="form-grid"><div><label>Plantilla para el chat</label><select id="templateCopyType">${types.map(([k,n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div><div><label>Nombre concreto de la ficha</label><input id="templateCopySubject" placeholder="Ej.: Amphiprion ocellaris o pez payaso común"></div><div><label>&nbsp;</label><button class="primary" onclick="copiarApartadosFicha()">Copiar apartados para Chat</button></div></div><div id="templateCopyStatus"></div></section>`;
   }
 
   function publicFilters(f) {
