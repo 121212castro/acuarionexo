@@ -51,7 +51,7 @@
     if (!concreteSubject) {
       throw new Error('Escribe el nombre común, comercial o modelo concreto de la ficha.');
     }
-    if (biologicalTypes.has(type) && !S.isConcreteSpecies(concreteScientificName)) {
+    if (biologicalTypes.has(type) && !S.isConcreteScientificName(concreteScientificName)) {
       throw new Error('Escribe un nombre científico binomial válido para la especie biológica.');
     }
 
@@ -180,7 +180,7 @@
       byId('templateCopySubject')?.focus();
       return;
     }
-    if (biologicalTypes.has(selected) && !S.isConcreteSpecies(scientificName)) {
+    if (biologicalTypes.has(selected) && !S.isConcreteScientificName(scientificName)) {
       if (box) box.innerHTML = msg('Escribe el nombre científico exacto con dos palabras, por ejemplo Centropyge acanthops.', 'error');
       byId('templateCopyScientificName')?.focus();
       return;
