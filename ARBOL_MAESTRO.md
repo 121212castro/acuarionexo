@@ -4,7 +4,18 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-structure-clean-20260710-1005`.
+Build actual: `navigation-structure-20260713-1540`.
+
+## Núcleo / Navegación principal
+
+`app.js`
+→ mantiene el estado global y el renderizado base
+→ elimina cualquier barra inferior anterior antes de renderizar
+→ inserta una única `.bottom-nav` fuera de `#app`
+→ muestra exactamente cinco accesos principales
+→ Inicio / Acuarios / Biblioteca / Microfauna / Avisos
+→ no duplica Inventario ni Admin en la navegación fija
+→ no inserta separadores HTML de altura fija
 
 ## Biblioteca / Flujo de ficha
 
@@ -62,13 +73,14 @@ Build actual: `library-structure-clean-20260710-1005`.
 
 ## Propiedad única
 
+- Navegación inferior y renderizado base: `app.js`.
 - Vista abierta y acciones de ficha: `src/library/ficha/ficha-actions.js`.
 - Contrato copiado al Chat: `src/library/library-v3-template.js`.
 - Creación y validación previa desde texto del Chat: `src/library/ficha/ficha-chat-import.js`.
 - Importación desde Biblioteca: `src/library/inventory/library-inventory-import.js` mediante `window.ANX.LibraryInventoryImport`.
 - Editor de imágenes: `src/library/library-v3-images.js`.
 - Editor y persistencia de ficha: `src/library/library-v3-ficha.js`.
-- Ningún otro archivo puede redefinir `window.verFicha`, `LibraryV3Images.imageBox`, el contrato del Chat ni el flujo de importación de Biblioteca.
+- Ningún otro archivo puede redefinir `window.verFicha`, `LibraryV3Images.imageBox`, el contrato del Chat, el flujo de importación de Biblioteca ni la estructura de `.bottom-nav`.
 
 ## Android
 
