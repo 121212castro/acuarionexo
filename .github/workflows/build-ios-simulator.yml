@@ -3,13 +3,10 @@ name: Build and validate iOS Simulator app
 on:
   push:
     branches: [main]
-    paths-ignore:
-      - ios-build-status.json
-      - ios-build-error.log
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-test:
@@ -92,13 +89,35 @@ jobs:
         run: |
           ditto -c -k --sequesterRsrc --keepParent ios-build/Build/Products/Debug-iphonesimulator/App.app AcuarioNexo-iOS-Simulator.zip
 
-      - name: Upload iOS audit evidence
+      - name: Generate validation result
+        if: always()
+        shell: bash
+        run: |
+          STATUS="${{ job.status }}"
+          VALIDATED=false
+          if [ "$STATUS" = "success" ] && [ -f ios-simulator-result.txt ] && grep -qx success ios-simulator-result.txt; then
+            VALIDATED=true
+          fi
+          cat > ios-build-status.json <<EOF_STATUS
+          {
+            "status": "$STATUS",
+            "commit": "${GITHUB_SHA}",
+            "run_id": "${GITHUB_RUN_ID}",
+            "validated_on_simulator": $VALIDATED,
+            "artifact": "AcuarioNexo-iOS-Simulator-Audit",
+            "signed_for_device": false,
+            "testflight_ready": false
+          }
+          EOF_STATUS
+
+      - name: Upload iOS audit evidence and validation result
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: AcuarioNexo-iOS-Simulator-Audit
           path: |
             AcuarioNexo-iOS-Simulator.zip
+            ios-build-status.json
             ios-launch.png
             ios-console.log
             ios-install.txt
@@ -113,31 +132,3 @@ jobs:
             ios-build-error.log
           if-no-files-found: warn
           retention-days: 14
-
-      - name: Record validation result
-        if: always()
-        shell: bash
-        run: |
-          STATUS="${{ job.status }}"
-          VALIDATED=false
-          if [ "$STATUS" = "success" ] && [ -f ios-simulator-result.txt ] && grep -qx success ios-simulator-result.txt; then
-            VALIDATED=true
-            rm -f ios-build-error.log
-          fi
-          cat > ios-build-status.json <<EOF_STATUS
-          {
-            "status": "$STATUS",
-            "commit": "${GITHUB_SHA}",
-            "run_id": "${GITHUB_RUN_ID}",
-            "validated_on_simulator": $VALIDATED,
-            "artifact": "AcuarioNexo-iOS-Simulator-Audit",
-            "signed_for_device": false,
-            "testflight_ready": false
-          }
-          EOF_STATUS
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ios-build-status.json
-          if [ -f ios-build-error.log ]; then git add ios-build-error.log; fi
-          git commit -m "Registra validación iOS [skip ci]" || exit 0
-          git push
