@@ -22,22 +22,6 @@ function buildFromManifest() {
   return match ? decodeURIComponent(match[1]) : '';
 }
 
-function androidValidation() {
-  const fallback = {
-    status: 'unknown',
-    commit: '',
-    run_id: '',
-    apk: '',
-    validated_on_emulator: false
-  };
-
-  try {
-    return { ...fallback, ...JSON.parse(read('android-build-status.json')) };
-  } catch {
-    return fallback;
-  }
-}
-
 function quotedLocalAssets(text) {
   const found = new Set();
   const re = /['"]([^'"]+\.(?:js|css|json|webmanifest|png)(?:\?[^'"]*)?)['"]/g;
@@ -56,38 +40,68 @@ if (build !== versionBuild || build !== manifestBuild) {
   throw new Error(`Build desincronizado: index=${build}, app-version=${versionBuild}, manifest=${manifestBuild}`);
 }
 
-const android = androidValidation();
 const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
 const indirect = ['src/library/ficha/ficha-json.js'];
 const active = [...new Set([...direct, ...modules, ...indirect])].sort();
 
+const mobilePipeline = `## Flujo móvil común
+
+\`Código fuente\`
+→ validación web
+→ preparación y validación del paquete móvil
+→ generación del proyecto nativo desde las fuentes reales
+→ compilación
+→ instalación
+→ ejecución
+→ auditoría
+→ resultados y evidencias publicados como artefactos
+
+- Los workflows móviles no escriben resultados ni documentación en \`main\`.
+- Los archivos de estado se generan dentro de cada job y se incluyen en su artefacto de auditoría.
+- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` son salidas generadas o dependencias y no se editan manualmente.`;
+
 const androidSummary = `## Android
 
-- Workflow único de validación y publicación: \`.github/workflows/build-android-apk.yml\`.
-- Auditoría real del emulador: \`scripts/android-emulator-audit.sh\`.
-- Resultado persistente: \`android-build-status.json\`.
-- Estado registrado: \`${android.status}\`.
-- Commit validado: \`${android.commit || 'sin registrar'}\`.
-- Run ID: \`${android.run_id || 'sin registrar'}\`.
-- Validado en emulador: \`${Boolean(android.validated_on_emulator)}\`.
-- APK: ${android.apk ? `\`${android.apk}\`` : '`sin publicar`'}.
+- Workflow: \`.github/workflows/build-android-apk.yml\`.
+- Auditoría real: \`scripts/android-emulator-audit.sh\`.
+- El workflow valida la aplicación web y el paquete móvil antes de generar Android.
+- El proyecto Android y sus recursos oficiales se generan desde las fuentes reales.
+- La APK se compila, instala y abre en el emulador.
+- La auditoría comprueba proceso, actividad visible, captura, instalación y \`logcat\`.
+- La APK se publica en la release \`android-test-latest\` únicamente cuando toda la validación termina correctamente.
+- \`android-build-status.json\` se genera dentro del job y se incluye en el artefacto \`AcuarioNexo-Android-Audit\`.
+- El workflow no realiza \`git commit\` ni \`git push\` y no escribe el resultado en \`main\`.
 
 ### Criterio obligatorio de cierre Android
 
 Android solo puede declararse terminado cuando, en una misma ejecución:
 
 1. la aplicación web y el paquete móvil pasan;
-2. el proyecto Android y los iconos se generan;
-3. el APK compila y se instala en el emulador;
+2. el proyecto Android y los recursos oficiales se generan;
+3. la APK compila y se instala en el emulador;
 4. el proceso de \`com.acuarionexo.app\` permanece activo;
 5. \`MainActivity\` queda visible;
-6. se genera captura y \`logcat\`;
+6. se generan captura y \`logcat\`;
 7. no existe \`FATAL EXCEPTION\`, ANR ni cierre del proceso;
-8. la release publica el APK;
-9. \`android-build-status.json\` registra \`status: success\` y \`validated_on_emulator: true\`.
+8. la release \`android-test-latest\` publica la APK;
+9. el artefacto \`AcuarioNexo-Android-Audit\` contiene el estado y las evidencias.
 
-No se acepta como cierre una ejecución iniciada, una compilación aislada ni un APK generado sin instalación y arranque comprobados.`;
+No se acepta como cierre una ejecución iniciada, una compilación aislada ni una APK generada sin instalación y arranque comprobados.`;
+
+const iosSummary = `## iOS
+
+- Workflow: \`.github/workflows/build-ios-simulator.yml\`.
+- Auditoría real: \`scripts/ios-simulator-audit.sh\`.
+- El workflow valida la aplicación web y el paquete móvil antes de generar iOS.
+- El proyecto iOS y sus recursos oficiales se generan desde las fuentes reales.
+- La aplicación se compila sin firma para iPhone Simulator.
+- La aplicación se instala y abre en el simulador.
+- La auditoría comprueba la instalación, el lanzamiento, el contenedor, la captura y la consola.
+- \`ios-build-status.json\` se genera dentro del job y se incluye en el artefacto \`AcuarioNexo-iOS-Simulator-Audit\`.
+- El artefacto incluye también la aplicación de simulador empaquetada y las evidencias de ejecución.
+- El workflow no realiza \`git commit\` ni \`git push\` y no escribe el resultado en \`main\`.
+- Esta validación acredita ejecución en simulador; no acredita firma para dispositivo ni disponibilidad en TestFlight.`;
 
 const map = `# MAPA DE ARCHIVOS
 
@@ -112,14 +126,19 @@ ${active.map(file => `- \`${file}\``).join('\n')}
 - \`src/library/inventory/library-inventory-import.js\`: importación de la ficha al acuario o inventario general según el tipo.
 - No se permiten archivos \`hotfix\`, \`patch\` o \`clean\` que redefinan la vista o las imágenes de ficha.
 
+${mobilePipeline}
+
 ${androidSummary}
+
+${iosSummary}
 
 ## Regla de actualización
 
-- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades, build o el sistema Android.
-- \`npm run check\` y \`npm run mobile:prepare\` regeneran este documento antes de continuar.
-- Después de una validación Android, comprobar que MAPA y ÁRBOL contienen el commit, run ID, estado y enlace vigentes.
-- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan a mano.
+- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades, build o los sistemas Android e iOS.
+- \`npm run check\` y \`npm run mobile:prepare\` regeneran estos documentos antes de continuar.
+- Los resultados de las validaciones móviles se consultan en los artefactos del run correspondiente, no en archivos persistentes de \`main\`.
+- Comprobar siempre los dos documentos generados después de actualizar el generador.
+- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan manualmente.
 `;
 
 const tree = `# ARBOL MAESTRO ACUARIONEXO
@@ -161,34 +180,68 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 - Editor y persistencia de ficha: \`src/library/library-v3-ficha.js\`.
 - Ningún otro archivo puede redefinir \`window.verFicha\` ni \`LibraryV3Images.imageBox\`.
 
-${androidSummary}
+## Flujo móvil maestro
 
-## Flujo de trabajo Android para futuras intervenciones
+\`Código fuente\`
+→ validación web
+→ preparación del paquete móvil
+→ generación nativa
+→ compilación
+→ instalación
+→ ejecución
+→ auditoría
+→ artefactos
+
+## Flujo Android
 
 \`.github/workflows/build-android-apk.yml\`
 → valida web y paquete móvil
-→ crea el proyecto Android y recursos oficiales
-→ compila y renombra el APK
-→ habilita KVM
+→ genera el proyecto Android y los recursos oficiales
+→ compila \`AcuarioNexo-Android-Test.apk\`
 → ejecuta \`scripts/android-emulator-audit.sh\`
 → instala y abre \`MainActivity\`
-→ verifica PID, actividad visible, captura y \`logcat\`
-→ publica \`android-test-latest\`
-→ actualiza \`android-build-status.json\`
+→ comprueba proceso, actividad visible, captura y \`logcat\`
+→ si toda la validación termina correctamente, publica la APK en \`android-test-latest\`
+→ genera \`android-build-status.json\` dentro del job
+→ sube estado y evidencias al artefacto \`AcuarioNexo-Android-Audit\`
+→ no realiza commits automáticos en \`main\`
 
-Ante un fallo:
+## Flujo iOS
+
+\`.github/workflows/build-ios-simulator.yml\`
+→ valida web y paquete móvil
+→ genera el proyecto iOS y los recursos oficiales
+→ compila \`App.app\` sin firma para iPhone Simulator
+→ ejecuta \`scripts/ios-simulator-audit.sh\`
+→ instala la aplicación en el simulador
+→ abre y comprueba la ejecución real
+→ genera \`ios-build-status.json\` dentro del job
+→ empaqueta \`AcuarioNexo-iOS-Simulator.zip\`
+→ sube estado, aplicación y evidencias al artefacto \`AcuarioNexo-iOS-Simulator-Audit\`
+→ no realiza commits automáticos en \`main\`
+
+## Lectura de resultados
+
+Ante un fallo Android:
 → abrir el job exacto
 → descargar \`AcuarioNexo-Android-Audit\`
-→ leer primero los archivos de estado y después los logs
-→ corregir la causa en \`main\`
-→ repetir hasta \`status: success\`
-→ no detenerse en informes intermedios
+→ leer \`android-build-status.json\` y las evidencias
+→ corregir la causa en las fuentes
+→ repetir la validación
+
+Ante un fallo iOS:
+→ abrir el job exacto
+→ descargar \`AcuarioNexo-iOS-Simulator-Audit\`
+→ leer \`ios-build-status.json\` y las evidencias
+→ corregir la causa en las fuentes
+→ repetir la validación
 
 ## Automatización
 
 - \`npm run docs:refresh\`: regenera MAPA y ÁRBOL.
-- \`npm run check\`: regenera documentación y valida la app.
+- \`npm run check\`: regenera documentación y valida la aplicación.
 - \`npm run mobile:prepare\`: regenera documentación y prepara \`www/\` desde los activos reales.
+- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan manualmente.
 `;
 
 write('MAPA_ARCHIVOS.md', map);
