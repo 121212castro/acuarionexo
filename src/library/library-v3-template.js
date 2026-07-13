@@ -45,28 +45,40 @@
     }, null, 2);
   }
 
-  function templateText(type) {
+  function templateText(type, subject) {
+    const concreteSubject = String(subject || '').trim();
     if (!type || type === 'all' || !S()?.CONTRACTS?.[type]) {
       throw new Error('Selecciona un tipo de ficha concreto antes de copiar la plantilla.');
+    }
+    if (!concreteSubject) {
+      throw new Error('Escribe el nombre concreto de la especie, producto o elemento de la ficha.');
     }
 
     const template = S.templateFor(type);
     const biologicalRules = BIOLOGICAL_TYPES.has(type) ? [
       '',
       'ESPECIE CONCRETA OBLIGATORIA:',
-      '- Esta ficha debe corresponder a una única especie concreta indicada por el usuario.',
+      `- La única especie autorizada para esta ficha es: ${concreteSubject}.`,
+      '- No cambies la especie solicitada ni redactes una ficha sobre un tema relacionado.',
       '- No generes una ficha genérica de un grupo, género, familia, acuario, parámetro, técnica ni producto.',
-      '- Si el usuario no ha indicado una especie concreta, detente y pídele el nombre común o científico antes de redactar la ficha.',
-      '- Identificación · Nombre científico y scientific_name deben contener el mismo binomio válido de dos palabras: Género especie.',
+      '- Identificación · Nombre científico y scientific_name deben corresponder exactamente a esa especie concreta.',
       '- No aceptes sp., spp., cf., aff., nombres de género aislados ni expresiones genéricas.',
       '- title debe ser el nombre común de esa misma especie y no un tema general.',
       ''
-    ] : [];
+    ] : [
+      '',
+      'OBJETO CONCRETO OBLIGATORIO:',
+      `- La ficha debe corresponder únicamente a: ${concreteSubject}.`,
+      '- No cambies el producto, equipo, test, alimento, aditivo o medicamento solicitado.',
+      '- No redactes una ficha genérica sobre su categoría, uso o parámetro asociado.',
+      ''
+    ];
 
     const lines = [
-      `Crea una ficha completa de ${typeName(type)} para AcuarioNexo.`,
+      `Crea una ficha completa de ${typeName(type)} sobre «${concreteSubject}» para AcuarioNexo.`,
       ...biologicalRules,
       'CONDICIÓN DE ENTREGA OBLIGATORIA:',
+      `- Antes de responder, comprueba que toda la ficha trata exclusivamente de «${concreteSubject}».`,
       '- No entregues la respuesta hasta comprobar internamente que TODOS los campos obligatorios cumplen exactamente las reglas indicadas.',
       '- Si un campo incumple longitud, formato, valor permitido o tipo numérico, corrígelo antes de responder.',
       '- La respuesta se importará y auditará automáticamente. Un solo campo inválido hará que AcuarioNexo rechace toda la ficha.',
@@ -103,6 +115,7 @@
       '- Fuentes / sources: mínimo 2 URLs reales.',
       '',
       'COMPROBACIÓN FINAL OBLIGATORIA ANTES DE RESPONDER:',
+      `- Verifica que title, scientific_name, summary y todos los apartados corresponden a «${concreteSubject}».`,
       '- Verifica que behavior tenga 20 caracteres o más.',
       '- Verifica que diet o feeding tenga 20 caracteres o más.',
       '- Verifica que reef_safe coincida literalmente con un valor permitido.',
@@ -128,6 +141,7 @@
       '- Debe ir solo entre ACUARIONEXO_JSON_START y ACUARIONEXO_JSON_END.',
       '- Debe usar entry_type exactamente como se indica.',
       '- Debe rellenar data con todas las claves indicadas.',
+      `- title y scientific_name deben corresponder a «${concreteSubject}» y no a un tema relacionado.`,
       '- scientific_name debe ir también en la clave superior del JSON y corresponder a la misma especie de la ficha.',
       '- No dejes null ni cadenas vacías en campos obligatorios.',
       '- Si una fuente fiable no ofrece un dato opcional, escribe una explicación concreta admitida por el contrato; nunca inventes.',
@@ -143,16 +157,22 @@
   window.copiarApartadosFicha = async function (type) {
     const rawSelected = type || (window.ANX.state.libraryFilter && window.ANX.state.libraryFilter !== 'all' ? window.ANX.state.libraryFilter : val('templateCopyType'));
     const selected = String(rawSelected || '').trim();
+    const subject = val('templateCopySubject');
     const box = byId('templateCopyStatus');
 
     if (!selected || selected === 'all' || !S()?.CONTRACTS?.[selected]) {
       if (box) box.innerHTML = msg('Selecciona un tipo de ficha concreto. «Todo» no puede generar una ficha válida.', 'error');
       return;
     }
+    if (!subject) {
+      if (box) box.innerHTML = msg('Escribe el nombre concreto de la especie, producto o elemento antes de copiar.', 'error');
+      byId('templateCopySubject')?.focus();
+      return;
+    }
 
     let text;
     try {
-      text = templateText(selected);
+      text = templateText(selected, subject);
     } catch (e) {
       if (box) box.innerHTML = msg(e.message || 'No se pudo generar la plantilla.', 'error');
       return;
@@ -160,7 +180,7 @@
 
     try {
       await navigator.clipboard.writeText(text);
-      if (box) box.innerHTML = msg(`Apartados de ${typeName(selected)} copiados con contrato y validación obligatoria. Pégalos en el chat.`, 'success');
+      if (box) box.innerHTML = msg(`Plantilla de ${typeName(selected)} para «${subject}» copiada.`, 'success');
     } catch (e) {
       if (box) box.innerHTML = `<div class="notice"><b>No se pudo copiar automáticamente.</b><br>Selecciona y copia este texto:<textarea readonly>${esc(text)}</textarea></div>`;
     }
