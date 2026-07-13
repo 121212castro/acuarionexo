@@ -1,0 +1,9 @@
+{
+  "status": "pending",
+  "commit": "",
+  "run_id": "",
+  "validated_on_simulator": false,
+  "artifact": "",
+  "signed_for_device": false,
+  "testflight_ready": false
+}
