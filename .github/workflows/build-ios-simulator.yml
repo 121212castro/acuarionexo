@@ -52,13 +52,15 @@ jobs:
           set -o pipefail
           rm -rf ios ios-build
           npx cap add ios 2>&1 | tee -a ios-build-error.log
-          npx --yes @capacitor/assets@3.0.5 generate --ios --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f' 2>&1 | tee -a ios-build-error.log
+          npm run mobile:assets:prepare 2>&1 | tee -a ios-build-error.log
+          npx --yes @capacitor/assets@3.0.5 generate --ios --asset-path assets --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f' 2>&1 | tee -a ios-build-error.log
           npx cap sync ios 2>&1 | tee -a ios-build-error.log
 
       - name: Verify generated iOS configuration
         shell: bash
         run: |
-          test -f ios/App/App.xcworkspace/contents.xcworkspacedata
+          set -o pipefail
+          test -f ios/App/App.xcodeproj/project.pbxproj
           test -f ios/App/App/Info.plist
           grep -R "com.acuarionexo.app" ios/App/App.xcodeproj/project.pbxproj
           find ios/App/App/Assets.xcassets -type f | sort | tee ios-assets-files.txt
@@ -69,7 +71,7 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Debug \
             -sdk iphonesimulator \
