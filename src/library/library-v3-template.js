@@ -1,21 +1,13 @@
 /* AcuarioNexo · Biblioteca V3 plantillas */
 (function () {
   const { byId, val, msg, esc } = window.ANX;
-  const { S, typeName } = window.ANX.LibraryV3Core;
-
-  const BIOLOGICAL_TYPES = new Set([
-    'pez_marino',
-    'pez_dulce',
-    'coral',
-    'invertebrado',
-    'planta',
-    'microfauna'
-  ]);
+  const { S, typeName, biologicalTypes } = window.ANX.LibraryV3Core;
 
   function fieldRuleText(field) {
     const rules = [];
     rules.push(`clave JSON: data.${field.id}`);
     if (field.type === 'number') rules.push('debe incluir valor numérico concreto');
+    else if (field.id === 'scientific_name') rules.push('debe contener exactamente un binomio científico válido');
     else rules.push(`mínimo ${field.minLength || 20} caracteres`);
     if (field.allowed && field.allowed.length) rules.push(`valores permitidos exactos: ${field.allowed.join(' | ')}`);
     if (field.validator === 'scientificName') rules.push('debe ser especie concreta, no sp., spp., cf. ni aff.');
@@ -23,7 +15,12 @@
     return rules.join('; ');
   }
 
-  function jsonSkeleton(type, template) {
+  function fieldLabel(field, type) {
+    if (field.id === 'title') return biologicalTypes.has(type) ? 'Nombre común' : 'Nombre del producto, modelo o elemento';
+    return field.label;
+  }
+
+  function jsonSkeleton(type, template, subject, scientificName) {
     const data = {};
     template.forEach(section => section.fields.forEach(field => {
       if (field.id === 'sources') return;
@@ -32,8 +29,8 @@
     }));
     return JSON.stringify({
       entry_type: type,
-      title: '',
-      scientific_name: '',
+      title: subject || '',
+      scientific_name: biologicalTypes.has(type) ? scientificName || '' : '',
       summary: '',
       tags: [],
       data,
@@ -45,25 +42,30 @@
     }, null, 2);
   }
 
-  function templateText(type, subject) {
+  function templateText(type, subject, scientificName) {
     const concreteSubject = String(subject || '').trim();
+    const concreteScientificName = String(scientificName || '').trim();
     if (!type || type === 'all' || !S()?.CONTRACTS?.[type]) {
       throw new Error('Selecciona un tipo de ficha concreto antes de copiar la plantilla.');
     }
     if (!concreteSubject) {
-      throw new Error('Escribe el nombre concreto de la especie, producto o elemento de la ficha.');
+      throw new Error('Escribe el nombre común, comercial o modelo concreto de la ficha.');
+    }
+    if (biologicalTypes.has(type) && !S.isConcreteSpecies(concreteScientificName)) {
+      throw new Error('Escribe un nombre científico binomial válido para la especie biológica.');
     }
 
     const template = S.templateFor(type);
-    const biologicalRules = BIOLOGICAL_TYPES.has(type) ? [
+    const identityRules = biologicalTypes.has(type) ? [
       '',
-      'ESPECIE CONCRETA OBLIGATORIA:',
-      `- La única especie autorizada para esta ficha es: ${concreteSubject}.`,
-      '- No cambies la especie solicitada ni redactes una ficha sobre un tema relacionado.',
+      'IDENTIDAD TAXONÓMICA CERRADA:',
+      `- Nombre común solicitado: ${concreteSubject}.`,
+      `- Nombre científico obligatorio: ${concreteScientificName}.`,
+      `- La clave superior scientific_name debe ser exactamente "${concreteScientificName}".`,
+      `- El apartado visible Nombre científico debe ser exactamente "${concreteScientificName}".`,
+      '- No sustituyas esa especie por otra, no omitas el nombre científico y no redactes sobre un tema relacionado.',
       '- No generes una ficha genérica de un grupo, género, familia, acuario, parámetro, técnica ni producto.',
-      '- Identificación · Nombre científico y scientific_name deben corresponder exactamente a esa especie concreta.',
-      '- No aceptes sp., spp., cf., aff., nombres de género aislados ni expresiones genéricas.',
-      '- title debe ser el nombre común de esa misma especie y no un tema general.',
+      '- title debe identificar esta misma especie mediante su nombre común.',
       ''
     ] : [
       '',
@@ -75,8 +77,10 @@
     ];
 
     const lines = [
-      `Crea una ficha completa de ${typeName(type)} sobre «${concreteSubject}» para AcuarioNexo.`,
-      ...biologicalRules,
+      biologicalTypes.has(type)
+        ? `Crea una ficha completa de ${typeName(type)} sobre «${concreteSubject}» (${concreteScientificName}) para AcuarioNexo.`
+        : `Crea una ficha completa de ${typeName(type)} sobre «${concreteSubject}» para AcuarioNexo.`,
+      ...identityRules,
       'CONDICIÓN DE ENTREGA OBLIGATORIA:',
       `- Antes de responder, comprueba que toda la ficha trata exclusivamente de «${concreteSubject}».`,
       '- No entregues la respuesta hasta comprobar internamente que TODOS los campos obligatorios cumplen exactamente las reglas indicadas.',
@@ -115,7 +119,8 @@
       '- Fuentes / sources: mínimo 2 URLs reales.',
       '',
       'COMPROBACIÓN FINAL OBLIGATORIA ANTES DE RESPONDER:',
-      `- Verifica que title, scientific_name, summary y todos los apartados corresponden a «${concreteSubject}».`,
+      `- Verifica que title, summary y todos los apartados corresponden a «${concreteSubject}».`,
+      ...(biologicalTypes.has(type) ? [`- Verifica que scientific_name sea exactamente "${concreteScientificName}" en el texto visible y en el JSON.`] : []),
       '- Verifica que behavior tenga 20 caracteres o más.',
       '- Verifica que diet o feeding tenga 20 caracteres o más.',
       '- Verifica que reef_safe coincida literalmente con un valor permitido.',
@@ -132,7 +137,7 @@
     ];
     template.forEach(section => {
       lines.push('', section.label);
-      section.fields.forEach(field => lines.push(`- ${field.label} (${fieldRuleText(field)})`));
+      section.fields.forEach(field => lines.push(`- ${fieldLabel(field, type)} (${fieldRuleText(field)})`));
     });
     lines.push(
       '',
@@ -141,23 +146,29 @@
       '- Debe ir solo entre ACUARIONEXO_JSON_START y ACUARIONEXO_JSON_END.',
       '- Debe usar entry_type exactamente como se indica.',
       '- Debe rellenar data con todas las claves indicadas.',
-      `- title y scientific_name deben corresponder a «${concreteSubject}» y no a un tema relacionado.`,
-      '- scientific_name debe ir también en la clave superior del JSON y corresponder a la misma especie de la ficha.',
+      ...(biologicalTypes.has(type) ? [`- scientific_name debe ser exactamente "${concreteScientificName}".`] : []),
       '- No dejes null ni cadenas vacías en campos obligatorios.',
       '- Si una fuente fiable no ofrece un dato opcional, escribe una explicación concreta admitida por el contrato; nunca inventes.',
       '',
       'ESQUELETO JSON:',
       'ACUARIONEXO_JSON_START',
-      jsonSkeleton(type, template),
+      jsonSkeleton(type, template, concreteSubject, concreteScientificName),
       'ACUARIONEXO_JSON_END'
     );
     return lines.join('\n');
   }
 
+  window.actualizarCamposPlantillaChat = function () {
+    const type = val('templateCopyType');
+    const field = byId('templateScientificField');
+    if (field) field.hidden = !biologicalTypes.has(type);
+  };
+
   window.copiarApartadosFicha = async function (type) {
     const rawSelected = type || (window.ANX.state.libraryFilter && window.ANX.state.libraryFilter !== 'all' ? window.ANX.state.libraryFilter : val('templateCopyType'));
     const selected = String(rawSelected || '').trim();
     const subject = val('templateCopySubject');
+    const scientificName = val('templateCopyScientificName');
     const box = byId('templateCopyStatus');
 
     if (!selected || selected === 'all' || !S()?.CONTRACTS?.[selected]) {
@@ -165,14 +176,19 @@
       return;
     }
     if (!subject) {
-      if (box) box.innerHTML = msg('Escribe el nombre concreto de la especie, producto o elemento antes de copiar.', 'error');
+      if (box) box.innerHTML = msg('Escribe el nombre común, comercial o modelo antes de copiar.', 'error');
       byId('templateCopySubject')?.focus();
+      return;
+    }
+    if (biologicalTypes.has(selected) && !S.isConcreteSpecies(scientificName)) {
+      if (box) box.innerHTML = msg('Escribe el nombre científico exacto con dos palabras, por ejemplo Centropyge acanthops.', 'error');
+      byId('templateCopyScientificName')?.focus();
       return;
     }
 
     let text;
     try {
-      text = templateText(selected, subject);
+      text = templateText(selected, subject, scientificName);
     } catch (e) {
       if (box) box.innerHTML = msg(e.message || 'No se pudo generar la plantilla.', 'error');
       return;
