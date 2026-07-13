@@ -4,9 +4,16 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-structure-clean-20260710-1005`
+`navigation-structure-20260713-1540`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
+
+## Núcleo / Navegación
+
+- `app.js`: coordinador principal, estado global, renderizado base y única definición estructural de la barra inferior.
+- La barra inferior contiene exactamente cinco accesos principales: Inicio, Acuarios, Biblioteca, Microfauna y Avisos.
+- Inventario y Admin permanecen como módulos internos de la pantalla principal y no se duplican en la barra inferior.
+- `render()` inserta una sola barra inferior fuera de `#app` y no añade separadores HTML de altura fija.
 
 ## Biblioteca / Fichas
 
