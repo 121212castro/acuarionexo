@@ -10,7 +10,7 @@ file:///home/runner/work/acuarionexo/acuarionexo/scripts/refresh-project-docs.mj
   throw new Error(`Build desincronizado: index=${build}, app-version=${versionBuild}, manifest=${manifestBuild}`);
         ^
 
-Error: Build desincronizado: index=ficha-subject-20260713-1600, app-version=navigation-structure-20260713-1540, manifest=navigation-structure-20260713-1540
+Error: Build desincronizado: index=ficha-subject-20260713-1600, app-version=ficha-scientific-identity-20260713-1605, manifest=ficha-subject-20260713-1600
     at file:///home/runner/work/acuarionexo/acuarionexo/scripts/refresh-project-docs.mjs:56:9
     at ModuleJob.run (node:internal/modules/esm/module_job:343:25)
     at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)
