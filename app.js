@@ -58,20 +58,18 @@
 
   function bottomNav(active) {
     const item = (id, label, icon, fn) => `<button class="${active === id ? 'active' : ''}" onclick="${fn}"><span>${icon}</span><small>${label}</small></button>`;
-    return `<nav class="bottom-nav">
+    return `<nav class="bottom-nav" aria-label="Navegación principal">
       ${item('inicio', 'Inicio', '⌂', 'dashboard()')}
       ${item('acuarios', 'Acuarios', '▣', 'acuariosHome()')}
       ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
       ${item('microfauna', 'Microfauna', '◌', 'microfauna()')}
       ${item('avisos', 'Avisos', '♢', 'tareas()')}
-      ${item('inventario', 'Inventario', '▤', 'inventario()')}
-      ${state.isAdmin ? item('admin', 'Admin', '⚙', 'adminPanel()') : ''}
     </nav>`;
   }
 
   function render(html, active = 'inicio', showNav = true) {
     document.querySelector('.bottom-nav')?.remove();
-    app.innerHTML = html + (showNav ? '<div style="height:140px"></div>' : '');
+    app.innerHTML = html;
     if (showNav) document.body.insertAdjacentHTML('beforeend', bottomNav(active));
     window.scrollTo(0, 0);
     requestAnimationFrame(function () {
