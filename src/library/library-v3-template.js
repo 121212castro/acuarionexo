@@ -3,6 +3,15 @@
   const { byId, val, msg, esc } = window.ANX;
   const { S, typeName } = window.ANX.LibraryV3Core;
 
+  const BIOLOGICAL_TYPES = new Set([
+    'pez_marino',
+    'pez_dulce',
+    'coral',
+    'invertebrado',
+    'planta',
+    'microfauna'
+  ]);
+
   function fieldRuleText(field) {
     const rules = [];
     rules.push(`clave JSON: data.${field.id}`);
@@ -37,10 +46,26 @@
   }
 
   function templateText(type) {
+    if (!type || type === 'all' || !S()?.CONTRACTS?.[type]) {
+      throw new Error('Selecciona un tipo de ficha concreto antes de copiar la plantilla.');
+    }
+
     const template = S.templateFor(type);
+    const biologicalRules = BIOLOGICAL_TYPES.has(type) ? [
+      '',
+      'ESPECIE CONCRETA OBLIGATORIA:',
+      '- Esta ficha debe corresponder a una única especie concreta indicada por el usuario.',
+      '- No generes una ficha genérica de un grupo, género, familia, acuario, parámetro, técnica ni producto.',
+      '- Si el usuario no ha indicado una especie concreta, detente y pídele el nombre común o científico antes de redactar la ficha.',
+      '- Identificación · Nombre científico y scientific_name deben contener el mismo binomio válido de dos palabras: Género especie.',
+      '- No aceptes sp., spp., cf., aff., nombres de género aislados ni expresiones genéricas.',
+      '- title debe ser el nombre común de esa misma especie y no un tema general.',
+      ''
+    ] : [];
+
     const lines = [
       `Crea una ficha completa de ${typeName(type)} para AcuarioNexo.`,
-      '',
+      ...biologicalRules,
       'CONDICIÓN DE ENTREGA OBLIGATORIA:',
       '- No entregues la respuesta hasta comprobar internamente que TODOS los campos obligatorios cumplen exactamente las reglas indicadas.',
       '- Si un campo incumple longitud, formato, valor permitido o tipo numérico, corrígelo antes de responder.',
@@ -103,6 +128,7 @@
       '- Debe ir solo entre ACUARIONEXO_JSON_START y ACUARIONEXO_JSON_END.',
       '- Debe usar entry_type exactamente como se indica.',
       '- Debe rellenar data con todas las claves indicadas.',
+      '- scientific_name debe ir también en la clave superior del JSON y corresponder a la misma especie de la ficha.',
       '- No dejes null ni cadenas vacías en campos obligatorios.',
       '- Si una fuente fiable no ofrece un dato opcional, escribe una explicación concreta admitida por el contrato; nunca inventes.',
       '',
@@ -115,9 +141,23 @@
   }
 
   window.copiarApartadosFicha = async function (type) {
-    const selected = type || (window.ANX.state.libraryFilter && window.ANX.state.libraryFilter !== 'all' ? window.ANX.state.libraryFilter : val('templateCopyType') || 'pez_marino');
-    const text = templateText(selected);
+    const rawSelected = type || (window.ANX.state.libraryFilter && window.ANX.state.libraryFilter !== 'all' ? window.ANX.state.libraryFilter : val('templateCopyType'));
+    const selected = String(rawSelected || '').trim();
     const box = byId('templateCopyStatus');
+
+    if (!selected || selected === 'all' || !S()?.CONTRACTS?.[selected]) {
+      if (box) box.innerHTML = msg('Selecciona un tipo de ficha concreto. «Todo» no puede generar una ficha válida.', 'error');
+      return;
+    }
+
+    let text;
+    try {
+      text = templateText(selected);
+    } catch (e) {
+      if (box) box.innerHTML = msg(e.message || 'No se pudo generar la plantilla.', 'error');
+      return;
+    }
+
     try {
       await navigator.clipboard.writeText(text);
       if (box) box.innerHTML = msg(`Apartados de ${typeName(selected)} copiados con contrato y validación obligatoria. Pégalos en el chat.`, 'success');
