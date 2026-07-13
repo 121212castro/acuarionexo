@@ -4,18 +4,87 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `navigation-structure-20260713-1540`.
+Build actual: `ficha-scientific-identity-20260713-1605`.
 
-## Núcleo / Navegación principal
+## Entrada web
 
-`app.js`
-→ mantiene el estado global y el renderizado base
-→ elimina cualquier barra inferior anterior antes de renderizar
-→ inserta una única `.bottom-nav` fuera de `#app`
-→ muestra exactamente cinco accesos principales
-→ Inicio / Acuarios / Biblioteca / Microfauna / Avisos
-→ no duplica Inventario ni Admin en la navegación fija
-→ no inserta separadores HTML de altura fija
+- `styles.css`
+- `aquarium-map.css`
+- `login-reef.css`
+- `aquarium-cards.css`
+- `aquariums-mobile-fix.css`
+- `mobile-form-fix.css`
+- `library-images.css`
+- `library-mobile-overflow-fix.css`
+- `library-clean.css`
+- `inventory-accordion.css`
+- `notifications.css`
+- `config.js`
+- `app.js`
+- `src/aquariums/aquariums-core.js`
+- `src/aquariums/aquariums-form.js`
+- `src/aquariums/aquariums-save.js`
+- `src/aquariums/aquariums.js`
+- `src/admin/admin-core.js`
+- `src/core/module-loader.js`
+- `src/auth/auth-core.js`
+- `src/auth/auth.js`
+- `update-manager.js`
+- `notifications.js`
+
+## Módulos cargados bajo demanda
+
+- `src/library/core/library-schema.js`
+- `src/library/core/library-schema-rules.js`
+- `src/library/ui/library.js`
+- `src/library/inventory/library-inventory-import.js`
+- `src/library/library-v3-core.js`
+- `src/library/library-v3-template.js`
+- `src/library/library-v3-images.js`
+- `src/library/library-v3-ai.js`
+- `src/library/library-v3-ficha.js`
+- `src/library/ficha/ficha-actions.js`
+- `src/library/library-v3.js`
+- `src/library/ficha/ficha-type-tools.js`
+- `src/library/ficha/ficha-chat-import.js`
+- `src/library/core/library-admin-policy.js`
+- `src/animals/animals-core.js`
+- `src/animals/animals.js`
+- `src/map/map-v3-model.js`
+- `src/map/map-state.js`
+- `src/map/map-ui.js`
+- `src/map/map-photos.js`
+- `src/map/map-markers.js`
+- `src/map/map-render-3d.js`
+- `src/map/map-save.js`
+- `src/map/map.js`
+- `src/map/map-interactions.js`
+- `src/photos/photos-core.js`
+- `src/photos/photos-form.js`
+- `src/photos/photos-save.js`
+- `src/photos/photos.js`
+- `src/inventory/inventory-core.js`
+- `src/inventory/inventory-list.js`
+- `src/inventory/inventory-form.js`
+- `src/inventory/inventory.js`
+- `src/inventory/inventory-ui.js`
+- `src/microfauna/microfauna-core.js`
+- `src/microfauna/microfauna-form.js`
+- `src/microfauna/microfauna-save.js`
+- `src/microfauna/microfauna.js`
+- `src/ai/ai.js`
+- `src/ai/ai-library-v3.js`
+- `src/ai/ai-alerts-extra.js`
+- `src/parameters/parameters-core.js`
+- `src/parameters/parameters-alert-helpers.js`
+- `src/parameters/parameters-manual.js`
+- `src/parameters/parameters.js`
+- `src/parameters/measurements-advanced.js`
+- `src/parameters/parameters-ai-fallback.js`
+- `src/tasks/tasks-core.js`
+- `src/tasks/tasks-form.js`
+- `src/tasks/tasks.js`
+- `src/admin/admin.js`
 
 ## Biblioteca / Flujo de ficha
 
@@ -25,115 +94,80 @@ Build actual: `navigation-structure-20260713-1540`.
 → muestra `cover_url` y `photo_url`
 → muestra datos estructurados y fuentes
 → ofrece Editar / Añadir a mi acuario / Publicar / Borrar
-→ «Añadir a mi acuario» llama a `ANX.LibraryInventoryImport.pasarFichaAInventario`
-→ `library-inventory-import.js`
-→ recarga la ficha desde `library_entries`
-→ determina si el destino es acuario o inventario general
-→ carga los acuarios del usuario cuando corresponde
-→ muestra el formulario de alta con acuario, cantidad, unidad, fecha, procedencia, precio, lote y notas
-→ guarda una copia real en `inventory_items`
-
-`library-v3-template.js`
-→ obtiene el contrato real mediante `LibrarySchema.templateFor(type)`
-→ genera el texto «Copiar apartados» con cada clave JSON, mínimo, tipo y valor permitido
-→ exige comprobación final antes de que ChatGPT responda
-→ advierte que cualquier incumplimiento hará que AcuarioNexo rechace la ficha
-
-`ficha-chat-import.js`
-→ recibe el texto y el bloque `ACUARIONEXO_JSON_START/END`
-→ detecta y valida el `entry_type`
-→ construye la fila candidata sin guardarla
-→ ejecuta `LibrarySchema.audit(entry)`
-→ si existe un campo inválido, muestra todos los errores y no inserta nada
-→ solo una ficha aprobada se guarda en `library_entries`
 
 `library-v3-ficha.js`
 → edición y guardado
 → usa `library-v3-images.js` para las dos imágenes
 
-## Acuarios / Animales
-
-`aquariums.js`
-→ abre un acuario
-→ `openAqSection('animales')`
-→ `module-loader.js`
-→ carga `animals-core.js` y `animals.js`
-→ `animals.js`
-→ consulta `inventory_items` del acuario
-→ filtra categorías vivas y organismos no dados de baja
-→ muestra los animales del acuario
-
-`dashboard()`
-→ `loadAquariums()`
-→ `loadDashboardStats(list)`
-→ consulta `inventory_items` vinculados a todos los acuarios del usuario
-→ aplica las mismas reglas de categorías vivas y estado
-→ suma `quantity`
-→ muestra el total en «Animales registrados»
+`library-inventory-import.js`
+→ copia la ficha al acuario o al inventario correspondiente
 
 ## Propiedad única
 
-- Navegación inferior y renderizado base: `app.js`.
-- Vista abierta y acciones de ficha: `src/library/ficha/ficha-actions.js`.
-- Contrato copiado al Chat: `src/library/library-v3-template.js`.
-- Creación y validación previa desde texto del Chat: `src/library/ficha/ficha-chat-import.js`.
-- Importación desde Biblioteca: `src/library/inventory/library-inventory-import.js` mediante `window.ANX.LibraryInventoryImport`.
+- Vista abierta: `src/library/ficha/ficha-actions.js`.
 - Editor de imágenes: `src/library/library-v3-images.js`.
 - Editor y persistencia de ficha: `src/library/library-v3-ficha.js`.
-- Ningún otro archivo puede redefinir `window.verFicha`, `LibraryV3Images.imageBox`, el contrato del Chat, el flujo de importación de Biblioteca ni la estructura de `.bottom-nav`.
+- Ningún otro archivo puede redefinir `window.verFicha` ni `LibraryV3Images.imageBox`.
 
-## Android
+## Flujo móvil maestro
 
-- Workflow único de validación y publicación: `.github/workflows/build-android-apk.yml`.
-- Auditoría real del emulador: `scripts/android-emulator-audit.sh`.
-- Resultado persistente: `android-build-status.json`.
-- Estado registrado: `success`.
-- Commit validado: `30c5e6069d8b55f88eab6d90ec62cd5ebe2825f9`.
-- Run ID: `29156270867`.
-- Validado en emulador: `true`.
-- APK: `https://github.com/121212castro/acuarionexo/releases/download/android-test-latest/AcuarioNexo-Android-Test.apk`.
+`Código fuente`
+→ validación web
+→ preparación del paquete móvil
+→ generación nativa
+→ compilación
+→ instalación
+→ ejecución
+→ auditoría
+→ artefactos
 
-### Criterio obligatorio de cierre Android
-
-Android solo puede declararse terminado cuando, en una misma ejecución:
-
-1. la aplicación web y el paquete móvil pasan;
-2. el proyecto Android y los iconos se generan;
-3. el APK compila y se instala en el emulador;
-4. el proceso `com.acuarionexo.app` permanece activo;
-5. `MainActivity` queda visible;
-6. se genera captura y `logcat`;
-7. no existe `FATAL EXCEPTION`, ANR ni cierre del proceso;
-8. la release publica el APK;
-9. `android-build-status.json` registra `status: success` y `validated_on_emulator: true`.
-
-No se acepta como cierre una ejecución iniciada, una compilación aislada ni un APK generado sin instalación y arranque comprobados.
-
-## Flujo de trabajo Android para futuras intervenciones
+## Flujo Android
 
 `.github/workflows/build-android-apk.yml`
 → valida web y paquete móvil
-→ crea el proyecto Android y recursos oficiales
-→ compila y renombra el APK
-→ habilita KVM
+→ genera el proyecto Android y los recursos oficiales
+→ compila `AcuarioNexo-Android-Test.apk`
 → ejecuta `scripts/android-emulator-audit.sh`
 → instala y abre `MainActivity`
-→ verifica PID, actividad visible, captura y `logcat`
-→ publica `android-test-latest`
-→ actualiza `android-build-status.json`
+→ comprueba proceso, actividad visible, captura y `logcat`
+→ si toda la validación termina correctamente, publica la APK en `android-test-latest`
+→ genera `android-build-status.json` dentro del job
+→ sube estado y evidencias al artefacto `AcuarioNexo-Android-Audit`
+→ no realiza commits automáticos en `main`
 
-Ante un fallo:
+## Flujo iOS
+
+`.github/workflows/build-ios-simulator.yml`
+→ valida web y paquete móvil
+→ genera el proyecto iOS y los recursos oficiales
+→ compila `App.app` sin firma para iPhone Simulator
+→ ejecuta `scripts/ios-simulator-audit.sh`
+→ instala la aplicación en el simulador
+→ abre y comprueba la ejecución real
+→ genera `ios-build-status.json` dentro del job
+→ empaqueta `AcuarioNexo-iOS-Simulator.zip`
+→ sube estado, aplicación y evidencias al artefacto `AcuarioNexo-iOS-Simulator-Audit`
+→ no realiza commits automáticos en `main`
+
+## Lectura de resultados
+
+Ante un fallo Android:
 → abrir el job exacto
 → descargar `AcuarioNexo-Android-Audit`
-→ leer primero los archivos de estado y después los logs
-→ corregir la causa en `main`
-→ repetir hasta `status: success`
-→ no detenerse en informes intermedios
+→ leer `android-build-status.json` y las evidencias
+→ corregir la causa en las fuentes
+→ repetir la validación
+
+Ante un fallo iOS:
+→ abrir el job exacto
+→ descargar `AcuarioNexo-iOS-Simulator-Audit`
+→ leer `ios-build-status.json` y las evidencias
+→ corregir la causa en las fuentes
+→ repetir la validación
 
 ## Automatización
 
 - `npm run docs:refresh`: regenera MAPA y ÁRBOL.
-- `npm run check`: regenera documentación y valida la app.
+- `npm run check`: regenera documentación y valida la aplicación.
 - `npm run mobile:prepare`: regenera documentación y prepara `www/` desde los activos reales.
-- Después de cada cambio funcional, MAPA y ÁRBOL deben reflejar el flujo vigente y comprobarse desde GitHub.
-- Después de una validación Android, MAPA y ÁRBOL deben conservar commit, run ID, estado y enlace vigentes.
+- `www/`, `android/`, `ios/` y `node_modules/` no se editan manualmente.
