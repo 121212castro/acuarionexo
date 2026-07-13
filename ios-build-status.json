@@ -1,7 +1,7 @@
 {
   "status": "failure",
-  "commit": "2bbe71e547aaf22c8b53b1a1880f42f7ac5eed8a",
-  "run_id": "29278246587",
+  "commit": "3455eccc5643472eeb4c8c71da6cd798927f866c",
+  "run_id": "29278614920",
   "validated_on_simulator": false,
   "artifact": "AcuarioNexo-iOS-Simulator-Audit",
   "signed_for_device": false,
