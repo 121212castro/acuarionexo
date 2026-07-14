@@ -160,7 +160,7 @@
 
   proxy('biblioteca', 'biblioteca', 'Biblioteca', 'biblioteca');
   proxy('animales', 'animales', 'Animales', 'acuarios');
-  proxy('mapa3D', 'mapa', 'Mapa', 'acuarios');
+  proxy('mapaIA', 'mapa', 'Mapa IA', 'acuarios');
   proxy('fotos', 'fotos', 'Fotos', 'acuarios');
   proxy('inventario', 'inventario', 'Inventario', 'inventario');
   proxy('microfauna', 'microfauna', 'Microfauna', 'microfauna');
