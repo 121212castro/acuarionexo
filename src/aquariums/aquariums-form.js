@@ -15,9 +15,9 @@
   }
 
   function dateValue(value) { return value ? String(value).slice(0, 10) : ''; }
-  function fnum(id, label, value) { return `<label>${esc(label)}</label><input id="${esc(id)}" type="number" step="0.1" inputmode="decimal" value="${esc(value ?? '')}" oninput="calcAqVolumes()">`; }
-  function fdate(id, label, value) { return `<label>${esc(label)}</label><input id="${esc(id)}" type="date" value="${esc(dateValue(value))}">`; }
-  function fcheck(id, label, value) { return `<label><input id="${esc(id)}" type="checkbox" ${value ? 'checked' : ''} onchange="calcAqVolumes()"> ${esc(label)}</label>`; }
+  function fnum(id, label, value) { return `<label for="${esc(id)}">${esc(label)}</label><input id="${esc(id)}" type="number" step="0.1" inputmode="decimal" value="${esc(value ?? '')}" oninput="calcAqVolumes()">`; }
+  function fdate(id, label, value) { return `<label for="${esc(id)}">${esc(label)}</label><input id="${esc(id)}" type="date" value="${esc(dateValue(value))}">`; }
+  function fcheck(id, label, value) { return `<label class="aq-switch" for="${esc(id)}"><span>${esc(label)}</span><input id="${esc(id)}" type="checkbox" ${value ? 'checked' : ''} onchange="calcAqVolumes()"><i aria-hidden="true"></i></label>`; }
   function nval(id) { const raw = val(id); if (raw === '') return null; const n = Number(String(raw).replace(',', '.')); return Number.isFinite(n) ? n : null; }
   function dval(id) { return val(id) || null; }
 
@@ -78,36 +78,42 @@
   function aquariumPhotoHtml(aq, isEdit) {
     if (!isEdit) return '';
     const currentPhoto = photoUrl(aq) || aq?.__cover_url || '';
-    return `<h3>Foto del acuario</h3>
+    return `<div class="aquarium-photo-block">
+      <h3>Foto del acuario</h3>
       ${currentPhoto ? `<img class="aquarium-form-photo" src="${esc(currentPhoto)}" alt="Foto actual de ${esc(aq?.name || 'acuario')}">` : '<p class="small">Este acuario todavía no tiene una foto.</p>'}
       <label for="editAqPhoto">Añadir o cambiar foto</label>
       <input id="editAqPhoto" type="file" accept="image/*" capture="environment">
-      <p class="small">La imagen seleccionada se guardará al pulsar Guardar cambios.</p>`;
+      <p class="small">La imagen seleccionada se guardará al pulsar Guardar cambios.</p>
+    </div>`;
+  }
+
+  function formSection(title, body, open = false) {
+    return `<details class="aquarium-form-section" ${open ? 'open' : ''}><summary>${esc(title)}</summary><div class="aquarium-form-section-body">${body}</div></details>`;
   }
 
   function aquariumFormHtml(aq, mode) {
     const isEdit = mode === 'edit';
     const type = aq?.aquarium_type || aq?.type || 'reef';
     const manual = aq?.manual_real_liters ?? aq?.real_liters ?? aq?.liters ?? '';
+    const general = `<label for="editAqName">Nombre</label><input id="editAqName" placeholder="Nombre del acuario" value="${esc(aq?.name || '')}">
+      <label for="editAqType">Tipo</label><select id="editAqType">${selectTypeOptions(type)}</select>
+      <label for="editAqLocation">Ubicación</label><input id="editAqLocation" placeholder="Ubicación" value="${esc(aq?.location || '')}">
+      ${aquariumPhotoHtml(aq, isEdit)}
+      <div class="aquarium-date-grid">${fdate('mounted_at','Fecha de montaje',aq?.mounted_at)}${fdate('filled_at','Fecha de llenado',aq?.filled_at)}${fdate('cycling_start_date','Inicio de ciclado',aq?.cycling_start_date)}${fdate('cycling_end_date','Fin de ciclado',aq?.cycling_end_date)}</div>`;
+    const tank = `<div class="aquarium-fields-grid">${fnum('tank_length_cm','Largo urna (cm)',aq?.tank_length_cm)}${fnum('tank_width_cm','Ancho urna (cm)',aq?.tank_width_cm)}${fnum('tank_height_cm','Alto urna (cm)',aq?.tank_height_cm)}${fnum('display_water_height_cm','Altura real de agua (cm)',aq?.display_water_height_cm)}${fnum('rock_kg','Roca (kg)',aq?.rock_kg)}${fnum('sand_kg','Arena (kg)',aq?.sand_kg)}</div>`;
+    const support = `${fcheck('has_sump','Tiene sump',!!aq?.has_sump)}<div class="aquarium-fields-grid">${fnum('sump_length_cm','Largo sump (cm)',aq?.sump_length_cm)}${fnum('sump_width_cm','Ancho sump (cm)',aq?.sump_width_cm)}${fnum('sump_height_cm','Alto sump (cm)',aq?.sump_height_cm)}${fnum('sump_water_height_cm','Altura agua sump (cm)',aq?.sump_water_height_cm)}</div>${fcheck('has_refugium','Tiene refugio',!!aq?.has_refugium)}${fnum('refugium_liters','Litros refugio',aq?.refugium_liters)}${fcheck('has_ato_reservoir','Tiene depósito de relleno',!!aq?.has_ato_reservoir)}${fnum('ato_reservoir_liters','Litros depósito relleno',aq?.ato_reservoir_liters)}`;
+    const liters = `${fnum('editAqLiters','Litros reales manuales',manual)}<div class="aquarium-volume-cards">${calcStat('Brutos urna','calcGross')}${calcStat('Display neto','calcDisplayNet')}${calcStat('Sump neto','calcSumpNet')}${calcStat('Sistema neto','calcSystemNet')}</div>`;
+    const notes = `<label for="editAqNotes">Nota</label><textarea id="editAqNotes">${esc(aq?.notes || '')}</textarea>`;
     return `<section class="summary-card"><div><small>AcuarioNexo</small><h2>${isEdit ? 'Editar acuario' : 'Nuevo acuario'}</h2><p>${isEdit ? 'Modificar datos del sistema.' : 'Crear un sistema nuevo.'}</p></div></section>
       <section class="panel aquarium-form">
-      <div class="panel-head"><h2>${isEdit ? 'Editar acuario' : 'Nuevo acuario'}</h2><button onclick="${isEdit ? 'openAqSection(\'resumen\')' : 'acuariosHome()'}">Cancelar</button></div>
-      <h3>Datos generales</h3>
-      <label>Nombre</label><input id="editAqName" placeholder="Nombre del acuario" value="${esc(aq?.name || '')}">
-      <label>Tipo</label><select id="editAqType">${selectTypeOptions(type)}</select>
-      <label>Ubicación</label><input id="editAqLocation" placeholder="Ubicación" value="${esc(aq?.location || '')}">
-      ${aquariumPhotoHtml(aq, isEdit)}
-      ${fdate('mounted_at','Fecha de montaje',aq?.mounted_at)}${fdate('filled_at','Fecha de llenado',aq?.filled_at)}${fdate('cycling_start_date','Inicio de ciclado',aq?.cycling_start_date)}${fdate('cycling_end_date','Fin de ciclado',aq?.cycling_end_date)}
-      <h3>Medidas de la urna</h3>
-      ${fnum('tank_length_cm','Largo urna (cm)',aq?.tank_length_cm)}${fnum('tank_width_cm','Ancho urna (cm)',aq?.tank_width_cm)}${fnum('tank_height_cm','Alto urna (cm)',aq?.tank_height_cm)}${fnum('display_water_height_cm','Altura real de agua (cm)',aq?.display_water_height_cm)}${fnum('rock_kg','Roca (kg)',aq?.rock_kg)}${fnum('sand_kg','Arena (kg)',aq?.sand_kg)}
-      <h3>Sump / refugio / relleno</h3>
-      ${fcheck('has_sump','Tiene sump',!!aq?.has_sump)}${fnum('sump_length_cm','Largo sump (cm)',aq?.sump_length_cm)}${fnum('sump_width_cm','Ancho sump (cm)',aq?.sump_width_cm)}${fnum('sump_height_cm','Alto sump (cm)',aq?.sump_height_cm)}${fnum('sump_water_height_cm','Altura agua sump (cm)',aq?.sump_water_height_cm)}${fcheck('has_refugium','Tiene refugio',!!aq?.has_refugium)}${fnum('refugium_liters','Litros refugio',aq?.refugium_liters)}${fcheck('has_ato_reservoir','Tiene depósito de relleno',!!aq?.has_ato_reservoir)}${fnum('ato_reservoir_liters','Litros depósito relleno',aq?.ato_reservoir_liters)}
-      <h3>Litros</h3>
-      ${fnum('editAqLiters','Litros reales manuales',manual)}
-      <div class="quick-actions">${calcStat('Brutos urna','calcGross')}${calcStat('Display neto','calcDisplayNet')}${calcStat('Sump neto','calcSumpNet')}${calcStat('Sistema neto','calcSystemNet')}</div>
-      <h3>Notas</h3><label>Nota</label><textarea id="editAqNotes">${esc(aq?.notes || '')}</textarea>
-      <button class="primary" onclick="${isEdit ? 'guardarEdicionAcuario()' : 'guardarNuevoAcuario()'}">${isEdit ? 'Guardar cambios' : 'Crear acuario'}</button><div id="editAqStatus"></div>
-    </section>`;
+        <div class="panel-head"><h2>${isEdit ? 'Editar acuario' : 'Nuevo acuario'}</h2><button onclick="${isEdit ? 'openAqSection(\'resumen\')' : 'acuariosHome()'}">Cancelar</button></div>
+        ${formSection('Datos generales', general, true)}
+        ${formSection('Medidas de la urna', tank)}
+        ${formSection('Sump, refugio y relleno', support)}
+        ${formSection('Litros calculados', liters, true)}
+        ${formSection('Notas', notes)}
+        <div class="aquarium-form-savebar"><button class="primary" onclick="${isEdit ? 'guardarEdicionAcuario()' : 'guardarNuevoAcuario()'}">${isEdit ? 'Guardar cambios' : 'Crear acuario'}</button><div id="editAqStatus"></div></div>
+      </section>`;
   }
 
   window.formA = function () {
@@ -143,6 +149,7 @@
     calcVolumesFromInputs,
     aquariumPayload,
     aquariumPhotoHtml,
+    formSection,
     aquariumFormHtml
   };
 })();
