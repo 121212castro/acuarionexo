@@ -4,11 +4,11 @@
   const DAY = 24 * HOUR;
 
   const microfaunaProfiles = {
-    rotiferos: { label: 'Rotiferos', salinity: [18, 25], temperature: [24, 28], feed: 'Fitoplancton vivo o concentrado', feedAmount: 'Poco y frecuente, mantener agua ligeramente verde', feedings: 2, waterPercent: 20, waterDays: 1, harvestHours: 24, notes: 'Mantener densidad estable, aireacion suave y evitar picos de amonio.' },
-    copepodos: { label: 'Copepodos', salinity: [30, 35], temperature: [22, 26], feed: 'Fitoplancton variado', feedAmount: 'Dosis baja hasta tinte suave', feedings: 1, waterPercent: 15, waterDays: 7, harvestHours: 168, notes: 'Cultivo mas lento. Recolectar parcial y conservar adultos reproductores.' },
-    fitoplancton: { label: 'Fitoplancton', salinity: [30, 35], temperature: [20, 25], feed: 'Fertilizante F/2', feedAmount: 'Segun cepa y volumen', feedings: 0, waterPercent: 50, waterDays: 7, harvestHours: 168, notes: 'Luz 14-18 h/dia, aireacion constante y dividir antes de colapso.' },
-    artemia: { label: 'Artemia', salinity: [25, 35], temperature: [26, 28], feed: 'Sin alimento hasta eclosion', feedAmount: 'Enriquecer tras eclosion si se mantiene mas tiempo', feedings: 0, waterPercent: 100, waterDays: 2, harvestHours: 36, hatchHours: 36, notes: 'Eclosion orientativa 24-36 h. Separar cascaras antes de alimentar.' },
-    infusorios: { label: 'Infusorios', salinity: [0, 2], temperature: [20, 26], feed: 'Materia vegetal o levadura muy diluida', feedAmount: 'Muy poco para evitar pudricion', feedings: 1, waterPercent: 20, waterDays: 3, harvestHours: 48, notes: 'Usar olor y claridad como senales de control. Renovar si se enturbia demasiado.' }
+    rotiferos: { label: 'Rotíferos', salinity: [18, 25], temperature: [24, 28], feed: 'Fitoplancton vivo o concentrado', feedAmount: 'Poco y frecuente, mantener agua ligeramente verde', feedings: 2, waterPercent: 20, waterDays: 1, harvestHours: 24, notes: 'Mantener densidad estable, aireación suave y evitar picos de amonio.' },
+    copepodos: { label: 'Copépodos', salinity: [30, 35], temperature: [22, 26], feed: 'Fitoplancton variado', feedAmount: 'Dosis baja hasta tinte suave', feedings: 1, waterPercent: 15, waterDays: 7, harvestHours: 168, notes: 'Cultivo más lento. Recolectar parcial y conservar adultos reproductores.' },
+    fitoplancton: { label: 'Fitoplancton', salinity: [30, 35], temperature: [20, 25], feed: 'Fertilizante F/2', feedAmount: 'Según cepa y volumen', feedings: 0, waterPercent: 50, waterDays: 7, harvestHours: 168, notes: 'Luz 14-18 h/día, aireación constante y dividir antes del colapso.' },
+    artemia: { label: 'Artemia', salinity: [25, 35], temperature: [26, 28], feed: 'Sin alimento hasta eclosión', feedAmount: 'Enriquecer tras eclosión si se mantiene más tiempo', feedings: 0, waterPercent: 100, waterDays: 2, harvestHours: 36, hatchHours: 36, notes: 'Eclosión orientativa 24-36 h. Separar cáscaras antes de alimentar.' },
+    infusorios: { label: 'Infusorios', salinity: [0, 2], temperature: [20, 26], feed: 'Materia vegetal o levadura muy diluida', feedAmount: 'Muy poco para evitar pudrición', feedings: 1, waterPercent: 20, waterDays: 3, harvestHours: 48, notes: 'Usar olor y claridad como señales de control. Renovar si se enturbia demasiado.' }
   };
 
   function profileFor(type) { return microfaunaProfiles[type] || microfaunaProfiles.rotiferos; }
@@ -86,6 +86,10 @@
     };
   }
 
+  function statusLabel(status) {
+    return ({ active: 'Activo', paused: 'Pausado', archived: 'Archivado' }[String(status || '').toLowerCase()] || status || 'Activo');
+  }
+
   function cultureCard(row) {
     const { state, esc } = window.ANX;
     const p = profileFor(row.culture_type);
@@ -93,19 +97,19 @@
     return `<article class="micro-card">
       <div class="micro-card-head">
         <div><small>${esc(p.label)}${aq ? ` · ${esc(aq.name || 'Acuario')}` : ''}</small><h3>${esc(row.name || p.label)}</h3></div>
-        <span class="pill">${esc(row.status || 'active')}</span>
+        <span class="pill">${esc(statusLabel(row.status))}</span>
       </div>
       <div class="micro-kpis">
         <span><b>${esc(row.volume_ml || '-')}</b> ml</span>
         <span><b>${esc(row.salinity_ppt || '-')}</b> ppt</span>
-        <span><b>${esc(row.temperature_c || '-')}</b> C</span>
+        <span><b>${esc(row.temperature_c || '-')}</b> °C</span>
       </div>
       <p class="small">${esc(row.feed_type || p.feed)}${row.feed_amount ? ` · ${esc(row.feed_amount)}` : ''}</p>
       <div class="micro-dates">
         ${dueLabel('Alimentar', row.next_feed_at)}
         ${dueLabel('Cambio', row.next_water_change_at)}
         ${dueLabel('Recolectar', row.next_harvest_at)}
-        ${row.hatch_expected_at ? dueLabel('Eclosion', row.hatch_expected_at) : ''}
+        ${row.hatch_expected_at ? dueLabel('Eclosión', row.hatch_expected_at) : ''}
       </div>
       <div class="micro-actions">
         <button onclick="registrarMicrofauna('${esc(row.id)}','feed')">Alimentar</button>
@@ -119,10 +123,10 @@
   function microSummary(rows) {
     const active = rows.filter(r => r.status !== 'paused' && r.status !== 'archived');
     const due = active.filter(r => [r.next_feed_at, r.next_water_change_at, r.next_harvest_at, r.hatch_expected_at].some(x => dueClass(x) === 'due')).length;
-    return `<section class="summary-card"><div><small>AcuarioNexo</small><h2>Microfauna</h2><p>${active.length} cultivos activos · ${due} con revision pendiente</p></div></section>`;
+    return `<section class="summary-card"><div><small>AcuarioNexo</small><h2>Microfauna</h2><p>${active.length} cultivos activos · ${due} con revisión pendiente</p></div></section>`;
   }
 
   window.ANX = window.ANX || {};
-  Object.assign(window.ANX, { HOUR, DAY, microfaunaProfiles, profileFor, nowIso, addIso, localDateTime, isoFromInput, dueClass, dueLabel, typeOptions, aquariumOptions, defaultCulture, cultureCard, microSummary, microfaunaProfileFor: profileFor });
-  window.ANX.MicrofaunaCore = { HOUR, DAY, microfaunaProfiles, profileFor, nowIso, addIso, localDateTime, isoFromInput, dueClass, dueLabel, typeOptions, aquariumOptions, defaultCulture, cultureCard, microSummary };
+  Object.assign(window.ANX, { HOUR, DAY, microfaunaProfiles, profileFor, nowIso, addIso, localDateTime, isoFromInput, dueClass, dueLabel, typeOptions, aquariumOptions, defaultCulture, statusLabel, cultureCard, microSummary, microfaunaProfileFor: profileFor });
+  window.ANX.MicrofaunaCore = { HOUR, DAY, microfaunaProfiles, profileFor, nowIso, addIso, localDateTime, isoFromInput, dueClass, dueLabel, typeOptions, aquariumOptions, defaultCulture, statusLabel, cultureCard, microSummary };
 })();
