@@ -18,14 +18,14 @@
     "mobile:open:ios": "npx cap open ios"
   },
   "dependencies": {
-    "@capacitor/android": "latest",
-    "@capacitor/app": "latest",
-    "@capacitor/core": "latest",
-    "@capacitor/ios": "latest",
-    "@capacitor/preferences": "latest",
-    "@capacitor/push-notifications": "latest"
+    "@capacitor/android": "8.4.1",
+    "@capacitor/app": "8.1.0",
+    "@capacitor/core": "8.4.1",
+    "@capacitor/ios": "8.4.1",
+    "@capacitor/preferences": "8.0.1",
+    "@capacitor/push-notifications": "8.1.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "latest"
+    "@capacitor/cli": "8.4.1"
   }
 }
