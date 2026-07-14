@@ -44,8 +44,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          sudo xcode-select -s /Applications/Xcode_16.4.app/Contents/Developer
+          sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
           xcodebuild -version | tee xcode-version.txt
+          xcrun --sdk iphoneos --show-sdk-version | tee ios-sdk-version.txt
+          test "$(xcrun --sdk iphoneos --show-sdk-version | cut -d. -f1)" -ge 26
 
       - name: Strict preflight of all Apple credentials
         shell: bash
@@ -151,6 +153,7 @@ jobs:
             ios-version.txt
             ios-project-list.txt
             xcode-version.txt
+            ios-sdk-version.txt
             testflight-build.log
           if-no-files-found: warn
           retention-days: 14
