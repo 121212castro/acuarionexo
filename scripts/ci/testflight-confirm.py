@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from pathlib import Path
 
 import jwt
 import requests
@@ -18,9 +19,21 @@ def required(name: str) -> str:
     return value
 
 
+def read_private_key() -> str:
+    key_path = Path(required("ASC_KEY_PATH"))
+    if not key_path.is_file():
+        raise SystemExit(f"Normalized App Store Connect key not found: {key_path}")
+    private_key = key_path.read_text(encoding="utf-8").replace("\r", "").strip()
+    if "-----BEGIN PRIVATE KEY-----" not in private_key:
+        raise SystemExit("Normalized App Store Connect key has no BEGIN PRIVATE KEY marker")
+    if "-----END PRIVATE KEY-----" not in private_key:
+        raise SystemExit("Normalized App Store Connect key has no END PRIVATE KEY marker")
+    return private_key + "\n"
+
+
 KEY_ID = required("ASC_KEY_ID")
 ISSUER_ID = required("ASC_ISSUER_ID")
-PRIVATE_KEY = required("ASC_PRIVATE_KEY")
+PRIVATE_KEY = read_private_key()
 BUNDLE_ID = required("BUNDLE_ID")
 EXPECTED_BUILD = required("EXPECTED_BUILD")
 
