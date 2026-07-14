@@ -1,0 +1,188 @@
+/* AcuarioNexo · Microfauna móvil */
+.microfauna-panel {
+  overflow: hidden;
+}
+
+.microfauna-head {
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.microfauna-head > div {
+  min-width: 0;
+}
+
+.microfauna-head .primary {
+  flex: 0 0 auto;
+  min-height: 42px;
+  padding: 8px 14px;
+}
+
+.micro-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 10px;
+}
+
+.micro-presets button {
+  min-width: 0;
+  min-height: 76px;
+  padding: 10px 8px;
+  line-height: 1.08;
+}
+
+.micro-presets button span {
+  font-size: 20px;
+}
+
+.micro-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.micro-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: rgba(3, 17, 30, .78);
+  overflow: hidden;
+}
+
+.micro-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.micro-card-head > div {
+  min-width: 0;
+}
+
+.micro-card-head h3 {
+  margin-top: 3px;
+  font-size: 23px;
+  line-height: 1.08;
+  overflow-wrap: anywhere;
+}
+
+.micro-card-head .pill {
+  flex: 0 0 auto;
+  max-width: 42%;
+  overflow-wrap: anywhere;
+}
+
+.micro-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.micro-kpis > span {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: rgba(255,255,255,.045);
+  line-height: 1.15;
+}
+
+.micro-kpis b {
+  display: block;
+  font-size: 19px;
+  overflow-wrap: anywhere;
+}
+
+.micro-card > .small {
+  margin-top: 12px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.micro-dates {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.micro-due {
+  min-width: 0;
+  padding: 10px;
+  border-radius: 15px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.micro-due b {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.micro-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.micro-actions button {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 9px 10px;
+  white-space: normal;
+}
+
+@media (max-width: 520px) {
+  .microfauna-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .microfauna-head .primary {
+    width: auto;
+  }
+
+  .micro-presets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .micro-presets button {
+    min-height: 62px;
+  }
+
+  .micro-presets button:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .micro-kpis,
+  .micro-dates {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .micro-kpis > span,
+  .micro-due {
+    padding: 9px 8px;
+    font-size: 13px;
+  }
+
+  .micro-kpis b {
+    font-size: 18px;
+  }
+}
+
+@media (max-width: 390px) {
+  .micro-kpis,
+  .micro-dates {
+    grid-template-columns: 1fr;
+  }
+
+  .micro-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}
