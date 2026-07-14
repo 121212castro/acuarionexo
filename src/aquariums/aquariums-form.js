@@ -1,6 +1,6 @@
 /* AcuarioNexo · aquariums form */
 (function () {
-  const { state, esc, byId, val, render } = window.ANX;
+  const { state, esc, byId, val, render, photoUrl } = window.ANX;
   const { calcStat } = window.ANX.AquariumsCore;
 
   function selectTypeOptions(current) {
@@ -75,6 +75,16 @@
     };
   }
 
+  function aquariumPhotoHtml(aq, isEdit) {
+    if (!isEdit) return '';
+    const currentPhoto = photoUrl(aq) || aq?.__cover_url || '';
+    return `<h3>Foto del acuario</h3>
+      ${currentPhoto ? `<img class="aquarium-form-photo" src="${esc(currentPhoto)}" alt="Foto actual de ${esc(aq?.name || 'acuario')}">` : '<p class="small">Este acuario todavía no tiene una foto.</p>'}
+      <label for="editAqPhoto">Añadir o cambiar foto</label>
+      <input id="editAqPhoto" type="file" accept="image/*" capture="environment">
+      <p class="small">La imagen seleccionada se guardará al pulsar Guardar cambios.</p>`;
+  }
+
   function aquariumFormHtml(aq, mode) {
     const isEdit = mode === 'edit';
     const type = aq?.aquarium_type || aq?.type || 'reef';
@@ -86,6 +96,7 @@
       <label>Nombre</label><input id="editAqName" placeholder="Nombre del acuario" value="${esc(aq?.name || '')}">
       <label>Tipo</label><select id="editAqType">${selectTypeOptions(type)}</select>
       <label>Ubicación</label><input id="editAqLocation" placeholder="Ubicación" value="${esc(aq?.location || '')}">
+      ${aquariumPhotoHtml(aq, isEdit)}
       ${fdate('mounted_at','Fecha de montaje',aq?.mounted_at)}${fdate('filled_at','Fecha de llenado',aq?.filled_at)}${fdate('cycling_start_date','Inicio de ciclado',aq?.cycling_start_date)}${fdate('cycling_end_date','Fin de ciclado',aq?.cycling_end_date)}
       <h3>Medidas de la urna</h3>
       ${fnum('tank_length_cm','Largo urna (cm)',aq?.tank_length_cm)}${fnum('tank_width_cm','Ancho urna (cm)',aq?.tank_width_cm)}${fnum('tank_height_cm','Alto urna (cm)',aq?.tank_height_cm)}${fnum('display_water_height_cm','Altura real de agua (cm)',aq?.display_water_height_cm)}${fnum('rock_kg','Roca (kg)',aq?.rock_kg)}${fnum('sand_kg','Arena (kg)',aq?.sand_kg)}
@@ -131,6 +142,7 @@
     displacement,
     calcVolumesFromInputs,
     aquariumPayload,
+    aquariumPhotoHtml,
     aquariumFormHtml
   };
 })();
