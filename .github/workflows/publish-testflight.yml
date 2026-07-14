@@ -128,8 +128,10 @@ jobs:
           KEYCHAIN_PATH="$RUNNER_TEMP/acuarionexo-signing.keychain-db"
           KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
 
-          printf '%s' "$DIST_P12_BASE64" | base64 --decode > "$CERT_PATH"
-          printf '%s' "$PROFILE_BASE64" | base64 --decode > "$PROFILE_PATH"
+          printf '%s' "$DIST_P12_BASE64" | tr -d '\r\n ' | openssl base64 -d -A -out "$CERT_PATH"
+          printf '%s' "$PROFILE_BASE64" | tr -d '\r\n ' | openssl base64 -d -A -out "$PROFILE_PATH"
+          test -s "$CERT_PATH"
+          test -s "$PROFILE_PATH"
 
           security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
           security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
