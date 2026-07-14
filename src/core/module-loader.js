@@ -165,6 +165,7 @@
   proxy('inventario', 'inventario', 'Inventario', 'inventario');
   proxy('microfauna', 'microfauna', 'Microfauna', 'microfauna');
   proxy('parametros', 'parametros', 'Parámetros', 'acuarios');
+  proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
   proxy('adminPanel', 'admin', 'Admin', 'admin');
 
