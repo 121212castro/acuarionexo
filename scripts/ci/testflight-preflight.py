@@ -54,15 +54,42 @@ def decode_base64(secret_name: str, destination: Path) -> int:
     return len(decoded)
 
 
+def normalize_api_key(secret: str) -> str:
+    value = secret.strip().replace("\r", "")
+
+    # GitHub secrets are sometimes pasted with escaped newlines.
+    if "\\n" in value and "-----BEGIN" in value:
+        value = value.replace("\\n", "\n")
+
+    # Preferred form: the PEM file contents were pasted directly.
+    if "-----BEGIN PRIVATE KEY-----" in value:
+        return value.rstrip() + "\n"
+
+    # Also accept Base64 of the complete AuthKey_*.p8 file.
+    compact = "".join(value.split())
+    try:
+        decoded = base64.b64decode(compact, validate=True).decode("utf-8")
+    except (binascii.Error, UnicodeDecodeError, ValueError):
+        fail(
+            "APP_STORE_CONNECT_PRIVATE_KEY is neither a PEM private key nor valid Base64 of an AuthKey .p8 file"
+        )
+
+    decoded = decoded.replace("\r", "").strip()
+    if "\\n" in decoded and "-----BEGIN" in decoded:
+        decoded = decoded.replace("\\n", "\n")
+    return decoded.rstrip() + "\n"
+
+
 def validate_api_key(path: Path) -> None:
-    private_key = require("ASC_PRIVATE_KEY").replace("\r", "")
+    private_key = normalize_api_key(require("ASC_PRIVATE_KEY"))
+    if not re.search(r"^-----BEGIN PRIVATE KEY-----$", private_key, re.MULTILINE):
+        fail("APP_STORE_CONNECT_PRIVATE_KEY has no BEGIN PRIVATE KEY marker after normalization")
+    if not re.search(r"^-----END PRIVATE KEY-----$", private_key, re.MULTILINE):
+        fail("APP_STORE_CONNECT_PRIVATE_KEY has no END PRIVATE KEY marker after normalization")
     path.write_text(private_key, encoding="utf-8")
     path.chmod(0o600)
-    if not re.search(r"^-----BEGIN PRIVATE KEY-----$", private_key, re.MULTILINE):
-        fail("APP_STORE_CONNECT_PRIVATE_KEY has no BEGIN PRIVATE KEY marker")
-    if not re.search(r"^-----END PRIVATE KEY-----$", private_key, re.MULTILINE):
-        fail("APP_STORE_CONNECT_PRIVATE_KEY has no END PRIVATE KEY marker")
     run(["openssl", "pkey", "-in", str(path), "-noout", "-check"], capture=True)
+    print("APP_STORE_CONNECT_PRIVATE_KEY: normalized and validated")
 
 
 def validate_p12(path: Path, password: str, temp: Path) -> None:
