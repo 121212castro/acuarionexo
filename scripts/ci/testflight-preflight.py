@@ -56,16 +56,10 @@ def decode_base64(secret_name: str, destination: Path) -> int:
 
 def normalize_api_key(secret: str) -> str:
     value = secret.strip().replace("\r", "")
-
-    # GitHub secrets are sometimes pasted with escaped newlines.
     if "\\n" in value and "-----BEGIN" in value:
         value = value.replace("\\n", "\n")
-
-    # Preferred form: the PEM file contents were pasted directly.
     if "-----BEGIN PRIVATE KEY-----" in value:
         return value.rstrip() + "\n"
-
-    # Also accept Base64 of the complete AuthKey_*.p8 file.
     compact = "".join(value.split())
     try:
         decoded = base64.b64decode(compact, validate=True).decode("utf-8")
@@ -73,7 +67,6 @@ def normalize_api_key(secret: str) -> str:
         fail(
             "APP_STORE_CONNECT_PRIVATE_KEY is neither a PEM private key nor valid Base64 of an AuthKey .p8 file"
         )
-
     decoded = decoded.replace("\r", "").strip()
     if "\\n" in decoded and "-----BEGIN" in decoded:
         decoded = decoded.replace("\\n", "\n")
@@ -102,7 +95,6 @@ def validate_p12(path: Path, password: str, temp: Path) -> None:
         legacy = probe.returncode == 0
     if probe.returncode != 0:
         fail("IOS_DISTRIBUTION_P12_BASE64 or IOS_DISTRIBUTION_P12_PASSWORD is invalid")
-
     prefix = base + (["-legacy"] if legacy else []) + common
     cert_pem = temp / "distribution-certificate.pem"
     key_pem = temp / "distribution-private-key.pem"
@@ -120,7 +112,7 @@ def validate_p12(path: Path, password: str, temp: Path) -> None:
     key_pem.unlink(missing_ok=True)
 
 
-def validate_profile(path: Path, plist_path: Path) -> tuple[str, str]:
+def validate_profile(path: Path, plist_path: Path) -> tuple[str, str, str]:
     decoded = run(["security", "cms", "-D", "-i", str(path)], capture=True).stdout
     plist_path.write_text(decoded, encoding="utf-8")
     with plist_path.open("rb") as handle:
@@ -129,7 +121,9 @@ def validate_profile(path: Path, plist_path: Path) -> tuple[str, str]:
     name = str(profile.get("Name", ""))
     teams = profile.get("TeamIdentifier") or []
     team = str(teams[0]) if teams else ""
-    app_id = str((profile.get("Entitlements") or {}).get("application-identifier", ""))
+    entitlements = profile.get("Entitlements") or {}
+    app_id = str(entitlements.get("application-identifier", ""))
+    aps_environment = str(entitlements.get("aps-environment", ""))
     if not uuid or not name:
         fail("The provisioning profile has no UUID or Name")
     if team != TEAM_ID:
@@ -137,11 +131,13 @@ def validate_profile(path: Path, plist_path: Path) -> tuple[str, str]:
     expected_app_id = f"{TEAM_ID}.{BUNDLE_ID}"
     if app_id != expected_app_id:
         fail(f"Provisioning profile application identifier is {app_id!r}, expected {expected_app_id!r}")
+    if aps_environment not in {"development", "production"}:
+        fail("Provisioning profile does not include the Apple Push Notifications entitlement aps-environment")
     Path("provisioning-profile-audit.txt").write_text(
-        f"name={name}\nuuid={uuid}\napplication_identifier={app_id}\nteam_id={team}\n",
+        f"name={name}\nuuid={uuid}\napplication_identifier={app_id}\nteam_id={team}\naps_environment={aps_environment}\n",
         encoding="utf-8",
     )
-    return uuid, name
+    return uuid, name, aps_environment
 
 
 def append_env(values: dict[str, str]) -> None:
@@ -160,18 +156,18 @@ def main() -> None:
     profile = temp / "AcuarioNexo_App_Store.mobileprovision"
     api_key = temp / f"AuthKey_{require('ASC_KEY_ID')}.p8"
     profile_plist = temp / "AcuarioNexo_App_Store.plist"
-
     decode_base64("DIST_P12_BASE64", cert)
     decode_base64("PROFILE_BASE64", profile)
     validate_api_key(api_key)
     validate_p12(cert, password, temp)
-    profile_uuid, profile_name = validate_profile(profile, profile_plist)
+    profile_uuid, profile_name, aps_environment = validate_profile(profile, profile_plist)
     append_env({
         "CERT_PATH": str(cert),
         "PROFILE_PATH": str(profile),
         "ASC_KEY_PATH": str(api_key),
         "PROFILE_UUID": profile_uuid,
         "PROFILE_NAME": profile_name,
+        "APS_ENVIRONMENT": aps_environment,
     })
     Path("credentials-preflight.txt").write_text(
         "app_store_connect_private_key_valid=true\n"
@@ -179,10 +175,12 @@ def main() -> None:
         "distribution_private_key_present=true\n"
         "provisioning_profile_valid=true\n"
         "provisioning_profile_matches_bundle=true\n"
-        "provisioning_profile_matches_team=true\n",
+        "provisioning_profile_matches_team=true\n"
+        "provisioning_profile_push_notifications=true\n"
+        f"aps_environment={aps_environment}\n",
         encoding="utf-8",
     )
-    print("All Apple credentials passed strict preflight validation.")
+    print("All Apple credentials, including Push Notifications, passed strict preflight validation.")
 
 
 if __name__ == "__main__":
