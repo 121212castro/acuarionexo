@@ -78,6 +78,42 @@
   overflow-wrap: anywhere;
 }
 
+.photos-panel .gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.photos-panel .gallery-card {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.photos-panel .gallery-card img {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.photos-panel .gallery-card b {
+  display: block;
+  min-height: 2.5em;
+  margin: 10px 0 8px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.photos-panel .gallery-card button {
+  width: 100%;
+  margin-top: auto;
+}
+
 @media (max-width: 520px) {
   .panel .form-grid:has(input[type="date"]) {
     grid-template-columns: 1fr !important;
@@ -152,7 +188,8 @@
     max-height: 220px;
   }
 
-  .animals-panel .panel-head > button {
+  .animals-panel .panel-head > button,
+  .photos-panel .panel-head > button {
     width: 100%;
     min-width: 0;
     white-space: normal;
@@ -181,5 +218,19 @@
     flex: 1 1 150px;
     width: auto;
     margin-left: 0;
+  }
+
+  .photos-panel .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .photos-panel .gallery-card img {
+    aspect-ratio: 4 / 3;
+    max-height: 300px;
+  }
+
+  .photos-panel .gallery-card b {
+    min-height: 0;
+    font-size: 17px;
   }
 }
