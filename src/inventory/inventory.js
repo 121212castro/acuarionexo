@@ -47,7 +47,7 @@ window.inventario = async function (scope = 'general') {
   const head = isAq ? aqHeader('inventario') : '';
   const title = isAq ? `Registro de ${aq.name || 'este acuario'}` : 'Inventario general';
   const addLabel = isAq ? 'Añadir manual al acuario' : 'Añadir manual';
-  render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">${esc(addLabel)}</button></div>${msg(isAq ? 'Cargando registros del acuario...' : 'Cargando inventario...')}</section>`, active);
+  render(head + `<section class="panel inventory-panel"><div class="panel-head"><h2>${esc(title)}</h2><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">${esc(addLabel)}</button></div>${msg(isAq ? 'Cargando registros del acuario...' : 'Cargando inventario...')}</section>`, active);
   try {
     const { data, error } = await supabase.from('inventory_items').select('id,name,category,quantity,unit,photo_url,aquarium_id,expiry_date,notes,created_at').eq('user_id', state.user.id).order('created_at', { ascending: false }).limit(120);
     if (error) throw error;
@@ -60,10 +60,13 @@ window.inventario = async function (scope = 'general') {
       <button class="${isAq ? 'active' : ''}" ${aq ? `onclick="openAqSection('inventario')"` : 'disabled'}>Este acuario</button>
       <button class="${!isAq ? 'active' : ''}" onclick="inventario('general')">General compartido</button>
     </div>`;
-    const hint = isAq ? '<p class="small inventory-hint">Aqui van los habitantes, microfauna y equipos que pertenecen solo a este acuario.</p>' : '<p class="small inventory-hint">Aqui van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.</p>';
-    render(head + `<section class="panel"><div class="panel-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">${isAq ? 'Añadir copia desde Biblioteca' : 'Desde ficha'}</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">${esc(addLabel)}</button></div></div>${tabs}${hint}${inventorySearchBar(isAq ? 'aquarium' : 'general')}<div id="inventoryList">${html || msg(isAq ? 'Sin registros en este acuario todavía.' : 'Sin inventario todavía.')}</div></section>`, active);
+    const hintText = isAq
+      ? 'Aquí van los habitantes, microfauna y equipos que pertenecen solo a este acuario.'
+      : 'Aquí van medicamentos, sales, aditivos, alimentos, tests y material compartido entre acuarios.';
+    const hint = `<details class="inventory-help"><summary>Información sobre este registro</summary><p>${esc(hintText)}</p></details>`;
+    render(head + `<section class="panel inventory-panel"><div class="panel-head inventory-main-head"><h2>${esc(title)}</h2><div class="inline-actions"><button onclick="importarFichaInventario('${isAq ? 'aquarium' : 'general'}')">${isAq ? 'Añadir copia desde Biblioteca' : 'Desde ficha'}</button><button class="primary" onclick="formInventario('${isAq ? 'aquarium' : 'general'}')">${esc(addLabel)}</button></div></div>${tabs}${hint}${inventorySearchBar(isAq ? 'aquarium' : 'general')}<div id="inventoryList">${html || msg(isAq ? 'Sin registros en este acuario todavía.' : 'Sin inventario todavía.')}</div></section>`, active);
   } catch (e) {
-    if (isCurrent(t)) render(head + `<section class="panel">${msg(e.message, 'error')}</section>`, active);
+    if (isCurrent(t)) render(head + `<section class="panel inventory-panel">${msg(e.message, 'error')}</section>`, active);
   }
 };
 
