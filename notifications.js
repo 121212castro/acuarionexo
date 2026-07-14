@@ -1,9 +1,9 @@
 (function () {
   const CHECK_INTERVAL_MS = 15 * 60 * 1000;
-  const TOKEN_KEY = 'acuarionexo:fcm-token';
+  const TOKEN_KEY = 'acuarionexo:push-token';
   let checking = false;
   let enabling = false;
-  let nativeAndroidStarted = false;
+  let nativePushStarted = false;
 
   function canNotify() {
     return 'Notification' in window;
@@ -17,17 +17,24 @@
     }
   }
 
-  function isAndroidNative() {
-    return capacitorPlatform() === 'android' && !!window.Capacitor?.Plugins?.PushNotifications;
+  function nativePushPlugin() {
+    return window.Capacitor?.Plugins?.PushNotifications || null;
   }
 
-  async function saveDeviceToken(token, platformOverride) {
+  function isNativePush() {
+    const platform = capacitorPlatform();
+    return (platform === 'ios' || platform === 'android') && !!nativePushPlugin();
+  }
+
+  async function saveDeviceToken(token, platformOverride, providerOverride) {
     if (!token || !window.s || !window.state?.user) return;
+    const platform = platformOverride || (/iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : /android/i.test(navigator.userAgent) ? 'android' : 'web');
+    const provider = providerOverride || (platform === 'ios-app' ? 'apns' : 'fcm');
     const row = {
       user_id: window.state.user.id,
-      provider: 'fcm',
+      provider,
       token,
-      platform: platformOverride || (/iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : /android/i.test(navigator.userAgent) ? 'android' : 'web'),
+      platform,
       user_agent: navigator.userAgent || null,
       enabled: true,
       last_seen_at: new Date().toISOString(),
@@ -40,16 +47,19 @@
     localStorage.setItem(TOKEN_KEY, token);
   }
 
-  async function registerNativeAndroidPush() {
-    if (!isAndroidNative() || nativeAndroidStarted) return null;
-    nativeAndroidStarted = true;
-    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+  async function registerNativePush() {
+    if (!isNativePush() || nativePushStarted) return null;
+    nativePushStarted = true;
+    const platform = capacitorPlatform();
+    const PushNotifications = nativePushPlugin();
     const permission = await PushNotifications.requestPermissions();
     if (permission.receive !== 'granted') return null;
 
     await PushNotifications.addListener('registration', async function (token) {
       const value = token?.value || token?.token || '';
-      if (value) await saveDeviceToken(value, 'android-app');
+      if (!value) return;
+      if (platform === 'ios') await saveDeviceToken(value, 'ios-app', 'apns');
+      else await saveDeviceToken(value, 'android-app', 'fcm');
     });
 
     await PushNotifications.addListener('registrationError', function (error) {
@@ -79,11 +89,16 @@
       vapidKey: cfg.FIREBASE_VAPID_KEY,
       serviceWorkerRegistration: registration
     });
-    if (token) await saveDeviceToken(token, 'web-fcm');
+    if (token) await saveDeviceToken(token, 'web-fcm', 'fcm');
     messaging.onMessage(function (payload) {
       const title = payload?.notification?.title || 'AcuarioNexo';
       const body = payload?.notification?.body || payload?.data?.title || 'Aviso pendiente';
-      if (Notification.permission === 'granted') new Notification(title, { body, tag: payload?.data?.task_id || body });
+      if (Notification.permission === 'granted') new Notification(title, {
+        body,
+        tag: payload?.data?.task_id || body,
+        silent: false,
+        renotify: true
+      });
     });
     return token;
   }
@@ -110,7 +125,9 @@
           body: t.title || 'Aviso pendiente',
           tag: t.id,
           data: { task_id: t.id },
-          requireInteraction: t.priority === 'high'
+          requireInteraction: t.priority === 'high',
+          silent: false,
+          renotify: true
         });
         set.add(t.id);
         changed = true;
@@ -126,8 +143,8 @@
     if (enabling) return false;
     enabling = true;
     try {
-      if (isAndroidNative()) {
-        await registerNativeAndroidPush();
+      if (isNativePush()) {
+        await registerNativePush();
         return true;
       }
       if (!canNotify()) return false;
@@ -157,6 +174,11 @@
     });
   }
 
-  window.AcuarioNexoNotifications = { enable: enableNotifications, checkDueTasks, registerNativeAndroidPush, registerFirebaseMessaging };
+  window.AcuarioNexoNotifications = {
+    enable: enableNotifications,
+    checkDueTasks,
+    registerNativePush,
+    registerFirebaseMessaging
+  };
   window.addEventListener('load', start);
 })();
