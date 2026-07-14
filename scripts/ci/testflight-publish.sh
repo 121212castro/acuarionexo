@@ -39,6 +39,12 @@ npx cap sync ios 2>&1 | tee -a testflight-build.log
 
 test -f "$XCODE_PROJECT/project.pbxproj"
 test -f ios/App/App/Info.plist
+/usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription AcuarioNexo usa tus fotos para guardar imagenes de acuarios, animales y fichas." ios/App/App/Info.plist 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string AcuarioNexo usa tus fotos para guardar imagenes de acuarios, animales y fichas." ios/App/App/Info.plist
+/usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryAddUsageDescription AcuarioNexo guarda imagenes exportadas en tu biblioteca si lo solicitas." ios/App/App/Info.plist 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryAddUsageDescription string AcuarioNexo guarda imagenes exportadas en tu biblioteca si lo solicitas." ios/App/App/Info.plist
+/usr/libexec/PlistBuddy -c "Set :NSCameraUsageDescription AcuarioNexo usa la camara para capturar fotos de tus acuarios cuando eliges hacer una foto." ios/App/App/Info.plist 2>/dev/null || \
+  /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string AcuarioNexo usa la camara para capturar fotos de tus acuarios cuando eliges hacer una foto." ios/App/App/Info.plist
 xcodebuild -project "$XCODE_PROJECT" -list | tee ios-project-list.txt
 grep -F "$BUNDLE_ID" "$XCODE_PROJECT/project.pbxproj"
 grep -Eq '^[[:space:]]*App$' ios-project-list.txt
