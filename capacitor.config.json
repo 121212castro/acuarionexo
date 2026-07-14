@@ -13,6 +13,13 @@
       "backgroundColor": "#02111f",
       "androidSplashResourceName": "splash",
       "showSpinner": false
+    },
+    "PushNotifications": {
+      "presentationOptions": [
+        "badge",
+        "sound",
+        "alert"
+      ]
     }
   }
 }
