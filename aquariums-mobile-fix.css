@@ -1,4 +1,20 @@
 /* AcuarioNexo · corrección móvil Acuarios */
+.aquarium-form-photo {
+  display: block;
+  width: 100%;
+  max-height: 280px;
+  object-fit: cover;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  margin: 10px 0 12px;
+}
+
+.aquarium-form input[type="file"] {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
 @media (max-width: 520px) {
   .panel .form-grid:has(input[type="date"]) {
     grid-template-columns: 1fr !important;
@@ -67,5 +83,9 @@
     flex: 1 1 140px;
     min-width: 0;
     white-space: normal;
+  }
+
+  .aquarium-form-photo {
+    max-height: 220px;
   }
 }
