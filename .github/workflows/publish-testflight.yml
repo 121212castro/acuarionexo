@@ -111,8 +111,10 @@ jobs:
           EXPECTED_BUILD: ${{ env.BUILD_NUMBER }}
         run: |
           set -euo pipefail
-          python3 -m pip install --quiet pyjwt cryptography requests
-          python3 scripts/ci/testflight-confirm.py
+          CONFIRM_VENV="$RUNNER_TEMP/testflight-confirm-venv"
+          python3 -m venv "$CONFIRM_VENV"
+          "$CONFIRM_VENV/bin/python" -m pip install --quiet --disable-pip-version-check pyjwt cryptography requests
+          "$CONFIRM_VENV/bin/python" scripts/ci/testflight-confirm.py
 
       - name: Generate TestFlight audit result
         if: always()
@@ -171,6 +173,7 @@ jobs:
           rm -f "$RUNNER_TEMP/AcuarioNexo_Distribution.p12"
           rm -f "$RUNNER_TEMP/AcuarioNexo_App_Store.mobileprovision"
           rm -f "$RUNNER_TEMP"/AuthKey_*.p8 "$RUNNER_TEMP"/*.pem "$RUNNER_TEMP"/*.plist
+          rm -rf "$RUNNER_TEMP/testflight-confirm-venv"
           echo "All temporary signing credentials removed." > credentials-cleanup.txt
 
       - name: Verify credential cleanup
@@ -184,4 +187,5 @@ jobs:
           test ! -e "$RUNNER_TEMP/AcuarioNexo_Distribution.p12"
           test ! -e "$RUNNER_TEMP/AcuarioNexo_App_Store.mobileprovision"
           test ! -e "$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          test ! -e "$RUNNER_TEMP/testflight-confirm-venv"
           echo "Credential cleanup verified." >> credentials-cleanup.txt
