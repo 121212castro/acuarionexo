@@ -1,6 +1,7 @@
 (function () {
   const CHECK_INTERVAL_MS = 15 * 60 * 1000;
   const TOKEN_KEY = 'acuarionexo:push-token';
+  const PENDING_TOKEN_KEY = 'acuarionexo:pending-push-token';
   let checking = false;
   let enabling = false;
   let nativePushStarted = false;
@@ -26,12 +27,41 @@
     return (platform === 'ios' || platform === 'android') && !!nativePushPlugin();
   }
 
+  async function resolveUserId() {
+    const stateUserId = window.state?.user?.id;
+    if (stateUserId) return stateUserId;
+    try {
+      const result = await window.s?.auth?.getUser?.();
+      return result?.data?.user?.id || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function rememberPendingToken(token, platform, provider) {
+    try {
+      localStorage.setItem(PENDING_TOKEN_KEY, JSON.stringify({
+        token,
+        platform,
+        provider,
+        saved_at: new Date().toISOString()
+      }));
+    } catch (_) {}
+  }
+
   async function saveDeviceToken(token, platformOverride, providerOverride) {
-    if (!token || !window.s || !window.state?.user) return;
+    if (!token) return false;
     const platform = platformOverride || (/iphone|ipad|ipod/i.test(navigator.userAgent) ? 'ios' : /android/i.test(navigator.userAgent) ? 'android' : 'web');
     const provider = providerOverride || (platform === 'ios-app' ? 'apns' : 'fcm');
+    const userId = await resolveUserId();
+
+    if (!window.s || !userId) {
+      rememberPendingToken(token, platform, provider);
+      return false;
+    }
+
     const row = {
-      user_id: window.state.user.id,
+      user_id: userId,
       provider,
       token,
       platform,
@@ -43,12 +73,34 @@
     const { error } = await window.s
       .from('notification_devices')
       .upsert(row, { onConflict: 'user_id,provider,token' });
-    if (error) throw error;
+    if (error) {
+      rememberPendingToken(token, platform, provider);
+      throw error;
+    }
     localStorage.setItem(TOKEN_KEY, token);
+    localStorage.removeItem(PENDING_TOKEN_KEY);
+    return true;
+  }
+
+  async function flushPendingToken() {
+    let pending = null;
+    try {
+      pending = JSON.parse(localStorage.getItem(PENDING_TOKEN_KEY) || 'null');
+    } catch (_) {}
+    if (!pending?.token) return false;
+    try {
+      return await saveDeviceToken(pending.token, pending.platform, pending.provider);
+    } catch (error) {
+      console.warn('AcuarioNexo pending push token save error', error);
+      return false;
+    }
   }
 
   async function registerNativePush() {
-    if (!isNativePush() || nativePushStarted) return null;
+    if (!isNativePush() || nativePushStarted) {
+      await flushPendingToken();
+      return null;
+    }
     nativePushStarted = true;
     const platform = capacitorPlatform();
     const PushNotifications = nativePushPlugin();
@@ -58,8 +110,12 @@
     await PushNotifications.addListener('registration', async function (token) {
       const value = token?.value || token?.token || '';
       if (!value) return;
-      if (platform === 'ios') await saveDeviceToken(value, 'ios-app', 'apns');
-      else await saveDeviceToken(value, 'android-app', 'fcm');
+      try {
+        if (platform === 'ios') await saveDeviceToken(value, 'ios-app', 'apns');
+        else await saveDeviceToken(value, 'android-app', 'fcm');
+      } catch (error) {
+        console.warn('AcuarioNexo push token save error', error);
+      }
     });
 
     await PushNotifications.addListener('registrationError', function (error) {
@@ -143,8 +199,11 @@
     if (enabling) return false;
     enabling = true;
     try {
+      await flushPendingToken();
       if (isNativePush()) {
         await registerNativePush();
+        setTimeout(flushPendingToken, 1500);
+        setTimeout(flushPendingToken, 5000);
         return true;
       }
       if (!canNotify()) return false;
@@ -160,16 +219,19 @@
 
   function start() {
     setTimeout(enableNotifications, 3500);
+    setTimeout(flushPendingToken, 8000);
     setTimeout(checkDueTasks, 30000);
     setInterval(checkDueTasks, CHECK_INTERVAL_MS);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) {
         enableNotifications();
+        flushPendingToken();
         checkDueTasks();
       }
     });
     window.addEventListener('focus', function () {
       enableNotifications();
+      flushPendingToken();
       checkDueTasks();
     });
   }
@@ -178,7 +240,8 @@
     enable: enableNotifications,
     checkDueTasks,
     registerNativePush,
-    registerFirebaseMessaging
+    registerFirebaseMessaging,
+    flushPendingToken
   };
   window.addEventListener('load', start);
 })();
