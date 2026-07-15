@@ -55,7 +55,7 @@ jobs:
           npm run mobile:prepare 2>&1 | tee -a mac-catalyst-build.log
           npm run mobile:check 2>&1 | tee -a mac-catalyst-build.log
 
-      - name: Generate Capacitor iOS project
+      - name: Generate and enable Mac Catalyst project
         shell: bash
         run: |
           set -euo pipefail
@@ -64,10 +64,44 @@ jobs:
           npm run mobile:assets:prepare 2>&1 | tee -a mac-catalyst-build.log
           npx --yes @capacitor/assets@3.0.5 generate --ios --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f' 2>&1 | tee -a mac-catalyst-build.log
           npx cap sync ios 2>&1 | tee -a mac-catalyst-build.log
-          test -f ios/App/App.xcodeproj/project.pbxproj
+
+          PBXPROJ='ios/App/App.xcodeproj/project.pbxproj'
+          test -f "$PBXPROJ"
           test -f ios/App/App/Info.plist
 
-      - name: Discover Mac Catalyst destination
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('ios/App/App.xcodeproj/project.pbxproj')
+          text = path.read_text(encoding='utf-8')
+
+          # Capacitor generates an iOS-only target. Enable Catalyst in every
+          # build configuration and expose macosx as an accepted platform.
+          text = re.sub(r'\bSUPPORTS_MACCATALYST = (?:YES|NO);',
+                        'SUPPORTS_MACCATALYST = YES;', text)
+          text = re.sub(r'\bSUPPORTED_PLATFORMS = [^;]+;',
+                        'SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";', text)
+
+          if 'SUPPORTS_MACCATALYST = YES;' not in text:
+              text = text.replace(
+                  'TARGETED_DEVICE_FAMILY = "1,2";',
+                  'SUPPORTS_MACCATALYST = YES;\n\t\t\t\tSUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";\n\t\t\t\tTARGETED_DEVICE_FAMILY = "1,2";'
+              )
+              text = text.replace(
+                  'TARGETED_DEVICE_FAMILY = 1,2;',
+                  'SUPPORTS_MACCATALYST = YES;\n\t\t\t\tSUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";\n\t\t\t\tTARGETED_DEVICE_FAMILY = 1,2;'
+              )
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+          grep -n 'SUPPORTS_MACCATALYST = YES' "$PBXPROJ" | tee mac-catalyst-project-settings.txt
+          grep -n 'SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx"' "$PBXPROJ" | tee -a mac-catalyst-project-settings.txt
+          test "$(grep -c 'SUPPORTS_MACCATALYST = YES' "$PBXPROJ")" -ge 2
+          test "$(grep -c 'SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx"' "$PBXPROJ")" -ge 2
+
+      - name: Verify Mac Catalyst destination
         shell: bash
         run: |
           set -euo pipefail
@@ -75,6 +109,7 @@ jobs:
             -project ios/App/App.xcodeproj \
             -scheme App \
             SUPPORTS_MACCATALYST=YES \
+            SUPPORTED_PLATFORMS='iphoneos iphonesimulator macosx' \
             -showdestinations 2>&1 | tee mac-catalyst-destinations.txt
           grep -F 'platform:macOS' mac-catalyst-destinations.txt
           grep -F 'variant:Mac Catalyst' mac-catalyst-destinations.txt
@@ -88,9 +123,10 @@ jobs:
             -scheme App \
             -configuration Release \
             -sdk macosx \
-            -destination 'platform=macOS,variant=Mac Catalyst' \
+            -destination 'generic/platform=macOS,variant=Mac Catalyst' \
             -derivedDataPath mac-catalyst-build \
             SUPPORTS_MACCATALYST=YES \
+            SUPPORTED_PLATFORMS='iphoneos iphonesimulator macosx' \
             DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER=NO \
             PRODUCT_BUNDLE_IDENTIFIER=com.acuarionexo.app \
             CODE_SIGNING_ALLOWED=NO \
@@ -127,6 +163,7 @@ jobs:
             AcuarioNexo-Mac-Catalyst-Unsigned.zip.sha256
             mac-catalyst-validation.txt
             mac-catalyst-binary.txt
+            mac-catalyst-project-settings.txt
             mac-catalyst-destinations.txt
             mac-catalyst-xcode-version.txt
             mac-catalyst-build.log
