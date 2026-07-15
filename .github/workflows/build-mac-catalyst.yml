@@ -1,0 +1,120 @@
+name: Build and validate AcuarioNexo for Mac Catalyst
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'capacitor.config.json'
+      - '.github/workflows/build-mac-catalyst.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acuarionexo-mac-catalyst
+  cancel-in-progress: true
+
+jobs:
+  build-mac-catalyst:
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo xcode-select -s /Applications/Xcode_26.3.app/Contents/Developer
+          xcodebuild -version | tee mac-catalyst-xcode-version.txt
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Validate web application
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run check 2>&1 | tee mac-catalyst-build.log
+
+      - name: Prepare mobile bundle
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm run mobile:prepare 2>&1 | tee -a mac-catalyst-build.log
+          npm run mobile:check 2>&1 | tee -a mac-catalyst-build.log
+
+      - name: Generate Capacitor iOS project
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf ios mac-catalyst-build
+          npx cap add ios 2>&1 | tee -a mac-catalyst-build.log
+          npm run mobile:assets:prepare 2>&1 | tee -a mac-catalyst-build.log
+          npx --yes @capacitor/assets@3.0.5 generate --ios --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f' 2>&1 | tee -a mac-catalyst-build.log
+          npx cap sync ios 2>&1 | tee -a mac-catalyst-build.log
+          test -f ios/App/App.xcodeproj/project.pbxproj
+          test -f ios/App/App/Info.plist
+
+      - name: Build unsigned Mac Catalyst app
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=macOS,variant=Mac Catalyst' \
+            -derivedDataPath mac-catalyst-build \
+            SUPPORTS_MACCATALYST=YES \
+            DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER=NO \
+            PRODUCT_BUNDLE_IDENTIFIER=com.acuarionexo.app \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            ONLY_ACTIVE_ARCH=NO \
+            clean build 2>&1 | tee -a mac-catalyst-build.log
+
+      - name: Validate generated Mac application
+        shell: bash
+        run: |
+          set -euo pipefail
+          APP_PATH="$(find mac-catalyst-build/Build/Products -type d -name 'App.app' -print -quit)"
+          test -n "$APP_PATH"
+          test -f "$APP_PATH/Contents/Info.plist"
+          BUNDLE_ID=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP_PATH/Contents/Info.plist")
+          PACKAGE_TYPE=$(/usr/libexec/PlistBuddy -c 'Print CFBundlePackageType' "$APP_PATH/Contents/Info.plist")
+          EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$APP_PATH/Contents/Info.plist")
+          test "$BUNDLE_ID" = 'com.acuarionexo.app'
+          test "$PACKAGE_TYPE" = 'APPL'
+          test -x "$APP_PATH/Contents/MacOS/$EXECUTABLE"
+          file "$APP_PATH/Contents/MacOS/$EXECUTABLE" | tee mac-catalyst-binary.txt
+          printf 'app_path=%s\nbundle_id=%s\npackage_type=%s\nexecutable=%s\nvalidation=success\n' \
+            "$APP_PATH" "$BUNDLE_ID" "$PACKAGE_TYPE" "$EXECUTABLE" | tee mac-catalyst-validation.txt
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" AcuarioNexo-Mac-Catalyst-Unsigned.zip
+          shasum -a 256 AcuarioNexo-Mac-Catalyst-Unsigned.zip | tee AcuarioNexo-Mac-Catalyst-Unsigned.zip.sha256
+
+      - name: Upload Mac Catalyst application and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: AcuarioNexo-Mac-Catalyst-Audit
+          path: |
+            AcuarioNexo-Mac-Catalyst-Unsigned.zip
+            AcuarioNexo-Mac-Catalyst-Unsigned.zip.sha256
+            mac-catalyst-validation.txt
+            mac-catalyst-binary.txt
+            mac-catalyst-xcode-version.txt
+            mac-catalyst-build.log
+          if-no-files-found: warn
+          retention-days: 14
