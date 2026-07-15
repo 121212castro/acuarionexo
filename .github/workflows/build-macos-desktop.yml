@@ -1,4 +1,4 @@
-name: Build AcuarioNexo for macOS
+name: Build, sign and notarize AcuarioNexo for macOS
 
 on:
   workflow_dispatch:
@@ -13,6 +13,7 @@ on:
       - 'config.js'
       - 'package.json'
       - 'package-lock.json'
+      - 'electron-builder.mac.yml'
       - '.github/workflows/build-macos-desktop.yml'
 
 permissions:
@@ -24,7 +25,7 @@ concurrency:
 
 jobs:
   build-macos:
-    name: Build macOS ${{ matrix.arch }}
+    name: Sign and notarize macOS ${{ matrix.arch }}
     runs-on: macos-15
     timeout-minutes: 60
     strategy:
@@ -50,44 +51,66 @@ jobs:
       - name: Prepare desktop web bundle
         run: npm run desktop:prepare
 
-      - name: Verify Electron entry points
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -f electron/main.cjs
-          test -f electron/preload.cjs
-          test -f www/index.html
-          node -e "const p=require('./package.json'); if(p.main!=='electron/main.cjs') process.exit(1);"
-
-      - name: Build unsigned macOS application
+      - name: Prepare App Store Connect API key
         shell: bash
         env:
-          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+          ASC_PRIVATE_KEY: ${{ secrets.APP_STORE_CONNECT_PRIVATE_KEY }}
+          ASC_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
         run: |
           set -euo pipefail
-          if [ '${{ matrix.arch }}' = 'x64' ]; then
-            npm run desktop:build:mac:x64
-          else
-            npm run desktop:build:mac:arm64
-          fi
+          test -n "$ASC_PRIVATE_KEY"
+          test -n "$ASC_KEY_ID"
+          KEY_PATH="$RUNNER_TEMP/AuthKey_${ASC_KEY_ID}.p8"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$KEY_PATH"
+          chmod 600 "$KEY_PATH"
+          echo "APPLE_API_KEY=$KEY_PATH" >> "$GITHUB_ENV"
 
-      - name: Validate generated package
+      - name: Build signed and notarized macOS application
+        shell: bash
+        env:
+          CSC_LINK: ${{ secrets.MACOS_DEVELOPER_ID_P12_BASE64 }}
+          CSC_KEY_PASSWORD: ${{ secrets.MACOS_DEVELOPER_ID_P12_PASSWORD }}
+          APPLE_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          set -euo pipefail
+          test -n "$CSC_LINK"
+          test -n "$CSC_KEY_PASSWORD"
+          test -n "$APPLE_API_KEY_ID"
+          test -n "$APPLE_API_ISSUER"
+          npx electron-builder --config electron-builder.mac.yml --mac zip --${{ matrix.arch }} --publish never
+
+      - name: Validate signature, notarization and Gatekeeper
         shell: bash
         run: |
           set -euo pipefail
+          APP_PATH="$(find dist-desktop -type d -name 'AcuarioNexo.app' -print -quit)"
           ZIP_PATH="$(find dist-desktop -maxdepth 1 -type f -name 'AcuarioNexo-*.zip' -print -quit)"
+          test -n "$APP_PATH"
           test -n "$ZIP_PATH"
+          codesign --verify --deep --strict --verbose=2 "$APP_PATH"
+          codesign -dv --verbose=4 "$APP_PATH" 2>&1 | tee "AcuarioNexo-${{ matrix.arch }}-codesign.txt"
+          codesign -dv --verbose=4 "$APP_PATH" 2>&1 | grep -q 'Authority=Developer ID Application:'
+          xcrun stapler validate -v "$APP_PATH"
+          spctl --assess --type execute --verbose=4 "$APP_PATH" 2>&1 | tee "AcuarioNexo-${{ matrix.arch }}-gatekeeper.txt"
           unzip -t "$ZIP_PATH"
           shasum -a 256 "$ZIP_PATH" | tee "AcuarioNexo-${{ matrix.arch }}.sha256"
-          printf 'architecture=%s\npackage=%s\nvalidation=success\n' '${{ matrix.arch }}' "$ZIP_PATH" | tee "AcuarioNexo-${{ matrix.arch }}-validation.txt"
+          printf 'architecture=%s\npackage=%s\nsignature=Developer ID Application\nnotarization=accepted\ngatekeeper=accepted\n' '${{ matrix.arch }}' "$ZIP_PATH" | tee "AcuarioNexo-${{ matrix.arch }}-validation.txt"
 
-      - name: Upload macOS application
+      - name: Upload signed and notarized macOS application
         uses: actions/upload-artifact@v4
         with:
-          name: AcuarioNexo-macOS-${{ matrix.arch }}
+          name: AcuarioNexo-macOS-${{ matrix.arch }}-signed-notarized
           path: |
             dist-desktop/AcuarioNexo-*.zip
             AcuarioNexo-${{ matrix.arch }}.sha256
             AcuarioNexo-${{ matrix.arch }}-validation.txt
+            AcuarioNexo-${{ matrix.arch }}-codesign.txt
+            AcuarioNexo-${{ matrix.arch }}-gatekeeper.txt
           if-no-files-found: error
           retention-days: 14
+
+      - name: Clean temporary notarization key
+        if: always()
+        shell: bash
+        run: rm -f "$RUNNER_TEMP"/AuthKey_*.p8
