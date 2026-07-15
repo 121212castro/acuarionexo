@@ -126,7 +126,7 @@ jobs:
           UPLOAD_ACCEPTED=false
           BUILD_VISIBLE=false
           test -f AcuarioNexo-TestFlight.ipa && IPA_PRESENT=true
-          test -f ipa-validation.txt && grep -q '^codesign=verified$' ipa-validation.txt && IPA_VALIDATED=true
+          test -f ipa-validation.txt && grep -q '^codesign=verified$' ipa-validation.txt && grep -q '^signed_app_aps_environment=production$' ipa-validation.txt && grep -q '^appdelegate_registration_callback=verified$' ipa-validation.txt && IPA_VALIDATED=true
           test -f app-store-connect-upload.log && grep -Eq 'UPLOAD SUCCEEDED|No errors uploading' app-store-connect-upload.log && UPLOAD_ACCEPTED=true
           test -f testflight-build-confirmation.json && BUILD_VISIBLE=true
           printf '{\n  "status": "%s",\n  "commit": "%s",\n  "run_id": "%s",\n  "bundle_id": "%s",\n  "marketing_version": "%s",\n  "build_number": "%s",\n  "ipa_present": %s,\n  "ipa_validated": %s,\n  "upload_accepted": %s,\n  "build_visible_in_app_store_connect": %s,\n  "automatic_git_commit": false,\n  "automatic_git_push": false,\n  "writes_to_main": false\n}\n' \
@@ -147,8 +147,11 @@ jobs:
             distribution-certificate-audit.txt
             provisioning-profile-audit.txt
             signing-identities.txt
+            push-entitlement-audit.txt
+            push-appdelegate-audit.txt
             ipa-validation.txt
             ipa-codesign-verification.txt
+            ipa-entitlements-command.txt
             app-store-connect-upload.log
             app-store-connect-key-audit.txt
             ios-identity.txt
