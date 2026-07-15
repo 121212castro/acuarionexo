@@ -37,8 +37,18 @@ npm run mobile:assets:prepare 2>&1 | tee -a testflight-build.log
 npx --yes @capacitor/assets@3.0.5 generate --ios --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f' 2>&1 | tee -a testflight-build.log
 npx cap sync ios 2>&1 | tee -a testflight-build.log
 
+# cap sync may regenerate native project files. Apply and verify all APNs native wiring afterwards.
+bash scripts/ci/enable-ios-push-entitlement.sh 2>&1 | tee -a testflight-build.log
+bash scripts/ci/enable-ios-push-appdelegate.sh 2>&1 | tee -a testflight-build.log
+
 test -f "$XCODE_PROJECT/project.pbxproj"
 test -f ios/App/App/Info.plist
+test -f ios/App/App/App.entitlements
+test -f ios/App/App/AppDelegate.swift
+grep -q 'CODE_SIGN_ENTITLEMENTS = App/App.entitlements;' "$XCODE_PROJECT/project.pbxproj"
+grep -q '<key>aps-environment</key>' ios/App/App/App.entitlements
+grep -q 'capacitorDidRegisterForRemoteNotifications' ios/App/App/AppDelegate.swift
+grep -q 'capacitorDidFailToRegisterForRemoteNotifications' ios/App/App/AppDelegate.swift
 /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryUsageDescription AcuarioNexo usa tus fotos para guardar imagenes de acuarios, animales y fichas." ios/App/App/Info.plist 2>/dev/null || \
   /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string AcuarioNexo usa tus fotos para guardar imagenes de acuarios, animales y fichas." ios/App/App/Info.plist
 /usr/libexec/PlistBuddy -c "Set :NSPhotoLibraryAddUsageDescription AcuarioNexo guarda imagenes exportadas en tu biblioteca si lo solicitas." ios/App/App/Info.plist 2>/dev/null || \
@@ -55,6 +65,8 @@ scheme=$XCODE_SCHEME
 target=App
 bundle_id=$BUNDLE_ID
 team_id=$TEAM_ID
+push_entitlements=App/App.entitlements
+push_appdelegate_callbacks=verified
 EOF_IDENTITY
 
 printf 'marketing_version=%s\nbuild_number=%s\n' "$MARKETING_VERSION" "$BUILD_NUMBER" > ios-version.txt
@@ -109,6 +121,9 @@ ditto -x -k AcuarioNexo-TestFlight.ipa "$VALIDATION_DIR"
 APP_PATH=$(find "$VALIDATION_DIR/Payload" -maxdepth 1 -type d -name '*.app' -print -quit)
 test -n "$APP_PATH"
 codesign --verify --deep --strict --verbose=2 "$APP_PATH" 2>&1 | tee ipa-codesign-verification.txt
+codesign -d --entitlements :- "$APP_PATH" > "$RUNNER_TEMP/ipa-entitlements.plist" 2>ipa-entitlements-command.txt
+IPA_APS=$(/usr/libexec/PlistBuddy -c 'Print :aps-environment' "$RUNNER_TEMP/ipa-entitlements.plist")
+test "$IPA_APS" = production
 IPA_BUNDLE=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP_PATH/Info.plist")
 IPA_VERSION=$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$APP_PATH/Info.plist")
 IPA_BUILD=$(/usr/libexec/PlistBuddy -c 'Print CFBundleVersion' "$APP_PATH/Info.plist")
@@ -117,7 +132,9 @@ test "$IPA_VERSION" = "$MARKETING_VERSION"
 test "$IPA_BUILD" = "$BUILD_NUMBER"
 security cms -D -i "$APP_PATH/embedded.mobileprovision" > "$RUNNER_TEMP/embedded-profile.plist"
 EMBEDDED_APP_ID=$(/usr/libexec/PlistBuddy -c 'Print Entitlements:application-identifier' "$RUNNER_TEMP/embedded-profile.plist")
+EMBEDDED_APS=$(/usr/libexec/PlistBuddy -c 'Print Entitlements:aps-environment' "$RUNNER_TEMP/embedded-profile.plist")
 test "$EMBEDDED_APP_ID" = "$TEAM_ID.$BUNDLE_ID"
+test "$EMBEDDED_APS" = production
 shasum -a 256 AcuarioNexo-TestFlight.ipa | tee AcuarioNexo-TestFlight.ipa.sha256
 
 cat > ipa-validation.txt <<EOF_IPA
@@ -126,6 +143,10 @@ bundle_id=$IPA_BUNDLE
 marketing_version=$IPA_VERSION
 build_number=$IPA_BUILD
 embedded_application_identifier=$EMBEDDED_APP_ID
+embedded_profile_aps_environment=$EMBEDDED_APS
+signed_app_aps_environment=$IPA_APS
+appdelegate_registration_callback=verified
+appdelegate_registration_error_callback=verified
 codesign=verified
 EOF_IPA
 
