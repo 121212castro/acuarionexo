@@ -19,8 +19,8 @@
     "mobile:open:ios": "npx cap open ios",
     "desktop:prepare": "npm run mobile:prepare && npm run mobile:check",
     "desktop:start": "npm run desktop:prepare && electron .",
-    "desktop:build:mac:x64": "npm run desktop:prepare && electron-builder --mac zip --x64",
-    "desktop:build:mac:arm64": "npm run desktop:prepare && electron-builder --mac zip --arm64"
+    "desktop:build:mac:x64": "npm run desktop:prepare && electron-builder --mac zip --x64 --publish never",
+    "desktop:build:mac:arm64": "npm run desktop:prepare && electron-builder --mac zip --arm64 --publish never"
   },
   "dependencies": {
     "@capacitor/android": "8.4.1",
