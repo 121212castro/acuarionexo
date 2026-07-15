@@ -67,6 +67,18 @@ jobs:
           test -f ios/App/App.xcodeproj/project.pbxproj
           test -f ios/App/App/Info.plist
 
+      - name: Discover Mac Catalyst destination
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            SUPPORTS_MACCATALYST=YES \
+            -showdestinations 2>&1 | tee mac-catalyst-destinations.txt
+          grep -F 'platform:macOS' mac-catalyst-destinations.txt
+          grep -F 'variant:Mac Catalyst' mac-catalyst-destinations.txt
+
       - name: Build unsigned Mac Catalyst app
         shell: bash
         run: |
@@ -75,7 +87,8 @@ jobs:
             -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
-            -destination 'generic/platform=macOS,variant=Mac Catalyst' \
+            -sdk macosx \
+            -destination 'platform=macOS,variant=Mac Catalyst' \
             -derivedDataPath mac-catalyst-build \
             SUPPORTS_MACCATALYST=YES \
             DERIVE_MACCATALYST_PRODUCT_BUNDLE_IDENTIFIER=NO \
@@ -114,6 +127,7 @@ jobs:
             AcuarioNexo-Mac-Catalyst-Unsigned.zip.sha256
             mac-catalyst-validation.txt
             mac-catalyst-binary.txt
+            mac-catalyst-destinations.txt
             mac-catalyst-xcode-version.txt
             mac-catalyst-build.log
           if-no-files-found: warn
