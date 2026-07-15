@@ -3,6 +3,7 @@
   "version": "0.2.0",
   "private": true,
   "type": "module",
+  "main": "electron/main.cjs",
   "scripts": {
     "docs:refresh": "node scripts/refresh-project-docs.mjs",
     "check": "npm run docs:refresh && node scripts/validate-app.mjs",
@@ -15,7 +16,11 @@
     "mobile:add:android": "npm run mobile:prepare && npm run mobile:check && npx cap add android && npm run mobile:assets:android",
     "mobile:add:ios": "npm run mobile:prepare && npm run mobile:check && npx cap add ios && npm run mobile:assets:ios && npx cap sync ios",
     "mobile:open:android": "npx cap open android",
-    "mobile:open:ios": "npx cap open ios"
+    "mobile:open:ios": "npx cap open ios",
+    "desktop:prepare": "npm run mobile:prepare && npm run mobile:check",
+    "desktop:start": "npm run desktop:prepare && electron .",
+    "desktop:build:mac:x64": "npm run desktop:prepare && electron-builder --mac zip --x64",
+    "desktop:build:mac:arm64": "npm run desktop:prepare && electron-builder --mac zip --arm64"
   },
   "dependencies": {
     "@capacitor/android": "8.4.1",
@@ -26,6 +31,30 @@
     "@capacitor/push-notifications": "8.1.1"
   },
   "devDependencies": {
-    "@capacitor/cli": "8.4.1"
+    "@capacitor/cli": "8.4.1",
+    "electron": "35.0.0",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.acuarionexo.desktop",
+    "productName": "AcuarioNexo",
+    "asar": true,
+    "directories": {
+      "output": "dist-desktop"
+    },
+    "files": [
+      "electron/**/*",
+      "www/**/*",
+      "icon-512.png",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "icon": "icon-512.png",
+      "target": [
+        "zip"
+      ],
+      "artifactName": "AcuarioNexo-${version}-${arch}.${ext}"
+    }
   }
 }
