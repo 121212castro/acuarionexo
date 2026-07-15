@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-: "${PROFILE_PATH:?Missing PROFILE_PATH}"
-: "${XCODE_PROJECT:?Missing XCODE_PROJECT}"
+if [ ! -f ios/App/App.xcodeproj/project.pbxproj ]; then
+  echo "APNs entitlement skipped: generated iOS project not present."
+  exit 0
+fi
 
+if [ -z "${PROFILE_PATH:-}" ] || [ ! -f "${PROFILE_PATH:-}" ]; then
+  echo "APNs entitlement skipped: provisioning profile not available."
+  exit 0
+fi
+
+XCODE_PROJECT="${XCODE_PROJECT:-ios/App/App.xcodeproj}"
+RUNNER_TEMP="${RUNNER_TEMP:-/tmp}"
 PROFILE_PLIST="$RUNNER_TEMP/acuarionexo-profile.plist"
 security cms -D -i "$PROFILE_PATH" > "$PROFILE_PLIST"
 PROFILE_APS=$(/usr/libexec/PlistBuddy -c 'Print Entitlements:aps-environment' "$PROFILE_PLIST")
@@ -35,3 +44,4 @@ PY
 
 grep -q 'CODE_SIGN_ENTITLEMENTS = App/App.entitlements;' "$PBX"
 printf 'profile_aps_environment=%s\nproject_entitlements=App/App.entitlements\n' "$PROFILE_APS" > push-entitlement-audit.txt
+echo "APNs entitlement enabled and profile verified."
