@@ -2,9 +2,24 @@
   const CHECK_INTERVAL_MS = 15 * 60 * 1000;
   const TOKEN_KEY = 'acuarionexo:push-token';
   const PENDING_TOKEN_KEY = 'acuarionexo:pending-push-token';
+  const DIAGNOSTIC_KEY = 'acuarionexo:push-diagnostic';
   let checking = false;
   let enabling = false;
   let nativePushStarted = false;
+  let started = false;
+
+  function diagnostic(stage, detail) {
+    const entry = {
+      stage: String(stage || 'unknown'),
+      detail: detail == null ? null : String(detail),
+      platform: capacitorPlatform(),
+      at: new Date().toISOString()
+    };
+    try { localStorage.setItem(DIAGNOSTIC_KEY, JSON.stringify(entry)); } catch (_) {}
+    window.AcuarioNexoPushDiagnostic = entry;
+    console.info('AcuarioNexo push diagnostic', entry);
+    return entry;
+  }
 
   function canNotify() {
     return 'Notification' in window;
@@ -57,6 +72,7 @@
 
     if (!window.s || !userId) {
       rememberPendingToken(token, platform, provider);
+      diagnostic('token-pending', !window.s ? 'supabase-unavailable' : 'user-unavailable');
       return false;
     }
 
@@ -75,10 +91,12 @@
       .upsert(row, { onConflict: 'user_id,provider,token' });
     if (error) {
       rememberPendingToken(token, platform, provider);
+      diagnostic('token-save-error', error.message || error.code || 'unknown');
       throw error;
     }
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.removeItem(PENDING_TOKEN_KEY);
+    diagnostic('token-saved', provider + ':' + platform);
     return true;
   }
 
@@ -97,19 +115,37 @@
   }
 
   async function registerNativePush() {
-    if (!isNativePush() || nativePushStarted) {
+    const platform = capacitorPlatform();
+    const PushNotifications = nativePushPlugin();
+
+    if (platform !== 'ios' && platform !== 'android') {
+      diagnostic('native-skip', 'platform:' + (platform || 'unknown'));
       await flushPendingToken();
       return null;
     }
-    nativePushStarted = true;
-    const platform = capacitorPlatform();
-    const PushNotifications = nativePushPlugin();
+    if (!PushNotifications) {
+      diagnostic('native-plugin-missing', platform);
+      return null;
+    }
+    if (nativePushStarted) {
+      await flushPendingToken();
+      return true;
+    }
+
+    diagnostic('permission-request', platform);
     const permission = await PushNotifications.requestPermissions();
-    if (permission.receive !== 'granted') return null;
+    if (permission.receive !== 'granted') {
+      diagnostic('permission-not-granted', permission.receive || 'unknown');
+      return null;
+    }
 
     await PushNotifications.addListener('registration', async function (token) {
       const value = token?.value || token?.token || '';
-      if (!value) return;
+      if (!value) {
+        diagnostic('registration-empty-token', platform);
+        return;
+      }
+      diagnostic('registration-token-received', platform);
       try {
         if (platform === 'ios') await saveDeviceToken(value, 'ios-app', 'apns');
         else await saveDeviceToken(value, 'android-app', 'fcm');
@@ -119,10 +155,12 @@
     });
 
     await PushNotifications.addListener('registrationError', function (error) {
+      diagnostic('registration-error', error?.error || error?.message || JSON.stringify(error || {}));
       console.warn('AcuarioNexo push registration error', error);
     });
 
     await PushNotifications.addListener('pushNotificationReceived', function (notification) {
+      diagnostic('push-received', notification?.title || 'notification');
       console.info('AcuarioNexo push received', notification);
     });
 
@@ -130,8 +168,16 @@
       try { window.tareas ? window.tareas() : location.assign(location.pathname + '?avisos=1'); } catch (_) {}
     });
 
-    await PushNotifications.register();
-    return true;
+    nativePushStarted = true;
+    diagnostic('register-called', platform);
+    try {
+      await PushNotifications.register();
+      return true;
+    } catch (error) {
+      nativePushStarted = false;
+      diagnostic('register-call-error', error?.message || String(error));
+      throw error;
+    }
   }
 
   async function registerFirebaseMessaging() {
@@ -206,20 +252,34 @@
         setTimeout(flushPendingToken, 5000);
         return true;
       }
+      const platform = capacitorPlatform();
+      if (platform === 'ios' || platform === 'android') {
+        diagnostic('native-unavailable', 'plugin-not-loaded');
+        return false;
+      }
       if (!canNotify()) return false;
       if (Notification.permission === 'default') await Notification.requestPermission();
       if (Notification.permission !== 'granted') return false;
       try { await registerFirebaseMessaging(); } catch (_) {}
       await checkDueTasks();
       return true;
+    } catch (error) {
+      diagnostic('enable-error', error?.message || String(error));
+      console.warn('AcuarioNexo notifications enable error', error);
+      return false;
     } finally {
       enabling = false;
     }
   }
 
   function start() {
+    if (started) return;
+    started = true;
+    diagnostic('module-start', document.readyState);
+    setTimeout(enableNotifications, 500);
     setTimeout(enableNotifications, 3500);
-    setTimeout(flushPendingToken, 8000);
+    setTimeout(enableNotifications, 8000);
+    setTimeout(flushPendingToken, 10000);
     setTimeout(checkDueTasks, 30000);
     setInterval(checkDueTasks, CHECK_INTERVAL_MS);
     document.addEventListener('visibilitychange', function () {
@@ -241,7 +301,15 @@
     checkDueTasks,
     registerNativePush,
     registerFirebaseMessaging,
-    flushPendingToken
+    flushPendingToken,
+    diagnostic: function () {
+      try { return JSON.parse(localStorage.getItem(DIAGNOSTIC_KEY) || 'null'); } catch (_) { return null; }
+    }
   };
-  window.addEventListener('load', start);
+
+  if (document.readyState === 'loading') {
+    window.addEventListener('load', start, { once: true });
+  } else {
+    start();
+  }
 })();
