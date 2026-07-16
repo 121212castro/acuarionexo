@@ -1,0 +1,58 @@
+/* AcuarioNexo · Biblioteca · ajustes exclusivos para escritorio */
+@media (min-width: 760px) {
+  .library-public-detail,
+  .library-detail {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: hidden;
+    padding-bottom: 76px;
+  }
+
+  .library-public-detail > img:first-of-type,
+  .library-detail > img:first-of-type,
+  .library-public-detail .library-detail-cover,
+  .library-detail .library-detail-cover,
+  .library-public-detail .library-cover-image,
+  .library-detail .library-cover-image {
+    display: block;
+    width: 100%;
+    max-width: 680px;
+    height: clamp(150px, 24vw, 230px);
+    max-height: 230px;
+    margin: 10px auto 16px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 18px;
+  }
+
+  .library-public-detail .library-detail-photo,
+  .library-detail .library-detail-photo,
+  .library-public-detail .library-main-image,
+  .library-detail .library-main-image,
+  .library-public-detail .detail-image,
+  .library-detail .detail-image {
+    display: block;
+    width: auto;
+    max-width: min(100%, 680px);
+    height: auto;
+    max-height: min(52vh, 430px);
+    margin: 12px auto 22px;
+    object-fit: contain;
+    object-position: center;
+    border-radius: 18px;
+    background: rgba(3, 16, 29, .72);
+  }
+
+  .library-public-detail img,
+  .library-detail img {
+    max-width: 100%;
+  }
+
+  .library-public-detail .image-actions,
+  .library-detail .image-actions {
+    max-width: 680px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
