@@ -59,6 +59,7 @@
       'src/microfauna/microfauna.js'
     ],
     ia: [
+      'src/inventory/inventory-core.js',
       'src/ai/ai.js',
       'src/ai/ai-library-v3.js',
       'src/ai/ai-alerts-extra.js',
