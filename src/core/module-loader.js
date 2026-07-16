@@ -181,6 +181,7 @@
   proxy('fotos', 'fotos', 'Fotos', 'acuarios');
   proxy('inventario', 'inventario', 'Inventario', 'inventario');
   proxy('microfauna', 'microfauna', 'Microfauna', 'microfauna');
+  proxy('iaAcuarioNexo', 'ia', 'Inteligencia artificial', 'avisos');
   proxy('parametros', 'parametros', 'Parámetros', 'acuarios');
   proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
