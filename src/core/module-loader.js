@@ -61,7 +61,8 @@
     ia: [
       'src/ai/ai.js',
       'src/ai/ai-library-v3.js',
-      'src/ai/ai-alerts-extra.js'
+      'src/ai/ai-alerts-extra.js',
+      'src/ai/ai-access.js'
     ],
     parametros: [
       'src/ai/ai.js',
@@ -71,7 +72,8 @@
       'src/parameters/parameters-manual.js',
       'src/parameters/parameters.js',
       'src/parameters/measurements-advanced.js',
-      'src/parameters/parameters-ai-fallback.js'
+      'src/parameters/parameters-ai-fallback.js',
+      'src/ai/ai-access.js'
     ],
     tareas: [
       'src/tasks/tasks-core.js',
@@ -84,7 +86,8 @@
     settings: [
       'src/settings/settings.js',
       'src/support/settings-support-link.js',
-      'src/status/settings-status-link.js'
+      'src/status/settings-status-link.js',
+      'src/ai/ai-access.js'
     ],
     support: [
       'src/support/support.js'
@@ -92,7 +95,8 @@
     status: [
       'src/status/status-core.js',
       'src/status/status-ui.js',
-      'src/status/status.js'
+      'src/status/status.js',
+      'src/ai/ai-access.js'
     ]
   };
 
