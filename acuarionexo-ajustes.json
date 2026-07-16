@@ -1,0 +1,21 @@
+{
+  "language": "es",
+  "theme": "system",
+  "textSize": "normal",
+  "reducedMotion": false,
+  "units": "metric",
+  "temperature": "celsius",
+  "dateFormat": "ddmmyyyy",
+  "notificationMode": "summary",
+  "notificationsEnabled": true,
+  "criticalImmediate": true,
+  "sound": true,
+  "badge": true,
+  "quietHoursEnabled": false,
+  "quietFrom": "22:00",
+  "quietTo": "08:00",
+  "analytics": false,
+  "errorReports": true,
+  "aiEnabled": false,
+  "plan": "free"
+}
