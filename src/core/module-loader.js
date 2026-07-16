@@ -80,6 +80,9 @@
     ],
     admin: [
       'src/admin/admin.js'
+    ],
+    settings: [
+      'src/settings/settings.js'
     ]
   };
 
@@ -168,6 +171,7 @@
   proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
   proxy('adminPanel', 'admin', 'Admin', 'admin');
+  proxy('settings', 'settings', 'Ajustes', 'inicio');
 
   ANX.loadModuleGroup = loadModuleGroup;
 })();
