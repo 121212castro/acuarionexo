@@ -64,28 +64,87 @@
     return `<p class="small">${esc(text || 'Sin datos todavía')}</p>`;
   }
 
+  function taskDateText(value) {
+    if (!value) return 'Sin fecha';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return 'Sin fecha';
+    return date.toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function dashboardAlertCard(task) {
+    const priority = String(task.priority || 'normal').toLowerCase();
+    const label = priority === 'high' ? 'Urgente' : 'Pendiente';
+    return `<button class="item dashboard-task" onclick="verAviso('${esc(task.id)}')">
+      <b>${esc(task.title || 'Aviso')}</b>
+      <span class="small">${esc(label)} · ${esc(taskDateText(task.due_at))}</span>
+    </button>`;
+  }
+
+  function dashboardActivityCard(task) {
+    return `<button class="item dashboard-task" onclick="verAviso('${esc(task.id)}')">
+      <b>${esc(task.title || 'Aviso realizado')}</b>
+      <span class="small">Realizado · ${esc(taskDateText(task.completed_at || task.updated_at))}</span>
+    </button>`;
+  }
+
   async function loadDashboardStats(list) {
     const aquariumIds = (list || []).map(function (aq) { return aq.id; }).filter(Boolean);
-    if (!aquariumIds.length) return { animals: 0, photos: 'No calculado', measurements: 'No calculado', tasks: null };
 
-    if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('animales');
-    const animalsCore = window.ANX.AnimalsCore;
-    if (!animalsCore) throw new Error('No se pudo cargar el contador de animales.');
-
-    const { data, error } = await supabase.from('inventory_items')
-      .select('category,quantity,notes,aquarium_id')
+    const openTasksQuery = supabase.from('tasks')
+      .select('id,title,priority,due_at,status,task_type,aquarium_id')
       .eq('user_id', state.user.id)
-      .in('aquarium_id', aquariumIds)
-      .limit(2000);
-    if (error) throw error;
+      .neq('status', 'done')
+      .order('due_at', { ascending: true, nullsFirst: false })
+      .limit(8);
 
-    const animals = (data || []).reduce(function (total, item) {
-      if (!animalsCore.liveCategories.has(item.category || '') || !animalsCore.isAlive(item)) return total;
-      const quantity = Number(item.quantity ?? 1);
-      return total + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
-    }, 0);
+    const recentTasksQuery = supabase.from('tasks')
+      .select('id,title,completed_at,updated_at,status,task_type,aquarium_id')
+      .eq('user_id', state.user.id)
+      .eq('status', 'done')
+      .order('completed_at', { ascending: false, nullsFirst: false })
+      .limit(8);
 
-    return { animals, photos: 'No calculado', measurements: 'No calculado', tasks: null };
+    const [openTasks, recentTasks] = await Promise.all([openTasksQuery, recentTasksQuery]);
+    if (openTasks.error) throw openTasks.error;
+    if (recentTasks.error) throw recentTasks.error;
+
+    let animals = 0;
+    if (aquariumIds.length) {
+      if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('animales');
+      const animalsCore = window.ANX.AnimalsCore;
+      if (!animalsCore) throw new Error('No se pudo cargar el contador de animales.');
+
+      const { data, error } = await supabase.from('inventory_items')
+        .select('category,quantity,notes,aquarium_id')
+        .eq('user_id', state.user.id)
+        .in('aquarium_id', aquariumIds)
+        .limit(2000);
+      if (error) throw error;
+
+      animals = (data || []).reduce(function (total, item) {
+        if (!animalsCore.liveCategories.has(item.category || '') || !animalsCore.isAlive(item)) return total;
+        const quantity = Number(item.quantity ?? 1);
+        return total + (Number.isFinite(quantity) && quantity > 0 ? quantity : 0);
+      }, 0);
+    }
+
+    const alerts = (openTasks.data || []).sort(function (a, b) {
+      const ap = String(a.priority || '').toLowerCase() === 'high' ? 0 : 1;
+      const bp = String(b.priority || '').toLowerCase() === 'high' ? 0 : 1;
+      if (ap !== bp) return ap - bp;
+      const ad = a.due_at ? new Date(a.due_at).getTime() : Number.MAX_SAFE_INTEGER;
+      const bd = b.due_at ? new Date(b.due_at).getTime() : Number.MAX_SAFE_INTEGER;
+      return ad - bd;
+    }).slice(0, 5);
+
+    return {
+      animals,
+      photos: 'No calculado',
+      measurements: 'No calculado',
+      tasks: alerts.length,
+      alerts,
+      recentActivity: (recentTasks.data || []).slice(0, 5)
+    };
   }
 
   async function refreshAdminForDashboard() {
@@ -100,6 +159,8 @@
     dashboardStat,
     calcStat,
     emptyLine,
+    dashboardAlertCard,
+    dashboardActivityCard,
     loadDashboardStats,
     refreshAdminForDashboard
   };
