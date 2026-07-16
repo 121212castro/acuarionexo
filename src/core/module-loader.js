@@ -82,7 +82,11 @@
       'src/admin/admin.js'
     ],
     settings: [
-      'src/settings/settings.js'
+      'src/settings/settings.js',
+      'src/support/settings-support-link.js'
+    ],
+    support: [
+      'src/support/support.js'
     ]
   };
 
@@ -172,6 +176,7 @@
   proxy('tareas', 'tareas', 'Avisos', 'avisos');
   proxy('adminPanel', 'admin', 'Admin', 'admin');
   proxy('settings', 'settings', 'Ajustes', 'inicio');
+  proxy('support', 'support', 'Soporte', 'inicio');
 
   ANX.loadModuleGroup = loadModuleGroup;
 })();
