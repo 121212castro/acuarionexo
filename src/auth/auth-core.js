@@ -48,6 +48,7 @@
   function updateSessionHeader() {
     const { byId, state } = window.ANX;
     byId('logoutBtn')?.classList.toggle('hidden', !state.user);
+    byId('settingsBtn')?.classList.toggle('hidden', !state.user);
     const text = byId('connectionText');
     if (text) text.textContent = state.user ? 'Conectado a Supabase' : 'Sin sesión';
   }
