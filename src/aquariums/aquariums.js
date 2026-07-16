@@ -1,7 +1,7 @@
 /* AcuarioNexo · aquariums */
 (function () {
   const { supabase, state, esc, byId, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
-  const { loadAquariums, aquariumCard, dashboardStat, emptyLine, loadDashboardStats, refreshAdminForDashboard, aquariumTypeLabel } = window.ANX.AquariumsCore;
+  const { loadAquariums, aquariumCard, dashboardStat, emptyLine, dashboardAlertCard, dashboardActivityCard, loadDashboardStats, refreshAdminForDashboard, aquariumTypeLabel } = window.ANX.AquariumsCore;
 
   window.dashboard = async function () {
     if (!state.user) return login();
@@ -13,6 +13,8 @@
       const stats = await loadDashboardStats(list);
       if (!isCurrent(t)) return;
       const liters = list.reduce(function (total, aq) { return total + (Number(aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters) || 0); }, 0);
+      const alertsHtml = (stats.alerts || []).map(dashboardAlertCard).join('') || emptyLine('Sin avisos importantes.');
+      const activityHtml = (stats.recentActivity || []).map(dashboardActivityCard).join('') || emptyLine('Sin actividad reciente.');
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Inicio</h2><p>Resumen general de la app</p></div></section>
         <section class="panel"><div class="panel-head"><h2>Estado general</h2></div><div class="quick-actions">
           ${dashboardStat('Acuarios activos', String(list.length))}
@@ -25,8 +27,8 @@
           <button onclick="inventario()"><span>▤</span>Inventario</button>
           ${state.isAdmin ? '<button onclick="adminPanel()"><span>⚙</span>Admin</button>' : ''}
         </div></section>
-        <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2></div>${emptyLine('Sin avisos importantes.')}</section>
-        <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2></div>${emptyLine('Sin actividad reciente.')}</section>`, 'inicio');
+        <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2><button onclick="tareas()">Ver todos</button></div>${alertsHtml}</section>
+        <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2><button onclick="tareas()">Ver historial</button></div>${activityHtml}</section>`, 'inicio');
     } catch (e) { if (isCurrent(t)) render(msg(e.message, 'error'), 'inicio'); }
   };
 
