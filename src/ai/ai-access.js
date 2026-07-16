@@ -122,19 +122,7 @@
     patchStatus();
   }
 
-  function patchLoader() {
-    const original = ANX.loadModuleGroup;
-    if (typeof original !== 'function' || original.__anxAiAccessWrapped) return;
-    const wrapped = async function () {
-      const result = await original.apply(this, arguments);
-      install();
-      return result;
-    };
-    wrapped.__anxAiAccessWrapped = true;
-    ANX.loadModuleGroup = wrapped;
-  }
-
   ANX.AIAccess = { access, isOwner, install };
   install();
-  patchLoader();
+  window.setInterval(install, 1000);
 })();
