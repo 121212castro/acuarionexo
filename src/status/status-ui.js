@@ -54,7 +54,7 @@
         `<button onclick="window.AcuarioNexoNotifications?.enable?.().then(()=>statusCenter())">Actualizar registro</button>`),
       card('Soporte', support.open ? `${support.open} incidencia(s) abierta(s)` : 'No hay incidencias abiertas', support.level,
         metric('Reportes totales', support.total) + metric('Último reporte', support.latest),
-        `<button onclick="supportCenter()">Abrir soporte</button>`),
+        `<button onclick="support()">Abrir soporte</button>`),
       card('Inteligencia artificial', ai.enabled ? 'Acceso habilitado localmente' : 'Acceso restringido', ai.level,
         metric('Plan', ai.plan === 'free' ? 'Gratis' : 'Pro') + metric('Acciones registradas', ai.usage) + `<p class="status-note">${esc(ai.note)}</p>`),
       card('Almacenamiento local', 'Estado del navegador o contenedor nativo', storage.level,
