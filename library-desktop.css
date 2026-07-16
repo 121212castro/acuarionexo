@@ -17,10 +17,10 @@
   .library-detail .library-cover-image {
     display: block;
     width: auto;
-    max-width: min(100%, 680px);
+    max-width: min(100%, 720px);
     height: auto;
-    max-height: min(34vh, 300px);
-    margin: 10px auto 16px;
+    max-height: min(40vh, 340px);
+    margin: 10px auto 18px;
     object-fit: contain;
     object-position: center;
     border-radius: 18px;
@@ -34,10 +34,10 @@
   .library-public-detail .detail-image,
   .library-detail .detail-image {
     display: block;
-    width: auto;
-    max-width: min(100%, 680px);
+    width: min(86%, 620px);
+    max-width: min(86%, 620px);
     height: auto;
-    max-height: min(52vh, 430px);
+    max-height: min(46vh, 380px);
     margin: 12px auto 22px;
     object-fit: contain;
     object-position: center;
