@@ -83,10 +83,16 @@
     ],
     settings: [
       'src/settings/settings.js',
-      'src/support/settings-support-link.js'
+      'src/support/settings-support-link.js',
+      'src/status/settings-status-link.js'
     ],
     support: [
       'src/support/support.js'
+    ],
+    status: [
+      'src/status/status-core.js',
+      'src/status/status-ui.js',
+      'src/status/status.js'
     ]
   };
 
@@ -177,6 +183,7 @@
   proxy('adminPanel', 'admin', 'Admin', 'admin');
   proxy('settings', 'settings', 'Ajustes', 'inicio');
   proxy('support', 'support', 'Soporte', 'inicio');
+  proxy('statusCenter', 'status', 'Centro de Estado', 'inicio');
 
   ANX.loadModuleGroup = loadModuleGroup;
 })();
