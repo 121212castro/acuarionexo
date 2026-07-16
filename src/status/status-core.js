@@ -90,6 +90,12 @@
     const openReports = reports.filter(item => !['resolved', 'closed'].includes(item.status)).length;
     const online = navigator.onLine !== false;
     const versionCurrent = !!publishedBuild && publishedBuild === installedBuild;
+    const aiAccess = ANX.AIAccess?.access?.() || {
+      allowed: !!window.AcuarioNexoSettings?.load?.().aiEnabled,
+      plan: window.AcuarioNexoSettings?.load?.().plan || 'free',
+      source: 'local',
+      note: 'Acceso comercial pendiente de validación por suscripción'
+    };
 
     return {
       generatedAt: new Date().toISOString(),
@@ -129,11 +135,12 @@
         latest: safeDate(reports[0]?.created_at)
       },
       ai: {
-        level: 'warning',
-        enabled: !!window.AcuarioNexoSettings?.load?.().aiEnabled,
-        plan: window.AcuarioNexoSettings?.load?.().plan || 'free',
+        level: aiAccess.allowed ? 'ok' : 'warning',
+        enabled: !!aiAccess.allowed,
+        plan: aiAccess.plan || 'free',
         usage: (userData.aiUsage || []).length,
-        note: 'Acceso comercial pendiente de validación por suscripción'
+        accessSource: aiAccess.source || 'unknown',
+        note: aiAccess.note || ''
       },
       storage: {
         level: 'ok',
