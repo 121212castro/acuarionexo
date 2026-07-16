@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
-    window.ACUARIONEXO_BUILD = 'ficha-scientific-identity-20260713-1605';
+    window.ACUARIONEXO_BUILD = 'settings-module-20260716-1100';
     window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD + '-' + Date.now();
     window.ANX_BOOT_READY = (async function () {
       try {
@@ -45,7 +45,7 @@
     })();
     (function () {
       var v = encodeURIComponent(window.ANX_ASSET_VERSION);
-      var css = ['styles.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css','library-clean.css','inventory-accordion.css','microfauna-mobile.css','notifications.css'];
+      var css = ['styles.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css','library-clean.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css'];
       var manifest = document.createElement('link');
       manifest.rel = 'manifest';
       manifest.href = 'manifest.webmanifest?v=' + v;
@@ -65,7 +65,7 @@
       <div class="brand-logo">🐠</div>
       <div><h1>Acuario<span>Nexo</span></h1><p id="version"></p></div>
     </div>
-    <div class="top-actions"><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
+    <div class="top-actions"><button id="settingsBtn" class="ghost settings-button hidden" onclick="settings()" aria-label="Ajustes" title="Ajustes">⚙</button><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
   </header>
   <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Comprobando la última versión...</p></section></main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
