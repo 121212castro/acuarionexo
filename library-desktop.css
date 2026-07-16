@@ -16,14 +16,15 @@
   .library-public-detail .library-cover-image,
   .library-detail .library-cover-image {
     display: block;
-    width: 100%;
-    max-width: 680px;
-    height: clamp(150px, 24vw, 230px);
-    max-height: 230px;
+    width: auto;
+    max-width: min(100%, 680px);
+    height: auto;
+    max-height: min(34vh, 300px);
     margin: 10px auto 16px;
-    object-fit: cover;
+    object-fit: contain;
     object-position: center;
     border-radius: 18px;
+    background: rgba(3, 16, 29, .72);
   }
 
   .library-public-detail .library-detail-photo,
