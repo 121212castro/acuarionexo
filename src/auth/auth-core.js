@@ -45,15 +45,25 @@
     state.isAdmin = false;
   }
 
+  function setSessionButtonVisibility(button, visible) {
+    if (!button) return;
+    button.classList.toggle('hidden', !visible);
+    button.hidden = !visible;
+    button.setAttribute('aria-hidden', visible ? 'false' : 'true');
+    if (visible) button.style.removeProperty('display');
+    else button.style.setProperty('display', 'none', 'important');
+  }
+
   function updateSessionHeader() {
     const { byId, state } = window.ANX;
-    byId('logoutBtn')?.classList.toggle('hidden', !state.user);
-    byId('settingsBtn')?.classList.toggle('hidden', !state.user);
+    const hasSession = !!state.user;
+    setSessionButtonVisibility(byId('logoutBtn'), hasSession);
+    setSessionButtonVisibility(byId('settingsBtn'), hasSession);
     const text = byId('connectionText');
-    if (text) text.textContent = state.user ? 'Conectado a Supabase' : 'Sin sesión';
+    if (text) text.textContent = hasSession ? 'Conectado a Supabase' : 'Sin sesión';
   }
 
   window.ANX = window.ANX || {};
-  Object.assign(window.ANX, { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader });
-  window.ANX.AuthCore = { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader };
+  Object.assign(window.ANX, { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader, setSessionButtonVisibility });
+  window.ANX.AuthCore = { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader, setSessionButtonVisibility };
 })();
