@@ -14,26 +14,58 @@
   loadScriptOnce('src/admin/report-issue.js?v=incidencia-20260702-2', 'report-issue');
   loadScriptOnce('src/admin/issue-entry.js?v=incidencia-20260702-2', 'issue-entry');
 
+  async function requireAdmin() {
+    if (!state.user) { login(); return false; }
+    await loadAdminRole();
+    if (!adminAllowed()) { adminBlocked(); return false; }
+    return true;
+  }
+
+  async function loadLibraryAdminTools() {
+    if (!await requireAdmin()) return false;
+    if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('biblioteca');
+    return true;
+  }
+
   window.refreshAdminAccess = async function () {
     try { await loadAdminRole(); }
     catch (_) { state.adminRole = null; state.isAdmin = false; }
   };
 
   window.adminCrearFicha = async function () {
-    if (!state.user) return login();
-    await loadAdminRole();
-    if (!adminAllowed()) return adminBlocked();
+    if (!await loadLibraryAdminTools()) return;
     render(`<section class="panel">${msg('Abriendo creador de fichas...')}</section>`, 'admin');
-    if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('biblioteca');
     if (typeof window.nuevaFichaV3 === 'function') return window.nuevaFichaV3();
     render(`<section class="panel">${msg('No se pudo abrir el creador de fichas.', 'error')}</section>`, 'admin');
   };
 
+  window.adminCrearFichaDesdeChat = async function () {
+    if (!await loadLibraryAdminTools()) return;
+    render(`<section class="summary-card"><div><small>Admin</small><h2>Crear ficha desde Chat</h2><p>Importación validada y restringida</p></div></section>
+      <section class="panel"><button onclick="adminPanel()">← Admin</button><div id="adminChatImportHost"></div></section>`, 'admin');
+    if (typeof window.mostrarCrearFichaDesdeChat === 'function') return window.mostrarCrearFichaDesdeChat();
+    render(`<section class="panel">${msg('No se pudo cargar la importación desde Chat.', 'error')}</section>`, 'admin');
+  };
+
+  window.adminPlantillaChat = async function () {
+    if (!await loadLibraryAdminTools()) return;
+    const types = window.ANX.LibraryV3Core?.types || [];
+    const options = types.filter(([key]) => key !== 'all').map(([key, name]) => `<option value="${esc(key)}">${esc(name)}</option>`).join('');
+    render(`<section class="summary-card"><div><small>Admin</small><h2>Plantilla para Chat</h2><p>Preparación de fichas verificables</p></div></section>
+      <section class="panel"><button onclick="adminPanel()">← Admin</button>
+        <div class="form-grid">
+          <div><label>Tipo de ficha</label><select id="templateCopyType" onchange="actualizarCamposPlantillaChat()">${options}</select></div>
+          <div><label>Nombre común, comercial o modelo</label><input id="templateCopySubject" placeholder="Ej.: pez ángel enano africano"></div>
+          <div id="templateScientificField"><label>Nombre científico exacto</label><input id="templateCopyScientificName" placeholder="Ej.: Centropyge acanthops"></div>
+          <div><label>&nbsp;</label><button class="primary" onclick="copiarApartadosFicha()">Copiar apartados para Chat</button></div>
+        </div><div id="templateCopyStatus"></div>
+      </section>`, 'admin');
+    requestAnimationFrame(() => window.actualizarCamposPlantillaChat?.());
+  };
+
   window.adminPanel = async function () {
-    if (!state.user) return login();
+    if (!await requireAdmin()) return;
     try {
-      await loadAdminRole();
-      if (!adminAllowed()) return adminBlocked();
       render(`<section class="panel">${msg('Cargando panel Admin...')}</section>`, 'admin');
       const stats = await adminStats();
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>${esc(roleLabel(state.adminRole.role))}</p></div></section>
@@ -50,14 +82,21 @@
           </div>
         </section>
         <section class="panel">
-          <div class="panel-head"><h2>Gestión</h2></div>
+          <div class="panel-head"><h2>Gestión de Biblioteca</h2></div>
           <div class="quick-actions">
-            <button onclick="adminCrearFicha()"><span>＋</span>Crear ficha</button>
-            <button onclick="biblioteca()"><span>□</span>Revisar biblioteca</button>
+            <button onclick="adminCrearFicha()"><span>＋</span>Crear ficha manual</button>
+            <button onclick="adminCrearFichaDesdeChat()"><span>✦</span>Crear ficha desde Chat</button>
+            <button onclick="adminPlantillaChat()"><span>▣</span>Plantilla para Chat</button>
+            <button onclick="biblioteca()"><span>□</span>Revisar Biblioteca</button>
+          </div>
+        </section>
+        <section class="panel">
+          <div class="panel-head"><h2>Administración</h2></div>
+          <div class="quick-actions">
             <button onclick="adminUsers()"><span>👥</span>Usuarios</button>
             <button onclick="adminReports()"><span>⚠</span>Fallos</button>
             <button onclick="adminAiUsage()"><span>◈</span>Consumo IA</button>
-            <button onclick="adminGrantForm()"><span>＋</span>Dar Admin</button>
+            <button onclick="adminGrantForm()"><span>＋</span>Autorizar usuario</button>
           </div>
         </section>
         <section class="panel">
@@ -67,7 +106,7 @@
             <button onclick="microfauna()"><span>◌</span>Microfauna</button>
             <button onclick="tareas()"><span>♢</span>Avisos</button>
           </div>
-          <p class="small">La creación de fichas queda restringida al panel Admin. La Biblioteca pública queda como zona de consulta limpia.</p>
+          <p class="small">Este panel solo está disponible para propietario, administradores y usuarios de confianza autorizados.</p>
         </section>`, 'admin');
     } catch (e) {
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>Error</p></div></section><section class="panel">${msg(e.message, 'error')}</section>`, 'inicio');
@@ -75,9 +114,7 @@
   };
 
   window.adminAiUsage = async function () {
-    if (!state.user) return login();
-    await loadAdminRole();
-    if (!adminAllowed()) return adminBlocked();
+    if (!await requireAdmin()) return;
     render(`<section class="summary-card"><div><small>Admin</small><h2>Consumo IA</h2><p>Registro de actividad y coste</p></div></section>
       <section class="panel"><button onclick="adminPanel()">← Admin</button>
         <div class="quick-actions">
@@ -89,5 +126,5 @@
       </section>`, 'admin');
   };
 
-  window.ANX.Admin = { loadAdminRole, adminAllowed, roleLabel };
+  window.ANX.Admin = { loadAdminRole, adminAllowed, roleLabel, requireAdmin, loadLibraryAdminTools };
 })();
