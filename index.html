@@ -10,52 +10,38 @@
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
-    window.ACUARIONEXO_BUILD = 'admin-center-20260717-2155';
-    window.ANX_ASSET_VERSION = window.ACUARIONEXO_BUILD + '-' + Date.now();
+    window.ACUARIONEXO_BUILD = 'atomic-update-20260717-2215';
     window.ANX_BOOT_READY = (async function () {
+      var declaredBuild = String(window.ACUARIONEXO_BUILD || 'dev');
+      var activeBuild = declaredBuild;
       try {
         var response = await fetch('app-version.json?boot=' + Date.now(), {
           cache: 'no-store',
           headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' }
         });
-        if (!response.ok) return true;
-        var remote = await response.json();
-        var remoteBuild = String(remote && remote.build || '');
-        if (remoteBuild && remoteBuild !== window.ACUARIONEXO_BUILD) {
-          try {
-            if ('caches' in window) {
-              var keys = await caches.keys();
-              await Promise.all(keys.map(function (key) { return caches.delete(key); }));
-            }
-            if ('serviceWorker' in navigator) {
-              var registrations = await navigator.serviceWorker.getRegistrations();
-              await Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
-            }
-          } catch (_) {}
-          var params = new URLSearchParams(location.search || '');
-          params.set('v', remoteBuild);
-          params.set('t', String(Date.now()));
-          location.replace(location.pathname + '?' + params.toString());
-          return false;
+        if (response.ok) {
+          var remote = await response.json();
+          var remoteBuild = String(remote && remote.build || '').trim();
+          if (remoteBuild) activeBuild = remoteBuild;
         }
-        return true;
-      } catch (_) {
-        return true;
+      } catch (_) {}
+
+      if (activeBuild !== declaredBuild) {
+        try {
+          if ('caches' in window) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }
+          if ('serviceWorker' in navigator) {
+            var registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+          }
+        } catch (_) {}
       }
-    })();
-    (function () {
-      var v = encodeURIComponent(window.ANX_ASSET_VERSION);
-      var css = ['styles.css','dashboard.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css','library-clean.css','library-desktop.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css','support.css','status.css'];
-      var manifest = document.createElement('link');
-      manifest.rel = 'manifest';
-      manifest.href = 'manifest.webmanifest?v=' + v;
-      document.head.appendChild(manifest);
-      css.forEach(function (href) {
-        var link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = href + '?v=' + v;
-        document.head.appendChild(link);
-      });
+
+      window.ANX_ACTIVE_BUILD = activeBuild;
+      window.ANX_ASSET_VERSION = activeBuild + '-' + Date.now();
+      return activeBuild;
     })();
   </script>
 </head>
@@ -74,27 +60,48 @@
   <script>
     (async function () {
       var app = document.getElementById('app');
-      var ready = await window.ANX_BOOT_READY;
-      if (!ready) return;
-      var v = encodeURIComponent(window.ANX_ASSET_VERSION || (window.ACUARIONEXO_BUILD + '-' + Date.now()) || 'dev');
+      var css = ['styles.css','dashboard.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-images.css','library-mobile-overflow-fix.css','library-clean.css','library-desktop.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css','support.css','status.css'];
       var scripts = ['config.js','app.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/core/module-loader.js','src/auth/auth-core.js','src/auth/auth.js','update-manager.js','notifications.js'];
+
       function showError(text) {
         if (!app) return;
         app.innerHTML = '<section class="auth-card"><h2>Error de carga</h2><p class="small">' + String(text || 'No se pudo cargar AcuarioNexo.') + '</p></section>';
       }
-      function loadScript(src) {
+
+      function loadStyle(href, version) {
+        return new Promise(function (resolve, reject) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href + '?v=' + version;
+          link.onload = resolve;
+          link.onerror = function () { reject(new Error('No se pudo cargar ' + href)); };
+          document.head.appendChild(link);
+        });
+      }
+
+      function loadScript(src, version) {
         return new Promise(function (resolve, reject) {
           var script = document.createElement('script');
-          script.src = src + '?v=' + v;
+          script.src = src + '?v=' + version;
           script.async = false;
           script.onload = resolve;
           script.onerror = function () { reject(new Error('No se pudo cargar ' + src)); };
           document.body.appendChild(script);
         });
       }
+
       try {
-        for (var i = 0; i < scripts.length; i += 1) await loadScript(scripts[i]);
-      } catch (e) { showError(e.message); }
+        await window.ANX_BOOT_READY;
+        var version = encodeURIComponent(window.ANX_ASSET_VERSION || window.ANX_ACTIVE_BUILD || window.ACUARIONEXO_BUILD || 'dev');
+        var manifest = document.createElement('link');
+        manifest.rel = 'manifest';
+        manifest.href = 'manifest.webmanifest?v=' + version;
+        document.head.appendChild(manifest);
+        await Promise.all(css.map(function (href) { return loadStyle(href, version); }));
+        for (var i = 0; i < scripts.length; i += 1) await loadScript(scripts[i], version);
+      } catch (e) {
+        showError(e.message);
+      }
     })();
   </script>
 </body>
