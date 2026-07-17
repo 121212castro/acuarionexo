@@ -3,8 +3,9 @@
   const CURRENT_BUILD = window.ACUARIONEXO_BUILD || 'dev';
   const KEY = APP + ':active-build';
   const LAST_CHECK_KEY = APP + ':last-version-check';
-  const CHECK_INTERVAL_MS = 10 * 60 * 1000;
-  const MIN_CHECK_GAP_MS = 60 * 1000;
+  const UPDATED_KEY = APP + ':updated-build';
+  const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+  const MIN_CHECK_GAP_MS = 30 * 1000;
   let checking = false;
 
   async function clearAppCache() {
@@ -34,8 +35,10 @@
   }
 
   async function forceReload(remoteBuild) {
+    const target = remoteBuild || CURRENT_BUILD;
+    try { sessionStorage.setItem(UPDATED_KEY, target); } catch (_) {}
     await clearAppCache();
-    window.location.replace(reloadUrl(remoteBuild || CURRENT_BUILD));
+    window.location.replace(reloadUrl(target));
   }
 
   async function fetchRemoteVersion() {
@@ -49,14 +52,11 @@
     });
     if (!res.ok) return null;
     const remote = await res.json();
-    return remote && remote.build ? remote.build : null;
+    return remote && remote.build ? String(remote.build) : null;
   }
 
-  async function applyRemoteVersion(remoteBuild) {
-    if (!remoteBuild) return false;
-    if (remoteBuild === CURRENT_BUILD) return false;
-    await forceReload(remoteBuild);
-    return true;
+  function removeNotice() {
+    document.getElementById('anxUpdateNotice')?.remove();
   }
 
   function showUpdateNotice(remoteBuild) {
@@ -65,23 +65,59 @@
     if (!box) {
       box = document.createElement('div');
       box.id = 'anxUpdateNotice';
+      box.setAttribute('role', 'alertdialog');
+      box.setAttribute('aria-modal', 'true');
       box.style.position = 'fixed';
-      box.style.left = '12px';
-      box.style.right = '12px';
-      box.style.bottom = '86px';
+      box.style.inset = '0';
       box.style.zIndex = '999999';
-      box.style.padding = '12px';
-      box.style.borderRadius = '16px';
-      box.style.background = 'rgba(5, 28, 48, .96)';
-      box.style.border = '1px solid rgba(84, 190, 255, .55)';
-      box.style.boxShadow = '0 12px 30px rgba(0,0,0,.35)';
-      box.style.color = '#fff';
-      box.style.fontWeight = '800';
+      box.style.display = 'grid';
+      box.style.placeItems = 'center';
+      box.style.padding = '24px';
+      box.style.background = 'rgba(1, 10, 20, .88)';
+      box.style.backdropFilter = 'blur(10px)';
       document.body.appendChild(box);
     }
-    box.innerHTML = '<div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap"><span>Hay una versión nueva de AcuarioNexo.</span><button id="anxApplyUpdateBtn" class="primary" style="color:#fff!important">Actualizar ahora</button></div>';
+    box.innerHTML = '<section style="width:min(100%,520px);padding:24px;border-radius:24px;background:linear-gradient(180deg,#0d2e4c,#081c30);border:1px solid rgba(84,190,255,.55);box-shadow:0 20px 60px rgba(0,0,0,.55);color:#fff;text-align:center">' +
+      '<div style="font-size:42px;margin-bottom:10px">↻</div>' +
+      '<h2 style="margin:0 0 10px;font-size:28px">Nueva actualización disponible</h2>' +
+      '<p style="margin:0 0 18px;line-height:1.45;color:#cfe4f5">AcuarioNexo necesita actualizarse para cargar todos los cambios correctamente.</p>' +
+      '<button id="anxApplyUpdateBtn" class="primary" style="width:100%;min-height:52px;font-size:18px;color:#fff!important">Actualizar ahora</button>' +
+      '<p style="margin:12px 0 0;font-size:12px;color:#9fb8cc">No se cerrará tu sesión ni se borrarán tus datos.</p>' +
+      '</section>';
     const btn = document.getElementById('anxApplyUpdateBtn');
-    if (btn) btn.onclick = function () { forceReload(remoteBuild); };
+    if (btn) btn.onclick = async function () {
+      btn.disabled = true;
+      btn.textContent = 'Actualizando…';
+      await forceReload(remoteBuild);
+    };
+  }
+
+  function showUpdatedConfirmation() {
+    let updatedBuild = '';
+    try {
+      updatedBuild = sessionStorage.getItem(UPDATED_KEY) || '';
+      sessionStorage.removeItem(UPDATED_KEY);
+    } catch (_) {}
+    if (!updatedBuild) return;
+    const box = document.createElement('div');
+    box.id = 'anxUpdatedConfirmation';
+    box.style.position = 'fixed';
+    box.style.left = '12px';
+    box.style.right = '12px';
+    box.style.top = 'calc(12px + env(safe-area-inset-top))';
+    box.style.zIndex = '999999';
+    box.style.maxWidth = '520px';
+    box.style.margin = '0 auto';
+    box.style.padding = '14px 16px';
+    box.style.borderRadius = '16px';
+    box.style.background = 'rgba(8, 48, 66, .97)';
+    box.style.border = '1px solid rgba(34,224,131,.55)';
+    box.style.boxShadow = '0 12px 30px rgba(0,0,0,.35)';
+    box.style.color = '#fff';
+    box.style.fontWeight = '800';
+    box.textContent = '✓ AcuarioNexo se ha actualizado correctamente.';
+    document.body.appendChild(box);
+    setTimeout(function () { box.remove(); }, 5000);
   }
 
   async function checkVersion(options) {
@@ -95,9 +131,10 @@
       const remoteBuild = await fetchRemoteVersion();
       if (remoteBuild) localStorage.setItem(KEY, remoteBuild);
       if (remoteBuild && remoteBuild !== CURRENT_BUILD) {
-        await applyRemoteVersion(remoteBuild);
+        showUpdateNotice(remoteBuild);
         return;
       }
+      removeNotice();
       if (manual) return forceReload(remoteBuild || CURRENT_BUILD);
     } catch (_) {
       if (manual) return forceReload(CURRENT_BUILD);
@@ -109,25 +146,30 @@
   function bindRefreshButton() {
     const btn = document.getElementById('refreshAppBtn');
     if (!btn) return;
-    btn.title = 'Refrescar AcuarioNexo';
+    btn.title = 'Buscar actualizaciones';
     btn.addEventListener('click', function () {
       checkVersion({ manual: true });
     });
   }
 
-  window.AcuarioNexoUpdate = { checkVersion, forceReload, softReload, clearAppCache };
+  window.AcuarioNexoUpdate = { checkVersion, forceReload, softReload, clearAppCache, showUpdateNotice };
   window.hardRefreshAcuarioNexo = forceReload;
   window.softRefreshAcuarioNexo = softReload;
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bindRefreshButton);
+    document.addEventListener('DOMContentLoaded', function () {
+      bindRefreshButton();
+      showUpdatedConfirmation();
+    });
   } else {
     bindRefreshButton();
+    showUpdatedConfirmation();
   }
   document.addEventListener('visibilitychange', function () {
     if (!document.hidden) checkVersion();
   });
   window.addEventListener('focus', checkVersion);
+  window.addEventListener('pageshow', checkVersion);
   window.addEventListener('online', checkVersion);
   setTimeout(checkVersion, 800);
   setInterval(checkVersion, CHECK_INTERVAL_MS);
