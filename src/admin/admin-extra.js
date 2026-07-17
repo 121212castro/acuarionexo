@@ -7,10 +7,23 @@
     return !!state.user && !!state.isAdmin;
   }
 
+  function ownerAllowed() {
+    return allowed() && state.adminRole?.role === 'owner';
+  }
+
   async function guard() {
     if (window.refreshAdminAccess) await window.refreshAdminAccess();
     if (!allowed()) {
       render(`<section class="panel">${msg('Acceso Admin no disponible.', 'error')}</section>`, 'inicio');
+      return false;
+    }
+    return true;
+  }
+
+  async function ownerGuard() {
+    if (window.refreshAdminAccess) await window.refreshAdminAccess();
+    if (!ownerAllowed()) {
+      render(`<section class="panel">${msg('Solo el propietario puede autorizar o cambiar administradores.', 'error')}<button onclick="adminPanel()">Volver</button></section>`, 'admin');
       return false;
     }
     return true;
@@ -21,8 +34,8 @@
   }
 
   window.adminGrantForm = async function () {
-    if (!await guard()) return;
-    render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Dar Admin</h2><p>Alta de usuario de confianza</p></div></section>
+    if (!await ownerGuard()) return;
+    render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Autorizar usuario</h2><p>Permisos concedidos por el propietario</p></div></section>
       <section class="panel">
         <button onclick="adminPanel()">← Admin</button>
         <label>Email</label><input id="adminGrantEmail" type="email" placeholder="correo@ejemplo.com">
@@ -35,7 +48,7 @@
   window.adminGrantRole = async function () {
     const box = byId('adminMsg');
     try {
-      if (!await guard()) return;
+      if (!await ownerGuard()) return;
       const email = val('adminGrantEmail');
       const role = val('adminGrantRole') || 'trusted_admin';
       if (!email) throw new Error('Pon el email del usuario.');
