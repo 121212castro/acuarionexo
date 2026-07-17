@@ -68,6 +68,9 @@
     try {
       render(`<section class="panel">${msg('Cargando panel Admin...')}</section>`, 'admin');
       const stats = await adminStats();
+      const ownerControls = state.adminRole?.role === 'owner'
+        ? '<button onclick="adminGrantForm()"><span>＋</span>Autorizar usuario</button>'
+        : '';
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>${esc(roleLabel(state.adminRole.role))}</p></div></section>
         <section class="panel">
           <div class="panel-head"><h2>Control general</h2></div>
@@ -96,7 +99,7 @@
             <button onclick="adminUsers()"><span>👥</span>Usuarios</button>
             <button onclick="adminReports()"><span>⚠</span>Fallos</button>
             <button onclick="adminAiUsage()"><span>◈</span>Consumo IA</button>
-            <button onclick="adminGrantForm()"><span>＋</span>Autorizar usuario</button>
+            ${ownerControls}
           </div>
         </section>
         <section class="panel">
