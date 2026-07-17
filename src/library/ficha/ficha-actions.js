@@ -5,8 +5,13 @@
   const { esc, render, byId, msg } = ANX;
   const { row, sources, typeName, statusName, libraryInfoNotice } = Core;
 
-  function actionLabel() {
-    return 'Añadir a mi acuario';
+  function actionScope(entryType) {
+    const resolver = ANX.LibraryInventoryImport?.inventoryScopeForType;
+    return typeof resolver === 'function' ? resolver(entryType) : 'general';
+  }
+
+  function actionLabel(entryType) {
+    return actionScope(entryType) === 'aquarium' ? 'Añadir a mi acuario' : 'Añadir al inventario';
   }
 
   function imageHtml(url, alt, className) {
@@ -46,25 +51,25 @@
     try {
       const importer = ANX.LibraryInventoryImport;
       if (!importer || typeof importer.pasarFichaAInventario !== 'function') throw new Error('El importador de Biblioteca no está disponible.');
-      if (box) box.innerHTML = msg('Cargando acuarios disponibles...');
+      if (box) box.innerHTML = msg('Preparando destino...');
       await importer.pasarFichaAInventario(id);
     } catch (error) {
-      if (box) box.innerHTML = msg(error.message || 'No se pudo abrir el formulario del acuario.', 'error');
+      if (box) box.innerHTML = msg(error.message || 'No se pudo abrir el formulario de destino.', 'error');
     }
   }
 
   function actionButtons(x, audit) {
     const id = esc(x.id);
     const label = esc(actionLabel(x.entry_type));
-    const canManage = !!ANX.LibraryAdminPolicy?.canManageEntry?.(x.id) || !!ANX.state?.isAdmin;
+    const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
     const addButton = audit.approved
       ? `<button class="primary" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
-      : `<button disabled title="Completa todos los campos obligatorios antes de añadir a mi acuario">${label}</button>`;
-    const editButton = canManage ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
-    const publishButton = ANX.state?.isAdmin
+      : `<button disabled title="Completa todos los campos obligatorios antes de añadir esta ficha">${label}</button>`;
+    const editButton = isAdmin ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
+    const publishButton = isAdmin
       ? (audit.approved ? `<button onclick="publicarFicha('${id}')">Publicar</button>` : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`)
       : '';
-    const deleteButton = canManage ? `<button onclick="borrarFicha('${id}')">Borrar</button>` : '';
+    const deleteButton = isAdmin ? `<button onclick="borrarFicha('${id}')">Borrar</button>` : '';
     return `${addButton}${editButton}${publishButton}${deleteButton}`;
   }
 
@@ -90,5 +95,5 @@
     </section>`, 'biblioteca');
   };
 
-  ANX.LibraryFichaActions = { actionLabel, fichaImages, fichaInformation, actionButtons, addToAquarium };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, actionButtons, addToAquarium };
 })();
