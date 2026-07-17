@@ -41,11 +41,6 @@
     return '<div id="libraryInfoNotice" class="notice"><b>Biblioteca de consulta.</b><br>Fichas verificadas para revisar compatibilidad, requisitos, riesgos y próximas compras.</div>';
   }
 
-  function libraryAdminTools(f) {
-    if (!isAdminLibrary()) return '';
-    return `<section class="panel library-admin-tools"><div class="panel-head"><h2>Herramientas Admin</h2><button class="primary" onclick="nuevaFichaV3()">Crear ficha</button></div><div class="form-grid"><div><label>Plantilla para el chat</label><select id="templateCopyType" onchange="actualizarCamposPlantillaChat()">${types.map(([k,n]) => `<option value="${k}" ${f === k ? 'selected' : ''}>${esc(n)}</option>`).join('')}</select></div><div><label>Nombre común, comercial o modelo</label><input id="templateCopySubject" placeholder="Ej.: pez ángel enano africano"></div><div id="templateScientificField"><label>Nombre científico exacto</label><input id="templateCopyScientificName" placeholder="Ej.: Centropyge acanthops"></div><div><label>&nbsp;</label><button class="primary" onclick="copiarApartadosFicha()">Copiar apartados para Chat</button></div></div><div id="templateCopyStatus"></div></section>`;
-  }
-
   function publicFilters(f) {
     return `<div class="library-clean-filters"><button class="${f === 'all' ? 'active' : ''}" onclick="filtrarBiblioteca('all')">Todo</button>${types.filter(([k]) => k !== 'all').map(([k,n]) => `<button class="${f === k ? 'active' : ''}" onclick="filtrarBiblioteca('${k}')">${esc(n)}</button>`).join('')}</div>`;
   }
@@ -75,9 +70,7 @@
     const rows = (state.libraryRows || []).filter(x => (f === 'all' || x.entry_type === f) && (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q)));
     const visible = rows.filter(canSeeLibraryEntry);
     render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section>
-      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>
-      ${libraryAdminTools(f)}`, 'biblioteca');
-    requestAnimationFrame(() => window.actualizarCamposPlantillaChat?.());
+      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
   }
 
   window.biblioteca = async function () {
