@@ -4,8 +4,10 @@
   "webDir": "www",
   "bundledWebRuntime": false,
   "server": {
+    "url": "https://acuarionexo.com",
     "androidScheme": "https",
-    "iosScheme": "capacitor"
+    "iosScheme": "capacitor",
+    "cleartext": false
   },
   "plugins": {
     "SplashScreen": {
