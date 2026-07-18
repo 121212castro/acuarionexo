@@ -8,7 +8,7 @@
   const biologicalTypes = new Set(['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna']);
 
   function typeName(t) { return labels[t] || t || 'Ficha'; }
-  function statusName(s) { return ({ review: 'Revisión', validated: 'Validada', published: 'Publicada', archived: 'Archivada' }[s] || s || 'Revisión'); }
+  function statusName(s) { return ({ draft: 'Borrador', identified: 'Identificada', review: 'Revisión', validated: 'Validada', published: 'Publicada', archived: 'Archivada' }[s] || s || 'Revisión'); }
   function row(id) { return (state.libraryRows || []).find(x => String(x.id) === String(id)); }
   function isAdminLibrary() { return !!state.isAdmin; }
   function isOwnLibraryEntry(x) { return !!state.user?.id && String(x.user_id || '') === String(state.user.id); }
@@ -67,14 +67,25 @@
   function list() {
     const q = val('librarySearch').toLowerCase();
     const f = state.libraryFilter || 'all';
-    const rows = (state.libraryRows || []).filter(x => (f === 'all' || x.entry_type === f) && (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q)));
+    const statusFilter = Array.isArray(state.libraryStatusFilter) ? state.libraryStatusFilter : [];
+    const rows = (state.libraryRows || []).filter(x =>
+      (f === 'all' || x.entry_type === f) &&
+      (!statusFilter.length || statusFilter.includes(String(x.status || '').toLowerCase())) &&
+      (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q))
+    );
     const visible = rows.filter(canSeeLibraryEntry);
+    const adminReviewHeader = state.libraryAdminReturn
+      ? `<div class="panel-head"><h2>Fichas pendientes de revisión</h2><button onclick="adminPanel()">← Admin</button></div><div class="notice"><b>${visible.length} fichas pendientes.</b><br>Abre una ficha para editarla, completar sus datos y publicarla cuando supere la validación.</div>`
+      : `<div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}`;
     render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section>
-      <section class="panel library-clean-panel"><div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
+      <section class="panel library-clean-panel">${adminReviewHeader}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
   }
 
-  window.biblioteca = async function () {
+  window.biblioteca = async function (options) {
     if (!state.user) return login();
+    const config = options && typeof options === 'object' ? options : {};
+    state.libraryStatusFilter = Array.isArray(config.statusFilter) ? config.statusFilter.map(x => String(x).toLowerCase()) : [];
+    state.libraryAdminReturn = !!config.adminReturn;
     const t = token();
     render(`<section class="panel">${msg('Cargando Biblioteca...')}</section>`, 'biblioteca');
     try { await load(); if (isCurrent(t)) list(); }
