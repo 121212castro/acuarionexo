@@ -58,22 +58,58 @@
     }
   }
 
+  async function validateAndPublish(id) {
+    const box = byId('libraryActionStatus') || byId('x') || byId('aiBox');
+    try {
+      const x = row(id);
+      if (!x) throw new Error('Ficha no encontrada.');
+      const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
+      if (!isAdmin) throw new Error('No tienes permiso para publicar fichas.');
+
+      const localAudit = Core.S.audit(x);
+      if (!localAudit.approved) {
+        const details = (localAudit.errors || []).slice(0, 8).map(error => `<li>${esc(error)}</li>`).join('');
+        throw new Error(`La ficha todavía no cumple todos los campos obligatorios.${details ? `<ul>${details}</ul>` : ''}`);
+      }
+
+      const call = ANX.LibraryV3AI?.call;
+      if (typeof call !== 'function') throw new Error('El servicio de validación de Biblioteca no está disponible.');
+
+      if (box) box.innerHTML = msg('Validando ficha antes de publicar...');
+      if (String(x.status || '').toLowerCase() !== 'validated') {
+        const validation = await call('library-audit-card', { entry_id: id });
+        if (!validation?.result?.approved) throw new Error('La validación no aprobó la ficha. Revisa los campos indicados.');
+        if (validation.data) Object.assign(x, validation.data);
+      }
+
+      if (box) box.innerHTML = msg('Publicando ficha...');
+      const publication = await call('library-publish', { entry_id: id });
+      if (publication?.data) Object.assign(x, publication.data);
+      await Core.load();
+      await biblioteca();
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo publicar la ficha.', 'error');
+    }
+  }
+
   function actionButtons(x, audit) {
     const id = esc(x.id);
     const label = esc(actionLabel(x.entry_type));
     const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
+    const isPublished = String(x.status || '').toLowerCase() === 'published';
     const addButton = audit.approved
       ? `<button class="primary" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
       : `<button disabled title="Completa todos los campos obligatorios antes de añadir esta ficha">${label}</button>`;
     const editButton = isAdmin ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
-    const publishButton = isAdmin
-      ? (audit.approved ? `<button onclick="publicarFicha('${id}')">Publicar</button>` : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`)
+    const publishButton = isAdmin && !isPublished
+      ? (audit.approved ? `<button onclick="publicarFicha('${id}')">Validar y publicar</button>` : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`)
       : '';
     const deleteButton = isAdmin ? `<button onclick="borrarFicha('${id}')">Borrar</button>` : '';
     return `${addButton}${editButton}${publishButton}${deleteButton}`;
   }
 
   window.anadirFichaAlAcuario = addToAquarium;
+  window.publicarFicha = validateAndPublish;
 
   window.verFicha = function (id) {
     const x = row(id);
@@ -95,5 +131,5 @@
     </section>`, 'biblioteca');
   };
 
-  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, actionButtons, addToAquarium };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, actionButtons, addToAquarium, validateAndPublish };
 })();
