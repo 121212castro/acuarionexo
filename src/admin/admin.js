@@ -63,6 +63,15 @@
     requestAnimationFrame(() => window.actualizarCamposPlantillaChat?.());
   };
 
+  window.adminRevisarFichas = async function () {
+    if (!await loadLibraryAdminTools()) return;
+    if (typeof window.biblioteca !== 'function') {
+      render(`<section class="panel">${msg('No se pudo abrir la revisión de fichas.', 'error')}</section>`, 'admin');
+      return;
+    }
+    return window.biblioteca({ statusFilter: ['review', 'draft', 'identified'], adminReturn: true });
+  };
+
   window.adminPanel = async function () {
     if (!await requireAdmin()) return;
     try {
@@ -75,7 +84,7 @@
         <section class="panel">
           <div class="panel-head"><h2>Control general</h2></div>
           <div class="quick-actions">
-            <article class="summary-card"><div><small>Fichas a revisar</small><h2>${esc(stats.libraryReview)}</h2></div></article>
+            <article class="summary-card" role="button" tabindex="0" onclick="adminRevisarFichas()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();adminRevisarFichas();}" aria-label="Abrir fichas pendientes de revisión"><div><small>Fichas a revisar</small><h2>${esc(stats.libraryReview)}</h2><p>Abrir revisión</p></div></article>
             <article class="summary-card"><div><small>Fichas validadas/publicadas</small><h2>${esc(stats.libraryValidated)}</h2></div></article>
             <article class="summary-card"><div><small>Acuarios</small><h2>${esc(stats.aquariums)}</h2></div></article>
             <article class="summary-card"><div><small>Inventario</small><h2>${esc(stats.inventory)}</h2></div></article>
@@ -90,7 +99,8 @@
             <button onclick="adminCrearFicha()"><span>＋</span>Crear ficha manual</button>
             <button onclick="adminCrearFichaDesdeChat()"><span>✦</span>Crear ficha desde Chat</button>
             <button onclick="adminPlantillaChat()"><span>▣</span>Plantilla para Chat</button>
-            <button onclick="biblioteca()"><span>□</span>Revisar Biblioteca</button>
+            <button onclick="adminRevisarFichas()"><span>□</span>Revisar fichas pendientes</button>
+            <button onclick="biblioteca()"><span>▦</span>Biblioteca completa</button>
           </div>
         </section>
         <section class="panel">
