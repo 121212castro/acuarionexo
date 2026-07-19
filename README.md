@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `phase2-parameters-fallback-20260704-1440`
+- `library-core-20260719-1305`
 
 Supabase oficial:
 
@@ -49,3 +49,4 @@ Validacion oficial:
 
 - Ejecutar `npm run check` antes de subir cambios.
 - Ejecutar `npm run mobile:prepare` cuando cambien archivos activos usados por la app movil.
+- Regenerar `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt` después de cambiar cargas, responsabilidades o build.
