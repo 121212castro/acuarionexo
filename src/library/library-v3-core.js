@@ -37,10 +37,13 @@
       asset.tablet ? `${esc(asset.tablet)} 800w` : '',
       asset.desktop ? `${esc(asset.desktop)} 1200w` : ''
     ].filter(Boolean).join(', ');
-    const sizes = kind === 'cover'
-      ? '(max-width: 600px) 104px, (max-width: 1024px) 240px, 320px'
-      : '(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 720px';
-    return `<img class="${esc(className)}" src="${esc(src)}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ''} alt="${esc(alt)}" loading="${loading}">`;
+    const isDetail = String(className || '').includes('library-detail-');
+    const sizes = isDetail
+      ? '(max-width: 759px) calc(100vw - 36px), (max-width: 1199px) 82vw, 820px'
+      : '(max-width: 600px) 104px, (max-width: 1024px) 240px, 320px';
+    const image = `<img class="${esc(className)}" src="${esc(src)}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ''} alt="${esc(alt)}" loading="${loading}">`;
+    if (!isDetail) return image;
+    return `<div class="library-media-frame library-media-frame--${kind}">${image}</div>`;
   }
 
   function card(x) {
