@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `library-admin-image-save-20260719-1415`
+- `library-detail-cover-context-20260719-1445`
 
 Supabase oficial:
 
