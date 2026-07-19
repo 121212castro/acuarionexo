@@ -1,7 +1,8 @@
 /* AcuarioNexo · Biblioteca V3 · gestión única de imágenes originales */
 (function () {
-  const { supabase, state, esc, byId, msg } = window.ANX;
-  const { row } = window.ANX.LibraryV3Core;
+  const ANX = window.ANX;
+  const { supabase, state, esc, byId, msg } = ANX;
+  const { row } = ANX.LibraryV3Core;
 
   function assetKind(field) {
     return field === 'cover_url' || field === 'cover' ? 'cover' : 'photo';
@@ -15,6 +16,11 @@
     return ['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna'].includes(type)
       ? 'organismos'
       : (['sal','aditivo','alimento','medicamento','test','equipamiento','producto'].includes(type) ? 'productos' : 'general');
+  }
+
+  function assertAdmin() {
+    const allowed = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!state.isAdmin;
+    if (!allowed) throw new Error('No tienes permiso para modificar imágenes de Biblioteca.');
   }
 
   async function uploadToAvailableBucket(path, file, contentType) {
@@ -33,6 +39,7 @@
   }
 
   async function uploadResponsiveAsset(file, kind, entryType) {
+    assertAdmin();
     if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido.');
     const timestamp = Date.now();
     const ext = filenameExt(file);
@@ -46,6 +53,7 @@
   }
 
   async function saveResponsiveAsset(id, field, asset) {
+    assertAdmin();
     const x = row(id);
     if (!x) throw new Error('Ficha no encontrada.');
     const kind = assetKind(field);
@@ -56,13 +64,22 @@
       [legacyField]: asset.original,
       updated_at: updatedAt
     };
-    const { error } = await supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', state.user.id);
+
+    const { data, error } = await supabase
+      .from('library_entries')
+      .update(payload)
+      .eq('id', id)
+      .select('id')
+      .maybeSingle();
+
     if (error) throw error;
+    if (!data?.id) throw new Error('La imagen se subió, pero la ficha no permitió guardar el cambio. Revisa la política RLS de administradores.');
     Object.assign(x, payload);
     return asset;
   }
 
   async function setImage(id, field, inputId) {
+    assertAdmin();
     const x = row(id);
     const file = byId(inputId)?.files?.[0];
     if (!x || !file) throw new Error('Selecciona una imagen.');
@@ -76,7 +93,7 @@
     try {
       if (box) box.innerHTML = msg('Guardando la imagen original sin recortes ni filtros...');
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg('Imagen original guardada correctamente.', 'success');
+      if (box) box.innerHTML = msg('Imagen guardada y vinculada a la ficha.', 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -107,7 +124,7 @@
     </section>`;
   }
 
-  window.ANX.LibraryV3Images = {
+  ANX.LibraryV3Images = {
     assetKind,
     filenameExt,
     coverFolder,
