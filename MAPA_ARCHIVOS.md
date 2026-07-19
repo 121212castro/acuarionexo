@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-admin-context-20260719-1345`
+`library-admin-image-save-20260719-1415`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -35,11 +35,12 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 
 - `src/admin/admin.js`: abre la Biblioteca desde Admin conservando `adminReturn: true`.
 - `src/library/library-v3-core.js`: listado, filtros, tarjetas y contexto de entrada.
-- `src/library/library-v3-images.js`: único responsable de carga y persistencia de `cover_url` y `photo_url`.
+- `src/library/library-v3-images.js`: único responsable de carga y persistencia de `cover_url` y `photo_url`; valida rol Admin, actualiza por `id` y confirma que Supabase modificó la ficha.
 - `src/library/library-v3-ficha.js`: único responsable del editor, guardado, auditoría, publicación y borrado.
 - `src/library/ficha/ficha-actions.js`: único responsable de la vista abierta.
 - `library-images.css`: única autoridad para el encaje visual de portada y foto interior.
 - Ningún otro archivo puede redefinir `window.verFicha`, `window.formFicha` o `LibraryV3Images.imageBox`.
+- No se permiten archivos `hotfix`, `patch`, wrappers ni copias paralelas que redefinan estas rutas.
 
 ## Regla de actualización
 
