@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `library-core-20260719-1305`
+- `library-admin-context-20260719-1345`
 
 Supabase oficial:
 
@@ -43,10 +43,10 @@ Estructura oficial:
 - `index.html`: orden de carga explicito de la app publicada.
 - `capacitor.config.json`: configuracion de app movil.
 - `scripts/prepare-mobile-bundle.mjs`: genera `www/` para Capacitor.
-- `.github/workflows/android-debug-apk.yml`: crea APK Android debug instalable.
 
 Validacion oficial:
 
+- Ejecutar `npm run docs:refresh` después de cambiar cargas, responsabilidades o build.
 - Ejecutar `npm run check` antes de subir cambios.
 - Ejecutar `npm run mobile:prepare` cuando cambien archivos activos usados por la app movil.
-- Regenerar `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt` después de cambiar cargas, responsabilidades o build.
+- Comprobar después `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt`.
