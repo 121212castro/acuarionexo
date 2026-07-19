@@ -28,11 +28,26 @@
     return list.length ? `<div class="library-source-list">${list.map(x => `<a class="item" href="${esc(x.url)}" target="_blank" rel="noopener"><b>${esc(x.name || 'Fuente')}</b></a>`).join('')}</div>` : msg('Sin fuentes estructuradas.', 'error');
   }
 
+  function responsiveImage(x, kind, fallback, className, alt, loading = 'lazy') {
+    const asset = x.image_assets?.[kind] || {};
+    const src = asset.mobile || asset.tablet || asset.desktop || fallback || '';
+    if (!src) return '';
+    const srcset = [
+      asset.mobile ? `${esc(asset.mobile)} 480w` : '',
+      asset.tablet ? `${esc(asset.tablet)} 800w` : '',
+      asset.desktop ? `${esc(asset.desktop)} 1200w` : ''
+    ].filter(Boolean).join(', ');
+    const sizes = kind === 'cover'
+      ? '(max-width: 600px) 104px, (max-width: 1024px) 240px, 320px'
+      : '(max-width: 600px) 100vw, (max-width: 1024px) 80vw, 720px';
+    return `<img class="${esc(className)}" src="${esc(src)}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ''} alt="${esc(alt)}" loading="${loading}">`;
+  }
+
   function card(x) {
-    const cover = x.cover_url || x.photo_url || '';
+    const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', x.title || 'Ficha');
     const badge = `<small class="library-type-badge">${esc(typeName(x.entry_type))}</small>`;
     return `<button class="library-card library-cover-card" onclick="verFicha('${esc(x.id)}')">
-      ${cover ? `<img class="library-card-cover" src="${esc(cover)}" alt="${esc(x.title)}" loading="lazy">` : `<div class="library-card-cover library-no-photo">Ficha</div>`}
+      ${cover || `<div class="library-card-cover library-no-photo">Ficha</div>`}
       <div class="library-card-body"><div class="library-card-top">${badge}<small>${S.normalizeSources(x.sources).length} fuentes</small></div><h3>${esc(x.title || 'Ficha')}</h3><p class="scientific">${esc(x.scientific_name || '')}</p><p>${esc(x.summary || '')}</p></div>
     </button>`;
   }
@@ -105,6 +120,7 @@
     row,
     load,
     sources,
+    responsiveImage,
     card,
     libraryInfoNotice,
     list,
