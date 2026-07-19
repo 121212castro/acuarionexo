@@ -72,6 +72,11 @@
     return window.biblioteca({ statusFilter: ['review', 'draft', 'identified'], adminReturn: true });
   };
 
+  window.adminBibliotecaCompleta = async function () {
+    if (!await loadLibraryAdminTools()) return;
+    return window.biblioteca({ adminReturn: true });
+  };
+
   window.adminPanel = async function () {
     if (!await requireAdmin()) return;
     try {
@@ -100,7 +105,7 @@
             <button onclick="adminCrearFichaDesdeChat()"><span>✦</span>Crear ficha desde Chat</button>
             <button onclick="adminPlantillaChat()"><span>▣</span>Plantilla para Chat</button>
             <button onclick="adminRevisarFichas()"><span>□</span>Revisar fichas pendientes</button>
-            <button onclick="biblioteca()"><span>▦</span>Biblioteca completa</button>
+            <button onclick="adminBibliotecaCompleta()"><span>▦</span>Biblioteca completa</button>
           </div>
         </section>
         <section class="panel">
