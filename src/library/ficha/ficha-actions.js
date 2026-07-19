@@ -3,7 +3,7 @@
   const ANX = window.ANX;
   const Core = ANX.LibraryV3Core;
   const { esc, render, byId, msg } = ANX;
-  const { row, sources, typeName, statusName, libraryInfoNotice } = Core;
+  const { row, sources, typeName, statusName, libraryInfoNotice, responsiveImage } = Core;
 
   function actionScope(entryType) {
     const resolver = ANX.LibraryInventoryImport?.inventoryScopeForType;
@@ -14,13 +14,9 @@
     return actionScope(entryType) === 'aquarium' ? 'Añadir a mi acuario' : 'Añadir al inventario';
   }
 
-  function imageHtml(url, alt, className) {
-    return url ? `<img class="${className}" src="${esc(url)}" alt="${esc(alt)}">` : '';
-  }
-
   function fichaImages(x) {
-    const cover = imageHtml(x.cover_url, x.title || 'Foto portada', 'library-detail-cover');
-    const photo = imageHtml(x.photo_url, x.title || 'Foto al abrir ficha', 'library-detail-photo');
+    const cover = responsiveImage(x, 'cover', x.cover_url, 'library-detail-cover', x.title || 'Foto portada', 'eager');
+    const photo = responsiveImage(x, 'photo', x.photo_url, 'library-detail-photo', x.title || 'Foto al abrir ficha', 'lazy');
     return `${cover}${photo}`;
   }
 
