@@ -17,6 +17,19 @@
     return isAdminLibrary() || isOwnLibraryEntry(x) || ['published', 'validated'].includes(status);
   }
 
+  function isAdminReturnContext() {
+    return !!state.libraryAdminReturn && !!state.isAdmin;
+  }
+
+  function returnToLibrarySource() {
+    return isAdminReturnContext() ? adminPanel() : biblioteca();
+  }
+
+  function libraryBackButton() {
+    const label = isAdminReturnContext() ? '← Panel de administración' : '← Biblioteca';
+    return `<button onclick="ANX.LibraryV3Core.returnToLibrarySource()">${label}</button>`;
+  }
+
   async function load() {
     const { data, error } = await supabase.from('library_entries').select('*').order('updated_at', { ascending: false }).limit(300);
     if (error) throw error;
@@ -84,7 +97,7 @@
       (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q))
     );
     const visible = rows.filter(canSeeLibraryEntry);
-    const adminReviewHeader = state.libraryAdminReturn
+    const adminReviewHeader = isAdminReturnContext()
       ? `<div class="panel-head"><h2>Fichas pendientes de revisión</h2><button onclick="adminPanel()">← Admin</button></div><div class="notice"><b>${visible.length} fichas pendientes.</b><br>Abre una ficha para editarla, completar sus datos y publicarla cuando supere la validación.</div>`
       : `<div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}`;
     render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section>
@@ -121,6 +134,9 @@
     list,
     isAdminLibrary,
     isOwnLibraryEntry,
-    canSeeLibraryEntry
+    canSeeLibraryEntry,
+    isAdminReturnContext,
+    returnToLibrarySource,
+    libraryBackButton
   };
 })();
