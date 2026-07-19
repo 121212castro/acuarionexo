@@ -60,7 +60,7 @@
   width: 100%;
   max-width: 100%;
   height: 190px;
-  object-fit: cover;
+  object-fit: contain;
   display: block;
 }
 
@@ -150,7 +150,7 @@
   width: 100%;
   max-width: 100%;
   max-height: 160px;
-  object-fit: cover;
+  object-fit: contain;
   border-radius: 12px;
   display: block;
 }
@@ -172,7 +172,7 @@
 }
 
 .library-media-frame--cover {
-  aspect-ratio: 16 / 9;
+  aspect-ratio: auto;
 }
 
 .library-media-frame--photo {
@@ -186,8 +186,7 @@
 .library-detail .library-detail-photo {
   display: block;
   width: 100%;
-  height: 100%;
-  max-width: none;
+  max-width: 100%;
   max-height: none;
   margin: 0;
   border-radius: 0;
@@ -195,10 +194,12 @@
 }
 
 .library-media-frame--cover > img {
-  object-fit: cover;
+  height: auto;
+  object-fit: contain;
 }
 
 .library-media-frame--photo > img {
+  height: 100%;
   object-fit: contain;
 }
 
