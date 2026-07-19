@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-admin-context-20260719-1345`.
+Build actual: `library-admin-image-save-20260719-1415`.
 
 ## Entrada web
 
@@ -55,7 +55,10 @@ La lista oficial se define únicamente en `src/core/module-loader.js`.
 → el retorno se resuelve según el contexto real: Admin o Biblioteca
 
 `src/library/library-v3-images.js`
-→ guarda portada y foto interior sin transformaciones destructivas
+→ autoriza la modificación mediante la política Admin
+→ guarda portada y foto interior por `id` de ficha, aunque el creador original sea otro usuario
+→ exige confirmación de que Supabase actualizó una fila
+→ conserva el original sin transformaciones destructivas
 → `library-images.css` realiza el encaje visual una sola vez
 
 ## Propiedad única
