@@ -1,75 +1,61 @@
-ACUARIONEXO · OFFICIAL MODULES · 04/07/2026
+ACUARIONEXO · MODULOS OFICIALES · 19/07/2026
 
 FUENTE DE VERDAD
-- Rama unica de trabajo: main.
+- Rama de trabajo y publicación: main.
 - URL web: https://121212castro.github.io/acuarionexo/
-- App movil: Capacitor con archivos internos generados en www/.
-- Local no es entorno vivo: solo sirve para revisar, preparar y subir.
-- Supabase es la fuente de datos, auth y storage.
-- No crear enlaces alternativos para cambios normales.
-- No reactivar archivos legacy ni motores que sobreescriban pantallas.
+- Supabase es la fuente de datos, autenticación y Storage.
+- Local no es entorno vivo.
 
 BUILD ACTUAL
-- window.ACUARIONEXO_BUILD en index.html: phase2-parameters-fallback-20260704-1440.
-- app-version.json debe declarar el mismo build.
-- manifest.webmanifest debe usar el mismo build en start_url.
+- index.html: library-core-20260719-1305.
+- app-version.json: library-core-20260719-1305.
+- manifest.webmanifest: library-core-20260719-1305.
 
-NUCLEO WEB ACTIVO DIRECTO
+ENTRADA WEB ACTIVA
 - index.html
 - config.js
 - app.js
+- src/aquariums/aquariums-core.js
+- src/aquariums/aquariums-form.js
+- src/aquariums/aquariums-save.js
+- src/aquariums/aquariums.js
+- src/admin/admin-core.js
+- src/core/module-loader.js
+- src/auth/auth-core.js
+- src/auth/auth.js
+- update-manager.js
+- notifications.js
+
+CSS ACTIVO
 - styles.css
+- dashboard.css
 - aquarium-map.css
 - login-reef.css
 - aquarium-cards.css
 - aquariums-mobile-fix.css
+- aquarium-form-ux.css
 - mobile-form-fix.css
-- library-images.css
 - library-mobile-overflow-fix.css
+- library-clean.css
+- library-images.css
+- inventory-accordion.css
+- microfauna-mobile.css
 - notifications.css
-- src/aquariums/aquariums.js
-- src/library/core/library-schema.js
-- src/library/ui/library.js
-- src/library/inventory/library-inventory-import.js
-- src/library/library-v3.js
-- src/library/ficha/ficha-chat-import.js
-- src/animals/animals.js
-- src/map/map-v3-model.js
-- src/map/map.js
-- src/map/map-interactions.js
-- src/photos/photos.js
-- src/inventory/inventory.js
-- src/inventory/inventory-ui.js
-- src/microfauna/microfauna.js
-- src/ai/ai.js
-- src/ai/ai-library-v3.js
-- src/ai/ai-alerts-extra.js
-- src/parameters/parameters.js
-- src/parameters/measurements-advanced.js
-- src/parameters/parameters-ai-fallback.js
-- src/tasks/tasks.js
-- src/admin/admin.js
-- src/auth/auth.js
-- update-manager.js
-- notifications.js
-- app-version.json
-- manifest.webmanifest
-- firebase-messaging-sw.js
-- icon-512.png
+- settings.css
+- support.css
+- status.css
 
-ACTIVOS INDIRECTOS
-- src/library/ficha/ficha-json.js: cargado dinamicamente por src/library/ui/library.js.
-- src/admin/admin-extra.js: cargado dinamicamente por src/admin/admin.js.
-- src/admin/report-issue.js: cargado dinamicamente por src/admin/admin.js.
-- src/admin/issue-entry.js: cargado dinamicamente por src/admin/admin.js.
+BIBLIOTECA · PROPIETARIOS UNICOS
+- src/library/library-v3-core.js: listado, filtros, tarjetas y contexto.
+- src/library/library-v3-images.js: carga y persistencia de portada y foto interior.
+- src/library/library-v3-ficha.js: editor y persistencia de la ficha.
+- src/library/ficha/ficha-actions.js: vista abierta y acciones.
+- library-images.css: presentación de imágenes.
+- Queda prohibido redefinir estas funciones desde archivos hotfix, patch, wrappers o copias paralelas.
 
-NUCLEO MOVIL ACTIVO
-- capacitor.config.json
-- scripts/prepare-mobile-bundle.mjs
-- mobile/README.md
-- .github/workflows/android-debug-apk.yml
-- .github/workflows/ios-mobile-build.yml
-- .github/workflows/ios-adhoc-ipa.yml
+MODULOS BAJO DEMANDA
+- La lista oficial está definida únicamente en src/core/module-loader.js.
+- Grupos activos: biblioteca, animales, mapa, fotos, inventario, microfauna, ia, parametros, tareas, admin, settings, support y status.
 
 GENERADO, NO EDITAR A MANO
 - www/
@@ -77,37 +63,20 @@ GENERADO, NO EDITAR A MANO
 - ios/
 - node_modules/
 
-REGLAS OBLIGATORIAS
-- app.js es el nucleo coordinador, no un contenedor de pantallas.
-- index.html solo carga el nucleo web activo y CDNs necesarios.
-- La app movil copia el nucleo web activo a www/ con npm run mobile:prepare.
-- No usar server.url en Capacitor: la app debe llevar los archivos dentro.
-- Solo los modulos oficiales pueden exponer funciones window.* para botones inline.
-- Si una funcionalidad hace falta, se integra en su modulo de dominio con una unica fuente de estado en window.ANX.
-- src/auth/auth.js se carga al final porque ejecuta boot().
-- No usar routers dinamicos.
-- No usar bloques inline grandes dentro de index.html.
-- No volver a meter funcionalidades grandes en app.js.
-- app-version.json debe tener el mismo build que window.ACUARIONEXO_BUILD.
-- No conservar wrappers, motores antiguos ni copias paralelas dentro de main.
-
 DOCUMENTACION DE CONTROL
+- README.md
 - ARBOL_MAESTRO.md
+- MAPA_ARCHIVOS.md
 - REGLAS_DE_CAMBIO.md
 - CHECKLIST_ANTES_DE_EDITAR.md
-- MAPA_ARCHIVOS.md
-- README.md
-- mobile/README.md
+- ARCHIVOS_ACTIVOS.txt
 
-VALIDACION OFICIAL
-- package.json
-- scripts/validate-app.mjs
-- scripts/prepare-mobile-bundle.mjs
-
-COMPROBACIONES ANTES DE PUBLICAR
-1. index.html carga solo el nucleo web activo.
-2. app-version.json coincide con window.ACUARIONEXO_BUILD.
-3. manifest.webmanifest usa el build actual en start_url.
-4. npm run check pasa sin errores.
-5. Si afecta a movil, npm run mobile:prepare pasa sin errores.
-6. El cambio queda subido a GitHub main.
+VALIDACION OBLIGATORIA
+1. Leer Árbol, Mapa, reglas y checklist antes de editar.
+2. Modificar exclusivamente el propietario real.
+3. Eliminar la implementación sustituida; no superponer otra.
+4. Sincronizar index.html, app-version.json y manifest.webmanifest.
+5. Ejecutar npm run docs:refresh.
+6. Ejecutar npm run check.
+7. Ejecutar npm run mobile:prepare cuando afecte al paquete móvil.
+8. Publicar únicamente con documentación y código sincronizados.
