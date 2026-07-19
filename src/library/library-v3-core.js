@@ -30,18 +30,10 @@
 
   function responsiveImage(x, kind, fallback, className, alt, loading = 'lazy') {
     const asset = x.image_assets?.[kind] || {};
-    const src = asset.mobile || asset.tablet || asset.desktop || fallback || '';
+    const src = asset.original || fallback || asset.desktop || asset.tablet || asset.mobile || '';
     if (!src) return '';
-    const srcset = [
-      asset.mobile ? `${esc(asset.mobile)} 480w` : '',
-      asset.tablet ? `${esc(asset.tablet)} 800w` : '',
-      asset.desktop ? `${esc(asset.desktop)} 1200w` : ''
-    ].filter(Boolean).join(', ');
     const isDetail = String(className || '').includes('library-detail-');
-    const sizes = isDetail
-      ? '(max-width: 759px) calc(100vw - 36px), (max-width: 1199px) 82vw, 820px'
-      : '(max-width: 600px) 104px, (max-width: 1024px) 240px, 320px';
-    const image = `<img class="${esc(className)}" src="${esc(src)}"${srcset ? ` srcset="${srcset}" sizes="${sizes}"` : ''} alt="${esc(alt)}" loading="${loading}">`;
+    const image = `<img class="${esc(className)}" src="${esc(src)}" alt="${esc(alt)}" loading="${loading}">`;
     if (!isDetail) return image;
     return `<div class="library-media-frame library-media-frame--${kind}">${image}</div>`;
   }
@@ -103,7 +95,7 @@
     if (!state.user) return login();
     const config = options && typeof options === 'object' ? options : {};
     state.libraryStatusFilter = Array.isArray(config.statusFilter) ? config.statusFilter.map(x => String(x).toLowerCase()) : [];
-    state.libraryAdminReturn = !!config.adminReturn;
+    state.libraryAdminReturn = !!config.adminReturn && !!state.isAdmin;
     const t = token();
     render(`<section class="panel">${msg('Cargando Biblioteca...')}</section>`, 'biblioteca');
     try { await load(); if (isCurrent(t)) list(); }
