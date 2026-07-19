@@ -43,65 +43,26 @@ if (build !== versionBuild || build !== manifestBuild) {
 const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
 const indirect = ['src/library/ficha/ficha-json.js'];
-const active = [...new Set([...direct, ...modules, ...indirect])].sort();
+const active = [...new Set(['index.html', ...direct, ...modules, ...indirect])].sort();
 
-const mobilePipeline = `## Flujo móvil común
+const ownership = `## Biblioteca / propietarios únicos
 
-\`Código fuente\`
-→ validación web
-→ preparación y validación del paquete móvil
-→ generación del proyecto nativo desde las fuentes reales
-→ compilación
-→ instalación
-→ ejecución
-→ auditoría
-→ resultados y evidencias publicados como artefactos
+- \`src/admin/admin.js\`: abre Biblioteca desde Admin conservando \`adminReturn: true\`.
+- \`src/library/library-v3-core.js\`: listado, filtros, contexto de entrada y retorno central hacia Admin o Biblioteca.
+- \`src/library/library-v3-images.js\`: carga y persistencia administrativa de \`cover_url\` y \`photo_url\` por id de ficha.
+- \`src/library/library-v3-ficha.js\`: editor, guardado, auditoría, publicación y borrado.
+- \`src/library/ficha/ficha-actions.js\`: vista abierta; utiliza el retorno central del núcleo.
+- \`library-images.css\`: única autoridad visual; la portada abierta conserva su proporción completa y la foto interior mantiene su marco propio.
+- Ningún otro archivo puede redefinir \`window.verFicha\`, \`window.formFicha\` o \`LibraryV3Images.imageBox\`.
+- No se permiten archivos \`hotfix\`, \`patch\`, wrappers ni copias paralelas que redefinan estas rutas.`;
 
-- Los workflows móviles no escriben resultados ni documentación en \`main\`.
-- Los archivos de estado se generan dentro de cada job y se incluyen en su artefacto de auditoría.
-- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` son salidas generadas o dependencias y no se editan manualmente.`;
+const updateRules = `## Regla de actualización
 
-const androidSummary = `## Android
-
-- Workflow: \`.github/workflows/build-android-apk.yml\`.
-- Auditoría real: \`scripts/android-emulator-audit.sh\`.
-- El workflow valida la aplicación web y el paquete móvil antes de generar Android.
-- El proyecto Android y sus recursos oficiales se generan desde las fuentes reales.
-- La APK se compila, instala y abre en el emulador.
-- La auditoría comprueba proceso, actividad visible, captura, instalación y \`logcat\`.
-- La APK se publica en la release \`android-test-latest\` únicamente cuando toda la validación termina correctamente.
-- \`android-build-status.json\` se genera dentro del job y se incluye en el artefacto \`AcuarioNexo-Android-Audit\`.
-- El workflow no realiza \`git commit\` ni \`git push\` y no escribe el resultado en \`main\`.
-
-### Criterio obligatorio de cierre Android
-
-Android solo puede declararse terminado cuando, en una misma ejecución:
-
-1. la aplicación web y el paquete móvil pasan;
-2. el proyecto Android y los recursos oficiales se generan;
-3. la APK compila y se instala en el emulador;
-4. el proceso de \`com.acuarionexo.app\` permanece activo;
-5. \`MainActivity\` queda visible;
-6. se generan captura y \`logcat\`;
-7. no existe \`FATAL EXCEPTION\`, ANR ni cierre del proceso;
-8. la release \`android-test-latest\` publica la APK;
-9. el artefacto \`AcuarioNexo-Android-Audit\` contiene el estado y las evidencias.
-
-No se acepta como cierre una ejecución iniciada, una compilación aislada ni una APK generada sin instalación y arranque comprobados.`;
-
-const iosSummary = `## iOS
-
-- Workflow: \`.github/workflows/build-ios-simulator.yml\`.
-- Auditoría real: \`scripts/ios-simulator-audit.sh\`.
-- El workflow valida la aplicación web y el paquete móvil antes de generar iOS.
-- El proyecto iOS y sus recursos oficiales se generan desde las fuentes reales.
-- La aplicación se compila sin firma para iPhone Simulator.
-- La aplicación se instala y abre en el simulador.
-- La auditoría comprueba la instalación, el lanzamiento, el contenedor, la captura y la consola.
-- \`ios-build-status.json\` se genera dentro del job y se incluye en el artefacto \`AcuarioNexo-iOS-Simulator-Audit\`.
-- El artefacto incluye también la aplicación de simulador empaquetada y las evidencias de ejecución.
-- El workflow no realiza \`git commit\` ni \`git push\` y no escribe el resultado en \`main\`.
-- Esta validación acredita ejecución en simulador; no acredita firma para dispositivo ni disponibilidad en TestFlight.`;
+- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades o build.
+- Ejecutar \`npm run check\` antes de publicar.
+- Ejecutar \`npm run mobile:prepare\` cuando el cambio afecte a archivos usados por la app móvil.
+- Comprobar después \`ARBOL_MAESTRO.md\`, \`MAPA_ARCHIVOS.md\` y \`ARCHIVOS_ACTIVOS.txt\`.
+- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan manualmente.`;
 
 const map = `# MAPA DE ARCHIVOS
 
@@ -113,33 +74,17 @@ Documento autogenerado por \`scripts/refresh-project-docs.mjs\`.
 
 El build coincide en \`index.html\`, \`app-version.json\` y \`manifest.webmanifest\`.
 
-## Archivos activos
+## Entrada web activa
 
-${active.map(file => `- \`${file}\``).join('\n')}
+${direct.map(file => `- \`${file}\``).join('\n')}
 
-## Biblioteca / Fichas
+## Módulos bajo demanda
 
-- \`src/library/library-v3-core.js\`: carga, filtros, tarjetas y listado de Biblioteca.
-- \`src/library/library-v3-images.js\`: único responsable del editor de las dos imágenes: \`cover_url\` y \`photo_url\`.
-- \`src/library/library-v3-ficha.js\`: formulario, guardado, auditoría, publicación y borrado.
-- \`src/library/ficha/ficha-actions.js\`: único responsable de la vista abierta. Muestra portada, foto al abrir, información estructurada, fuentes y botones Editar, Añadir a mi acuario, Publicar y Borrar.
-- \`src/library/inventory/library-inventory-import.js\`: importación de la ficha al acuario o inventario general según el tipo.
-- No se permiten archivos \`hotfix\`, \`patch\` o \`clean\` que redefinan la vista o las imágenes de ficha.
+La lista oficial se obtiene exclusivamente de \`src/core/module-loader.js\`.
 
-${mobilePipeline}
+${ownership}
 
-${androidSummary}
-
-${iosSummary}
-
-## Regla de actualización
-
-- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades, build o los sistemas Android e iOS.
-- \`npm run check\` y \`npm run mobile:prepare\` regeneran estos documentos antes de continuar.
-- Los resultados de las validaciones móviles se consultan en los artefactos del run correspondiente, no en archivos persistentes de \`main\`.
-- Comprobar siempre los dos documentos generados después de actualizar el generador.
-- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan manualmente.
-`;
+${updateRules}`;
 
 const tree = `# ARBOL MAESTRO ACUARIONEXO
 
@@ -157,93 +102,55 @@ ${direct.map(file => `- \`${file}\``).join('\n')}
 
 ${modules.map(file => `- \`${file}\``).join('\n')}
 
-## Biblioteca / Flujo de ficha
+## Biblioteca / flujo maestro
 
-\`library-v3-core.js\`
-→ lista y abre una ficha
-→ \`ficha-actions.js\`
-→ muestra \`cover_url\` y \`photo_url\`
-→ muestra datos estructurados y fuentes
-→ ofrece Editar / Añadir a mi acuario / Publicar / Borrar
+\`src/admin/admin.js\`
+→ abre Biblioteca completa o revisión con \`adminReturn: true\`
+→ \`src/library/library-v3-core.js\` conserva el contexto y resuelve el retorno
+→ \`src/library/ficha/ficha-actions.js\` abre la vista sin perder el contexto
+→ \`src/library/library-v3-ficha.js\` abre el editor
+→ vista y editor regresan al Panel Admin o a Biblioteca según el origen real
 
-\`library-v3-ficha.js\`
-→ edición y guardado
-→ usa \`library-v3-images.js\` para las dos imágenes
+\`src/library/library-v3-images.js\`
+→ guarda los archivos originales sin transformaciones destructivas
+→ actualiza la ficha por id y confirma la fila modificada
+→ \`library-images.css\` muestra la portada completa sin recortar sus textos
 
-\`library-inventory-import.js\`
-→ copia la ficha al acuario o al inventario correspondiente
+${ownership}
 
-## Propiedad única
+${updateRules}`;
 
-- Vista abierta: \`src/library/ficha/ficha-actions.js\`.
-- Editor de imágenes: \`src/library/library-v3-images.js\`.
-- Editor y persistencia de ficha: \`src/library/library-v3-ficha.js\`.
-- Ningún otro archivo puede redefinir \`window.verFicha\` ni \`LibraryV3Images.imageBox\`.
+const activeText = `ACUARIONEXO · MODULOS OFICIALES · 19/07/2026
 
-## Flujo móvil maestro
+FUENTE DE VERDAD
+- Rama de trabajo y publicación: main.
+- URL web: https://121212castro.github.io/acuarionexo/
+- Supabase es la fuente de datos, autenticación y Storage.
+- Local no es entorno vivo.
 
-\`Código fuente\`
-→ validación web
-→ preparación del paquete móvil
-→ generación nativa
-→ compilación
-→ instalación
-→ ejecución
-→ auditoría
-→ artefactos
+BUILD ACTUAL
+- index.html: ${build}.
+- app-version.json: ${build}.
+- manifest.webmanifest: ${build}.
 
-## Flujo Android
+ARCHIVOS ACTIVOS
+${active.map(file => `- ${file}`).join('\n')}
 
-\`.github/workflows/build-android-apk.yml\`
-→ valida web y paquete móvil
-→ genera el proyecto Android y los recursos oficiales
-→ compila \`AcuarioNexo-Android-Test.apk\`
-→ ejecuta \`scripts/android-emulator-audit.sh\`
-→ instala y abre \`MainActivity\`
-→ comprueba proceso, actividad visible, captura y \`logcat\`
-→ si toda la validación termina correctamente, publica la APK en \`android-test-latest\`
-→ genera \`android-build-status.json\` dentro del job
-→ sube estado y evidencias al artefacto \`AcuarioNexo-Android-Audit\`
-→ no realiza commits automáticos en \`main\`
+BIBLIOTECA · PROPIETARIOS UNICOS
+- src/admin/admin.js: entrada desde Admin.
+- src/library/library-v3-core.js: listado, contexto y retorno central.
+- src/library/library-v3-images.js: carga y persistencia de imágenes.
+- src/library/library-v3-ficha.js: editor y persistencia de ficha.
+- src/library/ficha/ficha-actions.js: vista abierta.
+- library-images.css: presentación única de imágenes.
 
-## Flujo iOS
-
-\`.github/workflows/build-ios-simulator.yml\`
-→ valida web y paquete móvil
-→ genera el proyecto iOS y los recursos oficiales
-→ compila \`App.app\` sin firma para iPhone Simulator
-→ ejecuta \`scripts/ios-simulator-audit.sh\`
-→ instala la aplicación en el simulador
-→ abre y comprueba la ejecución real
-→ genera \`ios-build-status.json\` dentro del job
-→ empaqueta \`AcuarioNexo-iOS-Simulator.zip\`
-→ sube estado, aplicación y evidencias al artefacto \`AcuarioNexo-iOS-Simulator-Audit\`
-→ no realiza commits automáticos en \`main\`
-
-## Lectura de resultados
-
-Ante un fallo Android:
-→ abrir el job exacto
-→ descargar \`AcuarioNexo-Android-Audit\`
-→ leer \`android-build-status.json\` y las evidencias
-→ corregir la causa en las fuentes
-→ repetir la validación
-
-Ante un fallo iOS:
-→ abrir el job exacto
-→ descargar \`AcuarioNexo-iOS-Simulator-Audit\`
-→ leer \`ios-build-status.json\` y las evidencias
-→ corregir la causa en las fuentes
-→ repetir la validación
-
-## Automatización
-
-- \`npm run docs:refresh\`: regenera MAPA y ÁRBOL.
-- \`npm run check\`: regenera documentación y valida la aplicación.
-- \`npm run mobile:prepare\`: regenera documentación y prepara \`www/\` desde los activos reales.
-- \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan manualmente.
-`;
+GENERADO, NO EDITAR A MANO
+- www/
+- android/
+- ios/
+- node_modules/`;
 
 write('MAPA_ARCHIVOS.md', map);
 write('ARBOL_MAESTRO.md', tree);
-console.log(`MAPA_ARCHIVOS.md y ARBOL_MAESTRO.md regenerados para ${build}`);
+write('ARCHIVOS_ACTIVOS.txt', activeText);
+console.log(`Documentación de proyecto regenerada para ${build}`);
