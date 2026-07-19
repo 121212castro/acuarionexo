@@ -256,15 +256,20 @@
     return biologicalTypes.has(x.entry_type) ? `<label>Nombre científico</label><input id="libScientific" value="${esc(x.scientific_name || '')}">` : '';
   }
 
+  function returnToLibrarySource() {
+    if (state.libraryAdminReturn && state.isAdmin) return adminPanel();
+    return biblioteca();
+  }
+
   function backButton() {
-    return state.isAdmin
-      ? '<button onclick="adminPanel()">← Panel de administración</button>'
-      : '<button onclick="biblioteca()">← Biblioteca</button>';
+    return state.libraryAdminReturn && state.isAdmin
+      ? '<button onclick="ANX.LibraryV3Ficha.returnToLibrarySource()">← Panel de administración</button>'
+      : '<button onclick="ANX.LibraryV3Ficha.returnToLibrarySource()">← Biblioteca</button>';
   }
 
   window.formFicha = function (id) {
     const x = row(id);
-    if (!x) return state.isAdmin ? adminPanel() : biblioteca();
+    if (!x) return returnToLibrarySource();
     const audit = S.audit(x);
     render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}"><label>Fuentes editables</label><textarea id="libSourcesRaw" placeholder="Nombre | URL | dato que justifica">${esc(sourceText(x.sources))}</textarea>${S.normalizeSources(x.sources).length < 2 ? emptyHint() : ''}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
   };
@@ -304,7 +309,7 @@
       if (!x) throw new Error('Ficha no encontrada.');
       assertComplete(x, 'No se puede publicar');
       await call('library-publish', { entry_id: id });
-      await biblioteca();
+      await returnToLibrarySource();
     } catch (e) {
       if (box) box.innerHTML = e.audit ? auditHtml(e.audit) : msg(e.message, 'error');
     }
@@ -314,13 +319,14 @@
     if (!confirm('¿Borrar ficha?')) return;
     const { error } = await supabase.from('library_entries').delete().eq('id', id).eq('user_id', state.user.id);
     if (error) return alert(error.message);
-    await biblioteca();
+    await returnToLibrarySource();
   };
 
   window.ANX.LibraryV3Ficha = {
     auditHtml,
     assertComplete,
     numberFrom,
-    sourceText
+    sourceText,
+    returnToLibrarySource
   };
 })();
