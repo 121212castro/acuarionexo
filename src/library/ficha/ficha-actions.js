@@ -3,7 +3,7 @@
   const ANX = window.ANX;
   const Core = ANX.LibraryV3Core;
   const { esc, render, byId, msg } = ANX;
-  const { row, sources, typeName, statusName, libraryInfoNotice, responsiveImage } = Core;
+  const { row, sources, typeName, statusName, libraryInfoNotice, responsiveImage, libraryBackButton, returnToLibrarySource } = Core;
 
   function actionScope(entryType) {
     const resolver = ANX.LibraryInventoryImport?.inventoryScopeForType;
@@ -82,7 +82,7 @@
       const publication = await call('library-publish', { entry_id: id });
       if (publication?.data) Object.assign(x, publication.data);
       await Core.load();
-      await biblioteca();
+      await returnToLibrarySource();
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo publicar la ficha.', 'error');
     }
@@ -109,11 +109,11 @@
 
   window.verFicha = function (id) {
     const x = row(id);
-    if (!x) return biblioteca();
+    if (!x) return returnToLibrarySource();
     const audit = Core.S.audit(x);
     render(`<section class="library-detail">
       ${libraryInfoNotice()}
-      <button onclick="biblioteca()">← Biblioteca</button>
+      ${libraryBackButton()}
       <small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small>
       <h2>${esc(x.title || 'Ficha')}</h2>
       ${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}
