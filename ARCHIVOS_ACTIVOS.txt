@@ -7,9 +7,9 @@ FUENTE DE VERDAD
 - Local no es entorno vivo.
 
 BUILD ACTUAL
-- index.html: library-core-20260719-1305.
-- app-version.json: library-core-20260719-1305.
-- manifest.webmanifest: library-core-20260719-1305.
+- index.html: library-admin-context-20260719-1345.
+- app-version.json: library-admin-context-20260719-1345.
+- manifest.webmanifest: library-admin-context-20260719-1345.
 
 ENTRADA WEB ACTIVA
 - index.html
@@ -26,36 +26,16 @@ ENTRADA WEB ACTIVA
 - update-manager.js
 - notifications.js
 
-CSS ACTIVO
-- styles.css
-- dashboard.css
-- aquarium-map.css
-- login-reef.css
-- aquarium-cards.css
-- aquariums-mobile-fix.css
-- aquarium-form-ux.css
-- mobile-form-fix.css
-- library-mobile-overflow-fix.css
-- library-clean.css
-- library-images.css
-- inventory-accordion.css
-- microfauna-mobile.css
-- notifications.css
-- settings.css
-- support.css
-- status.css
-
 BIBLIOTECA · PROPIETARIOS UNICOS
+- src/admin/admin.js: entrada desde Admin y conservación del contexto.
 - src/library/library-v3-core.js: listado, filtros, tarjetas y contexto.
 - src/library/library-v3-images.js: carga y persistencia de portada y foto interior.
 - src/library/library-v3-ficha.js: editor y persistencia de la ficha.
 - src/library/ficha/ficha-actions.js: vista abierta y acciones.
 - library-images.css: presentación de imágenes.
-- Queda prohibido redefinir estas funciones desde archivos hotfix, patch, wrappers o copias paralelas.
 
 MODULOS BAJO DEMANDA
 - La lista oficial está definida únicamente en src/core/module-loader.js.
-- Grupos activos: biblioteca, animales, mapa, fotos, inventario, microfauna, ia, parametros, tareas, admin, settings, support y status.
 
 GENERADO, NO EDITAR A MANO
 - www/
