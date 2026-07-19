@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-core-20260719-1305`
+`library-admin-context-20260719-1345`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -29,17 +29,17 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
 ## Módulos bajo demanda
 
-La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`. Incluye Biblioteca, Animales, Mapa, Fotos, Inventario, Microfauna, IA, Parámetros, Tareas, Admin, Ajustes, Soporte y Estado.
+La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 
 ## Biblioteca / Fichas
 
+- `src/admin/admin.js`: abre la Biblioteca desde Admin conservando `adminReturn: true`.
 - `src/library/library-v3-core.js`: listado, filtros, tarjetas y contexto de entrada.
 - `src/library/library-v3-images.js`: único responsable de carga y persistencia de `cover_url` y `photo_url`.
 - `src/library/library-v3-ficha.js`: único responsable del editor, guardado, auditoría, publicación y borrado.
 - `src/library/ficha/ficha-actions.js`: único responsable de la vista abierta.
 - `library-images.css`: única autoridad para el encaje visual de portada y foto interior.
 - Ningún otro archivo puede redefinir `window.verFicha`, `window.formFicha` o `LibraryV3Images.imageBox`.
-- No se permiten archivos `hotfix`, `patch`, wrappers ni copias paralelas que redefinan estas rutas.
 
 ## Regla de actualización
 
