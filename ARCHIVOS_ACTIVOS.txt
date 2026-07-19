@@ -7,9 +7,9 @@ FUENTE DE VERDAD
 - Local no es entorno vivo.
 
 BUILD ACTUAL
-- index.html: library-admin-context-20260719-1345.
-- app-version.json: library-admin-context-20260719-1345.
-- manifest.webmanifest: library-admin-context-20260719-1345.
+- index.html: library-admin-image-save-20260719-1415.
+- app-version.json: library-admin-image-save-20260719-1415.
+- manifest.webmanifest: library-admin-image-save-20260719-1415.
 
 ENTRADA WEB ACTIVA
 - index.html
@@ -29,7 +29,7 @@ ENTRADA WEB ACTIVA
 BIBLIOTECA · PROPIETARIOS UNICOS
 - src/admin/admin.js: entrada desde Admin y conservación del contexto.
 - src/library/library-v3-core.js: listado, filtros, tarjetas y contexto.
-- src/library/library-v3-images.js: carga y persistencia de portada y foto interior.
+- src/library/library-v3-images.js: carga y persistencia administrativa de portada y foto interior por id de ficha.
 - src/library/library-v3-ficha.js: editor y persistencia de la ficha.
 - src/library/ficha/ficha-actions.js: vista abierta y acciones.
 - library-images.css: presentación de imágenes.
@@ -42,21 +42,3 @@ GENERADO, NO EDITAR A MANO
 - android/
 - ios/
 - node_modules/
-
-DOCUMENTACION DE CONTROL
-- README.md
-- ARBOL_MAESTRO.md
-- MAPA_ARCHIVOS.md
-- REGLAS_DE_CAMBIO.md
-- CHECKLIST_ANTES_DE_EDITAR.md
-- ARCHIVOS_ACTIVOS.txt
-
-VALIDACION OBLIGATORIA
-1. Leer Árbol, Mapa, reglas y checklist antes de editar.
-2. Modificar exclusivamente el propietario real.
-3. Eliminar la implementación sustituida; no superponer otra.
-4. Sincronizar index.html, app-version.json y manifest.webmanifest.
-5. Ejecutar npm run docs:refresh.
-6. Ejecutar npm run check.
-7. Ejecutar npm run mobile:prepare cuando afecte al paquete móvil.
-8. Publicar únicamente con documentación y código sincronizados.
