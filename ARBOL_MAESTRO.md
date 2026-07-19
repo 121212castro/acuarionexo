@@ -4,21 +4,30 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `ficha-scientific-identity-20260713-1605`.
+Build actual: `library-core-20260719-1305`.
 
 ## Entrada web
 
+- `icon-512.png`
+- `app-version.json`
 - `styles.css`
+- `dashboard.css`
 - `aquarium-map.css`
 - `login-reef.css`
 - `aquarium-cards.css`
 - `aquariums-mobile-fix.css`
+- `aquarium-form-ux.css`
 - `mobile-form-fix.css`
-- `library-images.css`
 - `library-mobile-overflow-fix.css`
 - `library-clean.css`
+- `library-images.css`
 - `inventory-accordion.css`
+- `microfauna-mobile.css`
 - `notifications.css`
+- `settings.css`
+- `support.css`
+- `status.css`
+- `manifest.webmanifest`
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums-core.js`
@@ -75,6 +84,7 @@ Build actual: `ficha-scientific-identity-20260713-1605`.
 - `src/ai/ai.js`
 - `src/ai/ai-library-v3.js`
 - `src/ai/ai-alerts-extra.js`
+- `src/ai/ai-access.js`
 - `src/parameters/parameters-core.js`
 - `src/parameters/parameters-alert-helpers.js`
 - `src/parameters/parameters-manual.js`
@@ -85,6 +95,13 @@ Build actual: `ficha-scientific-identity-20260713-1605`.
 - `src/tasks/tasks-form.js`
 - `src/tasks/tasks.js`
 - `src/admin/admin.js`
+- `src/settings/settings.js`
+- `src/support/settings-support-link.js`
+- `src/status/settings-status-link.js`
+- `src/support/support.js`
+- `src/status/status-core.js`
+- `src/status/status-ui.js`
+- `src/status/status.js`
 
 ## Biblioteca / Flujo de ficha
 
