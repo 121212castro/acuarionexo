@@ -42,14 +42,30 @@
     return html || '<div class="notice">La ficha todavía no contiene información estructurada visible.</div>';
   }
 
+  function fichaCanBeAdded(x, audit) {
+    const status = String(x?.status || '').toLowerCase();
+    return status === 'validated' || status === 'published' || !!audit?.approved;
+  }
+
   async function addToAquarium(id) {
     const box = byId('libraryActionStatus');
+    const button = document.querySelector(`[data-library-add-id="${CSS.escape(String(id))}"]`);
     try {
+      const x = row(id);
+      if (!x) throw new Error('Ficha no encontrada.');
+      const audit = Core.S.audit(x);
+      if (!fichaCanBeAdded(x, audit)) {
+        const firstError = (audit.errors || [])[0];
+        throw new Error(firstError ? `La ficha está incompleta: ${firstError}` : 'La ficha debe estar completa, validada o publicada antes de añadirla.');
+      }
       const importer = ANX.LibraryInventoryImport;
-      if (!importer || typeof importer.pasarFichaAInventario !== 'function') throw new Error('El importador de Biblioteca no está disponible.');
+      const openImport = importer?.pasarFichaAInventario || window.pasarFichaAInventario;
+      if (typeof openImport !== 'function') throw new Error('El importador de Biblioteca no está disponible.');
+      if (button) { button.disabled = true; button.textContent = 'Preparando...'; }
       if (box) box.innerHTML = msg('Preparando destino...');
-      await importer.pasarFichaAInventario(id);
+      await openImport(id);
     } catch (error) {
+      if (button) { button.disabled = false; button.textContent = actionLabel(row(id)?.entry_type); }
       if (box) box.innerHTML = msg(error.message || 'No se pudo abrir el formulario de destino.', 'error');
     }
   }
@@ -93,9 +109,10 @@
     const label = esc(actionLabel(x.entry_type));
     const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
     const isPublished = String(x.status || '').toLowerCase() === 'published';
-    const addButton = audit.approved
-      ? `<button class="primary" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
-      : `<button disabled title="Completa todos los campos obligatorios antes de añadir esta ficha">${label}</button>`;
+    const canAdd = fichaCanBeAdded(x, audit);
+    const addButton = canAdd
+      ? `<button type="button" class="primary" data-library-add-id="${id}" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
+      : `<button type="button" onclick="anadirFichaAlAcuario('${id}')" title="La ficha debe estar completa, validada o publicada">${label}</button>`;
     const editButton = isAdmin ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
     const publishButton = isAdmin && !isPublished
       ? (audit.approved ? `<button onclick="publicarFicha('${id}')">Validar y publicar</button>` : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`)
@@ -127,5 +144,5 @@
     </section>`, 'biblioteca');
   };
 
-  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, actionButtons, addToAquarium, validateAndPublish };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, fichaCanBeAdded, actionButtons, addToAquarium, validateAndPublish };
 })();
