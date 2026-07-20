@@ -78,8 +78,111 @@
   }
 
   function repeatOptions(selected = '') {
-    const options = [['', 'No repetir'], ['1', 'Cada día'], ['7', 'Cada semana'], ['14', 'Cada 2 semanas'], ['30', 'Cada mes'], ['90', 'Cada 3 meses']];
+    const options = [
+      ['', 'No repetir'],
+      ['ai', 'Recomendada por IA'],
+      ['custom', 'Personalizar: cada X días'],
+      ['1', 'Cada día'],
+      ['3', 'Cada 3 días'],
+      ['5', 'Cada 5 días'],
+      ['7', 'Cada semana'],
+      ['14', 'Cada 2 semanas'],
+      ['30', 'Cada mes'],
+      ['90', 'Cada 3 meses']
+    ];
     return options.map(([value, label]) => `<option value="${value}" ${String(selected) === value ? 'selected' : ''}>${label}</option>`).join('');
+  }
+
+  function aquariumMode(aq) {
+    const type = String(aq?.aquarium_type || aq?.type || '').toLowerCase();
+    return /fresh|dulce|plant|angel|escalar|discus/.test(type) ? 'freshwater' : 'marine';
+  }
+
+  function recommendTaskRepeat(title, aq) {
+    const text = String(title || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+    const mode = aquariumMode(aq);
+    let days = 7;
+    let reason = 'Revisión semanal inicial, ajustable según el historial real del acuario.';
+
+    if (/cristal|vidrio|alga.*cristal/.test(text)) {
+      days = mode === 'marine' ? 3 : 4;
+      reason = 'La película de algas en los cristales cambia con la luz y los nutrientes; conviene revisar antes de que se acumule.';
+    } else if (/cambio.*agua|renovar.*agua/.test(text)) {
+      days = 7;
+      reason = 'Frecuencia inicial semanal para poder adaptarla después a nitrato, carga biológica y volumen de cambio.';
+    } else if (/limpiar.*filtro|mantenimiento.*filtro|esponja|perlon/.test(text)) {
+      days = 21;
+      reason = 'Intervalo inicial prudente para revisar el caudal sin limpiar en exceso el material biológico.';
+    } else if (/skimmer|copa/.test(text)) {
+      days = 3;
+      reason = 'La copa y el cuello pierden rendimiento cuando acumulan residuos.';
+    } else if (/rellen|evapor|osmosis/.test(text)) {
+      days = 1;
+      reason = 'La evaporación altera el nivel y, en marino, la salinidad; requiere revisión diaria.';
+    } else if (/aliment|comida/.test(text)) {
+      days = 1;
+      reason = 'La alimentación se controla diariamente y debe adaptarse a los animales registrados.';
+    } else if (/temperatura/.test(text)) {
+      days = 1;
+      reason = 'La temperatura puede variar rápidamente y conviene revisarla a diario.';
+    } else if (/salinidad|densidad/.test(text)) {
+      days = mode === 'marine' ? 2 : 7;
+      reason = mode === 'marine' ? 'La salinidad puede cambiar por evaporación y conviene verificarla varias veces por semana.' : 'En agua dulce esta medición no suele requerir una revisión frecuente.';
+    } else if (/ph|kh|no3|nitrato|po4|fosfato|amoni|nitrito|gh|tds|parametro|test/.test(text)) {
+      days = 7;
+      reason = 'Control semanal inicial; la IA podrá reducir o ampliar el intervalo según estabilidad y mediciones anteriores.';
+    } else if (/uv|ultravioleta/.test(text)) {
+      days = 30;
+      reason = 'Revisión mensual del caudal, suciedad de la funda y horas acumuladas de la lámpara.';
+    }
+
+    return { days, reason, mode, source: 'acuarionexo_ai_rules_v1' };
+  }
+
+  function repeatControls(prefix, selected = '', customDays = '') {
+    return `<select id="${prefix}Repeat" onchange="taskRepeatChanged('${prefix}')">${repeatOptions(selected)}</select>
+      <div id="${prefix}RepeatCustomWrap" class="${selected === 'custom' ? '' : 'hidden'}">
+        <label>Cada cuántos días</label>
+        <input id="${prefix}RepeatCustom" type="number" min="1" max="365" inputmode="numeric" value="${customDays || ''}" placeholder="Ejemplo: 4">
+      </div>
+      <div id="${prefix}RepeatAi" class="small ${selected === 'ai' ? '' : 'hidden'}"></div>`;
+  }
+
+  function taskRepeatChanged(prefix) {
+    const { byId, esc, currentAquarium } = A();
+    const select = byId(prefix + 'Repeat');
+    const customWrap = byId(prefix + 'RepeatCustomWrap');
+    const aiBox = byId(prefix + 'RepeatAi');
+    if (!select) return;
+    if (customWrap) customWrap.classList.toggle('hidden', select.value !== 'custom');
+    if (aiBox) aiBox.classList.toggle('hidden', select.value !== 'ai');
+    if (select.value === 'ai' && aiBox) {
+      const titleId = prefix === 'task' ? 'taskTitle' : 'taskTitleEdit';
+      const title = byId(titleId)?.value || '';
+      const suggestion = recommendTaskRepeat(title, currentAquarium());
+      select.dataset.aiDays = String(suggestion.days);
+      select.dataset.aiReason = suggestion.reason;
+      aiBox.innerHTML = `<b>IA: cada ${suggestion.days} días.</b><br>${esc(suggestion.reason)}<br><span>Podrás cambiarlo manualmente.</span>`;
+    }
+  }
+
+  function repeatSelection(prefix) {
+    const { byId } = A();
+    const select = byId(prefix + 'Repeat');
+    if (!select) return { days: null, mode: 'none', reason: '' };
+    if (select.value === 'custom') {
+      const days = Number(byId(prefix + 'RepeatCustom')?.value || 0);
+      if (!Number.isInteger(days) || days < 1 || days > 365) throw new Error('Indica una repetición personalizada entre 1 y 365 días.');
+      return { days, mode: 'custom', reason: 'Frecuencia personalizada por el usuario.' };
+    }
+    if (select.value === 'ai') {
+      taskRepeatChanged(prefix);
+      const days = Number(select.dataset.aiDays || 0);
+      if (!days) throw new Error('Escribe el título para que la IA pueda recomendar una frecuencia.');
+      return { days, mode: 'ai', reason: select.dataset.aiReason || '' };
+    }
+    const days = Number(select.value || 0);
+    return { days: days || null, mode: days ? 'preset' : 'none', reason: '' };
   }
 
   function isAiAlertTask(task) {
@@ -91,7 +194,7 @@
   function tareaCard(task) {
     const { esc, dateText } = A();
     const meta = taskMeta(task);
-    const repeat = meta.repeat_days ? ` · repetir ${meta.repeat_days} días` : '';
+    const repeat = meta.repeat_days ? ` · repetir ${meta.repeat_days} días${meta.repeat_mode === 'ai' ? ' (IA)' : ''}` : '';
     const priority = cleanStatus(task.priority || 'normal');
     const status = cleanStatus(task.status || 'open');
     const title = cleanParamText(task.title || 'Tarea');
@@ -133,7 +236,8 @@
   }
 
   window.ANX = window.ANX || {};
-  Object.assign(window.ANX, { cleanParamText, cleanStatus, taskMeta, taskNotes, taskNotesPayload, taskRoute, openTaskTarget, openTaskRoute, volverAvisos, repeatOptions, isAiAlertTask, tareaCard, renderTaskGroup, renderTaskSections, refreshAfterTaskDone });
+  Object.assign(window.ANX, { cleanParamText, cleanStatus, taskMeta, taskNotes, taskNotesPayload, taskRoute, openTaskTarget, openTaskRoute, volverAvisos, repeatOptions, repeatControls, taskRepeatChanged, repeatSelection, recommendTaskRepeat, isAiAlertTask, tareaCard, renderTaskGroup, renderTaskSections, refreshAfterTaskDone });
+  window.taskRepeatChanged = taskRepeatChanged;
   window.volverAvisos = volverAvisos;
-  window.ANX.TasksCore = { cleanParamText, cleanStatus, taskMeta, taskNotes, taskNotesPayload, taskRoute, openTaskTarget, openTaskRoute, volverAvisos, repeatOptions, isAiAlertTask, tareaCard, renderTaskGroup, renderTaskSections, refreshAfterTaskDone };
+  window.ANX.TasksCore = { cleanParamText, cleanStatus, taskMeta, taskNotes, taskNotesPayload, taskRoute, openTaskTarget, openTaskRoute, volverAvisos, repeatOptions, repeatControls, taskRepeatChanged, repeatSelection, recommendTaskRepeat, isAiAlertTask, tareaCard, renderTaskGroup, renderTaskSections, refreshAfterTaskDone };
 })();
