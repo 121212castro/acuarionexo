@@ -11,17 +11,12 @@ function buildFromIndex() {
   if (!match) throw new Error('No se encontró ACUARIONEXO_BUILD en index.html');
   return match[1];
 }
-
-function buildFromVersion() {
-  return JSON.parse(read('app-version.json')).build;
-}
-
+function buildFromVersion() { return JSON.parse(read('app-version.json')).build; }
 function buildFromManifest() {
   const manifest = JSON.parse(read('manifest.webmanifest'));
   const match = String(manifest.start_url || '').match(/[?&]v=([^&]+)/);
   return match ? decodeURIComponent(match[1]) : '';
 }
-
 function quotedLocalAssets(text) {
   const found = new Set();
   const re = /['"]([^'"]+\.(?:js|css|json|webmanifest|png)(?:\?[^'"]*)?)['"]/g;
@@ -36,10 +31,7 @@ function quotedLocalAssets(text) {
 const build = buildFromIndex();
 const versionBuild = buildFromVersion();
 const manifestBuild = buildFromManifest();
-if (build !== versionBuild || build !== manifestBuild) {
-  throw new Error(`Build desincronizado: index=${build}, app-version=${versionBuild}, manifest=${manifestBuild}`);
-}
-
+if (build !== versionBuild || build !== manifestBuild) throw new Error(`Build desincronizado: index=${build}, app-version=${versionBuild}, manifest=${manifestBuild}`);
 const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
 const indirect = ['src/library/ficha/ficha-json.js'];
@@ -60,9 +52,17 @@ const libraryImportOwnership = `## Biblioteca / importación a acuario e inventa
 
 - \`src/library/ficha/ficha-actions.js\`: única entrada desde la ficha abierta; determina la etiqueta, muestra estado y llama al importador oficial.
 - \`src/library/inventory/library-inventory-import.js\`: única autoridad para resolver destino, cargar acuarios, presentar el formulario y persistir la copia en \`inventory_items\`.
-- Las fichas publicadas, validadas o aprobadas por auditoría pueden iniciar la importación; los errores deben mostrarse en \`libraryActionStatus\`.
-- Flujo: ficha abierta → botón Añadir → resolución de ámbito → selección de acuario → formulario → inserción en Supabase → apertura del inventario de destino.
+- Solo las fichas aprobadas por la auditoría vigente pueden iniciar la importación; el estado publicado o validado no sustituye una auditoría correcta.
+- Flujo: ficha abierta → auditoría → botón Añadir → resolución de ámbito → selección de acuario → formulario → inserción en Supabase → apertura del inventario de destino.
 - No se permiten manejadores paralelos, botones sin estado visible ni archivos \`hotfix\` o \`patch\` para este flujo.`;
+
+const cardContract = `## Biblioteca / contrato completo de fichas
+
+- \`src/library/core/library-schema.js\`: fuente única del esqueleto completo por \`entry_type\` mediante \`CONTRACTS\`.
+- \`src/library/core/library-schema-rules.js\`: aplica la auditoría oficial sobre el contrato.
+- \`src/library/ficha/ficha-chat-import.js\`: antes de insertar exige todos los campos del contrato, dos fuentes reales con URL y auditoría aprobada.
+- Una ficha con campos omitidos, texto genérico o errores de validación se rechaza antes de entrar en Biblioteca.
+- La misma auditoría se reutiliza al abrir, publicar y añadir una ficha al acuario; no se admiten reglas divergentes por pantalla.`;
 
 const tasksOwnership = `## Tareas / arquitectura y repetición
 
@@ -104,6 +104,8 @@ ${ownership}
 
 ${libraryImportOwnership}
 
+${cardContract}
+
 ${tasksOwnership}
 
 ${updateRules}`;
@@ -126,22 +128,17 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 
 ## Biblioteca / flujo maestro
 
-\`src/admin/admin.js\`
-→ abre Biblioteca completa o revisión con \`adminReturn: true\`
-→ \`src/library/library-v3-core.js\` conserva el contexto y resuelve el retorno
-→ \`src/library/ficha/ficha-actions.js\` abre la vista sin perder el contexto
-→ \`src/library/library-v3-ficha.js\` abre el editor
-→ vista y editor regresan al Panel Admin o a Biblioteca según el origen real
-
-\`src/library/library-v3-images.js\`
-→ guarda los archivos originales sin transformaciones destructivas
-→ actualiza la ficha por id y confirma la fila modificada
-→ \`library-images.css\` muestra la portada completa sin recortar sus textos
+\`src/library/core/library-schema.js\`
+→ define todos los campos del tipo de ficha
+→ \`src/library/ficha/ficha-chat-import.js\` comprueba cobertura completa y fuentes
+→ \`src/library/core/library-schema-rules.js\` ejecuta la auditoría final
+→ solo después se inserta en Biblioteca
+→ \`src/library/ficha/ficha-actions.js\` vuelve a auditar antes de publicar o añadir al acuario
 
 ## Biblioteca / añadir a acuario
 
 \`src/library/ficha/ficha-actions.js\`
-→ valida que la ficha pueda importarse y muestra estado visible
+→ valida que la ficha supere la auditoría y muestra estado visible
 → \`src/library/inventory/library-inventory-import.js\` resuelve el ámbito y carga los acuarios
 → presenta el formulario de destino
 → inserta la copia en \`inventory_items\`
@@ -158,6 +155,8 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 ${ownership}
 
 ${libraryImportOwnership}
+
+${cardContract}
 
 ${tasksOwnership}
 
@@ -179,14 +178,12 @@ BUILD ACTUAL
 ARCHIVOS ACTIVOS
 ${active.map(file => `- ${file}`).join('\n')}
 
-BIBLIOTECA · PROPIETARIOS UNICOS
-- src/admin/admin.js: entrada desde Admin.
-- src/library/library-v3-core.js: listado, contexto y retorno central.
-- src/library/library-v3-images.js: carga y persistencia de imágenes.
-- src/library/library-v3-ficha.js: editor y persistencia de ficha.
-- src/library/ficha/ficha-actions.js: vista abierta y entrada oficial para añadir.
-- src/library/inventory/library-inventory-import.js: formulario y persistencia de importación.
-- library-images.css: presentación única de imágenes.
+BIBLIOTECA · CONTRATO Y AUDITORIA
+- src/library/core/library-schema.js: esqueleto completo por tipo.
+- src/library/core/library-schema-rules.js: auditoría oficial.
+- src/library/ficha/ficha-chat-import.js: cobertura completa, fuentes y validación antes de insertar.
+- src/library/ficha/ficha-actions.js: reauditoría antes de publicar o añadir.
+- src/library/inventory/library-inventory-import.js: formulario y persistencia de la copia.
 
 TAREAS · PROPIETARIOS UNICOS
 - src/tasks/tasks-core.js: reglas, validación y recomendación de repetición.
