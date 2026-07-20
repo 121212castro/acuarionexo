@@ -1,4 +1,4 @@
-ACUARIONEXO · MODULOS OFICIALES · 20/07/2026
+ACUARIONEXO · MODULOS OFICIALES · 21/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
@@ -7,9 +7,9 @@ FUENTE DE VERDAD
 - Local no es entorno vivo.
 
 BUILD ACTUAL
-- index.html: tasks-ai-custom-repeat-20260720-2345.
-- app-version.json: tasks-ai-custom-repeat-20260720-2345.
-- manifest.webmanifest: tasks-ai-custom-repeat-20260720-2345.
+- index.html: library-add-aquarium-20260721-0005.
+- app-version.json: library-add-aquarium-20260721-0005.
+- manifest.webmanifest: library-add-aquarium-20260721-0005.
 
 ARCHIVOS ACTIVOS
 - app-version.json
@@ -111,7 +111,8 @@ BIBLIOTECA · PROPIETARIOS UNICOS
 - src/library/library-v3-core.js: listado, contexto y retorno central.
 - src/library/library-v3-images.js: carga y persistencia de imágenes.
 - src/library/library-v3-ficha.js: editor y persistencia de ficha.
-- src/library/ficha/ficha-actions.js: vista abierta.
+- src/library/ficha/ficha-actions.js: vista abierta y entrada oficial para añadir.
+- src/library/inventory/library-inventory-import.js: formulario y persistencia de importación.
 - library-images.css: presentación única de imágenes.
 
 TAREAS · PROPIETARIOS UNICOS
