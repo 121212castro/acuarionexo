@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-detail-cover-context-20260719-1445`
+`tasks-ai-custom-repeat-20260720-2345`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -57,6 +57,16 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `library-images.css`: única autoridad visual; la portada abierta conserva su proporción completa y la foto interior mantiene su marco propio.
 - Ningún otro archivo puede redefinir `window.verFicha`, `window.formFicha` o `LibraryV3Images.imageBox`.
 - No se permiten archivos `hotfix`, `patch`, wrappers ni copias paralelas que redefinan estas rutas.
+
+## Tareas / arquitectura y repetición
+
+- `src/tasks/tasks-core.js`: única autoridad para opciones, validación y cálculo de repetición; contiene presets, intervalo personalizado de 1 a 365 días y recomendación contextual por IA.
+- `src/tasks/tasks-form.js`: formulario de creación; consume los controles oficiales del núcleo y no duplica reglas de frecuencia.
+- `src/tasks/tasks.js`: persistencia en Supabase, edición, finalización y creación de la siguiente ocurrencia.
+- Metadatos oficiales: `repeat_days`, `repeat_mode`, `repeat_reason` y `route`, almacenados mediante `taskNotesPayload`.
+- Flujo: título y acuario → selección manual o recomendación IA → validación → guardado → al marcar Hecho se crea la siguiente tarea.
+- La IA propone y justifica; el usuario siempre puede sustituir la propuesta por una frecuencia personalizada.
+- No se permiten listas de repetición paralelas, reglas duplicadas ni archivos `hotfix` o `patch` para este flujo.
 
 ## Regla de actualización
 
