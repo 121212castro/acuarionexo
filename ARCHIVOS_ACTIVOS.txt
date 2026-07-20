@@ -1,4 +1,4 @@
-ACUARIONEXO · MODULOS OFICIALES · 19/07/2026
+ACUARIONEXO · MODULOS OFICIALES · 20/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
@@ -7,9 +7,9 @@ FUENTE DE VERDAD
 - Local no es entorno vivo.
 
 BUILD ACTUAL
-- index.html: library-detail-cover-context-20260719-1445.
-- app-version.json: library-detail-cover-context-20260719-1445.
-- manifest.webmanifest: library-detail-cover-context-20260719-1445.
+- index.html: tasks-ai-custom-repeat-20260720-2345.
+- app-version.json: tasks-ai-custom-repeat-20260720-2345.
+- manifest.webmanifest: tasks-ai-custom-repeat-20260720-2345.
 
 ARCHIVOS ACTIVOS
 - app-version.json
@@ -113,6 +113,12 @@ BIBLIOTECA · PROPIETARIOS UNICOS
 - src/library/library-v3-ficha.js: editor y persistencia de ficha.
 - src/library/ficha/ficha-actions.js: vista abierta.
 - library-images.css: presentación única de imágenes.
+
+TAREAS · PROPIETARIOS UNICOS
+- src/tasks/tasks-core.js: reglas, validación y recomendación de repetición.
+- src/tasks/tasks-form.js: formulario oficial de creación.
+- src/tasks/tasks.js: persistencia, edición, finalización y siguiente ocurrencia.
+- Metadatos: repeat_days, repeat_mode, repeat_reason y route.
 
 GENERADO, NO EDITAR A MANO
 - www/
