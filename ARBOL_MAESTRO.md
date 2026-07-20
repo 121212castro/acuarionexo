@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `tasks-ai-custom-repeat-20260720-2345`.
+Build actual: `library-add-aquarium-20260721-0005`.
 
 ## Entrada web
 
@@ -117,6 +117,15 @@ Build actual: `tasks-ai-custom-repeat-20260720-2345`.
 → actualiza la ficha por id y confirma la fila modificada
 → `library-images.css` muestra la portada completa sin recortar sus textos
 
+## Biblioteca / añadir a acuario
+
+`src/library/ficha/ficha-actions.js`
+→ valida que la ficha pueda importarse y muestra estado visible
+→ `src/library/inventory/library-inventory-import.js` resuelve el ámbito y carga los acuarios
+→ presenta el formulario de destino
+→ inserta la copia en `inventory_items`
+→ abre el inventario del acuario seleccionado
+
 ## Tareas / flujo maestro
 
 `src/tasks/tasks-form.js`
@@ -135,6 +144,14 @@ Build actual: `tasks-ai-custom-repeat-20260720-2345`.
 - `library-images.css`: única autoridad visual; la portada abierta conserva su proporción completa y la foto interior mantiene su marco propio.
 - Ningún otro archivo puede redefinir `window.verFicha`, `window.formFicha` o `LibraryV3Images.imageBox`.
 - No se permiten archivos `hotfix`, `patch`, wrappers ni copias paralelas que redefinan estas rutas.
+
+## Biblioteca / importación a acuario e inventario
+
+- `src/library/ficha/ficha-actions.js`: única entrada desde la ficha abierta; determina la etiqueta, muestra estado y llama al importador oficial.
+- `src/library/inventory/library-inventory-import.js`: única autoridad para resolver destino, cargar acuarios, presentar el formulario y persistir la copia en `inventory_items`.
+- Las fichas publicadas, validadas o aprobadas por auditoría pueden iniciar la importación; los errores deben mostrarse en `libraryActionStatus`.
+- Flujo: ficha abierta → botón Añadir → resolución de ámbito → selección de acuario → formulario → inserción en Supabase → apertura del inventario de destino.
+- No se permiten manejadores paralelos, botones sin estado visible ni archivos `hotfix` o `patch` para este flujo.
 
 ## Tareas / arquitectura y repetición
 
