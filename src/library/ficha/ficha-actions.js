@@ -43,8 +43,7 @@
   }
 
   function fichaCanBeAdded(x, audit) {
-    const status = String(x?.status || '').toLowerCase();
-    return status === 'validated' || status === 'published' || !!audit?.approved;
+    return !!x && !!audit?.approved;
   }
 
   async function addToAquarium(id) {
@@ -55,8 +54,8 @@
       if (!x) throw new Error('Ficha no encontrada.');
       const audit = Core.S.audit(x);
       if (!fichaCanBeAdded(x, audit)) {
-        const firstError = (audit.errors || [])[0];
-        throw new Error(firstError ? `La ficha está incompleta: ${firstError}` : 'La ficha debe estar completa, validada o publicada antes de añadirla.');
+        const errors = (audit.errors || []).slice(0, 4).join(' · ');
+        throw new Error(errors ? `La ficha debe corregirse antes de añadirla: ${errors}` : 'La ficha debe superar la auditoría antes de añadirse.');
       }
       const importer = ANX.LibraryInventoryImport;
       const openImport = importer?.pasarFichaAInventario || window.pasarFichaAInventario;
@@ -77,23 +76,19 @@
       if (!x) throw new Error('Ficha no encontrada.');
       const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
       if (!isAdmin) throw new Error('No tienes permiso para publicar fichas.');
-
       const localAudit = Core.S.audit(x);
       if (!localAudit.approved) {
         const details = (localAudit.errors || []).slice(0, 8).map(error => `<li>${esc(error)}</li>`).join('');
         throw new Error(`La ficha todavía no cumple todos los campos obligatorios.${details ? `<ul>${details}</ul>` : ''}`);
       }
-
       const call = ANX.LibraryV3AI?.call;
       if (typeof call !== 'function') throw new Error('El servicio de validación de Biblioteca no está disponible.');
-
       if (box) box.innerHTML = msg('Validando ficha antes de publicar...');
       if (String(x.status || '').toLowerCase() !== 'validated') {
         const validation = await call('library-audit-card', { entry_id: id });
         if (!validation?.result?.approved) throw new Error('La validación no aprobó la ficha. Revisa los campos indicados.');
         if (validation.data) Object.assign(x, validation.data);
       }
-
       if (box) box.innerHTML = msg('Publicando ficha...');
       const publication = await call('library-publish', { entry_id: id });
       if (publication?.data) Object.assign(x, publication.data);
@@ -112,7 +107,7 @@
     const canAdd = fichaCanBeAdded(x, audit);
     const addButton = canAdd
       ? `<button type="button" class="primary" data-library-add-id="${id}" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
-      : `<button type="button" onclick="anadirFichaAlAcuario('${id}')" title="La ficha debe estar completa, validada o publicada">${label}</button>`;
+      : `<button type="button" disabled title="Corrige los errores de auditoría antes de añadir esta ficha">${label}</button>`;
     const editButton = isAdmin ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
     const publishButton = isAdmin && !isPublished
       ? (audit.approved ? `<button onclick="publicarFicha('${id}')">Validar y publicar</button>` : `<button disabled title="Completa todos los campos obligatorios antes de publicar">Publicar</button>`)
