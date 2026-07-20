@@ -56,6 +56,16 @@ const ownership = `## Biblioteca / propietarios únicos
 - Ningún otro archivo puede redefinir \`window.verFicha\`, \`window.formFicha\` o \`LibraryV3Images.imageBox\`.
 - No se permiten archivos \`hotfix\`, \`patch\`, wrappers ni copias paralelas que redefinan estas rutas.`;
 
+const tasksOwnership = `## Tareas / arquitectura y repetición
+
+- \`src/tasks/tasks-core.js\`: única autoridad para opciones, validación y cálculo de repetición; contiene presets, intervalo personalizado de 1 a 365 días y recomendación contextual por IA.
+- \`src/tasks/tasks-form.js\`: formulario de creación; consume los controles oficiales del núcleo y no duplica reglas de frecuencia.
+- \`src/tasks/tasks.js\`: persistencia en Supabase, edición, finalización y creación de la siguiente ocurrencia.
+- Metadatos oficiales: \`repeat_days\`, \`repeat_mode\`, \`repeat_reason\` y \`route\`, almacenados mediante \`taskNotesPayload\`.
+- Flujo: título y acuario → selección manual o recomendación IA → validación → guardado → al marcar Hecho se crea la siguiente tarea.
+- La IA propone y justifica; el usuario siempre puede sustituir la propuesta por una frecuencia personalizada.
+- No se permiten listas de repetición paralelas, reglas duplicadas ni archivos \`hotfix\` o \`patch\` para este flujo.`;
+
 const updateRules = `## Regla de actualización
 
 - Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades o build.
@@ -83,6 +93,8 @@ ${direct.map(file => `- \`${file}\``).join('\n')}
 La lista oficial se obtiene exclusivamente de \`src/core/module-loader.js\`.
 
 ${ownership}
+
+${tasksOwnership}
 
 ${updateRules}`;
 
@@ -116,11 +128,21 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 → actualiza la ficha por id y confirma la fila modificada
 → \`library-images.css\` muestra la portada completa sin recortar sus textos
 
+## Tareas / flujo maestro
+
+\`src/tasks/tasks-form.js\`
+→ recoge título, fecha, notas y modo de repetición
+→ \`src/tasks/tasks-core.js\` calcula o valida la frecuencia
+→ \`src/tasks/tasks.js\` guarda los metadatos en Supabase
+→ al completar la tarea crea la siguiente ocurrencia con el intervalo oficial
+
 ${ownership}
+
+${tasksOwnership}
 
 ${updateRules}`;
 
-const activeText = `ACUARIONEXO · MODULOS OFICIALES · 19/07/2026
+const activeText = `ACUARIONEXO · MODULOS OFICIALES · 20/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
@@ -143,6 +165,12 @@ BIBLIOTECA · PROPIETARIOS UNICOS
 - src/library/library-v3-ficha.js: editor y persistencia de ficha.
 - src/library/ficha/ficha-actions.js: vista abierta.
 - library-images.css: presentación única de imágenes.
+
+TAREAS · PROPIETARIOS UNICOS
+- src/tasks/tasks-core.js: reglas, validación y recomendación de repetición.
+- src/tasks/tasks-form.js: formulario oficial de creación.
+- src/tasks/tasks.js: persistencia, edición, finalización y siguiente ocurrencia.
+- Metadatos: repeat_days, repeat_mode, repeat_reason y route.
 
 GENERADO, NO EDITAR A MANO
 - www/
