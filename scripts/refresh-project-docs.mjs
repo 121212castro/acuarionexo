@@ -56,6 +56,14 @@ const ownership = `## Biblioteca / propietarios únicos
 - Ningún otro archivo puede redefinir \`window.verFicha\`, \`window.formFicha\` o \`LibraryV3Images.imageBox\`.
 - No se permiten archivos \`hotfix\`, \`patch\`, wrappers ni copias paralelas que redefinan estas rutas.`;
 
+const libraryImportOwnership = `## Biblioteca / importación a acuario e inventario
+
+- \`src/library/ficha/ficha-actions.js\`: única entrada desde la ficha abierta; determina la etiqueta, muestra estado y llama al importador oficial.
+- \`src/library/inventory/library-inventory-import.js\`: única autoridad para resolver destino, cargar acuarios, presentar el formulario y persistir la copia en \`inventory_items\`.
+- Las fichas publicadas, validadas o aprobadas por auditoría pueden iniciar la importación; los errores deben mostrarse en \`libraryActionStatus\`.
+- Flujo: ficha abierta → botón Añadir → resolución de ámbito → selección de acuario → formulario → inserción en Supabase → apertura del inventario de destino.
+- No se permiten manejadores paralelos, botones sin estado visible ni archivos \`hotfix\` o \`patch\` para este flujo.`;
+
 const tasksOwnership = `## Tareas / arquitectura y repetición
 
 - \`src/tasks/tasks-core.js\`: única autoridad para opciones, validación y cálculo de repetición; contiene presets, intervalo personalizado de 1 a 365 días y recomendación contextual por IA.
@@ -94,6 +102,8 @@ La lista oficial se obtiene exclusivamente de \`src/core/module-loader.js\`.
 
 ${ownership}
 
+${libraryImportOwnership}
+
 ${tasksOwnership}
 
 ${updateRules}`;
@@ -128,6 +138,15 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 → actualiza la ficha por id y confirma la fila modificada
 → \`library-images.css\` muestra la portada completa sin recortar sus textos
 
+## Biblioteca / añadir a acuario
+
+\`src/library/ficha/ficha-actions.js\`
+→ valida que la ficha pueda importarse y muestra estado visible
+→ \`src/library/inventory/library-inventory-import.js\` resuelve el ámbito y carga los acuarios
+→ presenta el formulario de destino
+→ inserta la copia en \`inventory_items\`
+→ abre el inventario del acuario seleccionado
+
 ## Tareas / flujo maestro
 
 \`src/tasks/tasks-form.js\`
@@ -138,11 +157,13 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 
 ${ownership}
 
+${libraryImportOwnership}
+
 ${tasksOwnership}
 
 ${updateRules}`;
 
-const activeText = `ACUARIONEXO · MODULOS OFICIALES · 20/07/2026
+const activeText = `ACUARIONEXO · MODULOS OFICIALES · 21/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
@@ -163,7 +184,8 @@ BIBLIOTECA · PROPIETARIOS UNICOS
 - src/library/library-v3-core.js: listado, contexto y retorno central.
 - src/library/library-v3-images.js: carga y persistencia de imágenes.
 - src/library/library-v3-ficha.js: editor y persistencia de ficha.
-- src/library/ficha/ficha-actions.js: vista abierta.
+- src/library/ficha/ficha-actions.js: vista abierta y entrada oficial para añadir.
+- src/library/inventory/library-inventory-import.js: formulario y persistencia de importación.
 - library-images.css: presentación única de imágenes.
 
 TAREAS · PROPIETARIOS UNICOS
