@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`tasks-ai-custom-repeat-20260720-2345`
+`library-add-aquarium-20260721-0005`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -57,6 +57,14 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `library-images.css`: única autoridad visual; la portada abierta conserva su proporción completa y la foto interior mantiene su marco propio.
 - Ningún otro archivo puede redefinir `window.verFicha`, `window.formFicha` o `LibraryV3Images.imageBox`.
 - No se permiten archivos `hotfix`, `patch`, wrappers ni copias paralelas que redefinan estas rutas.
+
+## Biblioteca / importación a acuario e inventario
+
+- `src/library/ficha/ficha-actions.js`: única entrada desde la ficha abierta; determina la etiqueta, muestra estado y llama al importador oficial.
+- `src/library/inventory/library-inventory-import.js`: única autoridad para resolver destino, cargar acuarios, presentar el formulario y persistir la copia en `inventory_items`.
+- Las fichas publicadas, validadas o aprobadas por auditoría pueden iniciar la importación; los errores deben mostrarse en `libraryActionStatus`.
+- Flujo: ficha abierta → botón Añadir → resolución de ámbito → selección de acuario → formulario → inserción en Supabase → apertura del inventario de destino.
+- No se permiten manejadores paralelos, botones sin estado visible ni archivos `hotfix` o `patch` para este flujo.
 
 ## Tareas / arquitectura y repetición
 
