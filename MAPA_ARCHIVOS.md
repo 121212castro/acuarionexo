@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-full-contract-audit-20260721-0035`
+`library-validation-details-20260721-0955`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -21,7 +21,7 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `src/library/core/library-schema.js`: contrato completo por tipo de ficha.
 - `src/library/core/library-schema-rules.js`: auditoría oficial.
 - `src/library/ficha/ficha-chat-import.js`: importación desde Chat con cobertura completa, fuentes y auditoría previa.
-- `src/library/ficha/ficha-actions.js`: vista abierta, reauditoría y entrada para añadir.
+- `src/library/ficha/ficha-actions.js`: vista abierta, reauditoría, publicación, detalle de errores y entrada para añadir.
 - `src/library/inventory/library-inventory-import.js`: selección de destino y persistencia de la copia.
 
 ## Biblioteca / contrato completo de fichas
@@ -31,6 +31,13 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - El texto genérico, los campos omitidos o cualquier error de auditoría impiden guardar la ficha.
 - Publicar o validar no sustituye una auditoría correcta.
 - La misma auditoría controla creación, apertura, publicación y añadido al acuario.
+- La validación remota debe devolver y mostrar motivos concretos cuando rechaza una ficha.
+
+## Biblioteca / clasificación
+
+- El tipo estructurado de la ficha debe conservarse durante la importación.
+- Los peces marinos deben almacenarse como `pez_marino`; no pueden aparecer en `aditivo` por detección textual.
+- Una corrección de clasificación obliga a limpiar los campos superiores y volver a auditar.
 
 ## Biblioteca / importación a acuario e inventario
 
