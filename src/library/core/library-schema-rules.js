@@ -1,196 +1,106 @@
-/* AcuarioNexo · reglas flexibles de contrato de Biblioteca */
+/* AcuarioNexo · contrato estricto y único de Biblioteca */
 (function () {
   const S = window.ANX?.LibrarySchema;
-  if (!S || S.__flexRulesApplied) return;
+  if (!S || S.__strictContractApplied) return;
 
   const originalAudit = S.audit;
   const originalValidateTemplate = S.validateTemplate;
   const originalMissingFields = S.missingFields;
+  const originalTemplateFor = S.templateFor;
+  const TOP_LEVEL_FIELDS = new Set(['title', 'scientific_name', 'summary', 'sources']);
+  const BIOLOGICAL_TYPES = new Set(S.BIOLOGICAL_TYPES || []);
+  const INTERNAL_TRACE_ERROR = /La ficha contiene campos internos o trazas técnicas\./i;
+  const MIN_SUMMARY_LENGTH = 20;
 
-  const UNKNOWN_PATTERN = /^(no\s+(localizado|encontrado|indicado|declarado|disponible)|sin\s+(dato|datos|informaci[oó]n)|no\s+consta|no\s+aplica)/i;
-  const EMPTY_ERROR_PATTERN = /Campo obligatorio vacío\./i;
-  const MIN_LENGTH_ERROR_PATTERN = /Debe tener al menos\s+\d+\s+caracteres\./i;
-  const NUMBER_ERROR_PATTERN = /Debe ser un valor numérico\.|Debe incluir un valor numérico válido\./i;
-  const INTERNAL_FIELDS_ERROR_PATTERN = /campos internos o trazas técnicas/i;
-  const FLEXIBLE_NUMBER_PATTERN = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|a|hasta)\s*\d+(?:[.,]\d+)?)?/i;
-
-  const REQUIRED_BY_TYPE = {
-    pez_marino: ['title','scientific_name','summary','habitat','adult_size_cm','minimum_tank_liters','temperature_min','temperature_max','ph_min','ph_max','salinity_min','salinity_max','diet','behavior','compatibility','reef_safe','sources'],
-    pez_dulce: ['title','scientific_name','summary','habitat','adult_size_cm','minimum_tank_liters','temperature_min','temperature_max','ph_min','ph_max','diet','behavior','compatibility','sources'],
-    coral: ['title','scientific_name','summary','habitat','coral_type','lighting','flow','placement','temperature_min','temperature_max','salinity_min','salinity_max','ph_min','ph_max','kh_min','kh_max','compatibility','reef_safe','sources'],
-    invertebrado: ['title','scientific_name','summary','habitat','adult_size_cm','minimum_tank_liters','temperature_min','temperature_max','ph_min','ph_max','salinity_min','salinity_max','diet','behavior','reef_safe','compatibility','sources'],
-    planta: ['title','scientific_name','summary','habitat','plant_type','height_cm','placement','temperature_min','temperature_max','ph_min','ph_max','lighting','maintenance','compatibility','sources'],
-    microfauna: ['title','scientific_name','summary','culture_type','identification','use_in_aquarium','culture_method','temperature_min','temperature_max','feeding','maintenance','sources'],
-    producto: ['title','summary','manufacturer','brand','category','intended_use','use','compatibility','risks','sources'],
-    aditivo: ['title','summary','manufacturer','brand','what_corrects','parameter_target','dose','instructions','monitoring','compatibility','risks','sources'],
-    sal: ['title','summary','manufacturer','brand','salinity_reference','grams_per_liter','mixing','dose','use','risks','sources'],
-    alimento: ['title','summary','manufacturer','brand','food_type','composition','target_species','feeding_frequency','use','risks','sources'],
-    medicamento: ['title','summary','manufacturer','brand','active_ingredient','indications','dose','treatment_days','instructions','risks','warnings','sources'],
-    test: ['title','summary','manufacturer','brand','test_type','parameter','reading_unit','range','procedure','reading_time','interpretation','sources'],
-    equipamiento: ['title','summary','manufacturer','brand','equipment_type','specifications','power','installation','maintenance','compatibility','risks','sources']
-  };
-
-  const SOFT_UNKNOWN_FIELDS = new Set([
-    'common_names','synonyms','family','order_name','class_name','distribution','habitat','depth_range','natural_environment',
-    'adult_size_cm','life_expectancy_years','minimum_tank_liters','recommended_tank_liters','tank_maturity','care_level','beginner_suitable',
-    'aggressiveness','territoriality','social_behavior','schooling','swimming_zone','reproduction','breeding_notes','common_diseases','health_notes',
-    'coral_type','growth_form','sweeper_tentacles','growth_rate','fragging','propagation','pests','adult_size_cm',
-    'plant_type','height_cm','substrate','algae_risk','culture_type','target_animals','container','density_control','crash_risks','contamination_risks',
-    'composition','active_components','declared_parameters','salinity_reference','maximum_dose','expiry','lot','accuracy','scale_values','device_min_limit','device_max_limit','led_wavelength','standard_code','warranty','spare_parts','source_label','source_manual',
-    'manufacturer','brand','product_code','category','what_corrects','aquarium_type','active_components','parameter_target','monitoring','warnings','storage','use','instructions','dose_calculation'
-  ]);
-
-  const FLEXIBLE_MIN_LENGTH_FIELDS = new Map([
-    ['title', 2],['scientific_name', 2],['summary', 10],['common_names', 2],['synonyms', 2],['family', 2],['order_name', 2],['class_name', 2],
-    ['depth_range', 1],['par_range', 1],['nitrate_range', 1],['phosphate_range', 1],['category', 2],['coral_type', 2],['plant_type', 2],['culture_type', 2],
-    ['care_level', 2],['beginner_suitable', 2],['reef_safe', 2],['aggressiveness', 2],['territoriality', 2],['schooling', 2],['swimming_zone', 2],
-    ['growth_form', 2],['growth_rate', 2],['photosynthetic', 2],['fragging', 2],['propagation', 2],['placement', 2],['lighting', 2],['flow', 1],
-    ['co2', 2],['fertilization', 2],['substrate', 2],['trimming', 2],['algae_risk', 2],['molting', 2],['iodine_sensitivity', 2],['copper_sensitivity', 2],
-    ['storage', 2],['expiry', 2],['lot', 2],['manufacturer', 2],['brand', 2],['product_code', 2],['parameter', 2],['method', 2],['test_type', 2]
-  ]);
-
-  function requiredSet(entry) {
-    const type = String(entry?.entry_type || '').trim();
-    return new Set(REQUIRED_BY_TYPE[type] || ['title','summary','sources']);
+  function cleanEntry(entry) {
+    const data = { ...(entry?.data || {}) };
+    TOP_LEVEL_FIELDS.forEach(field => delete data[field]);
+    return { ...(entry || {}), data };
   }
 
-  function isRequired(entry, field) {
-    return requiredSet(entry).has(field);
+  function unique(list) {
+    return [...new Set((list || []).map(value => String(value || '').trim()).filter(Boolean))];
   }
 
-  function isUnknown(value) {
-    return UNKNOWN_PATTERN.test(String(value || '').trim());
+  function summaryError(entry) {
+    const summary = String(entry?.summary || entry?.sections?.summary || '').trim();
+    if (!summary) return 'Resumen · Resumen: Campo obligatorio vacío.';
+    if (summary.length < MIN_SUMMARY_LENGTH) return `Resumen · Resumen: Debe tener al menos ${MIN_SUMMARY_LENGTH} caracteres.`;
+    return '';
   }
 
-  function hasNumericValue(value) {
-    if (value === null || value === undefined || Array.isArray(value)) return false;
-    return FLEXIBLE_NUMBER_PATTERN.test(String(value).trim());
-  }
-
-  function valueFor(entry, field) {
-    return entry?.data?.[field] ?? entry?.[field];
-  }
-
-  function fieldIdFromLabel(entry, label) {
-    let fieldId = '';
-    S.validateTemplate(entry).forEach(section => section.fields.forEach(field => {
-      if (field.label === label) fieldId = field.id;
-    }));
-    return fieldId;
-  }
-
-  function isSoftAcceptable(entry, field) {
-    const value = valueFor(entry, field);
-    if (!SOFT_UNKNOWN_FIELDS.has(field)) return false;
-    if (!isUnknown(value)) return false;
-    return S.normalizeSources(entry.sources).length >= 2;
-  }
-
-  function isMinLengthAcceptable(entry, field) {
-    if (!FLEXIBLE_MIN_LENGTH_FIELDS.has(field)) return false;
-    const value = valueFor(entry, field);
-    if (value == null || Array.isArray(value)) return false;
-    return String(value).trim().length >= FLEXIBLE_MIN_LENGTH_FIELDS.get(field);
-  }
-
-  function isNumberErrorAcceptable(entry, field) {
-    const value = valueFor(entry, field);
-    return hasNumericValue(value);
-  }
-
-  function isEmptyOptionalError(entry, field, text) {
-    return field && !isRequired(entry, field) && (EMPTY_ERROR_PATTERN.test(text) || MIN_LENGTH_ERROR_PATTERN.test(text) || NUMBER_ERROR_PATTERN.test(text));
-  }
-
-  function filterAudit(entry, audit) {
-    const next = {
-      ...audit,
-      errors: [],
-      warnings: [...(audit.warnings || [])],
-      missing_fields: []
-    };
-
-    (audit.errors || []).forEach(error => {
-      const text = String(error || '');
-      const matched = text.match(/·\s*([^:]+):/);
-      const label = matched ? matched[1].trim() : '';
-      const fieldId = label ? fieldIdFromLabel(entry, label) : '';
-
-      if (isEmptyOptionalError(entry, fieldId, text)) {
-        next.warnings.push(`${label}: campo opcional según el tipo de ficha.`);
+  function contractIntegrityReport() {
+    const errors = [];
+    Object.entries(S.CONTRACTS || {}).forEach(([type, contract]) => {
+      if (!Array.isArray(contract) || !contract.length) {
+        errors.push(`${type}: contrato vacío.`);
         return;
       }
-      if (fieldId && isSoftAcceptable(entry, fieldId)) {
-        next.warnings.push(`${label}: aceptado como no localizado en fuente fiable.`);
-        return;
-      }
-      if (fieldId && MIN_LENGTH_ERROR_PATTERN.test(text) && isMinLengthAcceptable(entry, fieldId)) {
-        next.warnings.push(`${label}: aceptado con texto corto porque el dato real no requiere 20 caracteres.`);
-        return;
-      }
-      if (fieldId && NUMBER_ERROR_PATTERN.test(text) && isNumberErrorAcceptable(entry, fieldId)) {
-        next.warnings.push(`${label}: aceptado con número, rango o unidad.`);
-        return;
-      }
-      if (!fieldId && INTERNAL_FIELDS_ERROR_PATTERN.test(text)) {
-        next.warnings.push('Trazas técnicas: no se bloquea la ficha por claves internas del contrato.');
-        return;
-      }
-      next.errors.push(error);
+      const duplicates = contract.filter((field, index) => contract.indexOf(field) !== index);
+      if (duplicates.length) errors.push(`${type}: campos duplicados: ${unique(duplicates).join(', ')}.`);
+      if (!contract.includes('title')) errors.push(`${type}: falta title.`);
+      if (!contract.includes('sources')) errors.push(`${type}: falta sources.`);
+      if (BIOLOGICAL_TYPES.has(type) && !contract.includes('scientific_name')) errors.push(`${type}: falta scientific_name.`);
+
+      const sections = originalTemplateFor(type);
+      const templateFields = sections.flatMap(section => section.fields.map(field => field.id));
+      contract.forEach(field => {
+        if (!templateFields.includes(field)) errors.push(`${type}: ${field} no aparece en la plantilla.`);
+        const definition = sections.flatMap(section => section.fields).find(item => item.id === field);
+        if (!definition?.label) errors.push(`${type}: ${field} no tiene etiqueta visible.`);
+        if (!definition?.section) errors.push(`${type}: ${field} no tiene apartado.`);
+      });
+      templateFields.forEach(field => {
+        if (!contract.includes(field)) errors.push(`${type}: la plantilla contiene ${field}, pero el contrato no.`);
+      });
     });
-
-    (audit.missing_fields || []).forEach(field => {
-      if (!isRequired(entry, field)) {
-        next.warnings.push(`${field}: campo opcional según el tipo de ficha.`);
-        return;
-      }
-      if (isSoftAcceptable(entry, field)) {
-        next.warnings.push(`${field}: aceptado como no localizado en fuente fiable.`);
-        return;
-      }
-      if (isMinLengthAcceptable(entry, field)) {
-        next.warnings.push(`${field}: aceptado con texto corto porque el dato real no requiere 20 caracteres.`);
-        return;
-      }
-      if (isNumberErrorAcceptable(entry, field)) {
-        next.warnings.push(`${field}: aceptado con número, rango o unidad.`);
-        return;
-      }
-      next.missing_fields.push(field);
-    });
-
-    next.approved = next.errors.length === 0;
-    return next;
+    return { approved: errors.length === 0, errors, types: Object.keys(S.CONTRACTS || {}).length };
   }
 
-  S.audit = function (entry) {
-    return filterAudit(entry, originalAudit(entry));
+  S.templateFor = function (type) {
+    return originalTemplateFor(type).map(section => ({
+      ...section,
+      fields: section.fields.filter(field => !['title', 'scientific_name'].includes(field.id))
+    })).filter(section => section.fields.length);
   };
 
   S.validateTemplate = function (entry) {
-    const template = originalValidateTemplate(entry);
-    return template.map(section => {
-      const fields = section.fields.map(field => {
-        const required = isRequired(entry, field.id);
-        if (!required && !field.valid) return { ...field, required: false, valid: true, error: '' };
-        if (field.valid) return { ...field, required };
-        if (isSoftAcceptable(entry, field.id)) return { ...field, required, valid: true, error: '' };
-        if (MIN_LENGTH_ERROR_PATTERN.test(String(field.error || '')) && isMinLengthAcceptable(entry, field.id)) return { ...field, required, valid: true, error: '' };
-        if (NUMBER_ERROR_PATTERN.test(String(field.error || '')) && isNumberErrorAcceptable(entry, field.id)) return { ...field, required, valid: true, error: '' };
-        return { ...field, required };
-      });
-      return { ...section, fields, valid: fields.every(field => field.valid) };
-    });
+    return originalValidateTemplate(cleanEntry(entry));
   };
 
   S.missingFields = function (entry) {
-    return originalMissingFields(entry).filter(field => isRequired(entry, field) && !isSoftAcceptable(entry, field) && !isMinLengthAcceptable(entry, field) && !isNumberErrorAcceptable(entry, field));
+    const cleaned = cleanEntry(entry);
+    const missing = originalMissingFields(cleaned);
+    const summary = String(cleaned.summary || cleaned.sections?.summary || '').trim();
+    if (summary.length < MIN_SUMMARY_LENGTH) missing.push('summary');
+    return unique(missing);
   };
 
-  S.hasNumericValue = hasNumericValue;
-  S.requiredFieldsForType = type => Array.from(requiredSet({ entry_type: type }));
-  S.isRequiredFieldForEntry = isRequired;
-  S.isSoftUnknownField = field => SOFT_UNKNOWN_FIELDS.has(field);
-  S.isFlexibleMinLengthField = field => FLEXIBLE_MIN_LENGTH_FIELDS.has(field);
-  S.__flexRulesApplied = true;
+  S.audit = function (entry) {
+    const cleaned = cleanEntry(entry);
+    const base = originalAudit(cleaned);
+    const errors = (base.errors || []).filter(error => !INTERNAL_TRACE_ERROR.test(String(error)));
+    const summaryIssue = summaryError(cleaned);
+    if (summaryIssue) errors.push(summaryIssue);
+
+    const integrity = contractIntegrityReport();
+    if (!integrity.approved) errors.push(...integrity.errors.map(error => `Contrato interno · ${error}`));
+
+    const missingFields = S.missingFields(cleaned);
+    return {
+      ...base,
+      approved: errors.length === 0,
+      errors: unique(errors),
+      warnings: unique(base.warnings || []),
+      missing_fields: missingFields,
+      contract_integrity: integrity
+    };
+  };
+
+  S.requiredFieldsForType = type => Array.from(S.CONTRACTS?.[type] || []);
+  S.isRequiredFieldForEntry = (entry, field) => (S.CONTRACTS?.[entry?.entry_type] || []).includes(field) || field === 'summary';
+  S.topLevelFields = Array.from(TOP_LEVEL_FIELDS);
+  S.cleanEntryForAudit = cleanEntry;
+  S.contractIntegrityReport = contractIntegrityReport;
+  S.__strictContractApplied = true;
 })();
