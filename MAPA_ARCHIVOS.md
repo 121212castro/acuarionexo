@@ -1,48 +1,49 @@
 # MAPA DE ARCHIVOS
 
-Documento autogenerado por `scripts/refresh-project-docs.mjs`.
+Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `scripts/refresh-library-contract-docs.mjs`.
 
 ## Build actual
 
-`library-validation-details-20260721-0955`
+`library-contract-audit-20260721-1025`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
-## Entrada web activa
-
-La entrada web se obtiene desde `index.html`.
-
-## Módulos bajo demanda
-
-La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
-
 ## Biblioteca / propietarios únicos
 
-- `src/library/core/library-schema.js`: contrato completo por tipo de ficha.
-- `src/library/core/library-schema-rules.js`: auditoría oficial.
-- `src/library/ficha/ficha-chat-import.js`: importación desde Chat con cobertura completa, fuentes y auditoría previa.
-- `src/library/ficha/ficha-actions.js`: vista abierta, reauditoría, publicación, detalle de errores y entrada para añadir.
-- `src/library/inventory/library-inventory-import.js`: selección de destino y persistencia de la copia.
+- `src/library/core/library-schema.js`: contratos y reglas base de los 13 tipos.
+- `src/library/core/library-schema-rules.js`: contrato estricto, resumen obligatorio y auditoría única.
+- `src/library/library-v3-template.js`: formulario para Chat y esqueleto JSON con rutas correctas.
+- `src/library/ficha/ficha-chat-import.js`: importación estructurada, saneamiento y rechazo previo.
+- `src/library/library-v3-ficha.js`: editor y guardado mediante la auditoría oficial.
+- `src/library/ficha/ficha-actions.js`: reauditoría, publicación y añadido.
+- `src/library/inventory/library-inventory-import.js`: selección de destino y persistencia.
 
-## Biblioteca / contrato completo de fichas
+## Contrato completo
 
-- Todos los campos de `CONTRACTS[entry_type]` deben estar presentes antes de insertar una ficha creada desde Chat.
+- Todos los campos de `CONTRACTS[entry_type]` son obligatorios.
+- `summary` es obligatorio y requiere 20 caracteres.
 - Se exigen al menos dos fuentes reales con URL completa.
-- El texto genérico, los campos omitidos o cualquier error de auditoría impiden guardar la ficha.
-- Publicar o validar no sustituye una auditoría correcta.
-- La misma auditoría controla creación, apertura, publicación y añadido al acuario.
-- La validación remota debe devolver y mostrar motivos concretos cuando rechaza una ficha.
+- `title`, `scientific_name`, `summary` y `sources` son claves superiores.
+- El resto de campos se almacena exclusivamente dentro de `data`.
+- El texto genérico, los campos omitidos y los tipos incorrectos impiden guardar o publicar.
 
-## Biblioteca / clasificación
+## Flujo oficial
 
-- El tipo estructurado de la ficha debe conservarse durante la importación.
-- Los peces marinos deben almacenarse como `pez_marino`; no pueden aparecer en `aditivo` por detección textual.
-- Una corrección de clasificación obliga a limpiar los campos superiores y volver a auditar.
+Plantilla → JSON estructurado → comprobación de tipo → saneamiento de claves → cobertura completa → auditoría → inserción → reauditoría al abrir → publicación o añadido.
 
-## Biblioteca / importación a acuario e inventario
+<!-- LIBRARY_CONTRACT_AUDIT_START -->
+## Biblioteca / auditoría integral de formularios
 
-- Solo una ficha con `audit.approved === true` puede activar `Añadir a mi acuario`.
-- Flujo: ficha abierta → auditoría → botón Añadir → selección de acuario → formulario → inserción en `inventory_items`.
+- `scripts/audit-library-contracts.mjs` construye una ficha completa por cada tipo y comprueba que apruebe.
+- Después vacía individualmente cada campo para verificar que la auditoría lo rechace.
+- También comprueba el resumen, duplicados, etiquetas visibles, apartados y correspondencia exacta entre contrato y plantilla.
+- `npm run library:check` forma parte de `npm run check` y `npm run mobile:prepare`.
+<!-- LIBRARY_CONTRACT_AUDIT_END -->
+
+## Importación a acuario e inventario
+
+- Solo una ficha con `audit.approved === true` puede activar el botón de añadido.
+- El estado publicado o validado no sustituye la auditoría vigente.
 - No se permiten manejadores paralelos, reglas divergentes, `hotfix` ni `patch`.
 
 ## Regla de actualización
