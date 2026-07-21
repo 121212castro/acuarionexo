@@ -6,8 +6,9 @@
   "main": "electron/main.cjs",
   "scripts": {
     "docs:refresh": "node scripts/refresh-project-docs.mjs",
-    "check": "npm run docs:refresh && node scripts/validate-app.mjs",
-    "mobile:prepare": "npm run docs:refresh && node scripts/prepare-mobile-bundle.mjs",
+    "library:check": "node scripts/audit-library-contracts.mjs",
+    "check": "npm run docs:refresh && npm run library:check && node scripts/validate-app.mjs",
+    "mobile:prepare": "npm run docs:refresh && npm run library:check && node scripts/prepare-mobile-bundle.mjs",
     "mobile:check": "node scripts/validate-mobile-bundle.mjs",
     "mobile:assets:prepare": "node scripts/prepare-mobile-assets.mjs && bash scripts/ci/enable-ios-push-entitlement.sh",
     "mobile:assets:android": "npm run mobile:assets:prepare && npx --yes @capacitor/assets@3.0.5 generate --android --iconBackgroundColor '#02111f' --iconBackgroundColorDark '#02111f' --splashBackgroundColor '#02111f' --splashBackgroundColorDark '#02111f'",
@@ -39,21 +40,12 @@
     "appId": "com.acuarionexo.desktop",
     "productName": "AcuarioNexo",
     "asar": true,
-    "directories": {
-      "output": "dist-desktop"
-    },
-    "files": [
-      "electron/**/*",
-      "www/**/*",
-      "icon-512.png",
-      "package.json"
-    ],
+    "directories": { "output": "dist-desktop" },
+    "files": ["electron/**/*", "www/**/*", "icon-512.png", "package.json"],
     "mac": {
       "category": "public.app-category.utilities",
       "icon": "icon-512.png",
-      "target": [
-        "zip"
-      ],
+      "target": ["zip"],
       "artifactName": "AcuarioNexo-${version}-${arch}.${ext}"
     }
   }
