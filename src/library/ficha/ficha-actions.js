@@ -46,6 +46,18 @@
     return !!x && !!audit?.approved;
   }
 
+  function validationDetails(validation) {
+    const result = validation?.result || validation || {};
+    const raw = [];
+    ['errors', 'missing_fields', 'warnings'].forEach(key => {
+      const value = result[key] ?? validation?.[key];
+      if (Array.isArray(value)) raw.push(...value);
+    });
+    const reason = result.reason || result.message || validation?.message;
+    if (reason) raw.unshift(reason);
+    return [...new Set(raw.map(value => String(value || '').trim()).filter(Boolean))].slice(0, 12);
+  }
+
   async function addToAquarium(id) {
     const box = byId('libraryActionStatus');
     const button = document.querySelector(`[data-library-add-id="${CSS.escape(String(id))}"]`);
@@ -86,7 +98,11 @@
       if (box) box.innerHTML = msg('Validando ficha antes de publicar...');
       if (String(x.status || '').toLowerCase() !== 'validated') {
         const validation = await call('library-audit-card', { entry_id: id });
-        if (!validation?.result?.approved) throw new Error('La validación no aprobó la ficha. Revisa los campos indicados.');
+        if (!validation?.result?.approved) {
+          const details = validationDetails(validation);
+          const list = details.map(item => `<li>${esc(item)}</li>`).join('');
+          throw new Error(`La validación no aprobó la ficha.${list ? `<ul>${list}</ul>` : ' El servicio no devolvió los campos concretos; revisa el registro de validación.'}`);
+        }
         if (validation.data) Object.assign(x, validation.data);
       }
       if (box) box.innerHTML = msg('Publicando ficha...');
@@ -95,7 +111,7 @@
       await Core.load();
       await returnToLibrarySource();
     } catch (error) {
-      if (box) box.innerHTML = msg(error.message || 'No se pudo publicar la ficha.', 'error');
+      if (box) box.innerHTML = `<div class="error">${error.message || 'No se pudo publicar la ficha.'}</div>`;
     }
   }
 
@@ -139,5 +155,5 @@
     </section>`, 'biblioteca');
   };
 
-  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, fichaCanBeAdded, actionButtons, addToAquarium, validateAndPublish };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, fichaCanBeAdded, actionButtons, addToAquarium, validateAndPublish, validationDetails };
 })();
