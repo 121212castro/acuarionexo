@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-full-contract-audit-20260721-0035`.
+Build actual: `library-validation-details-20260721-0955`.
 
 ## Biblioteca / flujo maestro de fichas
 
@@ -15,6 +15,13 @@ Build actual: `library-full-contract-audit-20260721-0035`.
 → `src/library/core/library-schema-rules.js` ejecuta la auditoría oficial
 → solo si la auditoría aprueba se inserta la ficha en Biblioteca
 → `src/library/ficha/ficha-actions.js` vuelve a auditar al abrir, publicar o añadir
+→ la validación remota debe mostrar los campos, errores o motivos devueltos
+
+## Biblioteca / clasificación de fichas
+
+- El `entry_type` del JSON estructurado prevalece sobre detecciones por palabras del texto visible.
+- Una ficha biológica no puede quedar clasificada como producto, aditivo, test o equipamiento.
+- Las correcciones de tipo deben conservar el contenido útil, limpiar nombre científico y volver a auditar la ficha.
 
 ## Biblioteca / añadir a acuario
 
@@ -30,7 +37,7 @@ Build actual: `library-full-contract-audit-20260721-0035`.
 - `src/library/core/library-schema.js`: esqueleto completo por tipo.
 - `src/library/core/library-schema-rules.js`: auditoría oficial.
 - `src/library/ficha/ficha-chat-import.js`: entrada desde ficha generada por Chat.
-- `src/library/ficha/ficha-actions.js`: vista y control de acciones.
+- `src/library/ficha/ficha-actions.js`: vista, reauditoría, publicación y mensajes de validación.
 - `src/library/inventory/library-inventory-import.js`: importación al acuario o inventario.
 
 ## Reglas estructurales
@@ -39,6 +46,7 @@ Build actual: `library-full-contract-audit-20260721-0035`.
 - Un campo sin dato real debe declararlo de forma explícita y respaldada, nunca omitirse.
 - Se rechazan textos genéricos o imprecisos detectados por la auditoría.
 - Una ficha publicada o validada no puede saltarse la auditoría vigente.
+- La validación no puede responder solo «no aprobada»: debe mostrar los motivos recibidos.
 - No se permiten reglas paralelas, `hotfix`, `patch` ni validadores distintos según la pantalla.
 
 ## Regla de actualización
