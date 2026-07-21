@@ -2,11 +2,11 @@
 <html lang="es">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#0d3155">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="AcuarioNexo">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>AcuarioNexo</title>
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
@@ -15,49 +15,94 @@
       var declaredBuild = String(window.ACUARIONEXO_BUILD || 'dev');
       var activeBuild = declaredBuild;
       try {
-        var response = await fetch('app-version.json?boot=' + Date.now(), { cache: 'no-store' });
+        var response = await fetch('app-version.json?boot=' + Date.now(), {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' }
+        });
         if (response.ok) {
-          var payload = await response.json();
-          if (payload && payload.build) activeBuild = String(payload.build);
+          var remote = await response.json();
+          var remoteBuild = String(remote && remote.build || '').trim();
+          if (remoteBuild) activeBuild = remoteBuild;
         }
       } catch (_) {}
-      window.ACUARIONEXO_BUILD = activeBuild;
+
+      if (activeBuild !== declaredBuild) {
+        try {
+          if ('caches' in window) {
+            var keys = await caches.keys();
+            await Promise.all(keys.map(function (key) { return caches.delete(key); }));
+          }
+          if ('serviceWorker' in navigator) {
+            var registrations = await navigator.serviceWorker.getRegistrations();
+            await Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+          }
+        } catch (_) {}
+      }
+
+      window.ANX_ACTIVE_BUILD = activeBuild;
+      window.ANX_ASSET_VERSION = activeBuild + '-' + Date.now();
       return activeBuild;
     })();
   </script>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="dashboard.css">
-  <link rel="stylesheet" href="aquarium-map.css">
-  <link rel="stylesheet" href="login-reef.css">
-  <link rel="stylesheet" href="aquarium-cards.css">
-  <link rel="stylesheet" href="aquariums-mobile-fix.css">
-  <link rel="stylesheet" href="aquarium-form-ux.css">
-  <link rel="stylesheet" href="mobile-form-fix.css">
-  <link rel="stylesheet" href="library-mobile-overflow-fix.css">
-  <link rel="stylesheet" href="library-clean.css">
-  <link rel="stylesheet" href="library-images.css">
-  <link rel="stylesheet" href="inventory-accordion.css">
-  <link rel="stylesheet" href="microfauna-mobile.css">
-  <link rel="stylesheet" href="notifications.css">
-  <link rel="stylesheet" href="settings.css">
-  <link rel="stylesheet" href="support.css">
-  <link rel="stylesheet" href="status.css">
-  <title>AcuarioNexo</title>
 </head>
 <body>
-  <div id="app"></div>
-  <script src="config.js"></script>
-  <script src="app.js"></script>
-  <script src="src/aquariums/aquariums-core.js"></script>
-  <script src="src/aquariums/aquariums-form.js"></script>
-  <script src="src/aquariums/aquariums-save.js"></script>
-  <script src="src/aquariums/aquariums.js"></script>
-  <script src="src/admin/admin-core.js"></script>
-  <script src="src/core/module-loader.js"></script>
-  <script src="src/auth/auth-core.js"></script>
-  <script src="src/auth/auth.js"></script>
-  <script src="update-manager.js"></script>
-  <script src="notifications.js"></script>
+  <header class="topbar premium-topbar">
+    <div class="brand-wrap">
+      <div class="brand-logo">🐠</div>
+      <div><h1>Acuario<span>Nexo</span></h1><p id="version"></p></div>
+    </div>
+    <div class="top-actions"><button id="settingsBtn" class="ghost settings-button hidden" onclick="settings()" aria-label="Ajustes" title="Ajustes">⚙</button><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
+  </header>
+  <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Comprobando la última versión...</p></section></main>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
+  <script>
+    (async function () {
+      var app = document.getElementById('app');
+      var css = ['styles.css','dashboard.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-mobile-overflow-fix.css','library-clean.css','library-images.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css','support.css','status.css'];
+      var scripts = ['config.js','app.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/core/module-loader.js','src/auth/auth-core.js','src/auth/auth.js','update-manager.js','notifications.js'];
+
+      function showError(text) {
+        if (!app) return;
+        app.innerHTML = '<section class="auth-card"><h2>Error de carga</h2><p class="small">' + String(text || 'No se pudo cargar AcuarioNexo.') + '</p></section>';
+      }
+
+      function loadStyle(href, version) {
+        return new Promise(function (resolve, reject) {
+          var link = document.createElement('link');
+          link.rel = 'stylesheet';
+          link.href = href + '?v=' + version;
+          link.onload = resolve;
+          link.onerror = function () { reject(new Error('No se pudo cargar ' + href)); };
+          document.head.appendChild(link);
+        });
+      }
+
+      function loadScript(src, version) {
+        return new Promise(function (resolve, reject) {
+          var script = document.createElement('script');
+          script.src = src + '?v=' + version;
+          script.async = false;
+          script.onload = resolve;
+          script.onerror = function () { reject(new Error('No se pudo cargar ' + src)); };
+          document.body.appendChild(script);
+        });
+      }
+
+      try {
+        await window.ANX_BOOT_READY;
+        var version = encodeURIComponent(window.ANX_ASSET_VERSION || window.ANX_ACTIVE_BUILD || window.ACUARIONEXO_BUILD || 'dev');
+        var manifest = document.createElement('link');
+        manifest.rel = 'manifest';
+        manifest.href = 'manifest.webmanifest?v=' + version;
+        document.head.appendChild(manifest);
+        await Promise.all(css.map(function (href) { return loadStyle(href, version); }));
+        for (var i = 0; i < scripts.length; i += 1) await loadScript(scripts[i], version);
+      } catch (e) {
+        showError(e.message);
+      }
+    })();
+  </script>
 </body>
 </html>
