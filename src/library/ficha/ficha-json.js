@@ -101,6 +101,8 @@
       '',
       'REGLAS OBLIGATORIAS:',
       '- No inventes datos.',
+      '- No des por válido ningún dato, formato, compatibilidad, código, procedimiento, valor, nombre, versión o característica antes de comprobarlo en una fuente fiable aplicable al producto, organismo o equipo exacto.',
+      '- Si un dato no puede verificarse, indícalo como "No localizado en fuente fiable"; no lo deduzcas, completes ni adaptes por semejanza con otro modelo, versión o fabricante.',
       '- Contrasta cada dato importante con fuentes fiables.',
       '- Usa valores concretos cuando existan.',
       '- No uses: bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.',
@@ -110,6 +112,9 @@
       '- Formato visible obligatorio de cada fuente: Nombre de fuente | URL completa | dato que justifica.',
       '- El JSON estructurado debe repetir esas mismas fuentes en sources[].',
       '- Si no encuentras URL real para una fuente, no la uses.',
+      '- Los campos técnicos no pueden limitarse a una palabra genérica cuando admitan una descripción completa.',
+      '- El campo parameter debe explicar qué se mide, en qué medio y cómo se expresa cuando corresponda; no uses únicamente etiquetas como pH, calcio, nitrato, fosfato o temperatura.',
+      '- Antes de entregar la ficha, comprueba que la ficha visible y el JSON contienen los mismos datos, que todos los campos obligatorios están completos o marcados como no localizados y que el JSON es válido.',
       '',
       'APARTADOS VISIBLES OBLIGATORIOS:'
     ];
