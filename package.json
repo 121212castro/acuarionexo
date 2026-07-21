@@ -5,7 +5,7 @@
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
-    "docs:refresh": "node scripts/refresh-project-docs.mjs",
+    "docs:refresh": "node scripts/refresh-project-docs.mjs && node scripts/refresh-library-contract-docs.mjs",
     "library:check": "node scripts/audit-library-contracts.mjs",
     "check": "npm run docs:refresh && npm run library:check && node scripts/validate-app.mjs",
     "mobile:prepare": "npm run docs:refresh && npm run library:check && node scripts/prepare-mobile-bundle.mjs",
