@@ -19,8 +19,8 @@
 
   function parameterTestLabel(test) {
     const data = test?.data || {};
-    const brand = data.brand || data.manufacturer || test?.brand || test?.manufacturer || '';
-    const model = data.product_code || test?.product_code || '';
+    const brand = data.brand || data.manufacturer || '';
+    const model = data.product_code || '';
     const title = test?.title || 'Test sin nombre';
     return [brand, model, title].map(x => String(x || '').trim()).filter((value, index, list) => value && list.indexOf(value) === index).join(' · ');
   }
@@ -41,7 +41,7 @@
     if (parameterTestsCache && !force) return parameterTestsCache;
     const { supabase, state } = A();
     const { data, error } = await supabase.from('library_entries')
-      .select('id,title,entry_type,status,data,manufacturer,brand,product_code')
+      .select('id,title,entry_type,status,data')
       .eq('entry_type', 'test')
       .order('title', { ascending: true });
     if (error) throw error;
