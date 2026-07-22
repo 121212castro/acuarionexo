@@ -74,32 +74,48 @@
     </div>`;
   }
 
-  function inputRows(aq, profileKey) {
+  function inputRows(aq, profileKey, tests) {
+    const optionsFor = window.ANX.parameterTestOptions;
     return keysFor(aq, profileKey).map(key => `<div class="measurement-row">
       <label>${esc(labelFor(key))}</label>
       <div class="measurement-row-inputs">
         <input id="m_${esc(key)}" inputmode="decimal" placeholder="Valor">
         <input id="u_${esc(key)}" value="${esc(units[key] || '')}" placeholder="Unidad">
       </div>
+      <label for="t_${esc(key)}">Test utilizado</label>
+      <select id="t_${esc(key)}" onchange="document.getElementById('tm_${esc(key)}').classList.toggle('hidden',this.value!=='__manual__')">${optionsFor ? optionsFor(key, tests) : '<option value="__manual__">Otro test o método</option>'}</select>
+      <input id="tm_${esc(key)}" class="hidden" placeholder="Marca, modelo o método utilizado">
     </div>`).join('');
   }
 
-  window.formMedicionCompleta = function (profileKey = 'weekly') {
+  function selectedMethod(key, profile) {
+    const selected = val(`t_${key}`);
+    if (selected === '__manual__') return val(`tm_${key}`) || profile.method;
+    return selected || profile.method;
+  }
+
+  window.formMedicionCompleta = async function (profileKey = 'weekly') {
     const aq = currentAquarium();
     if (!aq) return;
     const profile = profiles[profileKey] || profiles.weekly;
-    const now = new Date().toISOString().slice(0, 16);
-    render(aqHeader('parametros') + `<section class="panel guided-box">
-      <button onclick="parametros()">Volver</button>
-      <h2>${esc(profile.title)}</h2>
-      ${profileButtons(profileKey)}
-      <input id="measureProfile" class="hidden" value="${esc(profileKey)}">
-      <label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}">
-      <label>Metodo / test</label><input id="measureMethod" value="${esc(profile.method)}" placeholder="Hanna, Salifert, ICP, laboratorio...">
-      <div class="measurement-grid">${inputRows(aq, profileKey)}</div>
-      <label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea>
-      <button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div>
-    </section>`, 'acuarios');
+    render(aqHeader('parametros') + `<section class="panel guided-box">${msg('Cargando catálogo de tests...')}</section>`, 'acuarios');
+    try {
+      const tests = typeof window.ANX.loadParameterTests === 'function' ? await window.ANX.loadParameterTests() : [];
+      const now = new Date().toISOString().slice(0, 16);
+      render(aqHeader('parametros') + `<section class="panel guided-box">
+        <button onclick="parametros()">Volver</button>
+        <h2>${esc(profile.title)}</h2>
+        ${profileButtons(profileKey)}
+        <input id="measureProfile" class="hidden" value="${esc(profileKey)}">
+        <label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}">
+        <p class="small">Selecciona el test utilizado en cada parámetro. Las opciones proceden de las fichas Test de Biblioteca.</p>
+        <div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div>
+        <label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea>
+        <button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div>
+      </section>`, 'acuarios');
+    } catch (e) {
+      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button>${msg(e.message || 'No se pudo cargar el catálogo de tests.', 'error')}</section>`, 'acuarios');
+    }
   };
 
   window.saveMedicionCompleta = async function () {
@@ -110,12 +126,11 @@
     const batch = uuid();
     const measuredAt = val('measureDate') ? new Date(val('measureDate')).toISOString() : new Date().toISOString();
     const notes = val('measureNotes') || null;
-    const method = val('measureMethod') || profile.method;
     const rows = keysFor(aq, profileKey).map(key => {
       const display = val(`m_${key}`);
       const numeric = numberFromInput(`m_${key}`);
       const unit = val(`u_${key}`) || units[key] || null;
-      return { key, display, numeric, unit };
+      return { key, display, numeric, unit, method: selectedMethod(key, profile) };
     }).filter(row => row.display || Number.isFinite(row.numeric)).map(row => ({
       user_id: state.user.id,
       aquarium_id: aq.id,
@@ -128,7 +143,7 @@
       value: row.numeric,
       normalized_value: row.numeric,
       unit: row.unit,
-      method,
+      method: row.method,
       source: profile.source,
       notes,
       batch_id: batch,
