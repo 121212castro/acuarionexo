@@ -1,25 +1,37 @@
-ACUARIONEXO · MODULOS OFICIALES · 21/07/2026
+ACUARIONEXO · MODULOS OFICIALES · 23/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: library-full-contract-audit-20260721-0035.
-- app-version.json: library-full-contract-audit-20260721-0035.
-- manifest.webmanifest: library-full-contract-audit-20260721-0035.
+- index.html: parameter-test-catalog-20260723-0110.
+- app-version.json: parameter-test-catalog-20260723-0110.
+- manifest.webmanifest: parameter-test-catalog-20260723-0110.
 
 BIBLIOTECA · CONTRATO Y AUDITORIA
-- src/library/core/library-schema.js: esqueleto completo por tipo.
+- src/library/core/library-schema.js: esqueleto completo por tipo, incluida la identidad de las fichas Test.
 - src/library/core/library-schema-rules.js: auditoría oficial.
 - src/library/ficha/ficha-chat-import.js: exige todos los campos, dos fuentes reales y auditoría aprobada antes de insertar.
 - src/library/ficha/ficha-actions.js: vuelve a auditar antes de publicar o añadir.
 - src/library/inventory/library-inventory-import.js: selección de acuario y persistencia de la copia.
 
+PARAMETROS · CATALOGO OFICIAL DE TESTS
+- src/parameters/parameters-core.js: carga fichas Test, normaliza parámetros y filtra compatibilidad.
+- src/parameters/measurements-advanced.js: selector independiente por cada parámetro semanal, mensual o ICP.
+- src/parameters/parameters-manual.js: selector del mismo catálogo en medición puntual.
+- aquarium_measurements.method: guarda el test o método utilizado.
+- No existen listas paralelas de marcas.
+
+BIBLIOTECA · AUDITORIA INTEGRAL DE FORMULARIOS
+- scripts/audit-library-contracts.mjs: prueba todos los tipos y todos los campos.
+- npm run library:check: comprobación obligatoria del contrato.
+- title, scientific_name, summary y sources son claves superiores; el resto pertenece a data.
+- No se inserta una ficha incompleta para corregirla después.
+
 REGLAS
 - Una ficha incompleta no entra en Biblioteca.
-- Una ficha con texto genérico no entra en Biblioteca.
-- El estado publicado o validado no sustituye la auditoría vigente.
+- Una medición debe conservar el test o método realmente utilizado.
 - No se permiten validadores paralelos, hotfix ni patch.
 
 GENERADO, NO EDITAR A MANO
