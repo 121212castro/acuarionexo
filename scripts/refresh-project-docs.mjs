@@ -64,6 +64,15 @@ const cardContract = `## Biblioteca / contrato completo de fichas
 - Una ficha con campos omitidos, texto genérico o errores de validación se rechaza antes de entrar en Biblioteca.
 - La misma auditoría se reutiliza al abrir, publicar y añadir una ficha al acuario; no se admiten reglas divergentes por pantalla.`;
 
+const parametersOwnership = `## Parámetros / selección del test utilizado
+
+- \`src/library/core/library-schema.js\`: las fichas \`test\` identifican fabricante, marca, modelo, parámetro, método y campo interno.
+- \`src/parameters/parameters-core.js\`: única autoridad para cargar el catálogo de fichas Test, normalizar el parámetro, filtrar compatibilidad y construir las opciones.
+- \`src/parameters/measurements-advanced.js\`: exige y guarda un test o método independiente para cada parámetro del lote semanal, mensual o ICP.
+- \`src/parameters/parameters-manual.js\`: reutiliza el mismo catálogo para mediciones puntuales.
+- Las opciones proceden de \`library_entries\`; no existen listas paralelas de Hanna, JBL, Salifert ni otras marcas dentro de los formularios.
+- El valor guardado en \`aquarium_measurements.method\` identifica la marca, el modelo y la ficha seleccionada o el método manual indicado por el usuario.`;
+
 const tasksOwnership = `## Tareas / arquitectura y repetición
 
 - \`src/tasks/tasks-core.js\`: única autoridad para opciones, validación y cálculo de repetición; contiene presets, intervalo personalizado de 1 a 365 días y recomendación contextual por IA.
@@ -106,6 +115,8 @@ ${libraryImportOwnership}
 
 ${cardContract}
 
+${parametersOwnership}
+
 ${tasksOwnership}
 
 ${updateRules}`;
@@ -144,6 +155,15 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 → inserta la copia en \`inventory_items\`
 → abre el inventario del acuario seleccionado
 
+## Parámetros / flujo de test
+
+\`src/library/core/library-schema.js\`
+→ define la identidad y compatibilidad de cada ficha Test
+→ \`src/parameters/parameters-core.js\` carga y filtra el catálogo por parámetro
+→ \`src/parameters/measurements-advanced.js\` presenta una selección independiente en cada medición
+→ \`src/parameters/parameters-manual.js\` reutiliza el mismo catálogo
+→ cada fila guarda su método exacto en \`aquarium_measurements.method\`
+
 ## Tareas / flujo maestro
 
 \`src/tasks/tasks-form.js\`
@@ -158,11 +178,13 @@ ${libraryImportOwnership}
 
 ${cardContract}
 
+${parametersOwnership}
+
 ${tasksOwnership}
 
 ${updateRules}`;
 
-const activeText = `ACUARIONEXO · MODULOS OFICIALES · 21/07/2026
+const activeText = `ACUARIONEXO · MODULOS OFICIALES · 23/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
@@ -184,6 +206,12 @@ BIBLIOTECA · CONTRATO Y AUDITORIA
 - src/library/ficha/ficha-chat-import.js: cobertura completa, fuentes y validación antes de insertar.
 - src/library/ficha/ficha-actions.js: reauditoría antes de publicar o añadir.
 - src/library/inventory/library-inventory-import.js: formulario y persistencia de la copia.
+
+PARAMETROS · CATALOGO DE TESTS
+- src/parameters/parameters-core.js: catálogo y compatibilidad por parámetro.
+- src/parameters/measurements-advanced.js: selección independiente por fila.
+- src/parameters/parameters-manual.js: selección en medición puntual.
+- Las opciones proceden de las fichas Test de Biblioteca.
 
 TAREAS · PROPIETARIOS UNICOS
 - src/tasks/tasks-core.js: reglas, validación y recomendación de repetición.
