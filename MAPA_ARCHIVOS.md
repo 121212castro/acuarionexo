@@ -4,19 +4,28 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 ## Build actual
 
-`library-contract-audit-20260721-1025`
+`parameter-test-catalog-20260723-0110`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
 ## Biblioteca / propietarios únicos
 
-- `src/library/core/library-schema.js`: contratos y reglas base de los 13 tipos.
+- `src/library/core/library-schema.js`: contratos y reglas base de los 13 tipos, incluida la identidad completa de `test`.
 - `src/library/core/library-schema-rules.js`: contrato estricto, resumen obligatorio y auditoría única.
 - `src/library/library-v3-template.js`: formulario para Chat y esqueleto JSON con rutas correctas.
 - `src/library/ficha/ficha-chat-import.js`: importación estructurada, saneamiento y rechazo previo.
 - `src/library/library-v3-ficha.js`: editor y guardado mediante la auditoría oficial.
 - `src/library/ficha/ficha-actions.js`: reauditoría, publicación y añadido.
 - `src/library/inventory/library-inventory-import.js`: selección de destino y persistencia.
+
+## Parámetros / propietarios únicos
+
+- `src/parameters/parameters-core.js`: única autoridad para cargar fichas Test desde Biblioteca, normalizar parámetros, filtrar compatibilidad y generar opciones.
+- `src/parameters/measurements-advanced.js`: formulario semanal, mensual e ICP; presenta y guarda un test diferente para cada parámetro.
+- `src/parameters/parameters-manual.js`: medición puntual; reutiliza exactamente el mismo catálogo.
+- `src/library/core/library-schema.js`: define en cada ficha Test `manufacturer`, `brand`, `product_code`, `parameter`, `method` y `primary_field`.
+- `aquarium_measurements.method`: destino persistente del test o método realmente utilizado.
+- No existen listas internas separadas para Hanna, JBL, Salifert ni otras marcas.
 
 ## Contrato completo
 
@@ -27,17 +36,19 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - El resto de campos se almacena exclusivamente dentro de `data`.
 - El texto genérico, los campos omitidos y los tipos incorrectos impiden guardar o publicar.
 
-## Flujo oficial
+## Flujo oficial de tests y mediciones
 
-Plantilla → JSON estructurado → comprobación de tipo → saneamiento de claves → cobertura completa → auditoría → inserción → reauditoría al abrir → publicación o añadido.
+Ficha Test de Biblioteca → auditoría → catálogo central de Parámetros → normalización de `primary_field`/`parameter` → filtrado por parámetro → selección independiente por fila → guardado del método en la medición.
 
 <!-- LIBRARY_CONTRACT_AUDIT_START -->
 ## Biblioteca / auditoría integral de formularios
 
-- `scripts/audit-library-contracts.mjs` construye una ficha completa por cada tipo y comprueba que apruebe.
-- Después vacía individualmente cada campo para verificar que la auditoría lo rechace.
-- También comprueba el resumen, duplicados, etiquetas visibles, apartados y correspondencia exacta entre contrato y plantilla.
-- `npm run library:check` forma parte de `npm run check` y `npm run mobile:prepare`.
+- Los 13 tipos definidos en `CONTRACTS` utilizan un único contrato para plantilla, importación, edición, auditoría, publicación y añadido al acuario o inventario.
+- `src/library/core/library-schema-rules.js` exige todos los campos del contrato y un resumen de 20 caracteres; no existen campos opcionales ocultos según la pantalla.
+- `src/library/library-v3-template.js` genera rutas JSON coherentes: `title`, `scientific_name`, `summary` y `sources` son superiores; el resto se guarda en `data`.
+- `src/library/ficha/ficha-chat-import.js` exige JSON estructurado, sanea claves superiores duplicadas y rechaza la ficha antes de insertar si falta cualquier campo.
+- `scripts/audit-library-contracts.mjs` prueba automáticamente cada tipo, cada campo obligatorio y el resumen.
+- `npm run check` y `npm run mobile:prepare` ejecutan `npm run library:check` antes de publicar o preparar la app.
 <!-- LIBRARY_CONTRACT_AUDIT_END -->
 
 ## Importación a acuario e inventario
