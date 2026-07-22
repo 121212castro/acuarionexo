@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `library-detail-cover-context-20260719-1445`
+- `parameter-test-catalog-20260723-0110`
 
 Supabase oficial:
 
