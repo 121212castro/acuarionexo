@@ -2,9 +2,71 @@
 (function () {
   function A() { return window.ANX || {}; }
 
+  let parameterTestsCache = null;
+
   function paramKeysForAquarium(aq) {
     const { aiMeasurementPlans, aiAquariumMode } = A();
     return Object.keys(aiMeasurementPlans[aiAquariumMode(aq)] || aiMeasurementPlans.marine);
+  }
+
+  function normalizeTestParameter(value) {
+    const { normalizeMeasurementKey } = A();
+    const raw = String(value || '').trim();
+    if (!raw) return '';
+    if (typeof normalizeMeasurementKey === 'function') return normalizeMeasurementKey({ parameter_key: raw });
+    return raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+  }
+
+  function parameterTestLabel(test) {
+    const data = test?.data || {};
+    const brand = data.brand || data.manufacturer || test?.brand || test?.manufacturer || '';
+    const model = data.product_code || test?.product_code || '';
+    const title = test?.title || 'Test sin nombre';
+    return [brand, model, title].map(x => String(x || '').trim()).filter((value, index, list) => value && list.indexOf(value) === index).join(' · ');
+  }
+
+  function parameterKeysForTest(test) {
+    const data = test?.data || {};
+    return [data.primary_field, data.parameter, data.measured_ion_or_compound]
+      .map(normalizeTestParameter)
+      .filter(Boolean);
+  }
+
+  function testsForParameter(tests, parameterKey) {
+    const target = normalizeTestParameter(parameterKey);
+    return (tests || []).filter(test => parameterKeysForTest(test).includes(target));
+  }
+
+  async function loadParameterTests(force = false) {
+    if (parameterTestsCache && !force) return parameterTestsCache;
+    const { supabase, state } = A();
+    const { data, error } = await supabase.from('library_entries')
+      .select('id,title,entry_type,status,data,manufacturer,brand,product_code')
+      .eq('entry_type', 'test')
+      .order('title', { ascending: true });
+    if (error) throw error;
+    parameterTestsCache = (data || []).filter(test => {
+      const status = String(test.status || '').toLowerCase();
+      return ['published', 'validated'].includes(status) || (!!state?.isAdmin && ['review', 'draft', 'identified'].includes(status));
+    });
+    return parameterTestsCache;
+  }
+
+  function parameterTestOptions(parameterKey, tests, selected = '') {
+    const { esc } = A();
+    const matching = testsForParameter(tests, parameterKey);
+    return `<option value="">Seleccionar test...</option>${matching.map(test => {
+      const label = parameterTestLabel(test);
+      return `<option value="${esc(label)}" ${label === selected ? 'selected' : ''}>${esc(label)}</option>`;
+    }).join('')}<option value="__manual__">Otro test o método</option>`;
+  }
+
+  function allParameterTestOptions(tests, selected = '') {
+    const { esc } = A();
+    return `<option value="">Seleccionar test...</option>${(tests || []).map(test => {
+      const label = parameterTestLabel(test);
+      return `<option value="${esc(label)}" ${label === selected ? 'selected' : ''}>${esc(label)}</option>`;
+    }).join('')}<option value="__manual__">Otro test o método</option>`;
   }
 
   function paramActionPanel() {
@@ -121,6 +183,6 @@
   }
 
   window.ANX = window.ANX || {};
-  Object.assign(window.ANX, { paramKeysForAquarium, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml });
-  window.ANX.ParametersCore = { paramKeysForAquarium, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml };
+  Object.assign(window.ANX, { paramKeysForAquarium, normalizeTestParameter, parameterTestLabel, parameterKeysForTest, testsForParameter, loadParameterTests, parameterTestOptions, allParameterTestOptions, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml });
+  window.ANX.ParametersCore = { paramKeysForAquarium, normalizeTestParameter, parameterTestLabel, parameterKeysForTest, testsForParameter, loadParameterTests, parameterTestOptions, allParameterTestOptions, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml };
 })();
