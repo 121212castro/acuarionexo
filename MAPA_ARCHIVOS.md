@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 ## Build actual
 
-`library-aquarium-import-20260723-1045`
+`library-add-direct-action-20260723-1125`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -20,11 +20,12 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
 ## Importación a acuario e inventario
 
+- El botón invoca directamente `ANX.LibraryFichaActions.addToAquarium`; no depende de un alias global ni del orden de carga posterior.
 - `src/library/ficha/ficha-actions.js` identifica el botón mediante un id estable y contiene toda la captura de errores dentro de la acción.
 - No depende de `CSS.escape` ni de otra API opcional del navegador para iniciar la importación.
 - `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`; no mantiene una segunda consulta o estructura de acuarios.
 - Solo una ficha que aprueba `LibrarySchema.audit` puede abrir el formulario o guardarse, aunque su estado sea publicado o validado.
-- Flujo: ficha abierta → auditoría → botón Añadir → carga oficial de acuarios → selección de destino → formulario → inserción en `inventory_items` → inventario del destino.
+- Flujo: ficha abierta → auditoría → acción directa del módulo → carga oficial de acuarios → selección de destino → formulario → inserción en `inventory_items` → inventario del destino.
 - No existen manejadores paralelos, wrappers, `hotfix` ni archivos `patch` para esta acción.
 
 ## Parámetros / propietarios únicos
