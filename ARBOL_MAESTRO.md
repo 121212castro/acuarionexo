@@ -1,97 +1,63 @@
 # ARBOL MAESTRO ACUARIONEXO
 
-Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `scripts/refresh-library-contract-docs.mjs`.
+Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `module-loader-recovery-20260723-1230`.
+Build actual: `library-contract-link-20260723-1305`.
 
-## Carga de módulos
+## Flujo maestro de una ficha
 
-`src/core/module-loader.js`
-→ carga cada grupo en el orden oficial
-→ solo considera cargado un script cuyo `onload` haya terminado correctamente
-→ elimina etiquetas fallidas antes de reintentar
-→ realiza hasta tres intentos con URL nueva
-→ un fallo temporal de GitHub Pages no queda marcado como módulo cargado
+`library-schema.js`
+→ define el contrato y metadatos del tipo
+→ `library-schema-rules.js` crea la regla efectiva única
+→ `library-v3-template.js` entrega esa misma regla al Chat y fija la ruta JSON
+→ `ficha-chat-import.js` audita antes de insertar
+→ `library-v3-ficha.js` audita al guardar
+→ `ficha-actions.js` audita al publicar o añadir
+→ `library-inventory-import.js` audita antes de persistir la copia
 
-## Biblioteca / flujo maestro de fichas
+Una ficha no puede avanzar por estado, validación de IA ni publicación si falla `LibrarySchema.audit`.
 
-`src/library/core/library-schema.js`
-→ define el esqueleto completo para cada `entry_type`
-→ `src/library/core/library-schema-rules.js` aplica un contrato estricto único
-→ `src/library/library-v3-template.js` genera el formulario y JSON con las rutas correctas
-→ `src/library/ficha/ficha-chat-import.js` exige todos los campos, resumen y fuentes antes de insertar
-→ `src/library/ficha/ficha-actions.js` vuelve a auditar al abrir, publicar o añadir
+## Biblioteca / cadena única de contrato
 
-## Biblioteca / clasificación de fichas
+- `src/library/core/library-schema.js`: define los 13 contratos, campos, etiquetas, apartados y metadatos base.
+- `src/library/core/library-schema-rules.js`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
+- `src/library/library-v3-template.js`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
+- `src/library/ficha/ficha-chat-import.js`: rechaza antes de insertar cualquier ficha que no apruebe `LibrarySchema.audit`.
+- `src/library/library-v3-ficha.js`: usa la misma auditoría al editar y guardar.
+- `src/library/ficha/ficha-actions.js`: vuelve a usar la misma auditoría al publicar o añadir.
+- `src/library/inventory/library-inventory-import.js`: vuelve a auditar antes de persistir la copia.
+- `scripts/audit-library-contracts.mjs`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
+- No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.
 
-- El `entry_type` del JSON estructurado prevalece sobre detecciones por palabras.
-- Una ficha biológica no puede quedar clasificada como producto, aditivo, test o equipamiento.
-- Las correcciones de tipo deben conservar contenido útil, limpiar campos superiores y volver a auditar.
+## Biblioteca / reglas por clase de campo
 
-## Biblioteca / añadir a acuario
-
-`src/library/ficha/ficha-actions.js`
-→ habilita `Añadir a mi acuario` únicamente con `audit.approved === true`
-→ el botón usa un listener delegado único dentro del mismo módulo
-→ identifica el botón mediante su id estable, sin depender de `CSS.escape` ni APIs opcionales del navegador
-→ `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`
-→ presenta el formulario de destino
-→ inserta la copia en `inventory_items`
-→ abre el inventario del acuario seleccionado
-
-El estado publicado o validado no sustituye la auditoría vigente.
-
-## Parámetros / flujo oficial de tests
-
-`src/library/core/library-schema.js`
-→ las fichas `test` definen fabricante, marca, modelo, parámetro, método y `primary_field`
-→ `src/parameters/parameters-core.js` carga una sola vez el catálogo desde `library_entries`
-→ normaliza el parámetro y filtra únicamente los tests compatibles
-→ `src/parameters/measurements-advanced.js` presenta un selector independiente por cada valor medido
-→ `src/parameters/parameters-manual.js` reutiliza el mismo catálogo en mediciones puntuales
-→ cada medición guarda su test o método exacto en `aquarium_measurements.method`
-
-No existen listas paralelas de marcas en los formularios. Hanna, JBL, Salifert y cualquier otra marca se obtienen exclusivamente de las fichas Test de Biblioteca.
+- Valores cerrados: solo aceptan una opción exacta; no se les aplica longitud de texto descriptivo.
+- Campos numéricos: exigen número o rango concreto.
+- Nombre científico: exige binomio concreto válido.
+- Identificadores, marcas, modelos, unidades y códigos: usan su longitud mínima específica.
+- Campos descriptivos: usan la longitud mínima indicada por el contrato.
+- `reef_safe`: solo `Sí`, `Sí con precaución` o `No`; la explicación pertenece a `reef_safe_notes`.
+- `summary`: mínimo 20 caracteres.
+- `sources`: mínimo dos fuentes reales con URL completa.
 
 ## Propietarios únicos
 
-- `src/core/module-loader.js`: carga, reintento y estado real de módulos bajo demanda.
-- `src/library/core/library-schema.js`: esqueleto completo por tipo y contrato de ficha Test.
-- `src/library/core/library-schema-rules.js`: auditoría estricta oficial.
-- `src/library/library-v3-template.js`: plantilla para Chat y esqueleto JSON.
-- `src/library/ficha/ficha-chat-import.js`: entrada desde ficha generada por Chat.
-- `src/library/ficha/ficha-actions.js`: vista, reauditoría, publicación y entrada única para añadir.
-- `src/library/inventory/library-inventory-import.js`: selección de destino, carga oficial de acuarios y persistencia.
-- `src/parameters/parameters-core.js`: catálogo y compatibilidad de tests por parámetro.
-- `src/parameters/measurements-advanced.js`: mediciones por lotes y test independiente por fila.
-- `src/parameters/parameters-manual.js`: medición puntual con el mismo catálogo.
-
-## Reglas estructurales
-
-- La ficha generada debe incluir todos los campos entregados por el esqueleto.
-- `title`, `scientific_name`, `summary` y `sources` son claves superiores; el resto pertenece a `data`.
-- El resumen es obligatorio y debe tener al menos 20 caracteres.
-- No existen campos opcionales ocultos según la pantalla.
-- Una ficha incompleta se rechaza antes de insertarse en Biblioteca.
-- No se permiten reglas paralelas, `hotfix`, `patch` ni validadores distintos según la pantalla.
-
-<!-- LIBRARY_CONTRACT_AUDIT_START -->
-## Biblioteca / auditoría integral de formularios
-
-- Los 13 tipos definidos en `CONTRACTS` utilizan un único contrato para plantilla, importación, edición, auditoría, publicación y añadido al acuario o inventario.
-- `src/library/core/library-schema-rules.js` exige todos los campos del contrato y un resumen de 20 caracteres; no existen campos opcionales ocultos según la pantalla.
-- `src/library/library-v3-template.js` genera rutas JSON coherentes: `title`, `scientific_name`, `summary` y `sources` son superiores; el resto se guarda en `data`.
-- `src/library/ficha/ficha-chat-import.js` exige JSON estructurado, sanea claves superiores duplicadas y rechaza la ficha antes de insertar si falta cualquier campo.
-- `scripts/audit-library-contracts.mjs` prueba automáticamente cada tipo, cada campo obligatorio y el resumen.
-- `npm run check` y `npm run mobile:prepare` ejecutan `npm run library:check` antes de publicar o preparar la app.
-<!-- LIBRARY_CONTRACT_AUDIT_END -->
+- `src/library/core/library-schema.js`: contratos y metadatos base.
+- `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
+- `src/library/library-v3-template.js`: instrucciones y esqueleto JSON para el Chat.
+- `src/library/ficha/ficha-chat-import.js`: entrada de fichas desde Chat.
+- `src/library/library-v3-ficha.js`: edición y guardado.
+- `src/library/ficha/ficha-actions.js`: vista, publicación y entrada para añadir.
+- `src/library/inventory/library-inventory-import.js`: destino y persistencia en inventario.
+- `src/parameters/parameters-core.js`: catálogo de fichas Test y compatibilidad por parámetro.
+- No se permiten hotfix, patch, wrappers, validadores paralelos ni contratos duplicados.
 
 ## Regla de actualización
 
-- Ejecutar `npm run docs:refresh` después de modificar cargas, módulos, responsabilidades o build.
+- Ejecutar `npm run docs:refresh` después de modificar cargas, contratos, responsabilidades o build.
 - Ejecutar `npm run check` antes de publicar.
-- Ejecutar `npm run mobile:prepare` cuando el cambio afecte a archivos usados por la app móvil.
+- Ejecutar `npm run mobile:prepare` cuando cambien archivos activos usados por la app móvil.
 - Comprobar después `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt`.
 - `www/`, `android/`, `ios/` y `node_modules/` no se editan manualmente.
