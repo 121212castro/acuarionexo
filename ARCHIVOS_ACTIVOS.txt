@@ -5,16 +5,22 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: parameter-test-catalog-20260723-0110.
-- app-version.json: parameter-test-catalog-20260723-0110.
-- manifest.webmanifest: parameter-test-catalog-20260723-0110.
+- index.html: library-aquarium-import-20260723-1045.
+- app-version.json: library-aquarium-import-20260723-1045.
+- manifest.webmanifest: library-aquarium-import-20260723-1045.
 
 BIBLIOTECA · CONTRATO Y AUDITORIA
 - src/library/core/library-schema.js: esqueleto completo por tipo, incluida la identidad de las fichas Test.
 - src/library/core/library-schema-rules.js: auditoría oficial.
 - src/library/ficha/ficha-chat-import.js: exige todos los campos, dos fuentes reales y auditoría aprobada antes de insertar.
-- src/library/ficha/ficha-actions.js: vuelve a auditar antes de publicar o añadir.
-- src/library/inventory/library-inventory-import.js: selección de acuario y persistencia de la copia.
+- src/library/ficha/ficha-actions.js: vuelve a auditar y contiene la entrada única del botón Añadir.
+- src/library/inventory/library-inventory-import.js: carga oficial de acuarios, selección de destino y persistencia.
+
+BIBLIOTECA · IMPORTACION AL ACUARIO
+- El botón se identifica mediante id estable y no depende de CSS.escape.
+- AquariumsCore.loadAquariums es la única carga de acuarios utilizada por el importador.
+- LibrarySchema.audit debe aprobar la ficha antes de abrir y antes de guardar.
+- inventory_items es el destino persistente de la copia.
 
 PARAMETROS · CATALOGO OFICIAL DE TESTS
 - src/parameters/parameters-core.js: carga fichas Test, normaliza parámetros y filtra compatibilidad.
