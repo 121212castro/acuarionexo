@@ -27,6 +27,10 @@
     return true;
   }
 
+  function adminMetricCard(label, value, action, description) {
+    return `<article class="summary-card" role="button" tabindex="0" onclick="${action}()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();${action}();}" aria-label="${esc(description || label)}"><div><small>${esc(label)}</small><h2>${esc(value)}</h2><p>${esc(description || 'Abrir')}</p></div></article>`;
+  }
+
   window.refreshAdminAccess = async function () {
     try { await loadAdminRole(); }
     catch (_) { state.adminRole = null; state.isAdmin = false; }
@@ -77,6 +81,29 @@
     return window.biblioteca({ adminReturn: true });
   };
 
+  window.adminFichasValidadas = async function () {
+    if (!await loadLibraryAdminTools()) return;
+    return window.biblioteca({ statusFilter: ['validated', 'published'], adminReturn: true });
+  };
+
+  window.adminAcuarios = async function () {
+    if (!await requireAdmin()) return;
+    if (typeof window.listaAcuarios === 'function') return window.listaAcuarios();
+    render(`<section class="panel">${msg('No se pudo abrir la lista de acuarios.', 'error')}</section>`, 'admin');
+  };
+
+  window.adminInventario = async function () {
+    if (!await requireAdmin()) return;
+    if (typeof window.inventario === 'function') return window.inventario();
+    render(`<section class="panel">${msg('No se pudo abrir el inventario.', 'error')}</section>`, 'admin');
+  };
+
+  window.adminMicrofauna = async function () {
+    if (!await requireAdmin()) return;
+    if (typeof window.microfauna === 'function') return window.microfauna();
+    render(`<section class="panel">${msg('No se pudo abrir Microfauna.', 'error')}</section>`, 'admin');
+  };
+
   window.adminPanel = async function () {
     if (!await requireAdmin()) return;
     try {
@@ -89,13 +116,13 @@
         <section class="panel">
           <div class="panel-head"><h2>Control general</h2></div>
           <div class="quick-actions">
-            <article class="summary-card" role="button" tabindex="0" onclick="adminRevisarFichas()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();adminRevisarFichas();}" aria-label="Abrir fichas pendientes de revisión"><div><small>Fichas a revisar</small><h2>${esc(stats.libraryReview)}</h2><p>Abrir revisión</p></div></article>
-            <article class="summary-card"><div><small>Fichas validadas/publicadas</small><h2>${esc(stats.libraryValidated)}</h2></div></article>
-            <article class="summary-card"><div><small>Acuarios</small><h2>${esc(stats.aquariums)}</h2></div></article>
-            <article class="summary-card"><div><small>Inventario</small><h2>${esc(stats.inventory)}</h2></div></article>
-            <article class="summary-card"><div><small>Microfauna</small><h2>${esc(stats.microfauna)}</h2></div></article>
-            <article class="summary-card"><div><small>Reportes abiertos</small><h2>${esc(stats.reports)}</h2></div></article>
-            <article class="summary-card"><div><small>Consumos IA</small><h2>${esc(stats.aiUsage)}</h2></div></article>
+            ${adminMetricCard('Fichas a revisar', stats.libraryReview, 'adminRevisarFichas', 'Abrir revisión')}
+            ${adminMetricCard('Fichas validadas/publicadas', stats.libraryValidated, 'adminFichasValidadas', 'Abrir fichas validadas y publicadas')}
+            ${adminMetricCard('Acuarios', stats.aquariums, 'adminAcuarios', 'Abrir lista de acuarios')}
+            ${adminMetricCard('Inventario', stats.inventory, 'adminInventario', 'Abrir inventario')}
+            ${adminMetricCard('Microfauna', stats.microfauna, 'adminMicrofauna', 'Abrir cultivos de microfauna')}
+            ${adminMetricCard('Reportes abiertos', stats.reports, 'adminReports', 'Abrir reportes')}
+            ${adminMetricCard('Consumos IA', stats.aiUsage, 'adminAiUsage', 'Abrir consumo de IA')}
           </div>
         </section>
         <section class="panel">
@@ -120,8 +147,8 @@
         <section class="panel">
           <div class="panel-head"><h2>Herramientas</h2></div>
           <div class="quick-actions">
-            <button onclick="inventario()"><span>▤</span>Inventario</button>
-            <button onclick="microfauna()"><span>◌</span>Microfauna</button>
+            <button onclick="adminInventario()"><span>▤</span>Inventario</button>
+            <button onclick="adminMicrofauna()"><span>◌</span>Microfauna</button>
             <button onclick="tareas()"><span>♢</span>Avisos</button>
           </div>
           <p class="small">Este panel solo está disponible para propietario, administradores y usuarios de confianza autorizados.</p>
