@@ -32,65 +32,51 @@ const build = buildFromIndex();
 const versionBuild = buildFromVersion();
 const manifestBuild = buildFromManifest();
 if (build !== versionBuild || build !== manifestBuild) throw new Error(`Build desincronizado: index=${build}, app-version=${versionBuild}, manifest=${manifestBuild}`);
+
 const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
-const indirect = ['src/library/ficha/ficha-json.js'];
-const active = [...new Set(['index.html', ...direct, ...modules, ...indirect])].sort();
+const active = [...new Set(['index.html', ...direct, ...modules, 'src/library/ficha/ficha-json.js'])].sort();
 
-const ownership = `## Biblioteca / propietarios únicos
+const contractChain = `## Biblioteca / cadena única de contrato
 
-- \`src/admin/admin.js\`: abre Biblioteca desde Admin conservando \`adminReturn: true\`.
-- \`src/library/library-v3-core.js\`: listado, filtros, contexto de entrada y retorno central hacia Admin o Biblioteca.
-- \`src/library/library-v3-images.js\`: carga y persistencia administrativa de \`cover_url\` y \`photo_url\` por id de ficha.
-- \`src/library/library-v3-ficha.js\`: editor, guardado, auditoría, publicación y borrado.
-- \`src/library/ficha/ficha-actions.js\`: vista abierta, reauditoría y entrada única del botón Añadir.
-- \`src/library/inventory/library-inventory-import.js\`: carga oficial de acuarios, selección de destino y persistencia.
-- \`library-images.css\`: única autoridad visual; la portada abierta conserva su proporción completa y la foto interior mantiene su marco propio.
-- Ningún otro archivo puede redefinir \`window.verFicha\`, \`window.formFicha\` o \`LibraryV3Images.imageBox\`.
-- No se permiten archivos \`hotfix\`, \`patch\`, wrappers ni copias paralelas que redefinan estas rutas.`;
+- \`src/library/core/library-schema.js\`: define los 13 contratos, campos, etiquetas, apartados y metadatos base.
+- \`src/library/core/library-schema-rules.js\`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
+- \`src/library/library-v3-template.js\`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
+- \`src/library/ficha/ficha-chat-import.js\`: rechaza antes de insertar cualquier ficha que no apruebe \`LibrarySchema.audit\`.
+- \`src/library/library-v3-ficha.js\`: usa la misma auditoría al editar y guardar.
+- \`src/library/ficha/ficha-actions.js\`: vuelve a usar la misma auditoría al publicar o añadir.
+- \`src/library/inventory/library-inventory-import.js\`: vuelve a auditar antes de persistir la copia.
+- \`scripts/audit-library-contracts.mjs\`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
+- No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.`;
 
-const libraryImportOwnership = `## Biblioteca / importación a acuario e inventario
+const fieldRules = `## Biblioteca / reglas por clase de campo
 
-- \`src/library/ficha/ficha-actions.js\`: única entrada desde la ficha abierta; audita, muestra estado y llama al importador oficial.
-- El botón utiliza un id estable y no depende de \`CSS.escape\` ni de APIs opcionales del navegador.
-- \`src/library/inventory/library-inventory-import.js\`: única autoridad para resolver destino, presentar el formulario y persistir la copia en \`inventory_items\`.
-- La carga de acuarios se realiza exclusivamente mediante \`AquariumsCore.loadAquariums\`; no existe una consulta paralela dentro del importador.
-- Solo las fichas aprobadas por la auditoría vigente pueden iniciar o completar la importación; el estado publicado o validado no sustituye la auditoría.
-- Flujo: ficha abierta → auditoría → botón Añadir → carga oficial de acuarios → selección de destino → formulario → inserción en Supabase → inventario del destino.
-- No se permiten manejadores paralelos, botones sin estado visible ni archivos \`hotfix\` o \`patch\` para este flujo.`;
+- Valores cerrados: solo aceptan una opción exacta; no se les aplica longitud de texto descriptivo.
+- Campos numéricos: exigen número o rango concreto.
+- Nombre científico: exige binomio concreto válido.
+- Identificadores, marcas, modelos, unidades y códigos: usan su longitud mínima específica.
+- Campos descriptivos: usan la longitud mínima indicada por el contrato.
+- \`reef_safe\`: solo \`Sí\`, \`Sí con precaución\` o \`No\`; la explicación pertenece a \`reef_safe_notes\`.
+- \`summary\`: mínimo 20 caracteres.
+- \`sources\`: mínimo dos fuentes reales con URL completa.`;
 
-const cardContract = `## Biblioteca / contrato completo de fichas
+const ownership = `## Propietarios únicos
 
-- \`src/library/core/library-schema.js\`: fuente única del esqueleto completo por \`entry_type\` mediante \`CONTRACTS\`.
-- \`src/library/core/library-schema-rules.js\`: aplica la auditoría oficial sobre el contrato.
-- \`src/library/ficha/ficha-chat-import.js\`: antes de insertar exige todos los campos del contrato, dos fuentes reales con URL y auditoría aprobada.
-- Una ficha con campos omitidos, texto genérico o errores de validación se rechaza antes de entrar en Biblioteca.
-- La misma auditoría se reutiliza al abrir, publicar y añadir una ficha al acuario; no se admiten reglas divergentes por pantalla.`;
-
-const parametersOwnership = `## Parámetros / selección del test utilizado
-
-- \`src/library/core/library-schema.js\`: las fichas \`test\` identifican fabricante, marca, modelo, parámetro, método y campo interno.
-- \`src/parameters/parameters-core.js\`: única autoridad para cargar el catálogo de fichas Test, normalizar el parámetro, filtrar compatibilidad y construir las opciones.
-- \`src/parameters/measurements-advanced.js\`: exige y guarda un test o método independiente para cada parámetro del lote semanal, mensual o ICP.
-- \`src/parameters/parameters-manual.js\`: reutiliza el mismo catálogo para mediciones puntuales.
-- Las opciones proceden de \`library_entries\`; no existen listas paralelas de Hanna, JBL, Salifert ni otras marcas dentro de los formularios.
-- El valor guardado en \`aquarium_measurements.method\` identifica la marca, el modelo y la ficha seleccionada o el método manual indicado por el usuario.`;
-
-const tasksOwnership = `## Tareas / arquitectura y repetición
-
-- \`src/tasks/tasks-core.js\`: única autoridad para opciones, validación y cálculo de repetición; contiene presets, intervalo personalizado de 1 a 365 días y recomendación contextual por IA.
-- \`src/tasks/tasks-form.js\`: formulario de creación; consume los controles oficiales del núcleo y no duplica reglas de frecuencia.
-- \`src/tasks/tasks.js\`: persistencia en Supabase, edición, finalización y creación de la siguiente ocurrencia.
-- Metadatos oficiales: \`repeat_days\`, \`repeat_mode\`, \`repeat_reason\` y \`route\`, almacenados mediante \`taskNotesPayload\`.
-- Flujo: título y acuario → selección manual o recomendación IA → validación → guardado → al marcar Hecho se crea la siguiente tarea.
-- La IA propone y justifica; el usuario siempre puede sustituir la propuesta por una frecuencia personalizada.
-- No se permiten listas de repetición paralelas, reglas duplicadas ni archivos \`hotfix\` o \`patch\` para este flujo.`;
+- \`src/library/core/library-schema.js\`: contratos y metadatos base.
+- \`src/library/core/library-schema-rules.js\`: regla efectiva y auditoría única.
+- \`src/library/library-v3-template.js\`: instrucciones y esqueleto JSON para el Chat.
+- \`src/library/ficha/ficha-chat-import.js\`: entrada de fichas desde Chat.
+- \`src/library/library-v3-ficha.js\`: edición y guardado.
+- \`src/library/ficha/ficha-actions.js\`: vista, publicación y entrada para añadir.
+- \`src/library/inventory/library-inventory-import.js\`: destino y persistencia en inventario.
+- \`src/parameters/parameters-core.js\`: catálogo de fichas Test y compatibilidad por parámetro.
+- No se permiten hotfix, patch, wrappers, validadores paralelos ni contratos duplicados.`;
 
 const updateRules = `## Regla de actualización
 
-- Ejecutar \`npm run docs:refresh\` después de modificar cargas, módulos, responsabilidades o build.
+- Ejecutar \`npm run docs:refresh\` después de modificar cargas, contratos, responsabilidades o build.
 - Ejecutar \`npm run check\` antes de publicar.
-- Ejecutar \`npm run mobile:prepare\` cuando el cambio afecte a archivos usados por la app móvil.
+- Ejecutar \`npm run mobile:prepare\` cuando cambien archivos activos usados por la app móvil.
 - Comprobar después \`ARBOL_MAESTRO.md\`, \`MAPA_ARCHIVOS.md\` y \`ARCHIVOS_ACTIVOS.txt\`.
 - \`www/\`, \`android/\`, \`ios/\` y \`node_modules/\` no se editan manualmente.`;
 
@@ -112,15 +98,11 @@ ${direct.map(file => `- \`${file}\``).join('\n')}
 
 La lista oficial se obtiene exclusivamente de \`src/core/module-loader.js\`.
 
+${contractChain}
+
+${fieldRules}
+
 ${ownership}
-
-${libraryImportOwnership}
-
-${cardContract}
-
-${parametersOwnership}
-
-${tasksOwnership}
 
 ${updateRules}`;
 
@@ -132,60 +114,24 @@ Fuente de verdad: GitHub \`main\`.
 
 Build actual: \`${build}\`.
 
-## Entrada web
+## Flujo maestro de una ficha
 
-${direct.map(file => `- \`${file}\``).join('\n')}
+\`library-schema.js\`
+→ define el contrato y metadatos del tipo
+→ \`library-schema-rules.js\` crea la regla efectiva única
+→ \`library-v3-template.js\` entrega esa misma regla al Chat y fija la ruta JSON
+→ \`ficha-chat-import.js\` audita antes de insertar
+→ \`library-v3-ficha.js\` audita al guardar
+→ \`ficha-actions.js\` audita al publicar o añadir
+→ \`library-inventory-import.js\` audita antes de persistir la copia
 
-## Módulos cargados bajo demanda
+Una ficha no puede avanzar por estado, validación de IA ni publicación si falla \`LibrarySchema.audit\`.
 
-${modules.map(file => `- \`${file}\``).join('\n')}
+${contractChain}
 
-## Biblioteca / flujo maestro
-
-\`src/library/core/library-schema.js\`
-→ define todos los campos del tipo de ficha
-→ \`src/library/ficha/ficha-chat-import.js\` comprueba cobertura completa y fuentes
-→ \`src/library/core/library-schema-rules.js\` ejecuta la auditoría final
-→ solo después se inserta en Biblioteca
-→ \`src/library/ficha/ficha-actions.js\` vuelve a auditar antes de publicar o añadir al acuario
-
-## Biblioteca / añadir a acuario
-
-\`src/library/ficha/ficha-actions.js\`
-→ valida que la ficha supere la auditoría y muestra estado visible
-→ identifica el botón mediante un id estable
-→ \`src/library/inventory/library-inventory-import.js\` resuelve el ámbito
-→ reutiliza \`AquariumsCore.loadAquariums\`
-→ presenta el formulario de destino
-→ inserta la copia en \`inventory_items\`
-→ abre el inventario del acuario seleccionado
-
-## Parámetros / flujo de test
-
-\`src/library/core/library-schema.js\`
-→ define la identidad y compatibilidad de cada ficha Test
-→ \`src/parameters/parameters-core.js\` carga y filtra el catálogo por parámetro
-→ \`src/parameters/measurements-advanced.js\` presenta una selección independiente en cada medición
-→ \`src/parameters/parameters-manual.js\` reutiliza el mismo catálogo
-→ cada fila guarda su método exacto en \`aquarium_measurements.method\`
-
-## Tareas / flujo maestro
-
-\`src/tasks/tasks-form.js\`
-→ recoge título, fecha, notas y modo de repetición
-→ \`src/tasks/tasks-core.js\` calcula o valida la frecuencia
-→ \`src/tasks/tasks.js\` guarda los metadatos en Supabase
-→ al completar la tarea crea la siguiente ocurrencia con el intervalo oficial
+${fieldRules}
 
 ${ownership}
-
-${libraryImportOwnership}
-
-${cardContract}
-
-${parametersOwnership}
-
-${tasksOwnership}
 
 ${updateRules}`;
 
@@ -193,9 +139,7 @@ const activeText = `ACUARIONEXO · MODULOS OFICIALES · 23/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
-- URL web: https://121212castro.github.io/acuarionexo/
 - Supabase es la fuente de datos, autenticación y Storage.
-- Local no es entorno vivo.
 
 BUILD ACTUAL
 - index.html: ${build}.
@@ -205,30 +149,20 @@ BUILD ACTUAL
 ARCHIVOS ACTIVOS
 ${active.map(file => `- ${file}`).join('\n')}
 
-BIBLIOTECA · CONTRATO Y AUDITORIA
-- src/library/core/library-schema.js: esqueleto completo por tipo.
-- src/library/core/library-schema-rules.js: auditoría oficial.
-- src/library/ficha/ficha-chat-import.js: cobertura completa, fuentes y validación antes de insertar.
-- src/library/ficha/ficha-actions.js: reauditoría y entrada única del botón Añadir.
-- src/library/inventory/library-inventory-import.js: carga oficial de acuarios, formulario y persistencia de la copia.
+BIBLIOTECA · CADENA ÚNICA
+- library-schema.js: contratos y metadatos base.
+- library-schema-rules.js: regla efectiva y auditoría única.
+- library-v3-template.js: misma regla para el Chat y rutas JSON.
+- ficha-chat-import.js: rechazo previo a la inserción.
+- library-v3-ficha.js: auditoría al guardar.
+- ficha-actions.js: auditoría al publicar o añadir.
+- library-inventory-import.js: auditoría antes de persistir.
+- audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
 
-BIBLIOTECA · IMPORTACION AL ACUARIO
-- El botón utiliza un id estable y no depende de CSS.escape.
-- AquariumsCore.loadAquariums es la única carga de acuarios del importador.
-- LibrarySchema.audit debe aprobar la ficha antes de abrir y antes de guardar.
-- inventory_items es el destino persistente de la copia.
-
-PARAMETROS · CATALOGO DE TESTS
-- src/parameters/parameters-core.js: catálogo y compatibilidad por parámetro.
-- src/parameters/measurements-advanced.js: selección independiente por fila.
-- src/parameters/parameters-manual.js: selección en medición puntual.
-- Las opciones proceden de las fichas Test de Biblioteca.
-
-TAREAS · PROPIETARIOS UNICOS
-- src/tasks/tasks-core.js: reglas, validación y recomendación de repetición.
-- src/tasks/tasks-form.js: formulario oficial de creación.
-- src/tasks/tasks.js: persistencia, edición, finalización y siguiente ocurrencia.
-- Metadatos: repeat_days, repeat_mode, repeat_reason y route.
+REGLAS
+- Valores cerrados, números, identificadores y textos descriptivos no comparten una longitud genérica.
+- reef_safe usa un valor exacto y reef_safe_notes contiene la explicación.
+- No se permiten validadores paralelos, hotfix ni patch.
 
 GENERADO, NO EDITAR A MANO
 - www/
