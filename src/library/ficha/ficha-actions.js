@@ -122,7 +122,7 @@
     const isPublished = String(x.status || '').toLowerCase() === 'published';
     const canAdd = fichaCanBeAdded(x, audit);
     const addButton = canAdd
-      ? `<button id="libraryAddButton_${id}" type="button" class="primary" onclick="ANX.LibraryFichaActions.addToAquarium('${id}');return false">${label}</button>`
+      ? `<button id="libraryAddButton_${id}" type="button" class="primary" data-library-add-id="${id}">${label}</button>`
       : `<button type="button" disabled title="Corrige los errores de auditoría antes de añadir esta ficha">${label}</button>`;
     const editButton = isAdmin ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
     const publishButton = isAdmin && !isPublished
@@ -132,7 +132,15 @@
     return `${addButton}${editButton}${publishButton}${deleteButton}`;
   }
 
-  window.anadirFichaAlAcuario = addToAquarium;
+  function handleLibraryAction(event) {
+    const button = event.target.closest('[data-library-add-id]');
+    if (!button) return;
+    event.preventDefault();
+    event.stopPropagation();
+    addToAquarium(button.dataset.libraryAddId);
+  }
+
+  document.addEventListener('click', handleLibraryAction);
   window.publicarFicha = validateAndPublish;
 
   window.verFicha = function (id) {
