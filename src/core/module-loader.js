@@ -105,31 +105,63 @@
     return src.replace(/[?#].*$/, '');
   }
 
-  function scriptSrc(src) {
+  function scriptSrc(src, attempt) {
     if (/^https?:\/\//i.test(src)) return src;
-    return src + '?v=' + version;
+    return src + '?v=' + version + '&attempt=' + attempt + '&t=' + Date.now();
   }
 
-  function loadScript(src) {
+  function wait(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  function removeFailedScripts(key) {
+    document.querySelectorAll('script[data-src-key="' + key + '"]').forEach(function (script) {
+      if (script.dataset.loaded !== 'true') script.remove();
+    });
+  }
+
+  function loadScriptAttempt(src, attempt) {
     const key = scriptKey(src);
-    if (loadedScripts.has(key) || document.querySelector('script[data-src-key="' + key + '"]')) {
-      loadedScripts.add(key);
-      return Promise.resolve();
-    }
     return new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = scriptSrc(src);
+      script.src = scriptSrc(src, attempt);
       script.async = false;
       script.dataset.srcKey = key;
+      script.dataset.loaded = 'false';
       script.onload = function () {
+        script.dataset.loaded = 'true';
         loadedScripts.add(key);
         resolve();
       };
       script.onerror = function () {
+        script.remove();
         reject(new Error('No se pudo cargar ' + src));
       };
       document.body.appendChild(script);
     });
+  }
+
+  async function loadScript(src) {
+    const key = scriptKey(src);
+    const loadedTag = document.querySelector('script[data-src-key="' + key + '"][data-loaded="true"]');
+    if (loadedScripts.has(key) || loadedTag) {
+      loadedScripts.add(key);
+      return true;
+    }
+
+    removeFailedScripts(key);
+    let lastError = null;
+    for (let attempt = 1; attempt <= 3; attempt += 1) {
+      try {
+        await loadScriptAttempt(src, attempt);
+        return true;
+      } catch (error) {
+        lastError = error;
+        removeFailedScripts(key);
+        if (attempt < 3) await wait(attempt * 700);
+      }
+    }
+    throw lastError || new Error('No se pudo cargar ' + src);
   }
 
   async function loadModuleGroup(name) {
