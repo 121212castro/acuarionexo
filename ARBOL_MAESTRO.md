@@ -4,7 +4,16 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-add-direct-action-20260723-1125`.
+Build actual: `module-loader-recovery-20260723-1230`.
+
+## Carga de módulos
+
+`src/core/module-loader.js`
+→ carga cada grupo en el orden oficial
+→ solo considera cargado un script cuyo `onload` haya terminado correctamente
+→ elimina etiquetas fallidas antes de reintentar
+→ realiza hasta tres intentos con URL nueva
+→ un fallo temporal de GitHub Pages no queda marcado como módulo cargado
 
 ## Biblioteca / flujo maestro de fichas
 
@@ -25,7 +34,7 @@ Build actual: `library-add-direct-action-20260723-1125`.
 
 `src/library/ficha/ficha-actions.js`
 → habilita `Añadir a mi acuario` únicamente con `audit.approved === true`
-→ el botón llama directamente a `ANX.LibraryFichaActions.addToAquarium`
+→ el botón usa un listener delegado único dentro del mismo módulo
 → identifica el botón mediante su id estable, sin depender de `CSS.escape` ni APIs opcionales del navegador
 → `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`
 → presenta el formulario de destino
@@ -48,6 +57,7 @@ No existen listas paralelas de marcas en los formularios. Hanna, JBL, Salifert y
 
 ## Propietarios únicos
 
+- `src/core/module-loader.js`: carga, reintento y estado real de módulos bajo demanda.
 - `src/library/core/library-schema.js`: esqueleto completo por tipo y contrato de ficha Test.
 - `src/library/core/library-schema-rules.js`: auditoría estricta oficial.
 - `src/library/library-v3-template.js`: plantilla para Chat y esqueleto JSON.
