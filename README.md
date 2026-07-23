@@ -21,7 +21,15 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `library-contract-link-20260723-1305`
+- `admin-global-access-20260723-2325`
+
+Administración:
+
+- `index.html` contiene el único botón persistente `adminBtn`.
+- `src/auth/auth-core.js` lo muestra únicamente cuando existe sesión y `state.isAdmin` es verdadero.
+- `src/admin/admin-core.js` determina el rol oficial mediante `admin_roles`.
+- `src/core/module-loader.js` carga `adminPanel` desde cualquier pantalla.
+- Los usuarios no administradores no ven el botón.
 
 Biblioteca:
 
@@ -29,7 +37,6 @@ Biblioteca:
 - `src/library/core/library-schema-rules.js` es la única auditoría efectiva.
 - `src/library/library-v3-template.js` entrega al Chat exactamente las mismas reglas y rutas JSON.
 - `scripts/audit-library-contracts.mjs` verifica cada tipo y cada campo contra contrato, plantilla y auditoría.
-- Una validación de IA, un estado publicado o una pantalla distinta no pueden sustituir `LibrarySchema.audit`.
 
 Supabase oficial:
 
@@ -43,14 +50,6 @@ Destino:
 - Supabase para datos y fotos.
 - Capacitor para app Android/iOS con `www/` generado.
 - Sin Vercel.
-
-Estructura oficial:
-
-- `app.js`: núcleo coordinador y helpers compartidos.
-- `src/`: módulos de negocio por dominio.
-- `index.html`: orden de carga explícito de la app publicada.
-- `capacitor.config.json`: configuración de app móvil.
-- `scripts/prepare-mobile-bundle.mjs`: genera `www/` para Capacitor.
 
 Validación oficial:
 
