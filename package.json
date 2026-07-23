@@ -12,7 +12,7 @@
     "mobile:check": "node scripts/validate-mobile-bundle.mjs",
     "mobile:assets:prepare": "node scripts/prepare-mobile-assets.mjs && bash scripts/ci/enable-ios-push-entitlement.sh",
     "mobile:assets:android": "npm run mobile:assets:prepare && npx --yes @capacitor/assets@3.0.5 generate --android --iconBackgroundColor '#02111f' --iconBackgroundColorDark '#02111f' --splashBackgroundColor '#02111f' --splashBackgroundColorDark '#02111f'",
-    "mobile:assets:ios": "npm run mobile:assets:prepare && npx --yes @capacitor/assets@3.0.5 generate --ios --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f' --splashBackgroundColorDark '#02111f'",
+    "mobile:assets:ios": "npm run mobile:assets:prepare && npx --yes @capacitor/assets@3.0.5 generate --ios --iconBackgroundColor '#02111f' --splashBackgroundColor '#02111f'",
     "mobile:sync": "npm run mobile:prepare && npm run mobile:check && npx cap sync && npm run mobile:assets:android && npm run mobile:assets:ios",
     "mobile:add:android": "npm run mobile:prepare && npm run mobile:check && npx cap add android && npm run mobile:assets:android",
     "mobile:add:ios": "npm run mobile:prepare && npm run mobile:check && npx cap add ios && npm run mobile:assets:ios && npx cap sync ios",
