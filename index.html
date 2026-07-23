@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
-    window.ACUARIONEXO_BUILD = 'library-contract-link-20260723-1305';
+    window.ACUARIONEXO_BUILD = 'admin-global-access-20260723-2325';
     window.ANX_BOOT_READY = (async function () {
       var declaredBuild = String(window.ACUARIONEXO_BUILD || 'dev');
       var activeBuild = declaredBuild;
@@ -46,7 +46,7 @@
 <body>
   <header class="topbar premium-topbar">
     <div class="brand-wrap"><div class="brand-logo">🐠</div><div><h1>Acuario<span>Nexo</span></h1><p id="version"></p></div></div>
-    <div class="top-actions"><button id="settingsBtn" class="ghost settings-button hidden" onclick="settings()" aria-label="Ajustes" title="Ajustes">⚙</button><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
+    <div class="top-actions"><button id="adminBtn" class="ghost hidden" onclick="adminPanel()" aria-label="Panel de administración" title="Panel de administración">Admin</button><button id="settingsBtn" class="ghost settings-button hidden" onclick="settings()" aria-label="Ajustes" title="Ajustes">⚙</button><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
   </header>
   <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Comprobando la última versión...</p></section></main>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
