@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 ## Build actual
 
-`parameter-test-catalog-20260723-0110`
+`library-aquarium-import-20260723-1045`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -15,8 +15,17 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/library/library-v3-template.js`: formulario para Chat y esqueleto JSON con rutas correctas.
 - `src/library/ficha/ficha-chat-import.js`: importación estructurada, saneamiento y rechazo previo.
 - `src/library/library-v3-ficha.js`: editor y guardado mediante la auditoría oficial.
-- `src/library/ficha/ficha-actions.js`: reauditoría, publicación y añadido.
-- `src/library/inventory/library-inventory-import.js`: selección de destino y persistencia.
+- `src/library/ficha/ficha-actions.js`: reauditoría, publicación y entrada única del botón Añadir.
+- `src/library/inventory/library-inventory-import.js`: selección de destino, carga oficial de acuarios y persistencia.
+
+## Importación a acuario e inventario
+
+- `src/library/ficha/ficha-actions.js` identifica el botón mediante un id estable y contiene toda la captura de errores dentro de la acción.
+- No depende de `CSS.escape` ni de otra API opcional del navegador para iniciar la importación.
+- `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`; no mantiene una segunda consulta o estructura de acuarios.
+- Solo una ficha que aprueba `LibrarySchema.audit` puede abrir el formulario o guardarse, aunque su estado sea publicado o validado.
+- Flujo: ficha abierta → auditoría → botón Añadir → carga oficial de acuarios → selección de destino → formulario → inserción en `inventory_items` → inventario del destino.
+- No existen manejadores paralelos, wrappers, `hotfix` ni archivos `patch` para esta acción.
 
 ## Parámetros / propietarios únicos
 
@@ -50,12 +59,6 @@ Ficha Test de Biblioteca → auditoría → catálogo central de Parámetros →
 - `scripts/audit-library-contracts.mjs` prueba automáticamente cada tipo, cada campo obligatorio y el resumen.
 - `npm run check` y `npm run mobile:prepare` ejecutan `npm run library:check` antes de publicar o preparar la app.
 <!-- LIBRARY_CONTRACT_AUDIT_END -->
-
-## Importación a acuario e inventario
-
-- Solo una ficha con `audit.approved === true` puede activar el botón de añadido.
-- El estado publicado o validado no sustituye la auditoría vigente.
-- No se permiten manejadores paralelos, reglas divergentes, `hotfix` ni `patch`.
 
 ## Regla de actualización
 
