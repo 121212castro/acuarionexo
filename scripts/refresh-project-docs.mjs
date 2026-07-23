@@ -37,6 +37,16 @@ const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
 const active = [...new Set(['index.html', ...direct, ...modules, 'src/library/ficha/ficha-json.js'])].sort();
 
+const adminNavigation = `## Administración / acceso global
+
+- \`index.html\`: contiene el único botón persistente \`adminBtn\` de la cabecera.
+- \`src/auth/auth-core.js\`: muestra el botón únicamente cuando existe sesión y \`state.isAdmin === true\`.
+- \`src/admin/admin-core.js\`: determina el rol administrativo oficial mediante \`admin_roles\`.
+- \`src/core/module-loader.js\`: \`adminPanel\` carga el módulo oficial \`src/admin/admin.js\`.
+- El botón está disponible desde cualquier pantalla y abre siempre el Panel de Administración.
+- Los usuarios sin rol administrativo no ven el botón.
+- No se permiten botones Admin duplicados dentro de pantallas concretas.`;
+
 const contractChain = `## Biblioteca / cadena única de contrato
 
 - \`src/library/core/library-schema.js\`: define los 13 contratos, campos, etiquetas, apartados y metadatos base.
@@ -62,6 +72,9 @@ const fieldRules = `## Biblioteca / reglas por clase de campo
 
 const ownership = `## Propietarios únicos
 
+- \`index.html\`: estructura de la cabecera y botón global Admin.
+- \`src/auth/auth-core.js\`: visibilidad de controles de sesión y del acceso Admin.
+- \`src/admin/admin-core.js\`: autorización y rol administrativo.
 - \`src/library/core/library-schema.js\`: contratos y metadatos base.
 - \`src/library/core/library-schema-rules.js\`: regla efectiva y auditoría única.
 - \`src/library/library-v3-template.js\`: instrucciones y esqueleto JSON para el Chat.
@@ -98,6 +111,8 @@ ${direct.map(file => `- \`${file}\``).join('\n')}
 
 La lista oficial se obtiene exclusivamente de \`src/core/module-loader.js\`.
 
+${adminNavigation}
+
 ${contractChain}
 
 ${fieldRules}
@@ -113,6 +128,17 @@ Documento autogenerado por \`scripts/refresh-project-docs.mjs\`.
 Fuente de verdad: GitHub \`main\`.
 
 Build actual: \`${build}\`.
+
+## Navegación administrativa global
+
+\`admin_roles\`
+→ \`src/admin/admin-core.js\` resuelve \`state.isAdmin\`
+→ \`src/auth/auth-core.js\` muestra u oculta \`adminBtn\`
+→ \`index.html\` mantiene el botón en la cabecera de todas las pantallas
+→ \`src/core/module-loader.js\` carga \`adminPanel\`
+→ \`src/admin/admin.js\` presenta el Panel de Administración
+
+${adminNavigation}
 
 ## Flujo maestro de una ficha
 
@@ -148,6 +174,13 @@ BUILD ACTUAL
 
 ARCHIVOS ACTIVOS
 ${active.map(file => `- ${file}`).join('\n')}
+
+ADMINISTRACION · ACCESO GLOBAL
+- index.html: botón único adminBtn en la cabecera.
+- src/auth/auth-core.js: visible solo con sesión administrativa.
+- src/admin/admin-core.js: autoridad del rol administrativo.
+- src/core/module-loader.js: carga de adminPanel.
+- No existen botones Admin duplicados por pantalla.
 
 BIBLIOTECA · CADENA ÚNICA
 - library-schema.js: contratos y metadatos base.
