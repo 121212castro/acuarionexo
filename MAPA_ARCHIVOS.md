@@ -4,9 +4,17 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 ## Build actual
 
-`library-add-direct-action-20260723-1125`
+`module-loader-recovery-20260723-1230`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
+
+## Carga de módulos / propietario único
+
+- `src/core/module-loader.js`: única autoridad para cargar grupos bajo demanda.
+- Un script solo se registra como cargado después de completar `onload`.
+- Las etiquetas fallidas se eliminan antes de reintentar.
+- Cada módulo admite hasta tres intentos con URL renovada.
+- Un fallo temporal de GitHub Pages no puede quedar guardado como carga correcta.
 
 ## Biblioteca / propietarios únicos
 
@@ -20,12 +28,12 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
 ## Importación a acuario e inventario
 
-- El botón invoca directamente `ANX.LibraryFichaActions.addToAquarium`; no depende de un alias global ni del orden de carga posterior.
+- El botón usa un listener delegado único dentro de `src/library/ficha/ficha-actions.js`.
 - `src/library/ficha/ficha-actions.js` identifica el botón mediante un id estable y contiene toda la captura de errores dentro de la acción.
-- No depende de `CSS.escape` ni de otra API opcional del navegador para iniciar la importación.
+- No depende de `CSS.escape`, alias globales ni APIs opcionales del navegador.
 - `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`; no mantiene una segunda consulta o estructura de acuarios.
 - Solo una ficha que aprueba `LibrarySchema.audit` puede abrir el formulario o guardarse, aunque su estado sea publicado o validado.
-- Flujo: ficha abierta → auditoría → acción directa del módulo → carga oficial de acuarios → selección de destino → formulario → inserción en `inventory_items` → inventario del destino.
+- Flujo: ficha abierta → auditoría → listener del módulo → carga oficial de acuarios → selección de destino → formulario → inserción en `inventory_items` → inventario del destino.
 - No existen manejadores paralelos, wrappers, `hotfix` ni archivos `patch` para esta acción.
 
 ## Parámetros / propietarios únicos
