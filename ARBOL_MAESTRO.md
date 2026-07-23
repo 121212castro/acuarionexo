@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `parameter-test-catalog-20260723-0110`.
+Build actual: `library-aquarium-import-20260723-1045`.
 
 ## Biblioteca / flujo maestro de fichas
 
@@ -25,9 +25,13 @@ Build actual: `parameter-test-catalog-20260723-0110`.
 
 `src/library/ficha/ficha-actions.js`
 → habilita `Añadir a mi acuario` únicamente con `audit.approved === true`
-→ `src/library/inventory/library-inventory-import.js` carga los acuarios
+→ identifica el botón mediante su id estable, sin depender de `CSS.escape` ni APIs opcionales del navegador
+→ `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`
 → presenta el formulario de destino
 → inserta la copia en `inventory_items`
+→ abre el inventario del acuario seleccionado
+
+El estado publicado o validado no sustituye la auditoría vigente.
 
 ## Parámetros / flujo oficial de tests
 
@@ -47,8 +51,8 @@ No existen listas paralelas de marcas en los formularios. Hanna, JBL, Salifert y
 - `src/library/core/library-schema-rules.js`: auditoría estricta oficial.
 - `src/library/library-v3-template.js`: plantilla para Chat y esqueleto JSON.
 - `src/library/ficha/ficha-chat-import.js`: entrada desde ficha generada por Chat.
-- `src/library/ficha/ficha-actions.js`: vista, reauditoría, publicación y mensajes de validación.
-- `src/library/inventory/library-inventory-import.js`: importación al acuario o inventario.
+- `src/library/ficha/ficha-actions.js`: vista, reauditoría, publicación y entrada única para añadir.
+- `src/library/inventory/library-inventory-import.js`: selección de destino, carga oficial de acuarios y persistencia.
 - `src/parameters/parameters-core.js`: catálogo y compatibilidad de tests por parámetro.
 - `src/parameters/measurements-advanced.js`: mediciones por lotes y test independiente por fila.
 - `src/parameters/parameters-manual.js`: medición puntual con el mismo catálogo.
