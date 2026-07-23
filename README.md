@@ -4,11 +4,11 @@ App oficial web: `https://121212castro.github.io/acuarionexo/`
 
 Fuente de verdad:
 
-- GitHub `main` para codigo publicado.
-- Supabase para datos, auth, storage y backend.
-- Capacitor para empaquetado movil iOS/Android con archivos internos.
+- GitHub `main` para código publicado.
+- Supabase para datos, autenticación, Storage y backend.
+- Capacitor para empaquetado móvil iOS/Android con archivos internos.
 
-Regla actual: local no es entorno vivo. Cualquier cambio valido debe subirse a GitHub o aplicarse en Supabase.
+Regla actual: local no es entorno vivo. Cualquier cambio válido debe subirse a GitHub o aplicarse en Supabase.
 
 Antes de editar, leer:
 
@@ -17,11 +17,19 @@ Antes de editar, leer:
 - `CHECKLIST_ANTES_DE_EDITAR.md`
 - `MAPA_ARCHIVOS.md`
 - `ARCHIVOS_ACTIVOS.txt`
-- `mobile/README.md` si afecta a app movil.
+- `mobile/README.md` si afecta a la app móvil.
 
 Build web actual:
 
-- `library-add-direct-action-20260723-1125`
+- `library-contract-link-20260723-1305`
+
+Biblioteca:
+
+- Los 13 tipos de ficha proceden de `src/library/core/library-schema.js`.
+- `src/library/core/library-schema-rules.js` es la única auditoría efectiva.
+- `src/library/library-v3-template.js` entrega al Chat exactamente las mismas reglas y rutas JSON.
+- `scripts/audit-library-contracts.mjs` verifica cada tipo y cada campo contra contrato, plantilla y auditoría.
+- Una validación de IA, un estado publicado o una pantalla distinta no pueden sustituir `LibrarySchema.audit`.
 
 Supabase oficial:
 
@@ -38,15 +46,15 @@ Destino:
 
 Estructura oficial:
 
-- `app.js`: nucleo coordinador y helpers compartidos.
-- `src/`: modulos de negocio por dominio.
-- `index.html`: orden de carga explicito de la app publicada.
-- `capacitor.config.json`: configuracion de app movil.
+- `app.js`: núcleo coordinador y helpers compartidos.
+- `src/`: módulos de negocio por dominio.
+- `index.html`: orden de carga explícito de la app publicada.
+- `capacitor.config.json`: configuración de app móvil.
 - `scripts/prepare-mobile-bundle.mjs`: genera `www/` para Capacitor.
 
-Validacion oficial:
+Validación oficial:
 
-- Ejecutar `npm run docs:refresh` después de cambiar cargas, responsabilidades o build.
+- Ejecutar `npm run docs:refresh` después de cambiar cargas, contratos, responsabilidades o build.
 - Ejecutar `npm run check` antes de subir cambios.
-- Ejecutar `npm run mobile:prepare` cuando cambien archivos activos usados por la app movil.
+- Ejecutar `npm run mobile:prepare` cuando cambien archivos activos usados por la app móvil.
 - Comprobar después `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt`.
