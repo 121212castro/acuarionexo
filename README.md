@@ -21,7 +21,7 @@ Antes de editar, leer:
 
 Build web actual:
 
-- `library-aquarium-import-20260723-1045`
+- `library-add-direct-action-20260723-1125`
 
 Supabase oficial:
 
