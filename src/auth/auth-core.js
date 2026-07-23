@@ -59,6 +59,7 @@
     const hasSession = !!state.user;
     setSessionButtonVisibility(byId('logoutBtn'), hasSession);
     setSessionButtonVisibility(byId('settingsBtn'), hasSession);
+    setSessionButtonVisibility(byId('adminBtn'), hasSession && !!state.isAdmin);
     const text = byId('connectionText');
     if (text) text.textContent = hasSession ? 'Conectado a Supabase' : 'Sin sesión';
   }
