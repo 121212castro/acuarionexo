@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: library-aquarium-import-20260723-1045.
-- app-version.json: library-aquarium-import-20260723-1045.
-- manifest.webmanifest: library-aquarium-import-20260723-1045.
+- index.html: library-add-direct-action-20260723-1125.
+- app-version.json: library-add-direct-action-20260723-1125.
+- manifest.webmanifest: library-add-direct-action-20260723-1125.
 
 BIBLIOTECA · CONTRATO Y AUDITORIA
 - src/library/core/library-schema.js: esqueleto completo por tipo, incluida la identidad de las fichas Test.
@@ -17,7 +17,8 @@ BIBLIOTECA · CONTRATO Y AUDITORIA
 - src/library/inventory/library-inventory-import.js: carga oficial de acuarios, selección de destino y persistencia.
 
 BIBLIOTECA · IMPORTACION AL ACUARIO
-- El botón se identifica mediante id estable y no depende de CSS.escape.
+- El botón llama directamente a ANX.LibraryFichaActions.addToAquarium.
+- No depende de alias globales, CSS.escape ni APIs opcionales del navegador.
 - AquariumsCore.loadAquariums es la única carga de acuarios utilizada por el importador.
 - LibrarySchema.audit debe aprobar la ficha antes de abrir y antes de guardar.
 - inventory_items es el destino persistente de la copia.
