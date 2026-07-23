@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs` y completado por `
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-aquarium-import-20260723-1045`.
+Build actual: `library-add-direct-action-20260723-1125`.
 
 ## Biblioteca / flujo maestro de fichas
 
@@ -25,6 +25,7 @@ Build actual: `library-aquarium-import-20260723-1045`.
 
 `src/library/ficha/ficha-actions.js`
 → habilita `Añadir a mi acuario` únicamente con `audit.approved === true`
+→ el botón llama directamente a `ANX.LibraryFichaActions.addToAquarium`
 → identifica el botón mediante su id estable, sin depender de `CSS.escape` ni APIs opcionales del navegador
 → `src/library/inventory/library-inventory-import.js` reutiliza `AquariumsCore.loadAquariums`
 → presenta el formulario de destino
