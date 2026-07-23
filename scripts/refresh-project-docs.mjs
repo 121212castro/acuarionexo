@@ -43,17 +43,20 @@ const ownership = `## Biblioteca / propietarios únicos
 - \`src/library/library-v3-core.js\`: listado, filtros, contexto de entrada y retorno central hacia Admin o Biblioteca.
 - \`src/library/library-v3-images.js\`: carga y persistencia administrativa de \`cover_url\` y \`photo_url\` por id de ficha.
 - \`src/library/library-v3-ficha.js\`: editor, guardado, auditoría, publicación y borrado.
-- \`src/library/ficha/ficha-actions.js\`: vista abierta; utiliza el retorno central del núcleo.
+- \`src/library/ficha/ficha-actions.js\`: vista abierta, reauditoría y entrada única del botón Añadir.
+- \`src/library/inventory/library-inventory-import.js\`: carga oficial de acuarios, selección de destino y persistencia.
 - \`library-images.css\`: única autoridad visual; la portada abierta conserva su proporción completa y la foto interior mantiene su marco propio.
 - Ningún otro archivo puede redefinir \`window.verFicha\`, \`window.formFicha\` o \`LibraryV3Images.imageBox\`.
 - No se permiten archivos \`hotfix\`, \`patch\`, wrappers ni copias paralelas que redefinan estas rutas.`;
 
 const libraryImportOwnership = `## Biblioteca / importación a acuario e inventario
 
-- \`src/library/ficha/ficha-actions.js\`: única entrada desde la ficha abierta; determina la etiqueta, muestra estado y llama al importador oficial.
-- \`src/library/inventory/library-inventory-import.js\`: única autoridad para resolver destino, cargar acuarios, presentar el formulario y persistir la copia en \`inventory_items\`.
-- Solo las fichas aprobadas por la auditoría vigente pueden iniciar la importación; el estado publicado o validado no sustituye una auditoría correcta.
-- Flujo: ficha abierta → auditoría → botón Añadir → resolución de ámbito → selección de acuario → formulario → inserción en Supabase → apertura del inventario de destino.
+- \`src/library/ficha/ficha-actions.js\`: única entrada desde la ficha abierta; audita, muestra estado y llama al importador oficial.
+- El botón utiliza un id estable y no depende de \`CSS.escape\` ni de APIs opcionales del navegador.
+- \`src/library/inventory/library-inventory-import.js\`: única autoridad para resolver destino, presentar el formulario y persistir la copia en \`inventory_items\`.
+- La carga de acuarios se realiza exclusivamente mediante \`AquariumsCore.loadAquariums\`; no existe una consulta paralela dentro del importador.
+- Solo las fichas aprobadas por la auditoría vigente pueden iniciar o completar la importación; el estado publicado o validado no sustituye la auditoría.
+- Flujo: ficha abierta → auditoría → botón Añadir → carga oficial de acuarios → selección de destino → formulario → inserción en Supabase → inventario del destino.
 - No se permiten manejadores paralelos, botones sin estado visible ni archivos \`hotfix\` o \`patch\` para este flujo.`;
 
 const cardContract = `## Biblioteca / contrato completo de fichas
@@ -150,7 +153,9 @@ ${modules.map(file => `- \`${file}\``).join('\n')}
 
 \`src/library/ficha/ficha-actions.js\`
 → valida que la ficha supere la auditoría y muestra estado visible
-→ \`src/library/inventory/library-inventory-import.js\` resuelve el ámbito y carga los acuarios
+→ identifica el botón mediante un id estable
+→ \`src/library/inventory/library-inventory-import.js\` resuelve el ámbito
+→ reutiliza \`AquariumsCore.loadAquariums\`
 → presenta el formulario de destino
 → inserta la copia en \`inventory_items\`
 → abre el inventario del acuario seleccionado
@@ -204,8 +209,14 @@ BIBLIOTECA · CONTRATO Y AUDITORIA
 - src/library/core/library-schema.js: esqueleto completo por tipo.
 - src/library/core/library-schema-rules.js: auditoría oficial.
 - src/library/ficha/ficha-chat-import.js: cobertura completa, fuentes y validación antes de insertar.
-- src/library/ficha/ficha-actions.js: reauditoría antes de publicar o añadir.
-- src/library/inventory/library-inventory-import.js: formulario y persistencia de la copia.
+- src/library/ficha/ficha-actions.js: reauditoría y entrada única del botón Añadir.
+- src/library/inventory/library-inventory-import.js: carga oficial de acuarios, formulario y persistencia de la copia.
+
+BIBLIOTECA · IMPORTACION AL ACUARIO
+- El botón utiliza un id estable y no depende de CSS.escape.
+- AquariumsCore.loadAquariums es la única carga de acuarios del importador.
+- LibrarySchema.audit debe aprobar la ficha antes de abrir y antes de guardar.
+- inventory_items es el destino persistente de la copia.
 
 PARAMETROS · CATALOGO DE TESTS
 - src/parameters/parameters-core.js: catálogo y compatibilidad por parámetro.
