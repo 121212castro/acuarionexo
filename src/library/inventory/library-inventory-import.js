@@ -30,7 +30,6 @@
 
   function fichaCompleta(row) {
     if (!row) return false;
-    if (['validated', 'published'].includes(row.status)) return true;
     try { return !!window.ANX.LibrarySchema.audit(row).approved; }
     catch (_) { return false; }
   }
@@ -48,14 +47,15 @@
 
   async function loadInventoryAquariums() {
     if (Array.isArray(state.aquariums) && state.aquariums.length) return state.aquariums;
-    const { data, error } = await supabase.from('aquariums').select('id,name,aquarium_type,status,created_at').eq('user_id', state.user.id).order('created_at', { ascending: false });
-    if (error) throw error;
-    state.aquariums = data || [];
-    return state.aquariums;
+    const officialLoader = window.ANX.loadAquariums || window.ANX.AquariumsCore?.loadAquariums;
+    if (typeof officialLoader !== 'function') throw new Error('El cargador oficial de acuarios no está disponible.');
+    const aquariums = await officialLoader();
+    if (!Array.isArray(aquariums) || !aquariums.length) throw new Error('No tienes ningún acuario creado para recibir esta ficha.');
+    return aquariums;
   }
 
   function aquariumOptionsHtml(selectedId) {
-    return (state.aquariums || []).map(aq => `<option value="${esc(aq.id)}" ${String(aq.id) === String(selectedId || '') ? 'selected' : ''}>${esc(aq.name || 'Acuario')} · ${esc(aq.aquarium_type || 'acuario')}</option>`).join('');
+    return (state.aquariums || []).map(aq => `<option value="${esc(aq.id)}" ${String(aq.id) === String(selectedId || '') ? 'selected' : ''}>${esc(aq.name || 'Acuario')} · ${esc(aq.aquarium_type || aq.type || 'acuario')}</option>`).join('');
   }
 
   function importMetaFromForm(row, scope) {
@@ -110,7 +110,7 @@
   function formImportarFichaInventario(id, scope = 'general') {
     const row = (state.libraryRows || []).find(r => String(r.id) === String(id));
     if (!row) return importarFichaInventario(scope);
-    if (!fichaCompleta(row)) return;
+    if (!fichaCompleta(row)) throw new Error('La ficha ya no supera la auditoría vigente.');
     const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
     const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
     const selectedAqId = aq?.id || (state.aquariums || [])[0]?.id || '';
@@ -137,7 +137,7 @@
     try {
       const row = (state.libraryRows || []).find(r => String(r.id) === String(id));
       if (!row) throw new Error('No encuentro la ficha cargada.');
-      if (!fichaCompleta(row)) throw new Error('Solo fichas completas.');
+      if (!fichaCompleta(row)) throw new Error('La ficha ya no supera la auditoría vigente.');
       const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
       const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
       const targetAquariumId = realScope === 'aquarium' ? (val('importAquariumId') || aq?.id || '') : '';
@@ -164,8 +164,8 @@
   async function pasarFichaAInventario(id) {
     await loadRows();
     const row = (state.libraryRows || []).find(r => String(r.id) === String(id));
-    if (!row) return window.biblioteca();
-    if (!fichaCompleta(row)) throw new Error('Solo se pueden añadir fichas completas.');
+    if (!row) throw new Error('No encuentro la ficha en Biblioteca.');
+    if (!fichaCompleta(row)) throw new Error('La ficha ya no supera la auditoría vigente.');
     const scope = inventoryScopeForType(row.entry_type);
     if (scope === 'aquarium') await loadInventoryAquariums();
     return formImportarFichaInventario(id, scope);
