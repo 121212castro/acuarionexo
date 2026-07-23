@@ -4,7 +4,18 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-contract-link-20260723-1305`.
+Build actual: `admin-global-access-20260723-2325`.
+
+## Navegación administrativa global
+
+`admin_roles`
+→ `src/admin/admin-core.js` resuelve `state.isAdmin`
+→ `src/auth/auth-core.js` muestra u oculta `adminBtn`
+→ `index.html` mantiene el botón en la cabecera de todas las pantallas
+→ `src/core/module-loader.js` carga `adminPanel`
+→ `src/admin/admin.js` presenta el Panel de Administración
+
+El acceso Admin no depende de la pantalla de origen ni de un estado temporal de retorno. Los usuarios sin rol administrativo no ven el botón.
 
 ## Flujo maestro de una ficha
 
@@ -17,42 +28,14 @@ Build actual: `library-contract-link-20260723-1305`.
 → `ficha-actions.js` audita al publicar o añadir
 → `library-inventory-import.js` audita antes de persistir la copia
 
-Una ficha no puede avanzar por estado, validación de IA ni publicación si falla `LibrarySchema.audit`.
-
-## Biblioteca / cadena única de contrato
-
-- `src/library/core/library-schema.js`: define los 13 contratos, campos, etiquetas, apartados y metadatos base.
-- `src/library/core/library-schema-rules.js`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
-- `src/library/library-v3-template.js`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
-- `src/library/ficha/ficha-chat-import.js`: rechaza antes de insertar cualquier ficha que no apruebe `LibrarySchema.audit`.
-- `src/library/library-v3-ficha.js`: usa la misma auditoría al editar y guardar.
-- `src/library/ficha/ficha-actions.js`: vuelve a usar la misma auditoría al publicar o añadir.
-- `src/library/inventory/library-inventory-import.js`: vuelve a auditar antes de persistir la copia.
-- `scripts/audit-library-contracts.mjs`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
-- No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.
-
-## Biblioteca / reglas por clase de campo
-
-- Valores cerrados: solo aceptan una opción exacta; no se les aplica longitud de texto descriptivo.
-- Campos numéricos: exigen número o rango concreto.
-- Nombre científico: exige binomio concreto válido.
-- Identificadores, marcas, modelos, unidades y códigos: usan su longitud mínima específica.
-- Campos descriptivos: usan la longitud mínima indicada por el contrato.
-- `reef_safe`: solo `Sí`, `Sí con precaución` o `No`; la explicación pertenece a `reef_safe_notes`.
-- `summary`: mínimo 20 caracteres.
-- `sources`: mínimo dos fuentes reales con URL completa.
-
 ## Propietarios únicos
 
-- `src/library/core/library-schema.js`: contratos y metadatos base.
-- `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
-- `src/library/library-v3-template.js`: instrucciones y esqueleto JSON para el Chat.
-- `src/library/ficha/ficha-chat-import.js`: entrada de fichas desde Chat.
-- `src/library/library-v3-ficha.js`: edición y guardado.
-- `src/library/ficha/ficha-actions.js`: vista, publicación y entrada para añadir.
-- `src/library/inventory/library-inventory-import.js`: destino y persistencia en inventario.
-- `src/parameters/parameters-core.js`: catálogo de fichas Test y compatibilidad por parámetro.
-- No se permiten hotfix, patch, wrappers, validadores paralelos ni contratos duplicados.
+- `index.html`: cabecera y botón global Admin.
+- `src/auth/auth-core.js`: visibilidad de controles de sesión y del acceso Admin.
+- `src/admin/admin-core.js`: autorización administrativa.
+- `src/core/module-loader.js`: carga del panel oficial.
+- `src/admin/admin.js`: contenido del Panel de Administración.
+- No se permiten accesos Admin duplicados por pantalla, hotfix, patch ni wrappers.
 
 ## Regla de actualización
 
