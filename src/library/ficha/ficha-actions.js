@@ -59,9 +59,10 @@
   }
 
   async function addToAquarium(id) {
+    let button = null;
     const box = byId('libraryActionStatus');
-    const button = document.querySelector(`[data-library-add-id="${CSS.escape(String(id))}"]`);
     try {
+      button = byId(`libraryAddButton_${id}`);
       const x = row(id);
       if (!x) throw new Error('Ficha no encontrada.');
       const audit = Core.S.audit(x);
@@ -70,11 +71,10 @@
         throw new Error(errors ? `La ficha debe corregirse antes de añadirla: ${errors}` : 'La ficha debe superar la auditoría antes de añadirse.');
       }
       const importer = ANX.LibraryInventoryImport;
-      const openImport = importer?.pasarFichaAInventario || window.pasarFichaAInventario;
-      if (typeof openImport !== 'function') throw new Error('El importador de Biblioteca no está disponible.');
+      if (!importer || typeof importer.pasarFichaAInventario !== 'function') throw new Error('El importador de Biblioteca no está disponible.');
       if (button) { button.disabled = true; button.textContent = 'Preparando...'; }
       if (box) box.innerHTML = msg('Preparando destino...');
-      await openImport(id);
+      await importer.pasarFichaAInventario(id);
     } catch (error) {
       if (button) { button.disabled = false; button.textContent = actionLabel(row(id)?.entry_type); }
       if (box) box.innerHTML = msg(error.message || 'No se pudo abrir el formulario de destino.', 'error');
@@ -122,7 +122,7 @@
     const isPublished = String(x.status || '').toLowerCase() === 'published';
     const canAdd = fichaCanBeAdded(x, audit);
     const addButton = canAdd
-      ? `<button type="button" class="primary" data-library-add-id="${id}" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
+      ? `<button id="libraryAddButton_${id}" type="button" class="primary" onclick="anadirFichaAlAcuario('${id}')">${label}</button>`
       : `<button type="button" disabled title="Corrige los errores de auditoría antes de añadir esta ficha">${label}</button>`;
     const editButton = isAdmin ? `<button onclick="formFicha('${id}')">Editar</button>` : '';
     const publishButton = isAdmin && !isPublished
