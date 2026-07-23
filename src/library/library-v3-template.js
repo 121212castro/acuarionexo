@@ -10,12 +10,18 @@
 
   function fieldRuleText(field) {
     const rules = [`clave JSON: ${jsonPath(field)}`];
-    if (field.type === 'number') rules.push('debe incluir un valor numérico concreto');
-    else if (field.id === 'scientific_name') rules.push('debe contener exactamente un binomio científico válido');
-    else if (field.id === 'sources') rules.push('mínimo 2 fuentes reales con URL completa y dato justificado');
-    else rules.push(`mínimo ${field.minLength || 20} caracteres`);
-    if (field.allowed?.length) rules.push(`valores permitidos exactos: ${field.allowed.join(' | ')}`);
-    if (field.validator === 'scientificName') rules.push('especie concreta, no sp., spp., cf. ni aff.');
+    if (field.id === 'sources') {
+      rules.push('mínimo 2 fuentes reales con URL completa, name y used_for');
+    } else if (field.allowed?.length) {
+      rules.push(`usa exactamente uno de estos valores: ${field.allowed.join(' | ')}`);
+      rules.push('no desarrolles ni amplíes este valor dentro del mismo campo');
+    } else if (field.type === 'number') {
+      rules.push('debe incluir un valor numérico o rango concreto');
+    } else if (field.id === 'scientific_name' || field.validator === 'scientificName') {
+      rules.push('debe contener exactamente un binomio científico válido; no sp., spp., cf. ni aff.');
+    } else {
+      rules.push(`mínimo ${field.minLength || 1} caracteres`);
+    }
     if (field.id !== 'sources') rules.push('sin URLs dentro del texto');
     return rules.join('; ');
   }
@@ -25,11 +31,17 @@
     return field.label;
   }
 
+  function initialValue(field) {
+    if (field.allowed?.length) return field.allowed[0];
+    if (field.type === 'number') return 0;
+    return '';
+  }
+
   function jsonSkeleton(type, template, subject, scientificName) {
     const data = {};
     template.forEach(section => section.fields.forEach(field => {
       if (TOP_LEVEL.has(field.id)) return;
-      data[field.id] = field.type === 'number' ? 0 : '';
+      data[field.id] = initialValue(field);
     }));
     return JSON.stringify({
       entry_type: type,
@@ -54,7 +66,6 @@
     if (biologicalTypes.has(type) && !S.isConcreteScientificName(concreteScientificName)) throw new Error('Escribe un nombre científico binomial válido.');
 
     const template = S.templateFor(type);
-    const fields = template.flatMap(section => section.fields);
     const lines = [
       biologicalTypes.has(type)
         ? `Crea una ficha completa de ${typeName(type)} sobre «${concreteSubject}» (${concreteScientificName}) para AcuarioNexo.`
@@ -68,11 +79,14 @@
       '- Debes entregar TODOS los campos enumerados. Ninguno puede quedar vacío, null, undefined ni omitido.',
       '- No inventes datos. Contrasta cada dato importante con fuentes fiables.',
       '- No uses: bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.',
-      '- Los campos numéricos deben contener números reales; no sustituyas números por descripciones vagas.',
-      '- Reef safe debe usar exactamente: Sí, Sí con precaución o No.',
+      '- Respeta la regla individual escrita junto a cada campo; esa misma regla será utilizada por la auditoría.',
+      '- Los campos con valores permitidos deben contener solo uno de esos valores exactos. La explicación debe ir en su campo descriptivo correspondiente.',
+      '- Los campos numéricos deben contener números reales o rangos concretos.',
+      '- Los identificadores, marcas, modelos, unidades y códigos no necesitan texto de relleno.',
+      '- Los campos descriptivos deben alcanzar la longitud indicada y aportar información útil.',
       '- No incluyas URLs en campos de texto. Las URLs van únicamente en sources[].',
       '- sources[] debe contener al menos 2 fuentes reales, cada una con name, url y used_for.',
-      '- Antes de responder, comprueba que el JSON pasa el mismo contrato que la ficha visible.',
+      '- Antes de responder, comprueba que el JSON pasa exactamente estas mismas reglas.',
       '',
       'SALIDA OBLIGATORIA:',
       '1. Ficha visible para una persona, con apartados claros y Fuentes al final.',
@@ -81,10 +95,10 @@
       '{ JSON válido aquí }',
       'ACUARIONEXO_JSON_END',
       '',
-      'CAMPOS OBLIGATORIOS:'
+      'CAMPOS OBLIGATORIOS:',
+      '- Resumen (clave JSON: summary; mínimo 20 caracteres; mismo contenido en sections.summary).'
     ];
 
-    lines.push('- Resumen (clave JSON: summary; mínimo 20 caracteres; mismo contenido en sections.summary).');
     template.forEach(section => {
       lines.push('', section.label);
       section.fields.forEach(field => lines.push(`- ${fieldLabel(field, type)} (${fieldRuleText(field)})`));
@@ -94,9 +108,10 @@
       '',
       'COMPROBACIÓN FINAL:',
       `- Deben existir ${S.CONTRACTS[type].length} campos contractuales, además de summary.`,
-      '- No debe existir ninguna clave contractual dentro de data si su ruta indicada es superior.',
+      '- Cada campo debe estar en la ruta JSON indicada junto a su nombre.',
+      '- title, scientific_name, summary y sources son claves superiores; los demás campos pertenecen a data.',
       '- El texto visible y el JSON deben coincidir.',
-      '- No entregues la ficha si falta un campo o una fuente.',
+      '- No entregues la ficha si falta un campo, una fuente o un valor no respeta su regla individual.',
       '',
       'ESQUELETO JSON:',
       'ACUARIONEXO_JSON_START',
