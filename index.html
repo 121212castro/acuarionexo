@@ -10,7 +10,7 @@
   <link rel="apple-touch-icon" href="icon-512.png">
   <link rel="icon" href="icon-512.png">
   <script>
-    window.ACUARIONEXO_BUILD = 'library-publish-fallback-20260724-0845';
+    window.ACUARIONEXO_BUILD = 'ios-photo-picker-20260724-0915';
     window.ANX_BOOT_READY = (async function () {
       var declaredBuild = String(window.ACUARIONEXO_BUILD || 'dev');
       var activeBuild = declaredBuild;
@@ -52,6 +52,23 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
+  <script>
+    (function () {
+      function enablePhotoChoice(root) {
+        (root || document).querySelectorAll('input[type="file"][accept*="image"]').forEach(function (input) {
+          input.removeAttribute('capture');
+        });
+      }
+      enablePhotoChoice(document);
+      new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+          mutation.addedNodes.forEach(function (node) {
+            if (node.nodeType === 1) enablePhotoChoice(node);
+          });
+        });
+      }).observe(document.documentElement, { childList: true, subtree: true });
+    })();
+  </script>
   <script>
     (async function () {
       var app = document.getElementById('app');
