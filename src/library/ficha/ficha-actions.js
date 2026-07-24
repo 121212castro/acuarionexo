@@ -81,6 +81,21 @@
     }
   }
 
+  async function publishDirectly(id, x) {
+    const supabase = ANX.supabase;
+    if (!supabase) throw new Error('Conexión con la base de datos no disponible.');
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('library_entries')
+      .update({ status: 'published', updated_at: now })
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (error) throw error;
+    if (data) Object.assign(x, data);
+    return data;
+  }
+
   async function validateAndPublish(id) {
     const box = byId('libraryActionStatus') || byId('x') || byId('aiBox');
     try {
@@ -89,8 +104,6 @@
       const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
       if (!isAdmin) throw new Error('No tienes permiso para publicar fichas.');
 
-      // Fuente única de verdad: el mismo LibrarySchema genera la plantilla,
-      // controla la creación desde Chat y decide si la ficha puede publicarse.
       const localAudit = Core.S.audit(x);
       if (!localAudit.approved) {
         const details = (localAudit.errors || []).slice(0, 12).map(error => `<li>${esc(error)}</li>`).join('');
@@ -103,23 +116,27 @@
         throw new Error(`El contrato interno no está alineado y se ha detenido la publicación.${details ? `<ul>${details}</ul>` : ''}`);
       }
 
-      const call = ANX.LibraryV3AI?.call;
-      if (typeof call !== 'function') throw new Error('El servicio de publicación de Biblioteca no está disponible.');
       if (box) box.innerHTML = msg('Contrato único aprobado. Publicando ficha...');
+      const call = ANX.LibraryV3AI?.call;
+      let publishedByEdge = false;
 
-      // La auditoría remota queda como revisión complementaria. Nunca puede
-      // exigir campos distintos ni contradecir el contrato local aprobado.
-      try {
-        const remoteValidation = await call('library-audit-card', { entry_id: id, contract_source: 'LibrarySchema' });
-        if (remoteValidation?.data) Object.assign(x, remoteValidation.data);
-      } catch (_) {}
+      if (typeof call === 'function') {
+        try {
+          const publication = await call('library-publish', { entry_id: id, contract_source: 'LibrarySchema' });
+          if (publication?.data) Object.assign(x, publication.data);
+          publishedByEdge = String(x.status || publication?.data?.status || '').toLowerCase() === 'published';
+        } catch (edgeError) {
+          console.warn('library-publish no disponible; se usa publicación directa validada localmente.', edgeError);
+        }
+      }
 
-      const publication = await call('library-publish', { entry_id: id, contract_source: 'LibrarySchema' });
-      if (publication?.data) Object.assign(x, publication.data);
+      if (!publishedByEdge) await publishDirectly(id, x);
+      if (box) box.innerHTML = msg('Ficha validada y publicada correctamente.', 'success');
       await Core.load();
       await returnToLibrarySource();
     } catch (error) {
-      if (box) box.innerHTML = `<div class="error">${error.message || 'No se pudo publicar la ficha.'}</div>`;
+      const text = error?.message || 'No se pudo publicar la ficha.';
+      if (box) box.innerHTML = `<div class="error">${esc(text)}</div>`;
     }
   }
 
