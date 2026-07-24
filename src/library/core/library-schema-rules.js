@@ -8,7 +8,7 @@
   const BIOLOGICAL_TYPES = new Set(S.BIOLOGICAL_TYPES || []);
   const STATUSES = new Set(S.STATUSES || []);
   const MIN_SUMMARY_LENGTH = 20;
-  const FORBIDDEN_TEXT = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
+  const IMPRECISE_TEXT = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
   const INTERNAL_TRACE = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
   const URL_PATTERN = /https?:\/\//i;
 
@@ -106,7 +106,6 @@
       return `Debe tener al menos ${Number(field.minLength || 1)} caracteres.`;
     }
     if (field.id !== 'sources' && URL_PATTERN.test(text)) return 'Las URLs solo pueden aparecer en Fuentes.';
-    if (!field.allowed?.length && !IDENTIFIER_FIELDS.has(field.id) && FORBIDDEN_TEXT.test(text)) return 'Contiene una expresión imprecisa prohibida.';
     if (INTERNAL_TRACE.test(text)) return 'Contiene trazas internas de la aplicación.';
     return '';
   }
@@ -188,7 +187,13 @@
     if (!summary) errors.push('Resumen · Resumen: Campo obligatorio vacío.');
     else if (summary.length < MIN_SUMMARY_LENGTH) errors.push(`Resumen · Resumen: Debe tener al menos ${MIN_SUMMARY_LENGTH} caracteres.`);
     if (URL_PATTERN.test(summary)) errors.push('Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.');
-    if (FORBIDDEN_TEXT.test(summary)) errors.push('Resumen · Resumen: Contiene una expresión imprecisa prohibida.');
+
+    // Las expresiones dependientes del contexto no bloquean el guardado. Se
+    // muestran como aviso para revisión editorial, porque pueden ser correctas
+    // en reproducción, comportamiento, iluminación, flujo o compatibilidad.
+    const narrativeText = JSON.stringify({ summary, data: cleaned.data || {} });
+    const impreciseMatch = narrativeText.match(IMPRECISE_TEXT);
+    if (impreciseMatch) warnings.push(`Revisar expresión contextual: ${impreciseMatch[0]}.`);
 
     const integrity = contractIntegrityReport();
     if (!integrity.approved) errors.push(...integrity.errors.map(error => `Contrato interno · ${error}`));
