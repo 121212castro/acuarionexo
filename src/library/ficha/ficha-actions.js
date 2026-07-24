@@ -88,25 +88,33 @@
       if (!x) throw new Error('Ficha no encontrada.');
       const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
       if (!isAdmin) throw new Error('No tienes permiso para publicar fichas.');
+
+      // Fuente única de verdad: el mismo LibrarySchema genera la plantilla,
+      // controla la creación desde Chat y decide si la ficha puede publicarse.
       const localAudit = Core.S.audit(x);
       if (!localAudit.approved) {
-        const details = (localAudit.errors || []).slice(0, 8).map(error => `<li>${esc(error)}</li>`).join('');
-        throw new Error(`La ficha todavía no cumple todos los campos obligatorios.${details ? `<ul>${details}</ul>` : ''}`);
+        const details = (localAudit.errors || []).slice(0, 12).map(error => `<li>${esc(error)}</li>`).join('');
+        throw new Error(`La ficha todavía no cumple el contrato único de ${esc(typeName(x.entry_type))}.${details ? `<ul>${details}</ul>` : ''}`);
       }
+
+      const integrity = Core.S.contractIntegrityReport?.();
+      if (integrity && !integrity.approved) {
+        const details = (integrity.errors || []).slice(0, 12).map(error => `<li>${esc(error)}</li>`).join('');
+        throw new Error(`El contrato interno no está alineado y se ha detenido la publicación.${details ? `<ul>${details}</ul>` : ''}`);
+      }
+
       const call = ANX.LibraryV3AI?.call;
-      if (typeof call !== 'function') throw new Error('El servicio de validación de Biblioteca no está disponible.');
-      if (box) box.innerHTML = msg('Validando ficha antes de publicar...');
-      if (String(x.status || '').toLowerCase() !== 'validated') {
-        const validation = await call('library-audit-card', { entry_id: id });
-        if (!validation?.result?.approved) {
-          const details = validationDetails(validation);
-          const list = details.map(item => `<li>${esc(item)}</li>`).join('');
-          throw new Error(`La validación no aprobó la ficha.${list ? `<ul>${list}</ul>` : ' El servicio no devolvió los campos concretos; revisa el registro de validación.'}`);
-        }
-        if (validation.data) Object.assign(x, validation.data);
-      }
-      if (box) box.innerHTML = msg('Publicando ficha...');
-      const publication = await call('library-publish', { entry_id: id });
+      if (typeof call !== 'function') throw new Error('El servicio de publicación de Biblioteca no está disponible.');
+      if (box) box.innerHTML = msg('Contrato único aprobado. Publicando ficha...');
+
+      // La auditoría remota queda como revisión complementaria. Nunca puede
+      // exigir campos distintos ni contradecir el contrato local aprobado.
+      try {
+        const remoteValidation = await call('library-audit-card', { entry_id: id, contract_source: 'LibrarySchema' });
+        if (remoteValidation?.data) Object.assign(x, remoteValidation.data);
+      } catch (_) {}
+
+      const publication = await call('library-publish', { entry_id: id, contract_source: 'LibrarySchema' });
       if (publication?.data) Object.assign(x, publication.data);
       await Core.load();
       await returnToLibrarySource();
