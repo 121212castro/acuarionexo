@@ -12,6 +12,47 @@
   const INTERNAL_TRACE = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
   const URL_PATTERN = /https?:\/\//i;
 
+  // Los campos identificativos no son párrafos narrativos. Un nombre, marca,
+  // familia, modelo o código válido puede ser corto y no debe rellenarse con
+  // texto artificial para superar una longitud mínima genérica.
+  const IDENTIFIER_FIELDS = new Set([
+    'title', 'scientific_name', 'common_names', 'synonyms',
+    'manufacturer', 'brand', 'product_code', 'family', 'order_name',
+    'class_name', 'category', 'equipment_type', 'food_type', 'culture_type',
+    'coral_type', 'plant_type', 'test_type', 'parameter', 'method',
+    'reading_unit', 'data_type', 'internal_unit', 'primary_field',
+    'active_ingredient', 'reagent_code', 'standard_code', 'lot'
+  ]);
+  const IDENTIFIER_MIN_LENGTH = {
+    title: 2,
+    scientific_name: 3,
+    common_names: 2,
+    synonyms: 2,
+    manufacturer: 2,
+    brand: 2,
+    product_code: 1,
+    family: 2,
+    order_name: 2,
+    class_name: 2,
+    category: 2,
+    equipment_type: 2,
+    food_type: 2,
+    culture_type: 2,
+    coral_type: 2,
+    plant_type: 2,
+    test_type: 2,
+    parameter: 1,
+    method: 2,
+    reading_unit: 1,
+    data_type: 2,
+    internal_unit: 1,
+    primary_field: 2,
+    active_ingredient: 2,
+    reagent_code: 1,
+    standard_code: 1,
+    lot: 1
+  };
+
   function cleanEntry(entry) {
     const data = { ...(entry?.data || {}) };
     TOP_LEVEL_FIELDS.forEach(field => delete data[field]);
@@ -36,7 +77,11 @@
       fields: section.fields.map(field => ({
         ...field,
         type: field.allowed?.length ? 'enum' : field.type,
-        minLength: field.allowed?.length ? 1 : Number(field.minLength || 1)
+        minLength: field.allowed?.length
+          ? 1
+          : (IDENTIFIER_FIELDS.has(field.id)
+              ? Number(IDENTIFIER_MIN_LENGTH[field.id] || 1)
+              : Number(field.minLength || 1))
       }))
     }));
   }
@@ -61,7 +106,7 @@
       return `Debe tener al menos ${Number(field.minLength || 1)} caracteres.`;
     }
     if (field.id !== 'sources' && URL_PATTERN.test(text)) return 'Las URLs solo pueden aparecer en Fuentes.';
-    if (!field.allowed?.length && FORBIDDEN_TEXT.test(text)) return 'Contiene una expresión imprecisa prohibida.';
+    if (!field.allowed?.length && !IDENTIFIER_FIELDS.has(field.id) && FORBIDDEN_TEXT.test(text)) return 'Contiene una expresión imprecisa prohibida.';
     if (INTERNAL_TRACE.test(text)) return 'Contiene trazas internas de la aplicación.';
     return '';
   }
