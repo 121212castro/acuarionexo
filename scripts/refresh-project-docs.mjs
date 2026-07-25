@@ -53,8 +53,8 @@ const contractChain = `## Biblioteca / cadena única de contrato
 - \`src/library/core/library-schema-rules.js\`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
 - \`src/library/library-v3-template.js\`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
 - \`src/library/ficha/ficha-chat-import.js\`: rechaza antes de insertar cualquier ficha que no apruebe \`LibrarySchema.audit\`.
-- \`src/library/library-v3-ficha.js\`: usa la misma auditoría al editar y guardar.
-- \`src/library/ficha/ficha-actions.js\`: vuelve a usar la misma auditoría al publicar o añadir.
+- \`src/library/library-v3-ficha.js\`: usa la misma auditoría al editar y guardar; además gestiona el bloque opcional \`data.external_link\`.
+- \`src/library/ficha/ficha-actions.js\`: vuelve a usar la misma auditoría al publicar o añadir y muestra el botón externo cuando está activado.
 - \`src/library/inventory/library-inventory-import.js\`: vuelve a auditar antes de persistir la copia.
 - \`scripts/audit-library-contracts.mjs\`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
 - No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.`;
@@ -70,6 +70,17 @@ const fieldRules = `## Biblioteca / reglas por clase de campo
 - \`summary\`: mínimo 20 caracteres.
 - \`sources\`: mínimo dos fuentes reales con URL completa.`;
 
+const externalLinks = `## Biblioteca / enlace externo opcional
+
+- Todas las fichas pueden almacenar un único bloque común en \`data.external_link\`.
+- El bloque permanece oculto cuando \`enabled !== true\` o la URL no es válida.
+- \`src/library/library-v3-ficha.js\` es el propietario de edición, normalización, importación JSON y validación de la URL.
+- \`src/library/ficha/ficha-actions.js\` es el propietario de la representación pública del botón.
+- Campos disponibles: \`enabled\`, \`provider\`, \`url\`, \`button_label\`, \`link_type\`, \`disclaimer\`, \`sponsored\` y \`affiliate\`.
+- No se almacena precio en este bloque y su existencia no implica patrocinio, afiliación ni colaboración.
+- \`commercial_link\` solo se acepta como alias de lectura para migrar datos antiguos; al guardar se normaliza a \`external_link\`.
+- No se permiten botones externos paralelos, lógica duplicada por tipo de ficha ni archivos hotfix.`;
+
 const ownership = `## Propietarios únicos
 
 - \`index.html\`: estructura de la cabecera y botón global Admin.
@@ -79,8 +90,8 @@ const ownership = `## Propietarios únicos
 - \`src/library/core/library-schema-rules.js\`: regla efectiva y auditoría única.
 - \`src/library/library-v3-template.js\`: instrucciones y esqueleto JSON para el Chat.
 - \`src/library/ficha/ficha-chat-import.js\`: entrada de fichas desde Chat.
-- \`src/library/library-v3-ficha.js\`: edición y guardado.
-- \`src/library/ficha/ficha-actions.js\`: vista, publicación y entrada para añadir.
+- \`src/library/library-v3-ficha.js\`: edición, guardado y validación del enlace externo opcional.
+- \`src/library/ficha/ficha-actions.js\`: vista, publicación, entrada para añadir y representación del botón externo.
 - \`src/library/inventory/library-inventory-import.js\`: destino y persistencia en inventario.
 - \`src/parameters/parameters-core.js\`: catálogo de fichas Test y compatibilidad por parámetro.
 - No se permiten hotfix, patch, wrappers, validadores paralelos ni contratos duplicados.`;
@@ -117,6 +128,8 @@ ${contractChain}
 
 ${fieldRules}
 
+${externalLinks}
+
 ${ownership}
 
 ${updateRules}`;
@@ -147,8 +160,8 @@ ${adminNavigation}
 → \`library-schema-rules.js\` crea la regla efectiva única
 → \`library-v3-template.js\` entrega esa misma regla al Chat y fija la ruta JSON
 → \`ficha-chat-import.js\` audita antes de insertar
-→ \`library-v3-ficha.js\` audita al guardar
-→ \`ficha-actions.js\` audita al publicar o añadir
+→ \`library-v3-ficha.js\` audita al guardar y normaliza \`data.external_link\`
+→ \`ficha-actions.js\` audita al publicar o añadir y representa el botón externo
 → \`library-inventory-import.js\` audita antes de persistir la copia
 
 Una ficha no puede avanzar por estado, validación de IA ni publicación si falla \`LibrarySchema.audit\`.
@@ -156,6 +169,8 @@ Una ficha no puede avanzar por estado, validación de IA ni publicación si fall
 ${contractChain}
 
 ${fieldRules}
+
+${externalLinks}
 
 ${ownership}
 
@@ -187,10 +202,17 @@ BIBLIOTECA · CADENA ÚNICA
 - library-schema-rules.js: regla efectiva y auditoría única.
 - library-v3-template.js: misma regla para el Chat y rutas JSON.
 - ficha-chat-import.js: rechazo previo a la inserción.
-- library-v3-ficha.js: auditoría al guardar.
-- ficha-actions.js: auditoría al publicar o añadir.
+- library-v3-ficha.js: auditoría al guardar y gestión de data.external_link.
+- ficha-actions.js: auditoría al publicar o añadir y representación del botón externo.
 - library-inventory-import.js: auditoría antes de persistir.
 - audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
+
+ENLACE EXTERNO OPCIONAL
+- Propiedad única: data.external_link.
+- Oculto por defecto.
+- URL http/https obligatoria solo cuando enabled=true.
+- Sin precio fijo y sin implicar patrocinio o afiliación.
+- No se permiten implementaciones paralelas por tipo de ficha.
 
 REGLAS
 - Valores cerrados, números, identificadores y textos descriptivos no comparten una longitud genérica.
