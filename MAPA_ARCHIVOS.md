@@ -24,7 +24,23 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/library/core/library-schema-rules.js`: ejecuta la única auditoría efectiva.
 - `src/library/library-v3-template.js`: entrega al Chat las mismas reglas y rutas JSON.
 - `src/library/ficha/ficha-chat-import.js`: rechaza antes de insertar lo que no apruebe `LibrarySchema.audit`.
-- `src/library/library-v3-ficha.js`, `src/library/ficha/ficha-actions.js` y `src/library/inventory/library-inventory-import.js` reutilizan esa auditoría.
+- `src/library/library-v3-ficha.js`: edita, guarda, importa JSON y valida el bloque opcional `data.external_link`.
+- `src/library/ficha/ficha-actions.js`: publica, añade y representa el botón externo cuando está activado.
+- `src/library/inventory/library-inventory-import.js`: vuelve a auditar antes de persistir la copia.
+
+## Biblioteca / enlace externo opcional
+
+- Propiedad única: `data.external_link`.
+- Disponible en todas las fichas sin modificar los 13 contratos obligatorios.
+- Oculto por defecto: no se representa si `enabled !== true`.
+- Si se activa, exige una URL real con protocolo `http` o `https`.
+- Campos: `enabled`, `provider`, `url`, `button_label`, `link_type`, `disclaimer`, `sponsored` y `affiliate`.
+- El editor oficial está en `src/library/library-v3-ficha.js`.
+- La vista oficial está en `src/library/ficha/ficha-actions.js`.
+- El enlace se abre en otra pestaña con `noopener noreferrer`; añade `sponsored` cuando corresponda.
+- No contiene precio fijo y no implica por sí solo patrocinio, afiliación ni colaboración.
+- `commercial_link` se admite únicamente como alias heredado y se normaliza a `external_link` al guardar.
+- No existen implementaciones diferentes por categoría ni archivos patch o hotfix.
 
 ## Propietarios únicos
 
@@ -32,7 +48,9 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/auth/auth-core.js`: visibilidad de controles de sesión y acceso Admin.
 - `src/admin/admin-core.js`: autorización y rol administrativo.
 - `src/core/module-loader.js`: carga del panel.
-- No se permiten hotfix, patch, wrappers ni accesos Admin paralelos.
+- `src/library/library-v3-ficha.js`: edición, guardado, importación y validación del enlace externo.
+- `src/library/ficha/ficha-actions.js`: representación pública del botón externo.
+- No se permiten hotfix, patch, wrappers, botones externos paralelos ni accesos Admin duplicados.
 
 ## Regla de actualización
 
