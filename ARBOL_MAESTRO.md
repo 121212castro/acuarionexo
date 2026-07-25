@@ -15,8 +15,6 @@ Build actual: `admin-global-access-20260723-2325`.
 → `src/core/module-loader.js` carga `adminPanel`
 → `src/admin/admin.js` presenta el Panel de Administración
 
-El acceso Admin no depende de la pantalla de origen ni de un estado temporal de retorno. Los usuarios sin rol administrativo no ven el botón.
-
 ## Flujo maestro de una ficha
 
 `library-schema.js`
@@ -24,9 +22,22 @@ El acceso Admin no depende de la pantalla de origen ni de un estado temporal de 
 → `library-schema-rules.js` crea la regla efectiva única
 → `library-v3-template.js` entrega esa misma regla al Chat y fija la ruta JSON
 → `ficha-chat-import.js` audita antes de insertar
-→ `library-v3-ficha.js` audita al guardar
-→ `ficha-actions.js` audita al publicar o añadir
+→ `library-v3-ficha.js` audita al guardar y normaliza `data.external_link`
+→ `ficha-actions.js` audita al publicar o añadir y representa el botón externo
 → `library-inventory-import.js` audita antes de persistir la copia
+
+Una ficha no puede avanzar por estado, validación de IA ni publicación si falla `LibrarySchema.audit`.
+
+## Biblioteca / enlace externo opcional
+
+- Todas las fichas pueden almacenar un único bloque común en `data.external_link`.
+- El bloque permanece oculto cuando `enabled !== true` o la URL no es válida.
+- `src/library/library-v3-ficha.js` es el propietario de edición, normalización, importación JSON y validación de la URL.
+- `src/library/ficha/ficha-actions.js` es el propietario de la representación pública del botón.
+- Campos disponibles: `enabled`, `provider`, `url`, `button_label`, `link_type`, `disclaimer`, `sponsored` y `affiliate`.
+- No se almacena precio en este bloque y su existencia no implica patrocinio, afiliación ni colaboración.
+- `commercial_link` solo se acepta como alias de lectura para migrar datos antiguos; al guardar se normaliza a `external_link`.
+- No se permiten botones externos paralelos, lógica duplicada por tipo de ficha ni archivos hotfix.
 
 ## Propietarios únicos
 
@@ -34,7 +45,8 @@ El acceso Admin no depende de la pantalla de origen ni de un estado temporal de 
 - `src/auth/auth-core.js`: visibilidad de controles de sesión y del acceso Admin.
 - `src/admin/admin-core.js`: autorización administrativa.
 - `src/core/module-loader.js`: carga del panel oficial.
-- `src/admin/admin.js`: contenido del Panel de Administración.
+- `src/library/library-v3-ficha.js`: edición, guardado y validación del enlace externo opcional.
+- `src/library/ficha/ficha-actions.js`: vista, publicación, entrada para añadir y representación del botón externo.
 - No se permiten accesos Admin duplicados por pantalla, hotfix, patch ni wrappers.
 
 ## Regla de actualización
