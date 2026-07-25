@@ -20,6 +20,46 @@
     return `${cover}${photo}`;
   }
 
+  function normalizedExternalLink(x) {
+    const data = x?.data || {};
+    const raw = data.external_link || data.commercial_link || x?.external_link || x?.commercial_link || null;
+    if (!raw || typeof raw !== 'object' || raw.enabled !== true) return null;
+
+    const url = String(raw.url || raw.product_url || '').trim();
+    if (!url) return null;
+
+    try {
+      const parsed = new URL(url, window.location.origin);
+      if (!['http:', 'https:'].includes(parsed.protocol)) return null;
+      return {
+        url: parsed.href,
+        provider: String(raw.provider || raw.name || '').trim(),
+        label: String(raw.button_label || raw.button_text || 'Ver producto').trim() || 'Ver producto',
+        disclaimer: String(raw.disclaimer || '').trim(),
+        sponsored: raw.sponsored === true,
+        affiliate: raw.affiliate === true
+      };
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function fichaExternalLink(x) {
+    const link = normalizedExternalLink(x);
+    if (!link) return '';
+
+    const rel = ['noopener', 'noreferrer'];
+    if (link.sponsored || link.affiliate) rel.push('sponsored');
+    const provider = link.provider ? `<small class="library-external-provider">${esc(link.provider)}</small>` : '';
+    const disclaimer = link.disclaimer ? `<p class="library-external-disclaimer">${esc(link.disclaimer)}</p>` : '';
+
+    return `<section class="library-external-link" aria-label="Enlace externo">
+      ${provider}
+      <a class="primary library-external-button" href="${esc(link.url)}" target="_blank" rel="${rel.join(' ')}">${esc(link.label)}</a>
+      ${disclaimer}
+    </section>`;
+  }
+
   function valueHtml(value) {
     if (value == null || value === '') return '';
     if (Array.isArray(value)) return esc(value.join(', '));
@@ -180,6 +220,7 @@
       ${x.scientific_name ? `<p class="scientific">${esc(x.scientific_name)}</p>` : ''}
       ${fichaImages(x)}
       ${x.summary ? `<p class="library-detail-summary">${esc(x.summary)}</p>` : ''}
+      ${fichaExternalLink(x)}
       <div class="image-actions">${actionButtons(x, audit)}</div>
       <div id="libraryActionStatus"></div>
       <div class="library-detail-information">${fichaInformation(x)}</div>
@@ -188,5 +229,5 @@
     </section>`, 'biblioteca');
   };
 
-  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaInformation, fichaCanBeAdded, actionButtons, addToAquarium, validateAndPublish, validationDetails };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaExternalLink, normalizedExternalLink, fichaInformation, fichaCanBeAdded, actionButtons, addToAquarium, validateAndPublish, validationDetails };
 })();
