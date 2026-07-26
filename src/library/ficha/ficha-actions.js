@@ -24,10 +24,8 @@
     const data = x?.data || {};
     const raw = data.external_link || data.commercial_link || x?.external_link || x?.commercial_link || null;
     if (!raw || typeof raw !== 'object' || raw.enabled !== true) return null;
-
     const url = String(raw.url || raw.product_url || '').trim();
     if (!url) return null;
-
     try {
       const parsed = new URL(url, window.location.origin);
       if (!['http:', 'https:'].includes(parsed.protocol)) return null;
@@ -47,12 +45,10 @@
   function fichaExternalLink(x) {
     const link = normalizedExternalLink(x);
     if (!link) return '';
-
     const rel = ['noopener', 'noreferrer'];
     if (link.sponsored || link.affiliate) rel.push('sponsored');
     const provider = link.provider ? `<small class="library-external-provider">${esc(link.provider)}</small>` : '';
     const disclaimer = link.disclaimer ? `<p class="library-external-disclaimer">${esc(link.disclaimer)}</p>` : '';
-
     return `<section class="library-external-link" aria-label="Enlace externo">
       ${provider}
       <a class="primary library-external-button" href="${esc(link.url)}" target="_blank" rel="${rel.join(' ')}">${esc(link.label)}</a>
@@ -121,19 +117,39 @@
     }
   }
 
-  async function publishDirectly(id, x) {
+  function persistedAudit(localAudit) {
+    return {
+      approved: localAudit.approved === true,
+      errors: Array.isArray(localAudit.errors) ? localAudit.errors : [],
+      warnings: Array.isArray(localAudit.warnings) ? localAudit.warnings : [],
+      missing_fields: Array.isArray(localAudit.missing_fields) ? localAudit.missing_fields : [],
+      source_count: Number(localAudit.source_count || 0),
+      contract_integrity: localAudit.contract_integrity || null
+    };
+  }
+
+  async function publishDirectly(id, x, localAudit) {
     const supabase = ANX.supabase;
     if (!supabase) throw new Error('Conexión con la base de datos no disponible.');
     const now = new Date().toISOString();
-    const { data, error } = await supabase
+    const auditResult = { ...persistedAudit(localAudit), audited_at: now, engine: 'library-schema-single-source-v1', contract_source: 'LibrarySchema' };
+    const validated = await supabase
       .from('library_entries')
-      .update({ status: 'published', updated_at: now })
+      .update({ status: 'validated', validation_result: auditResult, validated_by: ANX.state.user.id, validated_at: now, updated_at: now })
       .eq('id', id)
       .select('*')
       .single();
-    if (error) throw error;
-    if (data) Object.assign(x, data);
-    return data;
+    if (validated.error) throw validated.error;
+    const published = await supabase
+      .from('library_entries')
+      .update({ status: 'published', published_at: now, updated_at: now })
+      .eq('id', id)
+      .eq('status', 'validated')
+      .select('*')
+      .single();
+    if (published.error) throw published.error;
+    if (published.data) Object.assign(x, published.data);
+    return published.data;
   }
 
   async function validateAndPublish(id) {
@@ -156,22 +172,36 @@
         throw new Error(`El contrato interno no está alineado y se ha detenido la publicación.${details ? `<ul>${details}</ul>` : ''}`);
       }
 
-      if (box) box.innerHTML = msg('Contrato único aprobado. Publicando ficha...');
+      if (box) box.innerHTML = msg('Auditoría aprobada. Guardando validación y publicando...');
       const call = ANX.LibraryV3AI?.call;
       let publishedByEdge = false;
+      let edgeError = null;
 
       if (typeof call === 'function') {
         try {
-          const publication = await call('library-publish', { entry_id: id, contract_source: 'LibrarySchema' });
+          const publication = await call('library-publish', {
+            entry_id: id,
+            contract_source: 'LibrarySchema',
+            audit_result: persistedAudit(localAudit)
+          });
           if (publication?.data) Object.assign(x, publication.data);
           publishedByEdge = String(x.status || publication?.data?.status || '').toLowerCase() === 'published';
-        } catch (edgeError) {
-          console.warn('library-publish no disponible; se usa publicación directa validada localmente.', edgeError);
+        } catch (error) {
+          edgeError = error;
+          console.warn('library-publish no disponible; se usa el mismo flujo de dos estados desde el cliente.', error);
         }
       }
 
-      if (!publishedByEdge) await publishDirectly(id, x);
-      if (box) box.innerHTML = msg('Ficha validada y publicada correctamente.', 'success');
+      if (!publishedByEdge) {
+        try {
+          await publishDirectly(id, x, localAudit);
+        } catch (directError) {
+          if (edgeError) directError.message = `${directError.message} · Servicio: ${edgeError.message || edgeError}`;
+          throw directError;
+        }
+      }
+
+      if (box) box.innerHTML = msg('Ficha auditada, validada y publicada correctamente.', 'success');
       await Core.load();
       await returnToLibrarySource();
     } catch (error) {
