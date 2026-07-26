@@ -4,8 +4,19 @@
   const { supabase, state, esc, byId, msg } = ANX;
   const { row } = ANX.LibraryV3Core;
 
+  const ASSET_KINDS = new Set(['cover', 'photo', 'map', 'taxonomy']);
+
   function assetKind(field) {
-    return field === 'cover_url' || field === 'cover' ? 'cover' : 'photo';
+    const value = String(field || '').toLowerCase();
+    if (value === 'cover_url' || value === 'cover') return 'cover';
+    if (value === 'photo_url' || value === 'photo') return 'photo';
+    if (value === 'map_url' || value === 'map' || value === 'distribution_map') return 'map';
+    if (value === 'taxonomy_url' || value === 'taxonomy' || value === 'taxonomy_tree') return 'taxonomy';
+    return 'photo';
+  }
+
+  function legacyFieldForKind(kind) {
+    return ({ cover: 'cover_url', photo: 'photo_url' })[kind] || null;
   }
 
   function filenameExt(file) {
@@ -40,6 +51,7 @@
 
   async function uploadResponsiveAsset(file, kind, entryType) {
     assertAdmin();
+    if (!ASSET_KINDS.has(kind)) throw new Error('Tipo de imagen no permitido.');
     if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido.');
     const timestamp = Date.now();
     const ext = filenameExt(file);
@@ -57,24 +69,24 @@
     const x = row(id);
     if (!x) throw new Error('Ficha no encontrada.');
     const kind = assetKind(field);
-    const legacyField = kind === 'cover' ? 'cover_url' : 'photo_url';
+    const legacyField = legacyFieldForKind(kind);
     const updatedAt = new Date().toISOString();
     const payload = {
       image_assets: { ...(x.image_assets || {}), [kind]: asset },
-      [legacyField]: asset.original,
       updated_at: updatedAt
     };
+    if (legacyField) payload[legacyField] = asset.original;
 
     const { data, error } = await supabase
       .from('library_entries')
       .update(payload)
       .eq('id', id)
-      .select('id')
+      .select('id, image_assets, cover_url, photo_url')
       .maybeSingle();
 
     if (error) throw error;
     if (!data?.id) throw new Error('La imagen se subió, pero la ficha no permitió guardar el cambio. Revisa la política RLS de administradores.');
-    Object.assign(x, payload);
+    Object.assign(x, payload, data);
     return asset;
   }
 
@@ -93,7 +105,7 @@
     try {
       if (box) box.innerHTML = msg('Guardando la imagen original sin recortes ni filtros...');
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg('Imagen guardada y vinculada a la ficha.', 'success');
+      if (box) box.innerHTML = msg('Imagen actualizada. El cambio se refleja en Biblioteca y en la ficha sin invalidar la auditoría.', 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -113,19 +125,34 @@
     return url ? `<img src="${esc(url)}" alt="${esc(alt)}">` : msg('Sin imagen', 'notice');
   }
 
+  function imageControl(x, kind, label, fallback, inputId, previewId) {
+    return `<div>
+      <label>${esc(label)}</label>
+      <div id="${esc(previewId)}" class="library-image-preview">${currentPreview(x, kind, fallback, label)}</div>
+      <input id="${esc(inputId)}" type="file" accept="image/*" onchange="previewLibraryImage('${esc(inputId)}','${esc(previewId)}')">
+      <button type="button" onclick="guardarImagenFicha('${esc(x.id)}','${esc(kind)}','${esc(inputId)}')">Cambiar ${esc(label.toLowerCase())}</button>
+    </div>`;
+  }
+
   function imageBox(x) {
+    const biological = ['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna'].includes(x.entry_type);
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">La aplicación conserva y muestra el archivo original. El encaje visual se realiza una sola vez mediante el diseño de la ficha.</p>
+      <p class="small">El administrador puede sustituir cualquier imagen en cualquier momento. Cambiar imágenes no modifica el contenido científico ni obliga a repetir la auditoría.</p>
       <div class="library-image-grid">
-        <div><label>Portada</label><div id="coverPreview" class="library-image-preview">${currentPreview(x, 'cover', x.cover_url, 'Portada')}</div><input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>
-        <div><label>Foto interior</label><div id="photoPreview" class="library-image-preview">${currentPreview(x, 'photo', x.photo_url, 'Foto interior')}</div><input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
-      </div><div id="imageStatus"></div>
+        ${imageControl(x, 'cover', 'Portada', x.cover_url, 'coverFile', 'coverPreview')}
+        ${imageControl(x, 'photo', 'Foto interior', x.photo_url, 'photoFile', 'photoPreview')}
+        ${biological ? imageControl(x, 'map', 'Mapa de distribución', null, 'mapFile', 'mapPreview') : ''}
+        ${biological ? imageControl(x, 'taxonomy', 'Árbol taxonómico', null, 'taxonomyFile', 'taxonomyPreview') : ''}
+      </div>
+      <div id="imageStatus"></div>
     </section>`;
   }
 
   ANX.LibraryV3Images = {
+    ASSET_KINDS,
     assetKind,
+    legacyFieldForKind,
     filenameExt,
     coverFolder,
     uploadResponsiveAsset,
