@@ -149,6 +149,69 @@
     </section>`;
   }
 
+  function referenceObject(x, key) {
+    const value = x?.sections?.[key] ?? x?.data?.[key] ?? null;
+    return value && typeof value === 'object' && !Array.isArray(value) ? value : null;
+  }
+
+  function referenceRows(value) {
+    if (!value) return '';
+    return Object.entries(value)
+      .filter(([, item]) => item != null && item !== '' && (!Array.isArray(item) || item.length))
+      .map(([key, item]) => {
+        const label = key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
+        const text = Array.isArray(item) ? item.join(', ') : (typeof item === 'object' ? Object.values(item).join(', ') : item);
+        return `<div class="library-detail-field"><dt>${esc(label)}</dt><dd>${esc(text)}</dd></div>`;
+      })
+      .join('');
+  }
+
+  function referenceVisualSection(x, kind, title, dataKey) {
+    const image = x?.image_assets?.[kind]?.original || '';
+    const rows = referenceRows(referenceObject(x, dataKey));
+    if (!image && !rows) return '';
+    return `<section class="library-detail-section library-reference-visual">
+      <h3>${esc(title)}</h3>
+      ${image ? `<div class="library-media-frame library-media-frame--${esc(kind)}"><img class="library-detail-photo" src="${esc(image)}" alt="${esc(title + ' de ' + (x.title || 'la ficha'))}" loading="lazy"></div>` : ''}
+      ${rows ? `<dl>${rows}</dl>` : ''}
+    </section>`;
+  }
+
+  function injectReferenceVisuals(id) {
+    const x = row(id);
+    const host = document.querySelector('.library-detail-information');
+    if (!x || !host || byId('libraryReferenceVisuals')) return;
+    const html = [
+      referenceVisualSection(x, 'map', 'Mapa de distribución', 'distribution_map'),
+      referenceVisualSection(x, 'taxonomy', 'Árbol taxonómico', 'taxonomy_tree')
+    ].filter(Boolean).join('');
+    if (!html) return;
+    const box = document.createElement('div');
+    box.id = 'libraryReferenceVisuals';
+    box.className = 'library-detail-information library-reference-visuals';
+    box.innerHTML = html;
+    host.insertAdjacentElement('afterend', box);
+  }
+
+  function installReferenceVisuals() {
+    const current = window.verFicha;
+    if (typeof current !== 'function' || current.__referenceVisualsWrapped) return false;
+    const wrapped = function (id) {
+      const result = current.apply(this, arguments);
+      requestAnimationFrame(() => injectReferenceVisuals(id));
+      return result;
+    };
+    wrapped.__referenceVisualsWrapped = true;
+    window.verFicha = wrapped;
+    return true;
+  }
+
+  let referenceInstallAttempts = 0;
+  const referenceInstallTimer = setInterval(function () {
+    referenceInstallAttempts += 1;
+    if (installReferenceVisuals() || referenceInstallAttempts >= 40) clearInterval(referenceInstallTimer);
+  }, 100);
+
   ANX.LibraryV3Images = {
     ASSET_KINDS,
     assetKind,
@@ -158,6 +221,8 @@
     uploadResponsiveAsset,
     saveResponsiveAsset,
     setImage,
-    imageBox
+    imageBox,
+    injectReferenceVisuals,
+    installReferenceVisuals
   };
 })();
