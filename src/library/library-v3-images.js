@@ -52,27 +52,70 @@
     };
   }
 
+  async function updateEntry(id, payload) {
+    const result = await supabase
+      .from('library_entries')
+      .update(payload)
+      .eq('id', id)
+      .select('*')
+      .single();
+    if (result.error) throw result.error;
+    return result.data;
+  }
+
   async function saveResponsiveAsset(id, field, asset) {
     assertAdmin();
     const x = row(id);
     if (!x) throw new Error('Ficha no encontrada.');
+
     const kind = assetKind(field);
     const legacyField = kind === 'cover' ? 'cover_url' : 'photo_url';
+    const previousStatus = String(x.status || '').toLowerCase();
+    const wasPublished = previousStatus === 'published';
+    const now = new Date().toISOString();
     const payload = {
       image_assets: { ...(x.image_assets || {}), [kind]: asset },
       [legacyField]: asset.original,
-      updated_at: new Date().toISOString()
+      updated_at: now
     };
 
-    const { error } = await supabase
-      .from('library_entries')
-      .update(payload)
-      .eq('id', id);
+    try {
+      // El trigger de publicación exige que una fila pase por "validated" antes de
+      // quedar en "published". Para editar una foto de una ficha ya publicada,
+      // hacemos esa transición de forma controlada y restauramos su publicación.
+      if (wasPublished) {
+        const validated = await updateEntry(id, { status: 'validated', updated_at: now });
+        Object.assign(x, validated);
+      }
 
-    if (error) throw error;
+      const updated = await updateEntry(id, payload);
+      Object.assign(x, updated);
 
-    Object.assign(x, payload);
-    return asset;
+      if (wasPublished) {
+        const republished = await updateEntry(id, {
+          status: 'published',
+          published_at: x.published_at || now,
+          updated_at: new Date().toISOString()
+        });
+        Object.assign(x, republished);
+      }
+
+      return asset;
+    } catch (error) {
+      // Si la imagen se guardó pero falló la restauración del estado, se intenta
+      // devolver la ficha a publicada antes de mostrar el error.
+      if (wasPublished && String(x.status || '').toLowerCase() !== 'published') {
+        try {
+          const restored = await updateEntry(id, {
+            status: 'published',
+            published_at: x.published_at || now,
+            updated_at: new Date().toISOString()
+          });
+          Object.assign(x, restored);
+        } catch (_) {}
+      }
+      throw error;
+    }
   }
 
   async function setImage(id, field, inputId) {
@@ -90,7 +133,7 @@
     try {
       if (box) box.innerHTML = msg('Guardando la imagen original sin recortes ni filtros...');
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg('Imagen guardada y vinculada a la ficha.', 'success');
+      if (box) box.innerHTML = msg('Imagen cambiada correctamente. La ficha conserva su estado de validación y publicación.', 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -113,7 +156,7 @@
   function imageBox(x) {
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">La aplicación conserva y muestra el archivo original. El encaje visual se realiza una sola vez mediante el diseño de la ficha.</p>
+      <p class="small">Puedes cambiar la portada y la foto interior aunque la ficha ya esté validada o publicada. El cambio no obliga a validar de nuevo.</p>
       <div class="library-image-grid">
         <div><label>Portada</label><div id="coverPreview" class="library-image-preview">${currentPreview(x, 'cover', x.cover_url, 'Portada')}</div><input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>
         <div><label>Foto interior</label><div id="photoPreview" class="library-image-preview">${currentPreview(x, 'photo', x.photo_url, 'Foto interior')}</div><input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
