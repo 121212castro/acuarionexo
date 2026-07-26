@@ -58,22 +58,19 @@
     if (!x) throw new Error('Ficha no encontrada.');
     const kind = assetKind(field);
     const legacyField = kind === 'cover' ? 'cover_url' : 'photo_url';
-    const updatedAt = new Date().toISOString();
     const payload = {
       image_assets: { ...(x.image_assets || {}), [kind]: asset },
       [legacyField]: asset.original,
-      updated_at: updatedAt
+      updated_at: new Date().toISOString()
     };
 
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('library_entries')
       .update(payload)
-      .eq('id', id)
-      .select('id')
-      .maybeSingle();
+      .eq('id', id);
 
     if (error) throw error;
-    if (!data?.id) throw new Error('La imagen se subió, pero la ficha no permitió guardar el cambio. Revisa la política RLS de administradores.');
+
     Object.assign(x, payload);
     return asset;
   }
