@@ -63,16 +63,35 @@
     };
   }
 
+  async function callImageUpdate(body) {
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw sessionError;
+    const token = sessionData?.session?.access_token;
+    if (!token) throw new Error('La sesión ha caducado. Vuelve a iniciar sesión.');
+    const baseUrl = String(supabase.supabaseUrl || '').replace(/\/$/, '');
+    const apiKey = supabase.supabaseKey;
+    if (!baseUrl || !apiKey) throw new Error('Configuración de Supabase incompleta.');
+    const response = await fetch(`${baseUrl}/functions/v1/library-image-update`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'apikey': apiKey,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+    let result = null;
+    try { result = await response.json(); } catch (_) {}
+    if (!response.ok) throw new Error(result?.error || `Error ${response.status} al guardar la imagen.`);
+    return result;
+  }
+
   async function saveResponsiveAsset(id, field, asset) {
     assertAdmin();
     const x = row(id);
     if (!x) throw new Error('Ficha no encontrada.');
     const kind = assetKind(field);
-    const response = await supabase.functions.invoke('library-image-update', {
-      body: { entry_id: id, kind, asset }
-    });
-    if (response.error) throw new Error(response.error.message || 'No se pudo guardar la imagen.');
-    const result = response.data;
+    const result = await callImageUpdate({ entry_id: id, kind, asset });
     if (!result?.ok || !result?.entry?.id) throw new Error(result?.error || 'No se pudo guardar la imagen.');
     Object.assign(x, result.entry);
     return result.asset || asset;
