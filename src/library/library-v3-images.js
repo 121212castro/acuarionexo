@@ -34,37 +34,48 @@
     if (!allowed) throw new Error('No tienes permiso para modificar imágenes de Biblioteca.');
   }
 
-  async function invokeImageUpdate(id, kind, entryType, file) {
+  async function uploadToAvailableBucket(path, file, contentType) {
+    const buckets = ['library-images','aquarium-photos','photos','animal-photos'];
+    let lastError = null;
+    for (const bucket of buckets) {
+      const upload = await supabase.storage.from(bucket).upload(path, file, {
+        upsert: true,
+        contentType: contentType || file.type || 'application/octet-stream',
+        cacheControl: '31536000'
+      });
+      if (!upload.error) return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+      lastError = upload.error;
+    }
+    throw new Error(lastError?.message || 'No se pudo guardar la imagen en Storage.');
+  }
+
+  async function uploadResponsiveAsset(file, kind, entryType, entryId) {
     assertAdmin();
     if (!ASSET_KINDS.has(kind)) throw new Error('Tipo de imagen no permitido.');
     if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Selecciona un archivo de imagen válido.');
-
-    const body = new FormData();
-    body.append('entry_id', String(id));
-    body.append('kind', kind);
-    body.append('entry_type', entryType || 'general');
-    body.append('file', file, file.name || `imagen.${filenameExt(file)}`);
-
-    const { data, error } = await supabase.functions.invoke('library-image-update', { body });
-    if (error) throw new Error(error.message || 'No se pudo guardar la imagen.');
-    if (!data?.ok || !data?.entry?.id) throw new Error(data?.error || 'No se pudo guardar la imagen.');
-    return data;
-  }
-
-  async function uploadResponsiveAsset(file, kind, entryType, id) {
-    const data = await invokeImageUpdate(id, kind, entryType, file);
-    return data.asset;
+    const ext = filenameExt(file);
+    const path = `library/${state.user.id}/${coverFolder(entryType)}/${entryId}/${kind}-${Date.now()}.${ext}`;
+    const original = await uploadToAvailableBucket(path, file, file.type || 'application/octet-stream');
+    return {
+      original,
+      generated_at: new Date().toISOString(),
+      source_name: file.name || null
+    };
   }
 
   async function saveResponsiveAsset(id, field, asset) {
+    assertAdmin();
     const x = row(id);
     if (!x) throw new Error('Ficha no encontrada.');
     const kind = assetKind(field);
-    const legacyField = legacyFieldForKind(kind);
-    const payload = { image_assets: { ...(x.image_assets || {}), [kind]: asset } };
-    if (legacyField) payload[legacyField] = asset.original;
-    Object.assign(x, payload);
-    return asset;
+    const response = await supabase.functions.invoke('library-image-update', {
+      body: { entry_id: id, kind, asset }
+    });
+    if (response.error) throw new Error(response.error.message || 'No se pudo guardar la imagen.');
+    const result = response.data;
+    if (!result?.ok || !result?.entry?.id) throw new Error(result?.error || 'No se pudo guardar la imagen.');
+    Object.assign(x, result.entry);
+    return result.asset || asset;
   }
 
   async function setImage(id, field, inputId) {
@@ -73,9 +84,8 @@
     const file = byId(inputId)?.files?.[0];
     if (!x || !file) throw new Error('Selecciona una imagen.');
     const kind = assetKind(field);
-    const data = await invokeImageUpdate(id, kind, x.entry_type, file);
-    Object.assign(x, data.entry);
-    return data.asset;
+    const asset = await uploadResponsiveAsset(file, kind, x.entry_type, id);
+    return saveResponsiveAsset(id, field, asset);
   }
 
   window.guardarImagenFicha = async function (id, field, inputId) {
@@ -83,7 +93,7 @@
     try {
       if (box) box.innerHTML = msg('Guardando imagen...');
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg('Imagen actualizada correctamente.', 'success');
+      if (box) box.innerHTML = msg('Imagen actualizada.', 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -116,7 +126,7 @@
     const biological = ['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna'].includes(x.entry_type);
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">Las imágenes se pueden cambiar en cualquier momento, sin validar ni publicar de nuevo la ficha.</p>
+      <p class="small">Las imágenes se pueden cambiar en cualquier estado de la ficha.</p>
       <div class="library-image-grid">
         ${imageControl(x, 'cover', 'Portada', x.cover_url, 'coverFile', 'coverPreview')}
         ${imageControl(x, 'photo', 'Foto interior', x.photo_url, 'photoFile', 'photoPreview')}
@@ -140,8 +150,7 @@
         const label = key.replace(/_/g, ' ').replace(/\b\w/g, letter => letter.toUpperCase());
         const text = Array.isArray(item) ? item.join(', ') : (typeof item === 'object' ? Object.values(item).join(', ') : item);
         return `<div class="library-detail-field"><dt>${esc(label)}</dt><dd>${esc(text)}</dd></div>`;
-      })
-      .join('');
+      }).join('');
   }
 
   function referenceVisualSection(x, kind, title, dataKey) {
