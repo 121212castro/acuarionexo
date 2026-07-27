@@ -46,7 +46,9 @@
     const src = asset.original || fallback || asset.desktop || asset.tablet || asset.mobile || '';
     if (!src) return '';
     const isDetail = String(className || '').includes('library-detail-');
-    const image = `<img class="${esc(className)}" src="${esc(src)}" alt="${esc(alt)}" loading="${loading}">`;
+    const isCard = String(className || '').includes('library-card-cover');
+    const cardStyle = isCard ? ' style="display:block!important;width:100%!important;min-width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;object-fit:contain!important;object-position:center!important;margin:0!important;padding:0!important;border-radius:0!important"' : '';
+    const image = `<img class="${esc(className)}" src="${esc(src)}" alt="${esc(alt)}" loading="${loading}"${cardStyle}>`;
     if (!isDetail) return image;
     return `<div class="library-media-frame library-media-frame--${kind}">${image}</div>`;
   }
@@ -54,7 +56,7 @@
   function card(x) {
     const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', x.title || 'Ficha');
     const title = esc(x.title || 'Ficha');
-    return `<button class="library-card library-cover-card library-cover-only" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}">
+    return `<button class="library-card library-cover-card library-cover-only" style="display:block!important;width:100%!important;height:auto!important;padding:0!important;overflow:hidden!important" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}">
       ${cover || `<div class="library-card-cover library-no-photo">Sin portada</div>`}
     </button>`;
   }
