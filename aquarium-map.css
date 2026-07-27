@@ -2,8 +2,7 @@
   overflow: hidden;
 }
 
-/* Stable image fitting across aquarium screens. */
-.tank-art img,
+/* Stable image fitting for gallery and library covers. */
 .gallery-card img,
 .library-cover-card .library-card-cover {
   object-fit: cover !important;
