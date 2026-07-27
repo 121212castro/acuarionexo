@@ -53,10 +53,9 @@
 
   function card(x) {
     const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', x.title || 'Ficha');
-    const badge = `<small class="library-type-badge">${esc(typeName(x.entry_type))}</small>`;
-    return `<button class="library-card library-cover-card" onclick="verFicha('${esc(x.id)}')">
-      ${cover || `<div class="library-card-cover library-no-photo">Ficha</div>`}
-      <div class="library-card-body"><div class="library-card-top">${badge}<small>${S.normalizeSources(x.sources).length} fuentes</small></div><h3>${esc(x.title || 'Ficha')}</h3><p class="scientific">${esc(x.scientific_name || '')}</p><p>${esc(x.summary || '')}</p></div>
+    const title = esc(x.title || 'Ficha');
+    return `<button class="library-card library-cover-card library-cover-only" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}">
+      ${cover || `<div class="library-card-cover library-no-photo">Sin portada</div>`}
     </button>`;
   }
 
