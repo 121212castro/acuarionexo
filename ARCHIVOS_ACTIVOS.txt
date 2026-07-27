@@ -1,30 +1,22 @@
-ACUARIONEXO · MODULOS OFICIALES · 23/07/2026
+ACUARIONEXO · MODULOS OFICIALES · 27/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: admin-global-access-20260723-2325.
-- app-version.json: admin-global-access-20260723-2325.
-- manifest.webmanifest: admin-global-access-20260723-2325.
+- index.html: library-cover-card-fill-20260727-0245.
+- app-version.json: library-cover-card-fill-20260727-0245.
+- manifest.webmanifest: library-cover-card-fill-20260727-0245.
 
-ADMINISTRACION · ACCESO GLOBAL
-- index.html: botón único adminBtn en la cabecera.
-- src/auth/auth-core.js: visible solo cuando hay sesión y state.isAdmin es verdadero.
-- src/admin/admin-core.js: autoridad del rol administrativo.
-- src/core/module-loader.js: carga de adminPanel.
-- src/admin/admin.js: contenido del panel.
-- No existen botones Admin duplicados por pantalla.
-
-BIBLIOTECA · CADENA ÚNICA
-- library-schema.js: contratos y metadatos base.
-- library-schema-rules.js: regla efectiva y auditoría única.
-- library-v3-template.js: misma regla para el Chat y rutas JSON.
-- ficha-chat-import.js: rechazo previo a la inserción.
-- library-v3-ficha.js: auditoría al guardar.
-- ficha-actions.js: auditoría al publicar o añadir.
-- library-inventory-import.js: auditoría antes de persistir.
+BIBLIOTECA · GALERÍA DE PORTADAS
+- src/library/library-v3-core.js: listado y marcado único de tarjetas.
+- library-images.css: autoridad visual única; tarjeta 2:3 y portada al 100 % con object-fit cover.
+- library-clean.css: filtros, paneles y secciones; no controla portadas.
+- src/library/library-v3-images.js: carga y persistencia de portada y foto interior.
+- src/library/ficha/ficha-actions.js: vista abierta.
+- src/library/library-v3-ficha.js: edición y guardado.
+- No se permiten hotfix, patch, wrappers ni estilos duplicados de tarjetas.
 
 GENERADO, NO EDITAR A MANO
 - www/
