@@ -4,6 +4,9 @@
     const { state, val, num, profileFor, isoFromInput, nowIso } = window.ANX;
     const type = val('microType') || 'rotiferos';
     const p = profileFor(type);
+    const isPhyto = type === 'fitoplancton';
+    const waterPercent = num('microWaterPercent');
+    const harvestHours = Number(val('microHarvestHours')) || null;
     return {
       user_id: state.user.id,
       aquarium_id: val('microAquarium') || null,
@@ -17,26 +20,32 @@
       density: val('microDensity') || null,
       feed_type: val('microFeed') || p.feed,
       feed_amount: val('microFeedAmount') || p.feedAmount,
-      feedings_per_day: Number(val('microFeedings')) || 0,
-      water_change_percent: num('microWaterPercent'),
-      water_change_days: Number(val('microWaterDays')) || null,
-      harvest_interval_hours: Number(val('microHarvestHours')) || null,
+      feedings_per_day: p.showFeedings ? (Number(val('microFeedings')) || 0) : 0,
+      water_change_percent: waterPercent,
+      water_change_days: p.showWater ? (Number(val('microWaterDays')) || null) : null,
+      harvest_interval_hours: harvestHours,
       culture_started_at: isoFromInput('microStarted'),
-      hatch_started_at: isoFromInput('microHatchStarted'),
-      hatch_expected_at: isoFromInput('microHatchExpected'),
+      hatch_started_at: p.showHatching ? isoFromInput('microHatchStarted') : null,
+      hatch_expected_at: p.showHatching ? isoFromInput('microHatchExpected') : null,
       next_feed_at: isoFromInput('microNextFeed'),
-      next_water_change_at: isoFromInput('microNextWater'),
+      next_water_change_at: p.showWater ? isoFromInput('microNextWater') : null,
       next_harvest_at: isoFromInput('microNextHarvest'),
       ai_profile: {
         label: p.label,
         salinity_ppt: p.salinity,
         temperature_c: p.temperature,
-        feed: p.feed,
-        feed_amount: p.feedAmount,
-        feedings_per_day: p.feedings,
-        water_change_percent: p.waterPercent,
-        water_change_days: p.waterDays,
-        harvest_interval_hours: p.harvestHours,
+        feed_label: p.feedLabel,
+        feed: val('microFeed') || p.feed,
+        feed_amount_label: p.feedAmountLabel,
+        feed_amount: val('microFeedAmount') || p.feedAmount,
+        feedings_per_day: p.showFeedings ? (Number(val('microFeedings')) || 0) : 0,
+        harvest_percent: isPhyto ? waterPercent : null,
+        water_change_percent: p.showWater ? waterPercent : null,
+        water_change_days: p.showWater ? (Number(val('microWaterDays')) || null) : null,
+        harvest_interval_hours: harvestHours,
+        next_feed_label: p.nextFeedLabel,
+        next_water_label: p.nextWaterLabel,
+        next_harvest_label: p.nextHarvestLabel,
         notes: p.notes
       },
       notes: val('microNotes') || null,
