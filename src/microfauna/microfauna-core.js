@@ -4,11 +4,55 @@
   const DAY = 24 * HOUR;
 
   const microfaunaProfiles = {
-    rotiferos: { label: 'Rotíferos', salinity: [18, 25], temperature: [24, 28], feed: 'Fitoplancton vivo o concentrado', feedAmount: 'Poco y frecuente, mantener agua ligeramente verde', feedings: 2, waterPercent: 20, waterDays: 1, harvestHours: 24, notes: 'Mantener densidad estable, aireación suave y evitar picos de amonio.' },
-    copepodos: { label: 'Copépodos', salinity: [30, 35], temperature: [22, 26], feed: 'Fitoplancton variado', feedAmount: 'Dosis baja hasta tinte suave', feedings: 1, waterPercent: 15, waterDays: 7, harvestHours: 168, notes: 'Cultivo más lento. Recolectar parcial y conservar adultos reproductores.' },
-    fitoplancton: { label: 'Fitoplancton', salinity: [30, 35], temperature: [20, 25], feed: 'Fertilizante F/2', feedAmount: 'Según cepa y volumen', feedings: 0, waterPercent: 50, waterDays: 7, harvestHours: 168, notes: 'Luz 14-18 h/día, aireación constante y dividir antes del colapso.' },
-    artemia: { label: 'Artemia', salinity: [25, 35], temperature: [26, 28], feed: 'Sin alimento hasta eclosión', feedAmount: 'Enriquecer tras eclosión si se mantiene más tiempo', feedings: 0, waterPercent: 100, waterDays: 2, harvestHours: 36, hatchHours: 36, notes: 'Eclosión orientativa 24-36 h. Separar cáscaras antes de alimentar.' },
-    infusorios: { label: 'Infusorios', salinity: [0, 2], temperature: [20, 26], feed: 'Materia vegetal o levadura muy diluida', feedAmount: 'Muy poco para evitar pudrición', feedings: 1, waterPercent: 20, waterDays: 3, harvestHours: 48, notes: 'Usar olor y claridad como señales de control. Renovar si se enturbia demasiado.' }
+    rotiferos: {
+      label: 'Rotíferos', salinity: [18, 25], temperature: [24, 28],
+      feed: 'Fitoplancton vivo o concentrado', feedAmount: 'Poco y frecuente, mantener agua ligeramente verde', feedings: 2,
+      waterPercent: 20, waterDays: 1, harvestHours: 24,
+      showFeedings: true, showWater: true, showHatching: false,
+      feedLabel: 'Alimento', feedAmountLabel: 'Cantidad alimento', nextFeedLabel: 'Próxima alimentación',
+      waterPercentLabel: 'Cambio de agua %', waterDaysLabel: 'Cada cuántos días', nextWaterLabel: 'Próximo cambio',
+      harvestPercentLabel: '', nextHarvestLabel: 'Próxima recolecta',
+      notes: 'Mantener densidad estable, aireación suave y evitar picos de amonio.'
+    },
+    copepodos: {
+      label: 'Copépodos', salinity: [30, 35], temperature: [22, 26],
+      feed: 'Fitoplancton variado', feedAmount: 'Dosis hasta mantener un tinte suave', feedings: 1,
+      waterPercent: 15, waterDays: 7, harvestHours: 168,
+      showFeedings: true, showWater: true, showHatching: false,
+      feedLabel: 'Alimento', feedAmountLabel: 'Cantidad alimento', nextFeedLabel: 'Próxima alimentación',
+      waterPercentLabel: 'Renovación de agua %', waterDaysLabel: 'Cada cuántos días', nextWaterLabel: 'Próxima renovación',
+      harvestPercentLabel: '', nextHarvestLabel: 'Próxima recolecta',
+      notes: 'Cultivo lento. Recolectar parcialmente y conservar adultos reproductores.'
+    },
+    fitoplancton: {
+      label: 'Fitoplancton', salinity: [30, 35], temperature: [20, 25],
+      feed: 'Medio de cultivo F/2', feedAmount: 'Según fabricante, cepa y volumen del cultivo', feedings: 0,
+      waterPercent: 50, waterDays: null, harvestHours: 168,
+      showFeedings: false, showWater: false, showHatching: false,
+      feedLabel: 'Fertilizante o medio', feedAmountLabel: 'Dosis de fertilizante', nextFeedLabel: 'Próxima fertilización',
+      waterPercentLabel: 'Porcentaje de cosecha %', waterDaysLabel: '', nextWaterLabel: '',
+      harvestPercentLabel: 'Porcentaje de cosecha %', nextHarvestLabel: 'Próxima cosecha',
+      notes: 'Mantener aireación constante, fotoperiodo estable y cosechar antes de que el cultivo pierda densidad o cambie de color.'
+    },
+    artemia: {
+      label: 'Artemia', salinity: [25, 35], temperature: [26, 28],
+      feed: 'Sin alimento hasta eclosión', feedAmount: 'Enriquecer tras eclosión si se mantiene más tiempo', feedings: 0,
+      waterPercent: null, waterDays: null, harvestHours: 36, hatchHours: 36,
+      showFeedings: false, showWater: false, showHatching: true,
+      feedLabel: 'Alimento o enriquecimiento', feedAmountLabel: 'Cantidad', nextFeedLabel: 'Próxima alimentación',
+      waterPercentLabel: '', waterDaysLabel: '', nextWaterLabel: '', harvestPercentLabel: '', nextHarvestLabel: 'Recolección prevista',
+      notes: 'Eclosión orientativa 24-36 h. Separar cáscaras antes de alimentar.'
+    },
+    infusorios: {
+      label: 'Infusorios', salinity: [0, 2], temperature: [20, 26],
+      feed: 'Materia vegetal o levadura muy diluida', feedAmount: 'Cantidad mínima para evitar pudrición', feedings: 1,
+      waterPercent: 20, waterDays: 3, harvestHours: 48,
+      showFeedings: true, showWater: true, showHatching: false,
+      feedLabel: 'Alimento', feedAmountLabel: 'Cantidad alimento', nextFeedLabel: 'Próxima alimentación',
+      waterPercentLabel: 'Renovación %', waterDaysLabel: 'Cada cuántos días', nextWaterLabel: 'Próxima renovación',
+      harvestPercentLabel: '', nextHarvestLabel: 'Próxima recolecta',
+      notes: 'Usar olor y claridad como señales de control. Renovar si se enturbia demasiado.'
+    }
   };
 
   function profileFor(type) { return microfaunaProfiles[type] || microfaunaProfiles.rotiferos; }
@@ -72,15 +116,15 @@
       density: '',
       feed_type: p.feed,
       feed_amount: p.feedAmount,
-      feedings_per_day: p.feedings,
+      feedings_per_day: p.showFeedings ? p.feedings : 0,
       water_change_percent: p.waterPercent,
-      water_change_days: p.waterDays,
+      water_change_days: p.showWater ? p.waterDays : null,
       harvest_interval_hours: p.harvestHours,
       culture_started_at: start,
-      hatch_started_at: type === 'artemia' ? start : null,
-      hatch_expected_at: type === 'artemia' ? addIso((p.hatchHours || 36) * HOUR) : null,
-      next_feed_at: p.feedings ? addIso(Math.max(1, Math.round(24 / p.feedings)) * HOUR) : null,
-      next_water_change_at: addIso(p.waterDays * DAY),
+      hatch_started_at: p.showHatching ? start : null,
+      hatch_expected_at: p.showHatching ? addIso((p.hatchHours || 36) * HOUR) : null,
+      next_feed_at: p.showFeedings ? addIso(Math.max(1, Math.round(24 / p.feedings)) * HOUR) : null,
+      next_water_change_at: p.showWater && p.waterDays ? addIso(p.waterDays * DAY) : null,
       next_harvest_at: addIso(p.harvestHours * HOUR),
       notes: p.notes
     };
@@ -94,6 +138,7 @@
     const { state, esc } = window.ANX;
     const p = profileFor(row.culture_type);
     const aq = (state.aquariums || []).find(a => a.id === row.aquarium_id);
+    const isPhyto = row.culture_type === 'fitoplancton';
     return `<article class="micro-card">
       <div class="micro-card-head">
         <div><small>${esc(p.label)}${aq ? ` · ${esc(aq.name || 'Acuario')}` : ''}</small><h3>${esc(row.name || p.label)}</h3></div>
@@ -106,15 +151,15 @@
       </div>
       <p class="small">${esc(row.feed_type || p.feed)}${row.feed_amount ? ` · ${esc(row.feed_amount)}` : ''}</p>
       <div class="micro-dates">
-        ${dueLabel('Alimentar', row.next_feed_at)}
-        ${dueLabel('Cambio', row.next_water_change_at)}
-        ${dueLabel('Recolectar', row.next_harvest_at)}
+        ${row.next_feed_at ? dueLabel(p.nextFeedLabel, row.next_feed_at) : ''}
+        ${row.next_water_change_at ? dueLabel(p.nextWaterLabel, row.next_water_change_at) : ''}
+        ${dueLabel(p.nextHarvestLabel, row.next_harvest_at)}
         ${row.hatch_expected_at ? dueLabel('Eclosión', row.hatch_expected_at) : ''}
       </div>
       <div class="micro-actions">
-        <button onclick="registrarMicrofauna('${esc(row.id)}','feed')">Alimentar</button>
-        <button onclick="registrarMicrofauna('${esc(row.id)}','water')">Cambio</button>
-        <button onclick="registrarMicrofauna('${esc(row.id)}','harvest')">Recolectar</button>
+        ${row.next_feed_at ? `<button onclick="registrarMicrofauna('${esc(row.id)}','feed')">${esc(isPhyto ? 'Fertilizar' : 'Alimentar')}</button>` : ''}
+        ${row.next_water_change_at ? `<button onclick="registrarMicrofauna('${esc(row.id)}','water')">${esc(p.nextWaterLabel.replace('Próxima ', ''))}</button>` : ''}
+        <button onclick="registrarMicrofauna('${esc(row.id)}','harvest')">${esc(isPhyto ? 'Cosechar' : 'Recolectar')}</button>
         <button onclick="formMicrofauna('${esc(row.id)}')">Editar</button>
       </div>
     </article>`;
