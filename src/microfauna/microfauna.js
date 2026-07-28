@@ -41,17 +41,23 @@ window.microfauna = async function () {
 window.registrarMicrofauna = async function (id, action) {
   const row = (state.microfaunaRows || []).find(r => r.id === id);
   if (!row) return;
+  const profile = profileFor(row.culture_type);
   const updates = { updated_at: nowIso(), last_review_at: nowIso() };
   if (action === 'feed') {
-    const perDay = Number(row.feedings_per_day) || profileFor(row.culture_type).feedings || 1;
-    updates.next_feed_at = addIso(Math.max(1, Math.round(24 / perDay)) * HOUR);
+    if (row.culture_type === 'fitoplancton') {
+      const hours = Number(row.harvest_interval_hours) || profile.harvestHours || 168;
+      updates.next_feed_at = addIso(hours * HOUR);
+    } else {
+      const perDay = Number(row.feedings_per_day) || profile.feedings || 1;
+      updates.next_feed_at = addIso(Math.max(1, Math.round(24 / perDay)) * HOUR);
+    }
   }
-  if (action === 'water') {
-    const days = Number(row.water_change_days) || profileFor(row.culture_type).waterDays || 1;
+  if (action === 'water' && profile.showWater) {
+    const days = Number(row.water_change_days) || profile.waterDays || 1;
     updates.next_water_change_at = addIso(days * DAY);
   }
   if (action === 'harvest') {
-    const hours = Number(row.harvest_interval_hours) || profileFor(row.culture_type).harvestHours || 24;
+    const hours = Number(row.harvest_interval_hours) || profile.harvestHours || 24;
     updates.last_harvest_at = nowIso();
     updates.next_harvest_at = addIso(hours * HOUR);
   }
