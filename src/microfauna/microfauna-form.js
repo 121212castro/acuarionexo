@@ -30,7 +30,7 @@
       : '<input id="microHatchStarted" type="hidden" value=""><input id="microHatchExpected" type="hidden" value="">';
 
     const scheduleFields = `${field('Inicio cultivo', `<input id="microStarted" type="datetime-local" value="${esc(localDateTime(row.culture_started_at))}">`)}
-      ${row.next_feed_at || p.showFeedings ? field(p.nextFeedLabel, `<input id="microNextFeed" type="datetime-local" value="${esc(localDateTime(row.next_feed_at))}">`) : '<input id="microNextFeed" type="hidden" value="">'}
+      ${isPhyto || row.next_feed_at || p.showFeedings ? field(p.nextFeedLabel, `<input id="microNextFeed" type="datetime-local" value="${esc(localDateTime(row.next_feed_at))}">`) : '<input id="microNextFeed" type="hidden" value="">'}
       ${p.showWater ? field(p.nextWaterLabel, `<input id="microNextWater" type="datetime-local" value="${esc(localDateTime(row.next_water_change_at))}">`) : '<input id="microNextWater" type="hidden" value="">'}
       ${field(p.nextHarvestLabel, `<input id="microNextHarvest" type="datetime-local" value="${esc(localDateTime(row.next_harvest_at))}">`)}`;
 
