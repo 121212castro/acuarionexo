@@ -10,6 +10,22 @@
     return m ? Number(m[0]) : '';
   }
 
+  function isMultiTaxonMicrofauna(x) {
+    if (x?.entry_type !== 'microfauna') return false;
+    const taxa = String(x?.scientific_name || '').trim().split(/\s*\+\s*/).filter(Boolean);
+    if (taxa.length < 2) return false;
+    const validTaxon = taxon => S.isConcreteScientificName(taxon) ||
+      /^[A-Z][a-z-]+\s+sp\.$/.test(taxon) ||
+      /^[A-Z][a-z-]+$/.test(taxon);
+    const description = `${x?.data?.culture_type || ''} ${x?.data?.identification || ''}`;
+    return taxa.every(validTaxon) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);
+  }
+
+  function keepsTextParameter(x, fieldId) {
+    return isMultiTaxonMicrofauna(x) &&
+      ['temperature_min', 'temperature_max', 'salinity_min', 'salinity_max'].includes(fieldId);
+  }
+
   function sourceText(value) {
     const list = Array.isArray(value) ? value : [];
     return list.map(x => {
@@ -75,7 +91,9 @@
     S.templateFor(x.entry_type).forEach(sec => sec.fields.forEach(f => {
       if (f.id === 'sources') return;
       const el = byId(`libData_${f.id}`);
-      if (el) d[f.id] = el.type === 'checkbox' ? el.checked : (f.type === 'number' ? numberFrom(el.value) : el.value.trim());
+      if (el) d[f.id] = el.type === 'checkbox'
+        ? el.checked
+        : (f.type === 'number' && !keepsTextParameter(x, f.id) ? numberFrom(el.value) : el.value.trim());
     }));
     d.external_link = readExternalLink();
     delete d.commercial_link;
@@ -298,8 +316,10 @@
     return S.templateFor(x.entry_type).map(sec => `<fieldset><legend>${esc(sec.label)}</legend>${sec.fields.map(f => {
       if (f.id === 'sources') return '';
       const raw = x.data?.[f.id] ?? x[f.id] ?? '';
-      const value = f.type === 'number' ? (numberFrom(raw) || '') : raw;
+      const textParameter = f.type === 'number' && keepsTextParameter(x, f.id);
+      const value = f.type === 'number' && !textParameter ? (numberFrom(raw) || '') : raw;
       const common = `id="libData_${esc(f.id)}"`;
+      if (textParameter) return `<label>${esc(f.label)}</label><textarea ${common} placeholder="Valor conjunto no publicado: explica la fuente y no inventes datos">${esc(value)}</textarea>${value === '' || value == null ? emptyHint() : ''}`;
       if (f.type === 'number') return `<label>${esc(f.label)}</label><input ${common} type="number" step="any" value="${esc(value)}">${value === '' || value == null ? emptyHint() : ''}`;
       return `<label>${esc(f.label)}</label><textarea ${common} placeholder="Pendiente de completar">${esc(value)}</textarea>${value === '' || value == null ? emptyHint() : ''}`;
     }).join('')}</fieldset>`).join('');
