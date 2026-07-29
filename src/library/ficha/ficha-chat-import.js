@@ -11,7 +11,32 @@
   const TYPES=[['pez_marino','Pez marino'],['pez_dulce','Pez de agua dulce'],['coral','Coral'],['invertebrado','Invertebrado'],['planta','Planta'],['microfauna','Microfauna'],['producto','Producto'],['medicamento','Medicamento'],['sal','Sal'],['aditivo','Aditivo'],['alimento','Alimento'],['test','Test'],['equipamiento','Equipamiento']];
   const TOP_LEVEL=new Set(['title','scientific_name','summary','sources','entry_type','tags','sections']);
   function typeOptions(){return TYPES.map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join('')}
-  function extractStructuredJson(text){const raw=String(text||'');const marked=raw.match(/ACUARIONEXO_JSON_START\s*([\s\S]*?)\s*ACUARIONEXO_JSON_END/i);const jsonText=marked?marked[1]:(raw.trim().startsWith('{')?raw.trim():'');if(!jsonText)return null;try{const parsed=JSON.parse(jsonText);return parsed&&typeof parsed==='object'?parsed:null}catch(_){return null}}
+  function normalizeStructuredJson(text){
+    return String(text||'')
+      .replace(/^\uFEFF/,'')
+      .replace(/[\u200B-\u200D\u2060]/g,'')
+      .replace(/^\s*```(?:json)?\s*/i,'')
+      .replace(/\s*```\s*$/,'')
+      .replace(/[\u201C\u201D\u2033]/g,'"')
+      .replace(/[\u2018\u2019\u2032]/g,"'")
+      .replace(/\u00A0/g,' ')
+      .replace(/,\s*([}\]])/g,'$1')
+      .trim()
+  }
+  function extractStructuredJson(text){
+    const raw=String(text||'')
+    const start=raw.indexOf('ACUARIONEXO_JSON_START')
+    const end=raw.indexOf('ACUARIONEXO_JSON_END')
+    if(start===-1||end===-1||end<=start)return null
+    const jsonText=normalizeStructuredJson(raw.slice(start+'ACUARIONEXO_JSON_START'.length,end))
+    if(!jsonText)return null
+    try{
+      const parsed=JSON.parse(jsonText)
+      return parsed&&typeof parsed==='object'?parsed:null
+    }catch(e){
+      throw new Error(`El bloque JSON está localizado, pero contiene un error: ${e.message}`)
+    }
+  }
   function detectType(text,selected){const structured=extractStructuredJson(text);if(structured?.entry_type&&S()?.CONTRACTS?.[structured.entry_type])return structured.entry_type;const selectedType=String(selected||'').trim();if(selectedType&&S()?.CONTRACTS?.[selectedType])return selectedType;return'pez_marino'}
   function parseSourcesRaw(text){const rows=String(text||'').split(/\n+/).map(s=>s.trim()).filter(Boolean);return rows.map((line,i)=>{const url=(line.match(/https?:\/\/[^\s|]+/i)||[])[0]||'';const parts=line.split('|').map(s=>s.trim());let name=parts[0]&&!/^https?:\/\//i.test(parts[0])?parts[0]:'';if(!name&&url){try{name=new URL(url).hostname}catch(_){name=`Fuente ${i+1}`}}return{url,name:name||`Fuente ${i+1}`,used_for:parts[2]||'Ficha creada desde texto del Chat',pending_url:!url};});}
   function cleanData(raw){const data={...(raw&&typeof raw==='object'?raw:{})};TOP_LEVEL.forEach(key=>delete data[key]);return data}
