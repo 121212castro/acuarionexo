@@ -71,6 +71,21 @@
     return entry?.data?.[field] ?? entry?.[field];
   }
 
+  function isZooMixException(entry) {
+    const title = String(entry?.title || '').trim();
+    return entry?.entry_type === 'microfauna' && /^zoo mix(?:\s*[—-]\s*power aquaculture)?$/i.test(title);
+  }
+
+  function isZooMixFlexibleField(entry, fieldId) {
+    return isZooMixException(entry) && [
+      'scientific_name',
+      'temperature_min',
+      'temperature_max',
+      'salinity_min',
+      'salinity_max'
+    ].includes(fieldId);
+  }
+
   function normalizedTemplate(type) {
     return originalTemplateFor(type).map(section => ({
       ...section,
@@ -99,9 +114,9 @@
     if (field.allowed?.length && !field.allowed.includes(String(value).trim())) {
       return `Valor no permitido. Usa exactamente: ${field.allowed.join(' | ')}.`;
     }
-    if (field.validator === 'scientificName' && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta con binomio científico válido.';
+    if (field.validator === 'scientificName' && !isZooMixFlexibleField(entry, field.id) && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta con binomio científico válido.';
     const text = String(value).trim();
-    if (field.type === 'number' && !S.hasNumericValue(value)) return 'Debe incluir un valor numérico o rango concreto.';
+    if (field.type === 'number' && !isZooMixFlexibleField(entry, field.id) && !S.hasNumericValue(value)) return 'Debe incluir un valor numérico o rango concreto.';
     if (field.type !== 'number' && !field.allowed?.length && text.length < Number(field.minLength || 1)) {
       return `Debe tener al menos ${Number(field.minLength || 1)} caracteres.`;
     }
@@ -177,7 +192,7 @@
     const warnings = [];
     if (!STATUSES.has(cleaned.status)) errors.push('Estado no permitido.');
     if (!cleaned.identity_confirmed) errors.push('Identificación insuficiente.');
-    if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta.');
+    if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !isZooMixException(cleaned) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta.');
 
     validateTemplate(cleaned).forEach(section => section.fields.forEach(field => {
       if (!field.valid) errors.push(`${section.label} · ${field.label}: ${field.error}`);
