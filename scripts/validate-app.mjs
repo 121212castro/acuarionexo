@@ -167,9 +167,35 @@ async function checkLoad() {
   vm.createContext(ctx);
   const bootstrapScripts = [...new Set([...scripts(), 'src/core/module-loader.js'])];
   for (const script of bootstrapScripts) vm.runInContext(read(script), ctx, { filename: script });
+  for (const script of ['src/library/core/library-schema.js', 'src/library/core/library-schema-rules.js']) {
+    vm.runInContext(read(script), ctx, { filename: script });
+  }
   if (typeof ctx.biblioteca !== 'function') fail('window.biblioteca missing');
   if (typeof ctx.adminPanel !== 'function') fail('window.adminPanel missing');
   if (typeof ctx.ANX?.loadModuleGroup !== 'function') fail('ANX.loadModuleGroup missing');
+  const multiTaxon = {
+    entry_type: 'microfauna',
+    title: 'Copépodos bentónicos Apocalypse Mix — Power Aquaculture',
+    scientific_name: 'Tigriopus californicus + Tisbe sp. + Apocyclops panamensis',
+    data: {
+      culture_type: 'Mezcla viva multiespecífica de copépodos marinos.',
+      identification: 'Mezcla multiespecífica confirmada por el fabricante.',
+      temperature_min: 'El fabricante no publica una temperatura mínima conjunta para la mezcla.',
+      temperature_max: 'El fabricante no publica una temperatura máxima conjunta para la mezcla.',
+      salinity_min: 'El fabricante no publica una salinidad mínima conjunta para la mezcla.',
+      salinity_max: 'El fabricante no publica una salinidad máxima conjunta para la mezcla.'
+    }
+  };
+  for (const fieldId of ['scientific_name','temperature_min','temperature_max','salinity_min','salinity_max']) {
+    const field = ctx.ANX.LibrarySchema.fieldDefinition('microfauna', fieldId);
+    const error = ctx.ANX.LibrarySchema.validateField(multiTaxon, field);
+    if (error) fail(`La mezcla multiespecífica válida fue rechazada en ${fieldId}: ${error}`);
+  }
+  const invalidSingleTaxon = { ...multiTaxon, scientific_name: 'Tisbe sp.' };
+  const scientificField = ctx.ANX.LibrarySchema.fieldDefinition('microfauna', 'scientific_name');
+  if (!ctx.ANX.LibrarySchema.validateField(invalidSingleTaxon, scientificField)) {
+    fail('Una ficha monoespecífica sin binomio fue aceptada como mezcla.');
+  }
 }
 
 try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }

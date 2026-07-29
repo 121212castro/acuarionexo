@@ -63,6 +63,14 @@ export function normalizeSources(value: unknown): SourceItem[] {
   }).filter(source => { if (!realUrl(source.url) || seen.has(source.url)) return false; seen.add(source.url); return true; }).slice(0, 20);
 }
 export function concreteScientificName(value: unknown) { const name = clean(value, 200); return /^[A-Z][a-z-]+ [a-z][a-z-]+(?:\s+var\.\s+[a-z-]+)?$/.test(name) && !/\b(?:spp?|cf|aff)\.?\b/i.test(name); }
+export function multiTaxonMicrofauna(entry: any) {
+  if (entry?.entry_type !== "microfauna") return false;
+  const taxa = clean(entry?.scientific_name, 500).split(/\s*\+\s*/).map(value => value.trim()).filter(Boolean);
+  if (taxa.length < 2) return false;
+  const validTaxon = (taxon: string) => concreteScientificName(taxon) || /^[A-Z][a-z-]+(?:\s+sp\.)?$/.test(taxon);
+  const description = `${clean(entry?.data?.culture_type, 500)} ${clean(entry?.data?.identification, 2000)}`;
+  return taxa.every(validTaxon) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);
+}
 
 export function contractPrompt(entryType: string, fields: string[]) {
   return [
@@ -95,7 +103,7 @@ export function auditEntry(entry: any) {
   const missing = required.filter(field => { if (field === "sources") return sources.length < 2; const value = data[field] ?? entry[field]; return value == null || value === "" || (Array.isArray(value) && !value.length); });
   const poor = required.filter(field => field !== "sources" && !missing.includes(field) && fieldIsPoor(field, data[field] ?? entry[field]));
   if (!entry.identity_confirmed) errors.push("Identificación insuficiente.");
-  if (biologicalTypes.has(entry.entry_type) && !concreteScientificName(entry.scientific_name)) errors.push("La ficha biológica no tiene una especie concreta.");
+  if (biologicalTypes.has(entry.entry_type) && !multiTaxonMicrofauna(entry) && !concreteScientificName(entry.scientific_name)) errors.push("La ficha biológica no tiene una especie concreta.");
   if (sources.length < 2) errors.push("Se requieren al menos dos URLs reales.");
   if (missing.length) errors.push(`Campos obligatorios incompletos: ${missing.join(", ")}.`);
   if (poor.length) errors.push(`Campos pobres o genéricos: ${poor.join(", ")}.`);

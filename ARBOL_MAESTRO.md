@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `release-7c76419`.
+Build actual: `release-9c8ae91bc15f`.
 
 ## Navegación administrativa global
 

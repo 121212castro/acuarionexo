@@ -8,17 +8,31 @@
     return TOP_LEVEL.has(field.id) ? field.id : `data.${field.id}`;
   }
 
-  function fieldRuleText(field) {
+  function multiTaxonMicrofaunaName(type, scientificName) {
+    if (type !== 'microfauna') return false;
+    const taxa = String(scientificName || '').trim().split(/\s*\+\s*/).filter(Boolean);
+    return taxa.length >= 2 && taxa.every(taxon =>
+      S.isConcreteScientificName(taxon) ||
+      /^[A-Z][a-z-]+\s+sp\.$/.test(taxon) ||
+      /^[A-Z][a-z-]+$/.test(taxon)
+    );
+  }
+
+  function fieldRuleText(field, flexibleMultiTaxon = false) {
     const rules = [`clave JSON: ${jsonPath(field)}`];
     if (field.id === 'sources') {
       rules.push('mínimo 2 fuentes reales con URL completa, name y used_for');
     } else if (field.allowed?.length) {
       rules.push(`usa exactamente uno de estos valores: ${field.allowed.join(' | ')}`);
       rules.push('no desarrolles ni amplíes este valor dentro del mismo campo');
+    } else if (field.type === 'number' && flexibleMultiTaxon && ['temperature_min','temperature_max','salinity_min','salinity_max'].includes(field.id)) {
+      rules.push('incluye el valor numérico verificado o explica expresamente que el fabricante no publica un valor conjunto para la mezcla');
     } else if (field.type === 'number') {
       rules.push('debe incluir un valor numérico o rango concreto');
     } else if (field.id === 'scientific_name' || field.validator === 'scientificName') {
-      rules.push('debe contener exactamente un binomio científico válido; no sp., spp., cf. ni aff.');
+      rules.push(flexibleMultiTaxon
+        ? 'debe enumerar con + todos los taxones confirmados; se admite género o sp. únicamente cuando la especie no está publicada'
+        : 'debe contener exactamente un binomio científico válido; no sp., spp., cf. ni aff.');
     } else {
       rules.push(`mínimo ${field.minLength || 1} caracteres`);
     }
@@ -61,9 +75,10 @@
   function templateText(type, subject, scientificName) {
     const concreteSubject = String(subject || '').trim();
     const concreteScientificName = String(scientificName || '').trim();
+    const flexibleMultiTaxon = multiTaxonMicrofaunaName(type, concreteScientificName);
     if (!type || type === 'all' || !S?.CONTRACTS?.[type]) throw new Error('Selecciona un tipo de ficha concreto.');
     if (!concreteSubject) throw new Error('Escribe el nombre común, comercial o modelo concreto.');
-    if (biologicalTypes.has(type) && !S.isConcreteScientificName(concreteScientificName)) throw new Error('Escribe un nombre científico binomial válido.');
+    if (biologicalTypes.has(type) && !S.isConcreteScientificName(concreteScientificName) && !flexibleMultiTaxon) throw new Error('Escribe un nombre científico binomial válido.');
 
     const template = S.templateFor(type);
     const lines = [
@@ -82,6 +97,7 @@
       '- Respeta la regla individual escrita junto a cada campo; esa misma regla será utilizada por creación, auditoría y publicación.',
       '- Los campos con valores permitidos deben contener solo uno de esos valores exactos. La explicación debe ir en su campo descriptivo correspondiente.',
       '- Los campos numéricos deben contener números reales o rangos concretos.',
+      ...(flexibleMultiTaxon ? ['- Esta ficha es una mezcla multiespecífica: culture_type e identification deben indicarlo expresamente. Si el fabricante no publica temperatura o salinidad conjunta, explícalo en el campo correspondiente sin inventar valores.'] : []),
       '- Los identificadores, marcas, modelos, unidades y códigos no necesitan texto de relleno.',
       '- Los campos descriptivos deben alcanzar la longitud indicada y aportar información útil.',
       '- No incluyas URLs en campos de texto. Las URLs van únicamente en sources[].',
@@ -101,7 +117,7 @@
 
     template.forEach(section => {
       lines.push('', section.label);
-      section.fields.forEach(field => lines.push(`- ${fieldLabel(field, type)} (${fieldRuleText(field)})`));
+      section.fields.forEach(field => lines.push(`- ${fieldLabel(field, type)} (${fieldRuleText(field, flexibleMultiTaxon)})`));
     });
 
     lines.push(

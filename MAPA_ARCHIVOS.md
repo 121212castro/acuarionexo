@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-7c76419`
+`release-9c8ae91bc15f`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 

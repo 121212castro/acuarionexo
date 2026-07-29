@@ -71,13 +71,20 @@
     return entry?.data?.[field] ?? entry?.[field];
   }
 
-  function isZooMixException(entry) {
-    const title = String(entry?.title || '').trim();
-    return entry?.entry_type === 'microfauna' && /^zoo mix(?:\s*[—-]\s*power aquaculture)?$/i.test(title);
+  function isMultiTaxonMicrofauna(entry) {
+    if (entry?.entry_type !== 'microfauna') return false;
+    const scientificName = String(entry?.scientific_name || '').trim();
+    const taxa = scientificName.split(/\s*\+\s*/).map(value => value.trim()).filter(Boolean);
+    if (taxa.length < 2) return false;
+    const validTaxon = taxon => S.isConcreteScientificName(taxon) ||
+      /^[A-Z][a-z-]+\s+sp\.$/.test(taxon) ||
+      /^[A-Z][a-z-]+$/.test(taxon);
+    const description = `${entry?.data?.culture_type || ''} ${entry?.data?.identification || ''}`;
+    return taxa.every(validTaxon) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);
   }
 
-  function isZooMixFlexibleField(entry, fieldId) {
-    return isZooMixException(entry) && [
+  function isMultiTaxonFlexibleField(entry, fieldId) {
+    return isMultiTaxonMicrofauna(entry) && [
       'scientific_name',
       'temperature_min',
       'temperature_max',
@@ -114,9 +121,9 @@
     if (field.allowed?.length && !field.allowed.includes(String(value).trim())) {
       return `Valor no permitido. Usa exactamente: ${field.allowed.join(' | ')}.`;
     }
-    if (field.validator === 'scientificName' && !isZooMixFlexibleField(entry, field.id) && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta con binomio científico válido.';
+    if (field.validator === 'scientificName' && !isMultiTaxonFlexibleField(entry, field.id) && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta con binomio científico válido.';
     const text = String(value).trim();
-    if (field.type === 'number' && !isZooMixFlexibleField(entry, field.id) && !S.hasNumericValue(value)) return 'Debe incluir un valor numérico o rango concreto.';
+    if (field.type === 'number' && !isMultiTaxonFlexibleField(entry, field.id) && !S.hasNumericValue(value)) return 'Debe incluir un valor numérico o rango concreto.';
     if (field.type !== 'number' && !field.allowed?.length && text.length < Number(field.minLength || 1)) {
       return `Debe tener al menos ${Number(field.minLength || 1)} caracteres.`;
     }
@@ -192,7 +199,7 @@
     const warnings = [];
     if (!STATUSES.has(cleaned.status)) errors.push('Estado no permitido.');
     if (!cleaned.identity_confirmed) errors.push('Identificación insuficiente.');
-    if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !isZooMixException(cleaned) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta.');
+    if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !isMultiTaxonMicrofauna(cleaned) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta.');
 
     validateTemplate(cleaned).forEach(section => section.fields.forEach(field => {
       if (!field.valid) errors.push(`${section.label} · ${field.label}: ${field.error}`);

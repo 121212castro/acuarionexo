@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: release-7c76419.
-- app-version.json: release-7c76419.
-- manifest.webmanifest: release-7c76419.
+- index.html: release-9c8ae91bc15f.
+- app-version.json: release-9c8ae91bc15f.
+- manifest.webmanifest: release-9c8ae91bc15f.
 
 ARCHIVOS ACTIVOS
 - app-version.json
