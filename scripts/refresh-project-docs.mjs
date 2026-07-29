@@ -35,7 +35,18 @@ if (build !== versionBuild || build !== manifestBuild) throw new Error(`Build de
 
 const direct = quotedLocalAssets(read('index.html'));
 const modules = quotedLocalAssets(read('src/core/module-loader.js'));
-const active = [...new Set(['index.html', ...direct, ...modules, 'src/library/ficha/ficha-json.js'])].sort();
+const activeSet = new Set(['index.html', ...direct, ...modules, 'src/library/ficha/ficha-json.js']);
+const pendingDependencies = [...activeSet];
+while (pendingDependencies.length) {
+  const owner = pendingDependencies.shift();
+  if (!owner.endsWith('.js') || !fs.existsSync(path.join(root, owner))) continue;
+  for (const dependency of quotedLocalAssets(read(owner))) {
+    if (activeSet.has(dependency)) continue;
+    activeSet.add(dependency);
+    pendingDependencies.push(dependency);
+  }
+}
+const active = [...activeSet].sort();
 
 const adminNavigation = `## Administración / acceso global
 
@@ -59,6 +70,18 @@ const contractChain = `## Biblioteca / cadena única de contrato
 - \`src/library/inventory/library-inventory-import.js\`: vuelve a auditar antes de persistir la copia.
 - \`scripts/audit-library-contracts.mjs\`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
 - No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.`;
+
+const automaticGenerator = `## Biblioteca / generador automático administrativo
+
+- \`src/admin/admin-library-generator.js\`: propietario único de la entrada por lotes, cola, orden, reintentos y procesamiento.
+- \`src/admin/admin-library-generator.css\`: presentación adaptable de la cola; tarjetas en móvil.
+- \`supabase/functions/library-identify/index.ts\`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
+- \`supabase/functions/library-generate-draft/index.ts\`: genera el borrador privado después de una identificación confirmada.
+- \`library_generation_jobs.identify_result.requested_brand\`: conserva la marca común sin crear un contrato de datos paralelo.
+- Los nombres se limpian de numeración antes de insertarse y procesarse.
+- El orden de la cola es el orden de entrada.
+- Un trabajo bloqueado o fallido muestra el motivo real y puede reintentarse de forma individual.
+- Nunca publica fichas automáticamente: las deja en revisión privada para añadir fotos y validar.`;
 
 const fieldRules = `## Biblioteca / reglas por clase de campo
 
@@ -128,6 +151,8 @@ ${adminNavigation}
 
 ${contractChain}
 
+${automaticGenerator}
+
 ${fieldRules}
 
 ${externalLinks}
@@ -170,6 +195,8 @@ Una ficha no puede avanzar por estado, validación de IA ni publicación si fall
 
 ${contractChain}
 
+${automaticGenerator}
+
 ${fieldRules}
 
 ${externalLinks}
@@ -208,6 +235,13 @@ BIBLIOTECA · CADENA ÚNICA
 - ficha-actions.js: auditoría al publicar o añadir y representación del botón externo.
 - library-inventory-import.js: auditoría antes de persistir.
 - audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
+
+BIBLIOTECA · GENERADOR AUTOMATICO
+- src/admin/admin-library-generator.js: entrada, cola, orden, procesamiento y reintentos.
+- src/admin/admin-library-generator.css: tarjetas adaptadas a móvil.
+- library-identify: identificación con contexto obligatorio de marca o fabricante.
+- library-generate-draft: borrador privado posterior a la identificación.
+- Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
 
 ENLACE EXTERNO OPCIONAL
 - Propiedad única: data.external_link.

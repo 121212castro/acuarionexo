@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-multitaxon-parameters-20260729-1022`
+`release-admin-generator-mobile-20260729-2135`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -70,6 +70,18 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `src/library/inventory/library-inventory-import.js`: vuelve a auditar antes de persistir la copia.
 - `scripts/audit-library-contracts.mjs`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
 - No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.
+
+## Biblioteca / generador automático administrativo
+
+- `src/admin/admin-library-generator.js`: propietario único de la entrada por lotes, cola, orden, reintentos y procesamiento.
+- `src/admin/admin-library-generator.css`: presentación adaptable de la cola; tarjetas en móvil.
+- `supabase/functions/library-identify/index.ts`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
+- `supabase/functions/library-generate-draft/index.ts`: genera el borrador privado después de una identificación confirmada.
+- `library_generation_jobs.identify_result.requested_brand`: conserva la marca común sin crear un contrato de datos paralelo.
+- Los nombres se limpian de numeración antes de insertarse y procesarse.
+- El orden de la cola es el orden de entrada.
+- Un trabajo bloqueado o fallido muestra el motivo real y puede reintentarse de forma individual.
+- Nunca publica fichas automáticamente: las deja en revisión privada para añadir fotos y validar.
 
 ## Biblioteca / reglas por clase de campo
 

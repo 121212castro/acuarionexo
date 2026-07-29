@@ -5,11 +5,12 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: release-multitaxon-parameters-20260729-1022.
-- app-version.json: release-multitaxon-parameters-20260729-1022.
-- manifest.webmanifest: release-multitaxon-parameters-20260729-1022.
+- index.html: release-admin-generator-mobile-20260729-2135.
+- app-version.json: release-admin-generator-mobile-20260729-2135.
+- manifest.webmanifest: release-admin-generator-mobile-20260729-2135.
 
 ARCHIVOS ACTIVOS
+- acuarionexo-ajustes.json
 - app-version.json
 - app.js
 - aquarium-cards.css
@@ -18,6 +19,7 @@ ARCHIVOS ACTIVOS
 - aquariums-mobile-fix.css
 - config.js
 - dashboard.css
+- firebase-messaging-sw.js
 - icon-512.png
 - index.html
 - inventory-accordion.css
@@ -32,7 +34,12 @@ ARCHIVOS ACTIVOS
 - notifications.js
 - settings.css
 - src/admin/admin-core.js
+- src/admin/admin-extra.js
+- src/admin/admin-library-generator.css
+- src/admin/admin-library-generator.js
 - src/admin/admin.js
+- src/admin/issue-entry.js
+- src/admin/report-issue.js
 - src/ai/ai-access.js
 - src/ai/ai-alerts-extra.js
 - src/ai/ai-library-v3.js
@@ -84,6 +91,7 @@ ARCHIVOS ACTIVOS
 - src/parameters/parameters-ai-fallback.js
 - src/parameters/parameters-alert-helpers.js
 - src/parameters/parameters-core.js
+- src/parameters/parameters-extra-fields.js
 - src/parameters/parameters-manual.js
 - src/parameters/parameters.js
 - src/photos/photos-core.js
@@ -121,6 +129,13 @@ BIBLIOTECA · CADENA ÚNICA
 - ficha-actions.js: auditoría al publicar o añadir y representación del botón externo.
 - library-inventory-import.js: auditoría antes de persistir.
 - audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
+
+BIBLIOTECA · GENERADOR AUTOMATICO
+- src/admin/admin-library-generator.js: entrada, cola, orden, procesamiento y reintentos.
+- src/admin/admin-library-generator.css: tarjetas adaptadas a móvil.
+- library-identify: identificación con contexto obligatorio de marca o fabricante.
+- library-generate-draft: borrador privado posterior a la identificación.
+- Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
 
 ENLACE EXTERNO OPCIONAL
 - Propiedad única: data.external_link.
