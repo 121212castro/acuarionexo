@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: release-28066fbf2db7.
-- app-version.json: release-28066fbf2db7.
-- manifest.webmanifest: release-28066fbf2db7.
+- index.html: release-library-worker-20260729-2359.
+- app-version.json: release-library-worker-20260729-2359.
+- manifest.webmanifest: release-library-worker-20260729-2359.
 
 ARCHIVOS ACTIVOS
 - acuarionexo-ajustes.json
@@ -131,11 +131,14 @@ BIBLIOTECA · CADENA ÚNICA
 - audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
 
 BIBLIOTECA · GENERADOR AUTOMATICO
-- src/admin/admin-library-generator.js: entrada, cola, orden, procesamiento y reintentos.
+- src/admin/admin-library-generator.js: entrada, consulta de cola, orden y reintentos.
 - src/admin/admin-library-generator.css: tarjetas adaptadas a móvil.
 - library-identify: identificación con contexto obligatorio de marca o fabricante.
 - library-generate-draft: generación asíncrona, consulta, auditoría y reparación por etapas.
+- library-generation-worker: consumidor automático de una etapa persistente por ejecución.
+- 20260729233000_library_generation_worker.sql: programación cada minuto mediante pg_cron, pg_net y Vault.
 - identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
+- queue_order: orden estable asignado por la base de datos.
 - Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
 
 ENLACE EXTERNO OPCIONAL

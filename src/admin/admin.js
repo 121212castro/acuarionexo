@@ -21,7 +21,7 @@
   loadScriptOnce('src/admin/admin-extra.js?v=admin-tools-20260702', 'admin-extra');
   loadScriptOnce('src/admin/report-issue.js?v=incidencia-20260702-2', 'report-issue');
   loadScriptOnce('src/admin/issue-entry.js?v=incidencia-20260702-2', 'issue-entry');
-  loadScriptOnce('src/admin/admin-library-generator.js?v=admin-library-generator-mobile-20260729-2', 'admin-library-generator');
+  loadScriptOnce('src/admin/admin-library-generator.js?v=library-generation-worker-20260729-1', 'admin-library-generator');
   loadStyleOnce('src/admin/admin-library-generator.css?v=admin-library-generator-mobile-20260729-2', 'admin-library-generator-style');
 
   async function requireAdmin() {

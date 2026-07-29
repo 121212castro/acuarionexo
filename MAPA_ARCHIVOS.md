@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-28066fbf2db7`
+`release-library-worker-20260729-2359`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -73,15 +73,18 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 
 ## Biblioteca / generador automático administrativo
 
-- `src/admin/admin-library-generator.js`: propietario único de la entrada por lotes, cola, orden, reintentos y procesamiento.
+- `src/admin/admin-library-generator.js`: propietario único de la entrada por lotes, consulta de la cola, orden y reintentos.
 - `src/admin/admin-library-generator.css`: presentación adaptable de la cola; tarjetas en móvil.
 - `supabase/functions/library-identify/index.ts`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
 - `supabase/functions/library-generate-draft/index.ts`: inicia y consulta respuestas asíncronas de OpenAI; audita cada resultado y separa cada reparación en otra respuesta.
+- `supabase/functions/library-generation-worker/index.ts`: consume una etapa persistente de la cola en cada ejecución, sin depender del navegador.
+- `supabase/migrations/20260729233000_library_generation_worker.sql`: programa el trabajador con pg_cron y pg_net y autentica la llamada con Supabase Vault.
 - `library_generation_jobs.identify_result.requested_brand`: conserva la marca común sin crear un contrato de datos paralelo.
 - `library_generation_jobs.identify_result.generation_state`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
+- `library_generation_jobs.queue_order`: fija el orden de entrada aunque varias filas se inserten en el mismo instante.
 - Los nombres se limpian de numeración antes de insertarse y procesarse.
 - El orden de la cola es el orden de entrada.
-- La pantalla consulta automáticamente trabajos pendientes y en generación; cerrar la aplicación no cancela una respuesta ya iniciada.
+- Supabase despierta el trabajador cada minuto; la pantalla solo consulta el estado y puede cerrarse sin detener el proceso.
 - Ninguna función espera encadenada la generación y tres reparaciones: cada llamada queda por debajo del límite de ejecución de Supabase.
 - Un trabajo bloqueado o fallido muestra el motivo real y puede reintentarse de forma individual.
 - Nunca publica fichas automáticamente: las deja en revisión privada para añadir fotos y validar.
