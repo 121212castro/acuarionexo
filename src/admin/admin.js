@@ -13,6 +13,7 @@
   loadScriptOnce('src/admin/admin-extra.js?v=admin-tools-20260702', 'admin-extra');
   loadScriptOnce('src/admin/report-issue.js?v=incidencia-20260702-2', 'report-issue');
   loadScriptOnce('src/admin/issue-entry.js?v=incidencia-20260702-2', 'issue-entry');
+  loadScriptOnce('src/admin/admin-library-generator.js?v=admin-library-generator-20260729', 'admin-library-generator');
 
   async function requireAdmin() {
     if (!state.user) { login(); return false; }
@@ -130,6 +131,7 @@
           <div class="quick-actions">
             <button onclick="adminCrearFicha()"><span>＋</span>Crear ficha manual</button>
             <button onclick="adminCrearFichaDesdeChat()"><span>✦</span>Crear ficha desde Chat</button>
+            <button onclick="adminGenerator()"><span>⚙</span>Generador de fichas</button>
             <button onclick="adminPlantillaChat()"><span>▣</span>Plantilla para Chat</button>
             <button onclick="adminRevisarFichas()"><span>□</span>Revisar fichas pendientes</button>
             <button onclick="adminBibliotecaCompleta()"><span>▦</span>Biblioteca completa</button>
