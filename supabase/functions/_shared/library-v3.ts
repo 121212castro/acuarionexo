@@ -42,7 +42,30 @@ export const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control
 export function json(body: unknown, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
 export function errorJson(code: string, message: string, status = 400, details?: unknown) { return json({ error: code, message, details }, status); }
 export function clean(value: unknown, max = 5000) { return String(value ?? "").trim().slice(0, max); }
-function jsonCandidate(text: string) { return text.match(/```json\s*([\s\S]*?)```/i)?.[1] || text.match(/\{[\s\S]*\}/)?.[0] || text; }
+function jsonCandidate(text: string) {
+  const source = text.match(/```json\s*([\s\S]*?)```/i)?.[1] || text;
+  const start = source.indexOf("{");
+  if (start < 0) return source;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let index = start; index < source.length; index += 1) {
+    const char = source[index];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === "{") depth += 1;
+    else if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(start, index + 1);
+    }
+  }
+  return source.slice(start);
+}
 export function extractJson(text: string) { return JSON.parse(jsonCandidate(text)); }
 export function urlsFromAny(value: unknown, found: string[] = []): string[] {
   if (value == null) return found;
@@ -200,5 +223,15 @@ export async function pollOpenAiJsonBackground(responseId: string) {
     }
     return { response_id: responseId, status: status || "in_progress", parsed: null };
   }
-  return { response_id: responseId, status, parsed: extractJson(responseText(output)) };
+  const text = responseText(output);
+  try {
+    return { response_id: responseId, status, parsed: extractJson(text) };
+  } catch (parseError) {
+    const model = clean(Deno.env.get("OPENAI_MODEL") || "gpt-4.1-mini", 80);
+    return {
+      response_id: responseId,
+      status,
+      parsed: await repairJsonWithModel(apiKey, model, text, parseError)
+    };
+  }
 }
