@@ -53,6 +53,7 @@ const contractChain = `## Biblioteca / cadena única de contrato
 - \`src/library/core/library-schema-rules.js\`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
 - \`src/library/library-v3-template.js\`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
 - \`src/library/ficha/ficha-chat-import.js\`: rechaza antes de insertar cualquier ficha que no apruebe \`LibrarySchema.audit\`.
+- \`src/library/library-v3-images.js\`: gestiona la carga y persistencia de la portada y la foto interior.
 - \`src/library/library-v3-ficha.js\`: usa la misma auditoría al editar y guardar; además gestiona el bloque opcional \`data.external_link\`.
 - \`src/library/ficha/ficha-actions.js\`: vuelve a usar la misma auditoría al publicar o añadir y muestra el botón externo cuando está activado.
 - \`src/library/inventory/library-inventory-import.js\`: vuelve a auditar antes de persistir la copia.
@@ -90,6 +91,7 @@ const ownership = `## Propietarios únicos
 - \`src/library/core/library-schema-rules.js\`: regla efectiva y auditoría única.
 - \`src/library/library-v3-template.js\`: instrucciones y esqueleto JSON para el Chat.
 - \`src/library/ficha/ficha-chat-import.js\`: entrada de fichas desde Chat.
+- \`src/library/library-v3-images.js\`: carga y persistencia de imágenes de las fichas.
 - \`src/library/library-v3-ficha.js\`: edición, guardado y validación del enlace externo opcional.
 - \`src/library/ficha/ficha-actions.js\`: vista, publicación, entrada para añadir y representación del botón externo.
 - \`src/library/inventory/library-inventory-import.js\`: destino y persistencia en inventario.

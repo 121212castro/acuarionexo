@@ -14,7 +14,7 @@
 
     const feedingFields = `${field(p.feedLabel, `<input id="microFeed" value="${esc(row.feed_type || '')}">`)}
       ${field(p.feedAmountLabel, `<input id="microFeedAmount" value="${esc(row.feed_amount || '')}">`)}
-      ${p.showFeedings ? field('Tomas/día', `<input id="microFeedings" type="number" step="1" value="${esc(row.feedings_per_day ?? '')}">`) : '<input id="microFeedings" type="hidden" value="0">')}`;
+      ${p.showFeedings ? field('Tomas/día', `<input id="microFeedings" type="number" step="1" value="${esc(row.feedings_per_day ?? '')}">`) : '<input id="microFeedings" type="hidden" value="0">'}`;
 
     const maintenanceFields = isPhyto
       ? `${field(p.harvestPercentLabel, `<input id="microWaterPercent" type="number" min="0" max="100" step="1" value="${esc(row.water_change_percent ?? '')}">`)}

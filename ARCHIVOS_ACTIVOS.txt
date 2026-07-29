@@ -1,22 +1,138 @@
-ACUARIONEXO · MODULOS OFICIALES · 27/07/2026
+ACUARIONEXO · MODULOS OFICIALES · 23/07/2026
 
 FUENTE DE VERDAD
 - Rama de trabajo y publicación: main.
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: library-cover-card-fill-20260727-0245.
-- app-version.json: library-cover-card-fill-20260727-0245.
-- manifest.webmanifest: library-cover-card-fill-20260727-0245.
+- index.html: release-7c76419.
+- app-version.json: release-7c76419.
+- manifest.webmanifest: release-7c76419.
 
-BIBLIOTECA · GALERÍA DE PORTADAS
-- src/library/library-v3-core.js: listado y marcado único de tarjetas.
-- library-images.css: autoridad visual única; tarjeta 2:3 y portada al 100 % con object-fit cover.
-- library-clean.css: filtros, paneles y secciones; no controla portadas.
-- src/library/library-v3-images.js: carga y persistencia de portada y foto interior.
-- src/library/ficha/ficha-actions.js: vista abierta.
-- src/library/library-v3-ficha.js: edición y guardado.
-- No se permiten hotfix, patch, wrappers ni estilos duplicados de tarjetas.
+ARCHIVOS ACTIVOS
+- app-version.json
+- app.js
+- aquarium-cards.css
+- aquarium-form-ux.css
+- aquarium-map.css
+- aquariums-mobile-fix.css
+- config.js
+- dashboard.css
+- icon-512.png
+- index.html
+- inventory-accordion.css
+- library-clean.css
+- library-images.css
+- library-mobile-overflow-fix.css
+- login-reef.css
+- manifest.webmanifest
+- microfauna-mobile.css
+- mobile-form-fix.css
+- notifications.css
+- notifications.js
+- settings.css
+- src/admin/admin-core.js
+- src/admin/admin.js
+- src/ai/ai-access.js
+- src/ai/ai-alerts-extra.js
+- src/ai/ai-library-v3.js
+- src/ai/ai.js
+- src/animals/animals-core.js
+- src/animals/animals.js
+- src/aquariums/aquariums-core.js
+- src/aquariums/aquariums-form.js
+- src/aquariums/aquariums-save.js
+- src/aquariums/aquariums.js
+- src/auth/auth-core.js
+- src/auth/auth.js
+- src/core/module-loader.js
+- src/inventory/inventory-core.js
+- src/inventory/inventory-form.js
+- src/inventory/inventory-list.js
+- src/inventory/inventory-ui.js
+- src/inventory/inventory.js
+- src/library/core/library-admin-policy.js
+- src/library/core/library-invertebrate-contract.js
+- src/library/core/library-schema-rules.js
+- src/library/core/library-schema.js
+- src/library/ficha/ficha-actions.js
+- src/library/ficha/ficha-chat-import.js
+- src/library/ficha/ficha-json.js
+- src/library/ficha/ficha-type-tools.js
+- src/library/inventory/library-inventory-import.js
+- src/library/library-v3-ai.js
+- src/library/library-v3-core.js
+- src/library/library-v3-ficha.js
+- src/library/library-v3-images.js
+- src/library/library-v3-template.js
+- src/library/library-v3.js
+- src/library/ui/library.js
+- src/map/map-interactions.js
+- src/map/map-markers.js
+- src/map/map-photos.js
+- src/map/map-render-3d.js
+- src/map/map-save.js
+- src/map/map-state.js
+- src/map/map-ui.js
+- src/map/map-v3-model.js
+- src/map/map.js
+- src/microfauna/microfauna-core.js
+- src/microfauna/microfauna-form.js
+- src/microfauna/microfauna-save.js
+- src/microfauna/microfauna.js
+- src/parameters/measurements-advanced.js
+- src/parameters/parameters-ai-fallback.js
+- src/parameters/parameters-alert-helpers.js
+- src/parameters/parameters-core.js
+- src/parameters/parameters-manual.js
+- src/parameters/parameters.js
+- src/photos/photos-core.js
+- src/photos/photos-form.js
+- src/photos/photos-save.js
+- src/photos/photos.js
+- src/settings/settings.js
+- src/status/settings-status-link.js
+- src/status/status-core.js
+- src/status/status-ui.js
+- src/status/status.js
+- src/support/settings-support-link.js
+- src/support/support.js
+- src/tasks/tasks-core.js
+- src/tasks/tasks-form.js
+- src/tasks/tasks.js
+- status.css
+- styles.css
+- support.css
+- update-manager.js
+
+ADMINISTRACION · ACCESO GLOBAL
+- index.html: botón único adminBtn en la cabecera.
+- src/auth/auth-core.js: visible solo con sesión administrativa.
+- src/admin/admin-core.js: autoridad del rol administrativo.
+- src/core/module-loader.js: carga de adminPanel.
+- No existen botones Admin duplicados por pantalla.
+
+BIBLIOTECA · CADENA ÚNICA
+- library-schema.js: contratos y metadatos base.
+- library-schema-rules.js: regla efectiva y auditoría única.
+- library-v3-template.js: misma regla para el Chat y rutas JSON.
+- ficha-chat-import.js: rechazo previo a la inserción.
+- library-v3-ficha.js: auditoría al guardar y gestión de data.external_link.
+- ficha-actions.js: auditoría al publicar o añadir y representación del botón externo.
+- library-inventory-import.js: auditoría antes de persistir.
+- audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
+
+ENLACE EXTERNO OPCIONAL
+- Propiedad única: data.external_link.
+- Oculto por defecto.
+- URL http/https obligatoria solo cuando enabled=true.
+- Sin precio fijo y sin implicar patrocinio o afiliación.
+- No se permiten implementaciones paralelas por tipo de ficha.
+
+REGLAS
+- Valores cerrados, números, identificadores y textos descriptivos no comparten una longitud genérica.
+- reef_safe usa un valor exacto y reef_safe_notes contiene la explicación.
+- No se permiten validadores paralelos, hotfix ni patch.
 
 GENERADO, NO EDITAR A MANO
 - www/
