@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: release-admin-generator-mobile-20260729-2135.
-- app-version.json: release-admin-generator-mobile-20260729-2135.
-- manifest.webmanifest: release-admin-generator-mobile-20260729-2135.
+- index.html: release-28066fbf2db7.
+- app-version.json: release-28066fbf2db7.
+- manifest.webmanifest: release-28066fbf2db7.
 
 ARCHIVOS ACTIVOS
 - acuarionexo-ajustes.json
@@ -134,7 +134,8 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - src/admin/admin-library-generator.js: entrada, cola, orden, procesamiento y reintentos.
 - src/admin/admin-library-generator.css: tarjetas adaptadas a móvil.
 - library-identify: identificación con contexto obligatorio de marca o fabricante.
-- library-generate-draft: borrador privado posterior a la identificación.
+- library-generate-draft: generación asíncrona, consulta, auditoría y reparación por etapas.
+- identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
 - Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
 
 ENLACE EXTERNO OPCIONAL

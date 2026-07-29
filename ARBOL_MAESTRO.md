@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `release-admin-generator-mobile-20260729-2135`.
+Build actual: `release-28066fbf2db7`.
 
 ## Navegación administrativa global
 
@@ -56,10 +56,13 @@ Una ficha no puede avanzar por estado, validación de IA ni publicación si fall
 - `src/admin/admin-library-generator.js`: propietario único de la entrada por lotes, cola, orden, reintentos y procesamiento.
 - `src/admin/admin-library-generator.css`: presentación adaptable de la cola; tarjetas en móvil.
 - `supabase/functions/library-identify/index.ts`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
-- `supabase/functions/library-generate-draft/index.ts`: genera el borrador privado después de una identificación confirmada.
+- `supabase/functions/library-generate-draft/index.ts`: inicia y consulta respuestas asíncronas de OpenAI; audita cada resultado y separa cada reparación en otra respuesta.
 - `library_generation_jobs.identify_result.requested_brand`: conserva la marca común sin crear un contrato de datos paralelo.
+- `library_generation_jobs.identify_result.generation_state`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
 - Los nombres se limpian de numeración antes de insertarse y procesarse.
 - El orden de la cola es el orden de entrada.
+- La pantalla consulta automáticamente trabajos pendientes y en generación; cerrar la aplicación no cancela una respuesta ya iniciada.
+- Ninguna función espera encadenada la generación y tres reparaciones: cada llamada queda por debajo del límite de ejecución de Supabase.
 - Un trabajo bloqueado o fallido muestra el motivo real y puede reintentarse de forma individual.
 - Nunca publica fichas automáticamente: las deja en revisión privada para añadir fotos y validar.
 

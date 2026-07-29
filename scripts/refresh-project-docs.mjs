@@ -76,10 +76,13 @@ const automaticGenerator = `## Biblioteca / generador automático administrativo
 - \`src/admin/admin-library-generator.js\`: propietario único de la entrada por lotes, cola, orden, reintentos y procesamiento.
 - \`src/admin/admin-library-generator.css\`: presentación adaptable de la cola; tarjetas en móvil.
 - \`supabase/functions/library-identify/index.ts\`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
-- \`supabase/functions/library-generate-draft/index.ts\`: genera el borrador privado después de una identificación confirmada.
+- \`supabase/functions/library-generate-draft/index.ts\`: inicia y consulta respuestas asíncronas de OpenAI; audita cada resultado y separa cada reparación en otra respuesta.
 - \`library_generation_jobs.identify_result.requested_brand\`: conserva la marca común sin crear un contrato de datos paralelo.
+- \`library_generation_jobs.identify_result.generation_state\`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
 - Los nombres se limpian de numeración antes de insertarse y procesarse.
 - El orden de la cola es el orden de entrada.
+- La pantalla consulta automáticamente trabajos pendientes y en generación; cerrar la aplicación no cancela una respuesta ya iniciada.
+- Ninguna función espera encadenada la generación y tres reparaciones: cada llamada queda por debajo del límite de ejecución de Supabase.
 - Un trabajo bloqueado o fallido muestra el motivo real y puede reintentarse de forma individual.
 - Nunca publica fichas automáticamente: las deja en revisión privada para añadir fotos y validar.`;
 
@@ -240,7 +243,8 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - src/admin/admin-library-generator.js: entrada, cola, orden, procesamiento y reintentos.
 - src/admin/admin-library-generator.css: tarjetas adaptadas a móvil.
 - library-identify: identificación con contexto obligatorio de marca o fabricante.
-- library-generate-draft: borrador privado posterior a la identificación.
+- library-generate-draft: generación asíncrona, consulta, auditoría y reparación por etapas.
+- identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
 - Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
 
 ENLACE EXTERNO OPCIONAL

@@ -2,6 +2,7 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
   let running = false;
+  let pollTimer = null;
 
   async function requireAdmin() {
     if (ANX.Admin?.requireAdmin) return ANX.Admin.requireAdmin();
@@ -59,6 +60,13 @@
       </section>`, 'admin');
   }
 
+  function scheduleNextPass(delay = 8000) {
+    clearTimeout(pollTimer);
+    pollTimer = setTimeout(() => {
+      if (typeof window.adminGeneratorRun === 'function') window.adminGeneratorRun();
+    }, delay);
+  }
+
   async function patchJob(id, values) {
     const { error } = await ANX.supabase.from('library_generation_jobs').update(values).eq('id', id);
     if (error) throw error;
@@ -75,6 +83,10 @@
 
   async function processJob(job) {
     try {
+      const savedState = job.identify_result?.generation_state || null;
+      if (job.status === 'generating' && savedState?.response_id) {
+        return continueGeneration(job, job.identify_result, savedState);
+      }
       await patchJob(job.id, { status:'identifying', progress:15, started_at:new Date().toISOString(), attempts:(job.attempts || 0) + 1, error_code:null, error_message:null });
       const requestedBrand = cleanSubject(job.identify_result?.requested_brand || '');
       const identified = await ANX.supabase.functions.invoke('library-identify', { body: { title:cleanSubject(job.subject), brand:requestedBrand, notes:requestedBrand ? `El fabricante o marca exigido por este lote es ${requestedBrand}. Descarta candidatos de otras marcas.` : '', entry_type:'auto' } });
@@ -93,23 +105,49 @@
         return;
       }
 
-      await patchJob(job.id, { status:'generating', progress:55 });
-      const generated = await ANX.supabase.functions.invoke('library-generate-draft', { body: { entry_type:resolvedType, identify_result:identity, cover_url:null, photo_url:null } });
+      await patchJob(job.id, { status:'generating', progress:50 });
+      return continueGeneration(job, identity, null);
+    } catch (error) {
+      await patchJob(job.id, { status:'failed', progress:0, error_code:'generation_failed', error_message:String(error?.message || error).slice(0, 1000) });
+    }
+  }
+
+  async function continueGeneration(job, identity, generationState) {
+    try {
+      const generated = await ANX.supabase.functions.invoke('library-generate-draft', { body: {
+        entry_type:identity.entry_type || job.entry_type,
+        identify_result:identity,
+        cover_url:null,
+        photo_url:null,
+        response_id:generationState?.response_id || null,
+        attempt:generationState?.attempt || 0
+      } });
       if (generated.error) throw generated.error;
-      const entry = generated.data?.data;
+      const result = generated.data?.data;
+      if (result?.response_id) {
+        const nextIdentity = { ...identity, generation_state: { response_id:result.response_id, attempt:result.attempt || 0, phase:result.phase, status:result.status } };
+        const progress = result.phase === 'repairing' ? Math.min(90, 70 + ((result.attempt || 1) * 5)) : 60;
+        await patchJob(job.id, { status:'generating', progress, identify_result:nextIdentity });
+        return false;
+      }
+      const entry = result;
       if (!entry?.id) throw new Error('El generador no devolvió una ficha guardada.');
       const { error: reviewError } = await ANX.supabase.from('library_entries').update({ status:'review', visibility:'private', cover_url:null, photo_url:null }).eq('id', entry.id);
       if (reviewError) throw reviewError;
       await patchJob(job.id, { status:'completed', progress:100, library_entry_id:entry.id, completed_at:new Date().toISOString() });
+      return true;
     } catch (error) {
       await patchJob(job.id, { status:'failed', progress:0, error_code:'generation_failed', error_message:String(error?.message || error).slice(0, 1000) });
+      return false;
     }
   }
 
   window.adminGenerator = async function () {
     if (!await requireAdmin()) return;
     if (ANX.loadModuleGroup) await ANX.loadModuleGroup('biblioteca');
-    return renderQueue();
+    const jobs = await listJobs();
+    await renderQueue();
+    if (jobs.some(job => ['pending','generating'].includes(job.status))) scheduleNextPass(500);
   };
 
   window.adminGeneratorAdd = async function () {
@@ -133,10 +171,14 @@
     if (!await requireAdmin() || running) return;
     running = true;
     try {
-      const { data, error } = await ANX.supabase.from('library_generation_jobs').select('*').eq('status','pending').order('created_at', { ascending:true }).limit(10);
+      const { data, error } = await ANX.supabase.from('library_generation_jobs').select('*').in('status',['pending','generating']).order('created_at', { ascending:true }).limit(10);
       if (error) throw error;
-      for (const job of data || []) { await processJob(job); await renderQueue('Procesando cola...'); }
-      await renderQueue('Bloque terminado. Las aprobadas están listas para fotos y revisión.');
+      for (const job of data || []) { await processJob(job); await renderQueue('Procesando cola por etapas...'); }
+      const { count, error:countError } = await ANX.supabase.from('library_generation_jobs').select('id', { count:'exact', head:true }).in('status',['pending','generating']);
+      if (countError) throw countError;
+      const unfinished = Number(count || 0) > 0;
+      await renderQueue(unfinished ? 'Las búsquedas continúan. Puedes cerrar la aplicación y reanudar después.' : 'Bloque terminado. Las aprobadas están listas para fotos y revisión.');
+      if (unfinished) scheduleNextPass();
     } catch (error) { await renderQueue(error.message || String(error)); }
     finally { running = false; }
   };

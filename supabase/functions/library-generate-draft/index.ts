@@ -1,5 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { auditEntry, authenticatedClients, clean, contractPrompt, contracts, corsHeaders, errorJson, json, normalizeSources, openAiJson } from "../_shared/library-v3.ts";
+import { auditEntry, authenticatedClients, clean, contractPrompt, contracts, corsHeaders, errorJson, json, normalizeSources, pollOpenAiJsonBackground, startOpenAiJsonBackground } from "../_shared/library-v3.ts";
 
 function buildRow(userId: string, identity: any, parsed: any, entryType: string, normalizedSources: any[], model: string, payload: any) {
   return {
@@ -24,29 +24,6 @@ function buildRow(userId: string, identity: any, parsed: any, entryType: string,
   };
 }
 
-async function repairDraft(identity: any, entryType: string, fields: string[], parsed: any, audit: any, imageUrl: string) {
-  return openAiJson(
-    "Eres el motor REPAIR de AcuarioNexo. Recibes un borrador rechazado y lo completas. Devuelve JSON estricto con la ficha completa corregida. No inventes datos: si no puedes verificar algo, usa null.",
-    [
-      `Identidad validada: ${JSON.stringify(identity)}`,
-      contractPrompt(entryType, fields),
-      `Borrador rechazado: ${JSON.stringify(parsed)}`,
-      `Errores de auditoría: ${JSON.stringify(audit.errors)}`,
-      `Campos incompletos: ${JSON.stringify(audit.missing_fields || [])}`,
-      `Campos pobres o genéricos: ${JSON.stringify(audit.poor_fields || [])}`,
-      "Corrige SOLO los campos rechazados y conserva lo que ya sea válido.",
-      "Cada campo corregido debe ser específico, verificable y útil para usuario final y para IA.",
-      "Prohibido usar: bajo, medio, alto, moderado, suele, normalmente, aproximadamente, mantener parámetros estables, compatible con peces pacíficos.",
-      "Para compatibilidad, indica grupos concretos compatibles e incompatibles, condiciones y riesgos.",
-      "Para salud, indica problemas concretos, señales observables y prevención verificable.",
-      "Para ai_notes, escribe datos estructurados en texto natural para decisiones futuras de AcuarioNexo.",
-      "Mantén o mejora sources con URLs reales y used_for.",
-      "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
-    ].join("\n\n"),
-    imageUrl
-  );
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return errorJson("method_not_allowed", "Método no permitido.", 405);
@@ -62,41 +39,56 @@ Deno.serve(async (req: Request) => {
     const fields = contracts[entryType];
     if (!fields) return errorJson("unsupported_entry_type", "Tipo de ficha no soportado.", 400);
     const imageUrl = clean(payload.photo_url, 800);
+    const responseId = clean(payload.response_id, 180);
+    const attempt = Math.max(0, Math.min(3, Number(payload.attempt) || 0));
+    if (!responseId) {
+      const started = await startOpenAiJsonBackground(
+        "Eres el motor GENERATE de AcuarioNexo. Recibes una identidad validada, investigas y creas únicamente un borrador completo, útil para usuario final y útil para IA. Nunca publicas. No inventes datos. Devuelve JSON estricto.",
+        [
+          `Identidad validada: ${JSON.stringify(identity)}`,
+          contractPrompt(entryType, fields),
+          "Contrasta fuentes reales. Mínimo dos URLs reales sobre la misma entidad.",
+          "Cada dato debe ser rastreable con sources[].used_for.",
+          "No devuelvas una ficha mínima: todos los campos del contrato deben estar cubiertos con datos útiles o null si no son verificables.",
+          "Prohibido usar: bajo, medio, alto, moderado, suele, normalmente, aproximadamente, mantener parámetros estables, compatible con peces pacíficos.",
+          "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
+        ].join("\n\n"),
+        imageUrl
+      );
+      return json({ data: { phase: "generating", ...started, attempt: 0 } }, 202);
+    }
 
-    const first = await openAiJson(
-      "Eres el motor GENERATE de AcuarioNexo. Recibes una identidad validada, investigas y creas únicamente un borrador completo, útil para usuario final y útil para IA. Nunca publicas. No inventes datos. Devuelve JSON estricto.",
-      [
-        `Identidad validada: ${JSON.stringify(identity)}`,
-        contractPrompt(entryType, fields),
-        "Contrasta fuentes reales. Mínimo dos URLs reales sobre la misma entidad.",
-        "Cada dato debe ser rastreable con sources[].used_for.",
-        "Reef safe solo puede ser Sí, Sí con precaución o No.",
-        "No devuelvas una ficha mínima: todos los campos del contrato deben estar cubiertos con datos útiles o null si no son verificables.",
-        "Prohibido usar: bajo, medio, alto, moderado, suele, normalmente, aproximadamente, mantener parámetros estables, compatible con peces pacíficos.",
-        "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
-      ].join("\n\n"),
-      imageUrl
-    );
+    const polled = await pollOpenAiJsonBackground(responseId);
+    if (polled.status !== "completed") {
+      return json({ data: { phase: attempt ? "repairing" : "generating", response_id: responseId, status: polled.status, attempt } }, 202);
+    }
 
-    let parsed = first.parsed;
-    let model = first.model;
+    const parsed = polled.parsed;
+    const model = clean(Deno.env.get("OPENAI_MODEL") || "gpt-4.1-mini", 80);
     let normalizedSources = normalizeSources([...(parsed.sources || []), ...sources]);
     if (normalizedSources.length < 2) return errorJson("sources_required", "La investigación no mantuvo dos fuentes reales.", 502);
 
     let row = buildRow(user.id, identity, parsed, entryType, normalizedSources, model, payload);
-    let audit = auditEntry(row);
-
-    for (let attempt = 1; !audit.approved && attempt <= 3; attempt += 1) {
-      const repair = await repairDraft(identity, entryType, fields, parsed, audit, imageUrl);
-      parsed = repair.parsed;
-      model = `${model}+repair${attempt}:${repair.model}`;
-      normalizedSources = normalizeSources([...(parsed.sources || []), ...normalizedSources, ...sources]);
-      if (normalizedSources.length < 2) return errorJson("sources_required", "La reparación no mantuvo dos fuentes reales.", 502);
-      row = buildRow(user.id, identity, parsed, entryType, normalizedSources, model, payload);
-      audit = auditEntry(row);
-    }
+    const audit = auditEntry(row);
 
     if (!audit.approved) {
+      if (attempt < 3) {
+        const repair = await startOpenAiJsonBackground(
+          "Eres el motor REPAIR de AcuarioNexo. Completa y corrige el JSON anterior sin inventar datos. Devuelve la ficha completa en JSON estricto.",
+          [
+            contractPrompt(entryType, fields),
+            `Errores de auditoría: ${JSON.stringify(audit.errors)}`,
+            `Campos incompletos: ${JSON.stringify(audit.missing_fields || [])}`,
+            `Campos pobres o genéricos: ${JSON.stringify(audit.poor_fields || [])}`,
+            "Corrige los campos rechazados y conserva el resto.",
+            "Mantén o mejora sources con URLs reales y used_for.",
+            "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
+          ].join("\n\n"),
+          "",
+          responseId
+        );
+        return json({ data: { phase: "repairing", ...repair, attempt: attempt + 1 } }, 202);
+      }
       return errorJson("draft_quality_failed", "La IA no consiguió crear una ficha completa sin campos pobres. No se ha guardado la ficha.", 422, {
         errors: audit.errors,
         missing_fields: audit.missing_fields || [],
@@ -105,7 +97,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    row.validation_result = { ...audit, generated_audit: true, audited_at: new Date().toISOString(), engine: "library-generate-draft-v5" };
+    row.validation_result = { ...audit, generated_audit: true, audited_at: new Date().toISOString(), engine: "library-generate-draft-v6-background" };
     row.status = "validated";
     row.validated_by = user.id;
     row.validated_at = new Date().toISOString();

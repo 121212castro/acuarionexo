@@ -151,3 +151,54 @@ export async function openAiJson(system: string, prompt: string, imageUrl = "") 
     return { parsed: await repairJsonWithModel(apiKey, model, text, parseError), model };
   }
 }
+
+function responseText(output: any) {
+  return output?.output_text || output?.output?.flatMap((item: any) => item.content || []).map((part: any) => part.text || "").join("\n") || "";
+}
+
+export async function startOpenAiJsonBackground(system: string, prompt: string, imageUrl = "", previousResponseId = "") {
+  const apiKey = Deno.env.get("OPENAI_API_KEY"); if (!apiKey) throw new Error("OPENAI_API_KEY_MISSING");
+  const model = clean(Deno.env.get("OPENAI_MODEL") || "gpt-4.1-mini", 80);
+  const content: any[] = [{ type: "input_text", text: `${prompt}\n\nDevuelve SOLO JSON válido. No uses markdown. No escribas comentarios. No dejes comas, corchetes ni llaves sin cerrar.` }];
+  if (imageUrl) content.push({ type: "input_image", image_url: imageUrl, detail: "high" });
+  const body: any = {
+    model,
+    input: previousResponseId
+      ? [{ role: "user", content }]
+      : [{ role: "system", content: system }, { role: "user", content }],
+    background: true,
+    store: true,
+    temperature: 0.1
+  };
+  if (previousResponseId) body.previous_response_id = previousResponseId;
+  else {
+    body.tools = [{ type: "web_search_preview" }];
+    body.tool_choice = { type: "web_search_preview" };
+  }
+  const response = await fetch("https://api.openai.com/v1/responses", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) throw new Error(`OPENAI_BACKGROUND_${response.status}:${(await response.text()).slice(0, 800)}`);
+  const output = await response.json();
+  if (!output?.id) throw new Error("OPENAI_BACKGROUND_ID_MISSING");
+  return { response_id: output.id, status: clean(output.status, 40) || "queued", model };
+}
+
+export async function pollOpenAiJsonBackground(responseId: string) {
+  const apiKey = Deno.env.get("OPENAI_API_KEY"); if (!apiKey) throw new Error("OPENAI_API_KEY_MISSING");
+  const response = await fetch(`https://api.openai.com/v1/responses/${encodeURIComponent(responseId)}`, {
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" }
+  });
+  if (!response.ok) throw new Error(`OPENAI_BACKGROUND_POLL_${response.status}:${(await response.text()).slice(0, 800)}`);
+  const output = await response.json();
+  const status = clean(output.status, 40);
+  if (status !== "completed") {
+    if (["failed", "cancelled", "incomplete"].includes(status)) {
+      throw new Error(`OPENAI_BACKGROUND_${status.toUpperCase()}:${clean(output.error?.message || output.incomplete_details?.reason, 800)}`);
+    }
+    return { response_id: responseId, status: status || "in_progress", parsed: null };
+  }
+  return { response_id: responseId, status, parsed: extractJson(responseText(output)) };
+}
