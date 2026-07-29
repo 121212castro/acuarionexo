@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-9c8ae91bc15f`
+`release-multitaxon-parameters-20260729-1022`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
