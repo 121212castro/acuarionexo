@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `release-9c8ae91bc15f`.
+Build actual: `release-multitaxon-parameters-20260729-1022`.
 
 ## Navegación administrativa global
 
