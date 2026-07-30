@@ -1,3 +1,5 @@
+import fs from 'node:fs';
+
 globalThis.window = globalThis;
 globalThis.ANX = {};
 
@@ -71,6 +73,30 @@ function completeEntry(type, contract) {
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 const failures = [];
+const generatedPath = new URL('../supabase/functions/_shared/library-contract.generated.ts', import.meta.url);
+const generatedSource = fs.readFileSync(generatedPath, 'utf8');
+const generatedMatch = generatedSource.match(/export const LIBRARY_CONTRACT = ([\s\S]+) as const;\s*$/);
+if (!generatedMatch) {
+  failures.push('Servidor: no se pudo leer el contrato generado.');
+} else {
+  const generated = JSON.parse(generatedMatch[1]);
+  if (JSON.stringify(generated.contracts) !== JSON.stringify(S.CONTRACTS)) {
+    failures.push('Servidor: sus contratos no coinciden exactamente con los contratos del cliente.');
+  }
+  if (JSON.stringify(generated.biologicalTypes) !== JSON.stringify(S.BIOLOGICAL_TYPES)) {
+    failures.push('Servidor: sus categorías biológicas no coinciden con las del cliente.');
+  }
+  if (JSON.stringify(generated.sourcePolicy) !== JSON.stringify(S.SOURCE_POLICY)) {
+    failures.push('Servidor: su política de fuentes no coincide con la del cliente.');
+  }
+}
+const serverAuditSource = fs.readFileSync(new URL('../supabase/functions/_shared/library-v3.ts', import.meta.url), 'utf8');
+if (!serverAuditSource.includes('import { LIBRARY_CONTRACT } from "./library-contract.generated.ts";')) {
+  failures.push('Servidor: la auditoría no consume el contrato generado.');
+}
+if (/export const contracts[^=]*=\s*\{/.test(serverAuditSource) || /const sourceDomains[^=]*=\s*\{/.test(serverAuditSource)) {
+  failures.push('Servidor: conserva una copia manual del contrato o de la política de fuentes.');
+}
 for (const [type, contract] of Object.entries(S.CONTRACTS || {})) {
   const valid = completeEntry(type, contract);
   const onlyTwo = clone(valid);
@@ -80,6 +106,14 @@ for (const [type, contract] of Object.entries(S.CONTRACTS || {})) {
   const noUsedFor = clone(valid);
   delete noUsedFor.sources[0].used_for;
   if (S.audit(noUsedFor).approved) failures.push(`${type}.sources: aprobó una fuente sin used_for.`);
+
+  const trackingDuplicate = clone(valid);
+  trackingDuplicate.sources = [
+    trackingDuplicate.sources[0],
+    { ...trackingDuplicate.sources[0], url: `${trackingDuplicate.sources[0].url}${trackingDuplicate.sources[0].url.includes('?') ? '&' : '?'}utm_source=openai` },
+    trackingDuplicate.sources[1]
+  ];
+  if (S.audit(trackingDuplicate).approved) failures.push(`${type}.sources: contó como distinta una URL duplicada con seguimiento UTM.`);
 }
 for (const [type, contract] of Object.entries(S.CONTRACTS || {})) {
   const template = S.completeTemplateFor(type);
@@ -132,6 +166,14 @@ for (const [type, contract] of Object.entries(S.CONTRACTS || {})) {
   shortSummary.summary = 'Resumen corto';
   shortSummary.sections.summary = 'Resumen corto';
   if (S.audit(shortSummary).approved) failures.push(`${type}.summary: aprobó un resumen inferior a 20 caracteres.`);
+}
+
+const multispecies = completeEntry('microfauna', S.CONTRACTS.microfauna);
+multispecies.scientific_name = 'Brachionus plicatilis + Tisbe spp. + Apocyclops spp. + Tigriopus spp.';
+multispecies.data.culture_type = 'Mezcla viva multiespecífica comercial.';
+multispecies.data.identification = 'Mezcla multiespecífica identificada por los taxones declarados por el productor.';
+if (!S.audit(multispecies).approved) {
+  failures.push(`microfauna: una mezcla comercial con taxones spp. fue rechazada: ${S.audit(multispecies).errors.join(' | ')}`);
 }
 
 if (failures.length) throw new Error(`Auditoría de enlace contrato-plantilla-validación fallida:\n${failures.join('\n')}`);

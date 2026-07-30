@@ -60,7 +60,7 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 
 ## Biblioteca / cadena única de contrato
 
-- `src/library/core/library-schema.js`: define los 13 contratos, campos, etiquetas, apartados y metadatos base.
+- `src/library/core/library-schema.js`: define los 14 contratos, campos, etiquetas, apartados y política de fuentes.
 - `src/library/core/library-schema-rules.js`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
 - `src/library/library-v3-template.js`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
 - `src/library/ficha/ficha-chat-import.js`: rechaza antes de insertar cualquier ficha que no apruebe `LibrarySchema.audit`.
@@ -68,7 +68,10 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `src/library/library-v3-ficha.js`: usa la misma auditoría al editar y guardar; además gestiona el bloque opcional `data.external_link`.
 - `src/library/ficha/ficha-actions.js`: vuelve a usar la misma auditoría al publicar o añadir y muestra el botón externo cuando está activado.
 - `src/library/inventory/library-inventory-import.js`: vuelve a auditar antes de persistir la copia.
-- `scripts/audit-library-contracts.mjs`: recorre los 13 tipos y verifica contrato, plantilla, rutas, valores cerrados, números, longitudes, resumen y fuentes.
+- `scripts/generate-library-server-contract.mjs`: genera el contrato del servidor directamente desde la regla efectiva del cliente.
+- `supabase/functions/_shared/library-contract.generated.ts`: copia generada y desplegable; no se edita manualmente.
+- `scripts/audit-library-contracts.mjs`: recorre los 14 tipos y verifica contrato, plantilla, servidor, valores cerrados, números, longitudes, resumen y fuentes.
+- Las URLs de fuentes se deduplican por dirección canónica; parámetros UTM y otros identificadores de seguimiento no crean fuentes nuevas.
 - No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.
 
 ## Biblioteca / generador automático administrativo
@@ -78,7 +81,8 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `supabase/functions/library-identify/index.ts`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
 - `supabase/functions/library-generate-draft/index.ts`: inicia y consulta respuestas asíncronas de OpenAI; audita cada resultado y separa cada reparación en otra respuesta.
 - `supabase/functions/library-generation-worker/index.ts`: consume una etapa persistente de la cola en cada ejecución, sin depender del navegador.
-- `supabase/functions/_shared/library-v3.ts`: concentra la auditoría del servidor; reconoce las mezclas comerciales multiespecíficas por su identidad validada sin exigir una especie única.
+- `supabase/functions/_shared/library-v3.ts`: consume el contrato generado del cliente y aplica la misma auditoría en identificación, generación, revisión y publicación.
+- Toda modificación de `_shared/library-v3.ts` o `library-contract.generated.ts` exige desplegar juntas `library-identify`, `library-generate-draft`, `library-generation-worker`, `library-audit-card` y `library-publish`.
 - El trabajador conserva el `scientific_name` multiespecífico confirmado y garantiza que `data.culture_type` y `data.identification` declaren expresamente la mezcla.
 - `data.ai_notes` debe terminar como texto técnico útil; si la IA devuelve un objeto, el trabajador lo serializa antes de auditarlo.
 - `supabase/migrations/20260729233000_library_generation_worker.sql`: programa el trabajador con pg_cron y pg_net y autentica la llamada con Supabase Vault.

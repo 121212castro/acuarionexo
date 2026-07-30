@@ -1,42 +1,30 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.8";
+import { LIBRARY_CONTRACT } from "./library-contract.generated.ts";
 
 export type SourceItem = { name: string; url: string; source_type?: string; original?: unknown; used_for?: string; confidence?: number | null; consulted_at?: string };
-export const biologicalTypes = new Set(["pez_marino", "pez_dulce", "coral", "invertebrado", "planta", "microfauna"]);
-export const productTypes = new Set(["producto", "medicamento", "sal", "aditivo", "alimento", "test", "equipamiento"]);
-export const statuses = ["identified", "draft", "review", "validated", "published"];
+export const biologicalTypes = new Set<string>(LIBRARY_CONTRACT.biologicalTypes);
+export const productTypes = new Set<string>(LIBRARY_CONTRACT.productTypes);
+export const statuses = [...LIBRARY_CONTRACT.statuses];
+export const contracts: Record<string, string[]> = Object.fromEntries(
+  Object.entries(LIBRARY_CONTRACT.contracts).map(([type, fields]) => [type, [...fields]])
+);
+const fieldRules = LIBRARY_CONTRACT.fieldRules as Record<string, Record<string, {
+  id: string;
+  label: string;
+  section: string;
+  type: string;
+  minLength: number;
+  allowed: readonly string[] | null;
+  validator: string | null;
+}>>;
 
-export const contracts: Record<string, string[]> = {
-  pez_marino: ["title","scientific_name","common_names","synonyms","family","order_name","class_name","distribution","habitat","depth_range","natural_environment","adult_size_cm","life_expectancy_years","minimum_tank_liters","recommended_tank_liters","tank_maturity","temperature_min","temperature_max","ph_min","ph_max","kh_min","kh_max","salinity_min","salinity_max","nitrate_max","phosphate_max","diet","feeding_frequency","feeding_notes","behavior","aggressiveness","territoriality","social_behavior","compatibility","fish_compatibility","coral_compatibility","invertebrate_compatibility","reef_safe","reef_safe_notes","care_level","beginner_suitable","acclimation","common_diseases","health_notes","reproduction","purchase_recommendations","common_mistakes","curiosities","ai_notes","user_summary","sources"],
-  pez_dulce: ["title","scientific_name","common_names","synonyms","family","order_name","class_name","distribution","habitat","natural_environment","adult_size_cm","life_expectancy_years","minimum_tank_liters","recommended_tank_liters","temperature_min","temperature_max","ph_min","ph_max","gh_min","gh_max","kh_min","kh_max","diet","feeding_frequency","feeding_notes","behavior","aggressiveness","territoriality","schooling","swimming_zone","compatibility","plant_compatibility","invertebrate_compatibility","care_level","beginner_suitable","acclimation","common_diseases","health_notes","reproduction","breeding_notes","purchase_recommendations","common_mistakes","curiosities","ai_notes","user_summary","sources"],
-  coral: ["title","scientific_name","common_names","synonyms","family","distribution","habitat","depth_range","natural_environment","coral_type","growth_form","lighting","par_range","flow","placement","aggressiveness","sweeper_tentacles","growth_rate","adult_size_cm","feeding","feeding_frequency","photosynthetic","reef_safe","compatibility","fish_compatibility","invertebrate_compatibility","temperature_min","temperature_max","salinity_min","salinity_max","ph_min","ph_max","kh_min","kh_max","calcium_min","calcium_max","magnesium_min","magnesium_max","nitrate_range","phosphate_range","care_level","beginner_suitable","fragging","propagation","common_problems","pests","purchase_recommendations","common_mistakes","curiosities","ai_notes","user_summary","sources"],
-  invertebrado: ["title","scientific_name","common_names","synonyms","family","distribution","habitat","natural_environment","adult_size_cm","minimum_tank_liters","temperature_min","temperature_max","ph_min","ph_max","salinity_min","salinity_max","kh_min","kh_max","diet","feeding","feeding_frequency","behavior","aggressiveness","territoriality","reef_safe","reef_safe_notes","coral_compatibility","fish_compatibility","invertebrate_compatibility","molting","iodine_sensitivity","copper_sensitivity","care_level","beginner_suitable","acclimation","common_problems","reproduction","purchase_recommendations","common_mistakes","curiosities","ai_notes","user_summary","sources"],
-  planta: ["title","scientific_name","common_names","synonyms","family","distribution","habitat","natural_environment","plant_type","growth_rate","height_cm","placement","temperature_min","temperature_max","ph_min","ph_max","gh_min","gh_max","kh_min","kh_max","lighting","co2","fertilization","substrate","propagation","maintenance","trimming","compatibility","fish_compatibility","invertebrate_compatibility","care_level","beginner_suitable","common_problems","algae_risk","purchase_recommendations","common_mistakes","curiosities","ai_notes","user_summary","sources"],
-  microfauna: ["title","scientific_name","common_names","culture_type","identification","use_in_aquarium","target_animals","culture_method","container","temperature_min","temperature_max","salinity_min","salinity_max","feeding","feeding_frequency","harvest","harvest_frequency","maintenance","water_changes","density_control","crash_risks","contamination_risks","storage","care_level","common_problems","common_mistakes","ai_notes","user_summary","sources"],
-  producto: ["title","manufacturer","brand","product_code","category","composition","active_components","intended_use","dose","dose_calculation","use","instructions","monitoring","compatibility","risks","warnings","storage","expiry","aquarium_type","source_label","ai_notes","user_summary","sources"],
-  sal: ["title","manufacturer","brand","product_code","composition","declared_parameters","salinity_reference","grams_per_liter","mixing","mixing_time","dose","dose_calculation","use","water_change_use","monitoring","compatibility","risks","storage","expiry","aquarium_type","source_label","ai_notes","user_summary","sources"],
-  aditivo: ["title","manufacturer","brand","product_code","composition","active_components","what_corrects","parameter_target","dose","dose_calculation","maximum_dose","use","instructions","monitoring","compatibility","risks","warnings","storage","expiry","aquarium_type","source_label","ai_notes","user_summary","sources"],
-  alimento: ["title","manufacturer","brand","product_code","food_type","composition","analysis","particle_size","target_species","feeding_frequency","dose","use","instructions","compatibility","risks","storage","expiry","aquarium_type","source_label","ai_notes","user_summary","sources"],
-  medicamento: ["title","manufacturer","brand","product_code","active_ingredient","indications","target_diseases","dose","dose_calculation","treatment_days","repeat_treatment","remove_equipment","water_change_after","monitoring","compatibility","contraindications","risks","warnings","storage","expiry","hospital_tank_use","source_label","ai_notes","user_summary","sources"],
-  test: ["title","manufacturer","brand","product_code","parameter","method","range","resolution","scale_values","sample_volume","reagents","procedure","reading_time","interpretation","interferences","expiry","storage","compatibility","acuarionexo_mapping","common_errors","source_label","ai_notes","user_summary","sources"],
-  equipamiento: ["title","manufacturer","brand","product_code","equipment_type","specifications","power","consumption_watts","flow","volume","tank_size_recommended","installation","setup","maintenance","cleaning_frequency","spare_parts","compatibility","risks","warnings","warranty","source_manual","ai_notes","user_summary","sources"]
-};
-
-const numericOrShortFields = new Set(["title","scientific_name","manufacturer","brand","product_code","family","order_name","class_name","common_names","synonyms","adult_size_cm","height_cm","life_expectancy_years","minimum_tank_liters","recommended_tank_liters","temperature_min","temperature_max","ph_min","ph_max","gh_min","gh_max","kh_min","kh_max","salinity_min","salinity_max","nitrate_max","phosphate_max","calcium_min","calcium_max","magnesium_min","magnesium_max","reef_safe","beginner_suitable","care_level","feeding_frequency","reading_time","sample_volume","resolution","range","method","power","flow","volume","consumption_watts","grams_per_liter","mixing_time","treatment_days","expiry","source_label","sources"]);
-
-export const contractSections: Record<string, string[]> = {
-  identidad: ["title","scientific_name","common_names","synonyms","manufacturer","brand","product_code","family","order_name","class_name","category","equipment_type","food_type","culture_type","coral_type","plant_type"],
-  habitat: ["distribution","habitat","depth_range","natural_environment"],
-  acuario: ["minimum_tank_liters","recommended_tank_liters","tank_maturity","tank_size_recommended","aquarium_type","placement","substrate"],
-  parametros: ["temperature_min","temperature_max","ph_min","ph_max","gh_min","gh_max","kh_min","kh_max","salinity_min","salinity_max","nitrate_max","phosphate_max","calcium_min","calcium_max","magnesium_min","magnesium_max","nitrate_range","phosphate_range","declared_parameters","salinity_reference","grams_per_liter","parameter","parameter_target","range","resolution","scale_values"],
-  alimentacion: ["diet","feeding","feeding_frequency","feeding_notes","target_species","composition","analysis","particle_size"],
-  comportamiento: ["behavior","aggressiveness","territoriality","social_behavior","schooling","swimming_zone","growth_form","growth_rate","photosynthetic","sweeper_tentacles"],
-  compatibilidad: ["compatibility","fish_compatibility","coral_compatibility","invertebrate_compatibility","plant_compatibility","reef_safe","reef_safe_notes"],
-  salud_mantenimiento: ["acclimation","common_diseases","health_notes","common_problems","pests","molting","iodine_sensitivity","copper_sensitivity","maintenance","trimming","fertilization","co2","lighting","par_range","flow","fragging","propagation","reproduction","breeding_notes"],
-  uso_dosis: ["active_components","active_ingredient","intended_use","use","instructions","dose","dose_calculation","maximum_dose","mixing","water_change_use","monitoring","indications","target_diseases","repeat_treatment","remove_equipment","water_change_after","hospital_tank_use","procedure","interpretation","interferences","acuarionexo_mapping"],
-  riesgos: ["risks","warnings","contraindications","crash_risks","contamination_risks","algae_risk","common_mistakes","common_errors"],
-  compra: ["purchase_recommendations","storage","expiry","warranty","spare_parts","source_manual"],
-  ia_usuario: ["user_summary","ai_notes","curiosities"]
-};
+function contractSectionsFor(entryType: string) {
+  return Object.values(fieldRules[entryType] || {}).reduce((sections, field) => {
+    const section = field.section || "identity";
+    (sections[section] ||= []).push(field.id);
+    return sections;
+  }, {} as Record<string, string[]>);
+}
 
 export const corsHeaders = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type", "Access-Control-Allow-Methods": "POST, OPTIONS" };
 export function json(body: unknown, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }); }
@@ -75,6 +63,20 @@ export function urlsFromAny(value: unknown, found: string[] = []): string[] {
   return found;
 }
 export function realUrl(value: unknown) { return urlsFromAny(value).some(url => { try { const parsed = new URL(url); return ["http:", "https:"].includes(parsed.protocol) && parsed.hostname.includes("."); } catch (_) { return false; } }); }
+function canonicalSourceKey(value: string) {
+  try {
+    const parsed = new URL(value);
+    parsed.hash = "";
+    parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+    [...parsed.searchParams.keys()].forEach(key => {
+      if (/^utm_/i.test(key) || /^(fbclid|gclid|dclid|msclkid)$/i.test(key)) parsed.searchParams.delete(key);
+    });
+    if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/+$/, "");
+    return parsed.toString();
+  } catch (_) {
+    return value;
+  }
+}
 export function normalizeSources(value: unknown): SourceItem[] {
   const raw = Array.isArray(value) ? value : [];
   const seen = new Set<string>();
@@ -83,24 +85,20 @@ export function normalizeSources(value: unknown): SourceItem[] {
     const url = urlsFromAny(item.url || item)[0] || "";
     let hostname = ""; try { hostname = new URL(url).hostname; } catch (_) {}
     return { name: clean(item.name || item.title || hostname || `Fuente ${index + 1}`, 180), url, source_type: clean(item.source_type || item.type, 80), original: item.original || item, used_for: clean(item.used_for, 500), confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null, consulted_at: item.consulted_at || new Date().toISOString() };
-  }).filter(source => { if (!realUrl(source.url) || seen.has(source.url)) return false; seen.add(source.url); return true; }).slice(0, 20);
+  }).filter(source => { const key = canonicalSourceKey(source.url); if (!realUrl(source.url) || seen.has(key)) return false; seen.add(key); return true; }).slice(0, 20);
 }
-const sourceDomains: Record<string, string[]> = {
-  pez_marino: ["fishbase.se", "catalogoffishes.org", "marinespecies.org", "iucnredlist.org", "gbif.org"],
-  pez_dulce: ["fishbase.se", "catalogoffishes.org", "iucnredlist.org", "gbif.org"],
-  planta: ["powo.science.kew.org", "worldfloraonline.org", "tropicos.org", "gbif.org"],
-  coral: ["marinespecies.org", "coraltraits.org", "iucnredlist.org", "gbif.org"],
-  invertebrado: ["marinespecies.org", "iucnredlist.org", "gbif.org"],
-  microfauna: ["marinespecies.org", "algaebase.org", "gbif.org"]
-};
-const officialSourceType = /\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\b/i;
-const weakSourceDomain = /\b(wikipedia\.org|facebook\.com|instagram\.com|amazon\.|ebay\.|aliexpress\.|mercadolibre\.|reddit\.com)\b/i;
+const sourceConfiguration = LIBRARY_CONTRACT.sourcePolicy;
+const sourceDomains = sourceConfiguration.specializedDomains as Record<string, readonly string[]>;
+const minimumSources = Number(sourceConfiguration.minimumSources);
+const minimumIndependentSources = Number(sourceConfiguration.minimumIndependentSources);
+const officialSourceType = new RegExp(sourceConfiguration.officialSourcePattern, "i");
+const weakSourceDomain = new RegExp(sourceConfiguration.weakSourceDomainPattern, "i");
 function sourceHostname(source: SourceItem) { try { return new URL(source.url).hostname.toLowerCase().replace(/^www\./, ""); } catch (_) { return ""; } }
-function matchesDomain(hostname: string, domains: string[]) { return domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`)); }
+function matchesDomain(hostname: string, domains: readonly string[]) { return domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`)); }
 export function sourcePolicy(entryType: string, value: unknown) {
   const sources = normalizeSources(value);
   const errors: string[] = [];
-  if (sources.length < 3) errors.push("Se requieren al menos tres fuentes reales.");
+  if (sources.length < minimumSources) errors.push(`Se requieren al menos ${minimumSources} fuentes reales con URL completa.`);
   if (sources.some(source => !clean(source.used_for, 500))) errors.push("Cada fuente debe indicar en used_for qué datos respalda.");
   const specializedDomains = sourceDomains[entryType] || [];
   const hasSpecialized = sources.some(source => matchesDomain(sourceHostname(source), specializedDomains));
@@ -111,8 +109,8 @@ export function sourcePolicy(entryType: string, value: unknown) {
     const hasOfficial = sources.some(source => officialSourceType.test(`${source.source_type || ""} ${source.name || ""}`) && !weakSourceDomain.test(sourceHostname(source)));
     if (!hasOfficial) errors.push("Falta una fuente oficial del fabricante, manual, prospecto o ficha técnica.");
   }
-  const usefulIndependent = sources.filter(source => !weakSourceDomain.test(sourceHostname(source)));
-  if (usefulIndependent.length < 2) errors.push("Se requieren al menos dos fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.");
+  const reliableHosts = new Set(sources.map(sourceHostname).filter(hostname => hostname && !weakSourceDomain.test(hostname)));
+  if (reliableHosts.size < minimumIndependentSources) errors.push(`Se requieren al menos ${minimumIndependentSources} fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.`);
   return { approved: errors.length === 0, errors, sources, source_count: sources.length, has_specialized: hasSpecialized };
 }
 export function concreteScientificName(value: unknown) { const name = clean(value, 200); return /^[A-Z][a-z-]+ [a-z][a-z-]+(?:\s+var\.\s+[a-z-]+)?$/.test(name) && !/\b(?:spp?|cf|aff)\.?\b/i.test(name); }
@@ -120,7 +118,7 @@ export function multiTaxonMicrofauna(entry: any) {
   if (entry?.entry_type !== "microfauna") return false;
   const taxa = clean(entry?.scientific_name, 500).split(/\s*\+\s*/).map(value => value.trim()).filter(Boolean);
   if (taxa.length < 2) return false;
-  const validTaxon = (taxon: string) => concreteScientificName(taxon) || /^[A-Z][a-z-]+(?:\s+sp\.)?$/.test(taxon);
+  const validTaxon = (taxon: string) => concreteScientificName(taxon) || /^[A-Z][a-z-]+(?:\s+spp?\.)?$/.test(taxon);
   const description = `${clean(entry?.data?.culture_type, 500)} ${clean(entry?.data?.identification, 2000)}`;
   return taxa.every(validTaxon) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);
 }
@@ -135,7 +133,7 @@ export function contractPrompt(entryType: string, fields: string[]) {
     "Si un dato no se puede verificar en fuentes, devuelve null, pero no sustituyas con relleno genérico.",
     "Añade user_summary: resumen claro para el usuario final. Añade ai_notes: datos estructurados para que la IA pueda tomar decisiones después.",
     "Devuelve sections agrupadas por apartados legibles para mostrar la ficha completa.",
-    `Apartados de referencia: ${JSON.stringify(contractSections)}.`,
+    `Apartados de referencia: ${JSON.stringify(contractSectionsFor(entryType))}.`,
     "sources debe incluir al menos tres URLs reales y used_for explicando qué dato justifica cada fuente.",
     "Fuentes obligatorias: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable elegida por la investigación.",
     "Para productos comerciales, la fuente oficial debe ser el fabricante, manual, prospecto o ficha técnica; si no existe accesible, documenta una fuente primaria equivalente.",
@@ -144,33 +142,107 @@ export function contractPrompt(entryType: string, fields: string[]) {
   ].join("\n");
 }
 
-function fieldIsPoor(field: string, value: unknown) {
-  if (value == null || value === "" || (Array.isArray(value) && !value.length)) return true;
-  if (numericOrShortFields.has(field)) return false;
-  if (typeof value === "number" || typeof value === "boolean") return false;
-  const text = clean(
-    typeof value === "object" ? JSON.stringify(value) : value,
-    5000
-  );
-  if (text.length < 20) return true;
-  if (/\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i.test(text)) return true;
-  if (/requiere buena calidad de agua|mantener par[aá]metros estables|alimentaci[oó]n variada|compatible con peces pac[ií]ficos/i.test(text)) return true;
-  return false;
+const topLevelFields = new Set(["title", "scientific_name", "summary", "sources"]);
+const numericPattern = /\d+(?:[.,]\d+)?(?:\s*(?:-|–|—|a|hasta)\s*\d+(?:[.,]\d+)?)?/i;
+const urlPattern = /https?:\/\//i;
+const internalTrace = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
+const impreciseText = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
+
+function unique(values: string[]) {
+  return [...new Set(values.map(value => clean(value, 2000)).filter(Boolean))];
+}
+
+function valueFor(entry: any, field: string) {
+  if (topLevelFields.has(field)) return entry?.[field];
+  return entry?.data?.[field] ?? entry?.[field];
+}
+
+function isMultiTaxonFlexibleField(entry: any, field: string) {
+  return multiTaxonMicrofauna(entry) && [
+    "scientific_name",
+    "temperature_min",
+    "temperature_max",
+    "salinity_min",
+    "salinity_max"
+  ].includes(field);
+}
+
+function validateGeneratedField(entry: any, field: string) {
+  if (field === "sources") return sourcePolicy(entry.entry_type, entry.sources).errors.join(" ");
+  const rule = fieldRules[entry.entry_type]?.[field];
+  if (!rule) return "El campo no existe en el contrato generado.";
+  const value = valueFor(entry, field);
+  if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) return "Campo obligatorio vacío.";
+  if (rule.allowed?.length && !rule.allowed.includes(clean(value, 500))) {
+    return `Valor no permitido. Usa exactamente: ${rule.allowed.join(" | ")}.`;
+  }
+  if (rule.validator === "scientificName" && !isMultiTaxonFlexibleField(entry, field) && !concreteScientificName(value)) {
+    return "Debe ser una especie concreta con binomio científico válido.";
+  }
+  const text = clean(typeof value === "object" ? JSON.stringify(value) : value, 10000);
+  if (rule.type === "number" && !isMultiTaxonFlexibleField(entry, field) && !numericPattern.test(text)) {
+    return "Debe incluir un valor numérico o rango concreto.";
+  }
+  if (rule.type !== "number" && !rule.allowed?.length && text.length < Number(rule.minLength || 1)) {
+    return `Debe tener al menos ${Number(rule.minLength || 1)} caracteres.`;
+  }
+  if (urlPattern.test(text)) return "Las URLs solo pueden aparecer en Fuentes.";
+  if (internalTrace.test(text)) return "Contiene trazas internas de la aplicación.";
+  return "";
 }
 
 export function auditEntry(entry: any) {
-  const errors: string[] = []; const warnings: string[] = []; const sourceAudit = sourcePolicy(entry.entry_type, entry.sources); const sources = sourceAudit.sources; const data = entry.data && typeof entry.data === "object" ? entry.data : {}; const required = contracts[entry.entry_type] || ["title", "sources"];
-  const missing = required.filter(field => { if (field === "sources") return sources.length < 3; const value = data[field] ?? entry[field]; return value == null || value === "" || (Array.isArray(value) && !value.length); });
-  const poor = required.filter(field => field !== "sources" && !missing.includes(field) && fieldIsPoor(field, data[field] ?? entry[field]));
-  if (!entry.identity_confirmed) errors.push("Identificación insuficiente.");
-  if (biologicalTypes.has(entry.entry_type) && !multiTaxonMicrofauna(entry) && !concreteScientificName(entry.scientific_name)) errors.push("La ficha biológica no tiene una especie concreta.");
-  errors.push(...sourceAudit.errors);
-  if (missing.length) errors.push(`Campos obligatorios incompletos: ${missing.join(", ")}.`);
-  if (poor.length) errors.push(`Campos pobres o genéricos: ${poor.join(", ")}.`);
-  const text = JSON.stringify(data);
-  [/requiere buena calidad de agua/i,/mantener par[aá]metros estables/i,/alimentaci[oó]n variada/i,/compatible con peces pac[ií]ficos/i,/\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i].forEach(pattern => { const match = text.match(pattern); if (match) warnings.push(`Frase genérica o imprecisa: ${match[0]}.`); });
-  if (entry.entry_type === "pez_marino" && /\bGH\b/i.test(text)) errors.push("GH no es un parámetro contractual para pez marino.");
-  return { approved: errors.length === 0, errors, warnings, missing_fields: missing, poor_fields: poor, source_count: sources.length, sources };
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const type = clean(entry?.entry_type, 80);
+  const required = contracts[type] || ["title", "sources"];
+  const missing: string[] = [];
+  const invalid: string[] = [];
+
+  if (!statuses.includes(entry?.status)) errors.push("Estado no permitido.");
+  if (!entry?.identity_confirmed) errors.push("Identificación insuficiente.");
+  if (biologicalTypes.has(type) && !multiTaxonMicrofauna(entry) && !concreteScientificName(entry?.scientific_name)) {
+    errors.push("La ficha biológica no tiene una especie concreta.");
+  }
+
+  for (const field of required) {
+    const error = validateGeneratedField(entry, field);
+    if (!error) continue;
+    const value = valueFor(entry, field);
+    if (field === "sources" || value == null || value === "" || (Array.isArray(value) && value.length === 0)) missing.push(field);
+    else invalid.push(field);
+    const rule = fieldRules[type]?.[field];
+    errors.push(`${rule?.section || "Contrato"} · ${rule?.label || field}: ${error}`);
+  }
+
+  const summary = clean(entry?.summary ?? entry?.sections?.summary, 5000);
+  if (!summary) {
+    errors.push("Resumen · Resumen: Campo obligatorio vacío.");
+    missing.push("summary");
+  } else if (summary.length < 20) {
+    errors.push("Resumen · Resumen: Debe tener al menos 20 caracteres.");
+    invalid.push("summary");
+  }
+  if (urlPattern.test(summary)) errors.push("Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.");
+
+  const narrativeText = JSON.stringify({ summary, data: entry?.data || {} });
+  const impreciseMatch = narrativeText.match(impreciseText);
+  if (impreciseMatch) warnings.push(`Revisar expresión contextual: ${impreciseMatch[0]}.`);
+  if (type === "pez_marino" && /\bGH\b/i.test(JSON.stringify(entry?.data || {}))) {
+    errors.push("GH no es un parámetro contractual para pez marino.");
+  }
+
+  const sources = normalizeSources(entry?.sources);
+  return {
+    approved: unique(errors).length === 0,
+    errors: unique(errors),
+    warnings: unique(warnings),
+    missing_fields: unique(missing),
+    poor_fields: unique(invalid),
+    source_count: sources.length,
+    sources,
+    contract_version: "generated-client-parity-v1"
+  };
 }
 export async function authenticatedClients(req: Request) {
   const authHeader = req.headers.get("Authorization") || ""; if (!authHeader) throw new Error("AUTH_REQUIRED");

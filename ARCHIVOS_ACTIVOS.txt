@@ -123,12 +123,13 @@ ADMINISTRACION · ACCESO GLOBAL
 BIBLIOTECA · CADENA ÚNICA
 - library-schema.js: contratos y metadatos base.
 - library-schema-rules.js: regla efectiva y auditoría única.
+- library-contract.generated.ts: contrato del servidor generado desde la regla efectiva del cliente.
 - library-v3-template.js: misma regla para el Chat y rutas JSON.
 - ficha-chat-import.js: rechazo previo a la inserción.
 - library-v3-ficha.js: auditoría al guardar y gestión de data.external_link.
 - ficha-actions.js: auditoría al publicar o añadir y representación del botón externo.
 - library-inventory-import.js: auditoría antes de persistir.
-- audit-library-contracts.mjs: prueba los 13 tipos campo por campo.
+- audit-library-contracts.mjs: prueba los 14 tipos y la paridad cliente-servidor campo por campo.
 
 BIBLIOTECA · GENERADOR AUTOMATICO
 - src/admin/admin-library-generator.js: entrada, consulta de cola, orden y reintentos.
@@ -136,7 +137,8 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - library-identify: identificación con contexto obligatorio de marca o fabricante.
 - library-generate-draft: generación asíncrona, consulta, auditoría y reparación por etapas.
 - library-generation-worker: consumidor automático de una etapa persistente por ejecución.
-- library-v3.ts: auditoría compartida del servidor con soporte explícito para mezclas comerciales multiespecíficas.
+- library-v3.ts: auditoría del servidor alimentada por el contrato generado, con soporte explícito para mezclas comerciales multiespecíficas.
+- Las cinco funciones de Biblioteca que importan la auditoría compartida se despliegan como una unidad.
 - El trabajador conserva scientific_name, culture_type e identification de la identidad multiespecífica confirmada.
 - ai_notes se normaliza a texto técnico útil antes de la auditoría.
 - 20260729233000_library_generation_worker.sql: programación cada minuto mediante pg_cron, pg_net y Vault.

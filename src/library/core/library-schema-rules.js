@@ -12,17 +12,12 @@
   const INTERNAL_TRACE = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
   const URL_PATTERN = /https?:\/\//i;
   const PRODUCT_TYPES = new Set(['producto', 'medicamento', 'sal', 'aditivo', 'alimento', 'test', 'equipamiento']);
-  const SOURCE_DOMAINS = {
-    pez_marino: ['fishbase.se', 'catalogoffishes.org', 'marinespecies.org', 'iucnredlist.org', 'gbif.org'],
-    pez_dulce: ['fishbase.se', 'catalogoffishes.org', 'iucnredlist.org', 'gbif.org'],
-    planta: ['powo.science.kew.org', 'worldfloraonline.org', 'tropicos.org', 'gbif.org'],
-    coral: ['marinespecies.org', 'coraltraits.org', 'iucnredlist.org', 'gbif.org'],
-    invertebrado: ['marinespecies.org', 'iucnredlist.org', 'gbif.org'],
-    microfauna: ['marinespecies.org', 'algaebase.org', 'gbif.org'],
-    fitoplancton: ['algaebase.org', 'marinespecies.org', 'gbif.org']
-  };
-  const OFFICIAL_SOURCE_TYPE = /\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\b/i;
-  const WEAK_SOURCE_DOMAIN = /\b(wikipedia\.org|facebook\.com|instagram\.com|amazon\.|ebay\.|aliexpress\.|mercadolibre\.|reddit\.com)\b/i;
+  const SOURCE_POLICY = S.SOURCE_POLICY || {};
+  const SOURCE_DOMAINS = SOURCE_POLICY.specializedDomains || {};
+  const MINIMUM_SOURCES = Number(SOURCE_POLICY.minimumSources || 3);
+  const MINIMUM_INDEPENDENT_SOURCES = Number(SOURCE_POLICY.minimumIndependentSources || 2);
+  const OFFICIAL_SOURCE_TYPE = new RegExp(SOURCE_POLICY.officialSourcePattern || '\\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\\b', 'i');
+  const WEAK_SOURCE_DOMAIN = new RegExp(SOURCE_POLICY.weakSourceDomainPattern || '\\b(wikipedia\\.org|facebook\\.com|instagram\\.com|amazon\\.|ebay\\.|aliexpress\\.|mercadolibre\\.|reddit\\.com)\\b', 'i');
 
   // Los campos identificativos no son párrafos narrativos. Un nombre, marca,
   // familia, modelo o código válido puede ser corto y no debe rellenarse con
@@ -80,7 +75,7 @@
     const errors = [];
     const hostname = source => { try { return new URL(source.url).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { return ''; } };
     const matches = (host, domains) => domains.some(domain => host === domain || host.endsWith(`.${domain}`));
-    if (sources.length < 3) errors.push('Se requieren al menos 3 fuentes reales con URL completa.');
+    if (sources.length < MINIMUM_SOURCES) errors.push(`Se requieren al menos ${MINIMUM_SOURCES} fuentes reales con URL completa.`);
     if (sources.some(source => !String(source.used_for || '').trim())) errors.push('Cada fuente debe indicar qué datos respalda.');
     const specialized = SOURCE_DOMAINS[entryType] || [];
     if (BIOLOGICAL_TYPES.has(entryType) && !sources.some(source => matches(hostname(source), specialized))) {
@@ -89,8 +84,9 @@
     if (PRODUCT_TYPES.has(entryType) && !sources.some(source => OFFICIAL_SOURCE_TYPE.test(`${source.source_type || ''} ${source.name || ''}`) && !WEAK_SOURCE_DOMAIN.test(hostname(source)))) {
       errors.push('Falta una fuente oficial del fabricante, manual, prospecto o ficha técnica.');
     }
-    if (sources.filter(source => !WEAK_SOURCE_DOMAIN.test(hostname(source))).length < 2) {
-      errors.push('Se requieren al menos 2 fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.');
+    const reliableHosts = new Set(sources.map(hostname).filter(host => host && !WEAK_SOURCE_DOMAIN.test(host)));
+    if (reliableHosts.size < MINIMUM_INDEPENDENT_SOURCES) {
+      errors.push(`Se requieren al menos ${MINIMUM_INDEPENDENT_SOURCES} fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.`);
     }
     return { approved: errors.length === 0, errors, sources };
   }
@@ -109,7 +105,7 @@
     const taxa = scientificName.split(/\s*\+\s*/).map(value => value.trim()).filter(Boolean);
     if (taxa.length < 2) return false;
     const validTaxon = taxon => S.isConcreteScientificName(taxon) ||
-      /^[A-Z][a-z-]+\s+sp\.$/.test(taxon) ||
+      /^[A-Z][a-z-]+\s+spp?\.$/.test(taxon) ||
       /^[A-Z][a-z-]+$/.test(taxon);
     const description = `${entry?.data?.culture_type || ''} ${entry?.data?.identification || ''}`;
     return taxa.every(validTaxon) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);

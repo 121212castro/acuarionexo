@@ -6,7 +6,8 @@
   "main": "electron/main.cjs",
   "scripts": {
     "docs:refresh": "node scripts/refresh-project-docs.mjs",
-    "library:check": "node scripts/audit-library-contracts.mjs",
+    "library:sync-server": "node scripts/generate-library-server-contract.mjs",
+    "library:check": "npm run library:sync-server && node scripts/audit-library-contracts.mjs",
     "check": "npm run docs:refresh && npm run library:check && node scripts/validate-app.mjs",
     "mobile:prepare": "npm run docs:refresh && npm run library:check && node scripts/prepare-mobile-bundle.mjs",
     "mobile:check": "node scripts/validate-mobile-bundle.mjs",

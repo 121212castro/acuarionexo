@@ -11,6 +11,21 @@
   const BIOLOGICAL_TYPES = ['pez_marino', 'pez_dulce', 'coral', 'invertebrado', 'planta', 'microfauna', 'fitoplancton'];
   const PRODUCT_TYPES = ['producto', 'medicamento', 'sal', 'aditivo', 'alimento', 'test', 'equipamiento'];
   const REEF_SAFE = ['Sí', 'Sí con precaución', 'No'];
+  const SOURCE_POLICY = {
+    minimumSources: 3,
+    minimumIndependentSources: 2,
+    specializedDomains: {
+      pez_marino: ['fishbase.se', 'catalogoffishes.org', 'marinespecies.org', 'iucnredlist.org', 'gbif.org'],
+      pez_dulce: ['fishbase.se', 'catalogoffishes.org', 'iucnredlist.org', 'gbif.org'],
+      planta: ['powo.science.kew.org', 'worldfloraonline.org', 'tropicos.org', 'gbif.org'],
+      coral: ['marinespecies.org', 'coraltraits.org', 'iucnredlist.org', 'gbif.org'],
+      invertebrado: ['marinespecies.org', 'iucnredlist.org', 'gbif.org'],
+      microfauna: ['marinespecies.org', 'algaebase.org', 'gbif.org'],
+      fitoplancton: ['algaebase.org', 'marinespecies.org', 'gbif.org']
+    },
+    officialSourcePattern: '\\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\\b',
+    weakSourceDomainPattern: '\\b(wikipedia\\.org|facebook\\.com|instagram\\.com|amazon\\.|ebay\\.|aliexpress\\.|mercadolibre\\.|reddit\\.com)\\b'
+  };
 
   const GENERIC_PATTERNS = [
     /requiere buena calidad de agua/i,
@@ -142,12 +157,26 @@
   }
   function cleanUrl(url) { return String(url || '').trim().replace(/[.,;:]+$/, ''); }
   function hasRealUrl(url) { try { const u = new URL(cleanUrl(url)); return ['http:', 'https:'].includes(u.protocol) && u.hostname.includes('.'); } catch (_) { return false; } }
+  function canonicalSourceKey(url) {
+    try {
+      const parsed = new URL(cleanUrl(url));
+      parsed.hash = '';
+      parsed.hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+      [...parsed.searchParams.keys()].forEach(key => {
+        if (/^utm_/i.test(key) || /^(fbclid|gclid|dclid|msclkid)$/i.test(key)) parsed.searchParams.delete(key);
+      });
+      if (parsed.pathname.length > 1) parsed.pathname = parsed.pathname.replace(/\/+$/, '');
+      return parsed.toString();
+    } catch (_) {
+      return cleanUrl(url);
+    }
+  }
   function normalizeSources(raw) {
     if (!raw) return [];
     if (typeof raw === 'string') raw = extractUrlsFromAny(raw).map(url => ({ url }));
     if (!Array.isArray(raw)) raw = [raw];
     const seen = new Set();
-    return raw.map((source, index) => { const item = typeof source === 'string' ? { url: source } : (source || {}); const url = cleanUrl(extractUrlsFromAny(item.url || item)[0] || ''); return { name: String(item.name || item.title || (url ? new URL(url).hostname : `Fuente ${index + 1}`)).trim(), url, source_type: String(item.source_type || item.type || '').trim(), original: item.original || item, used_for: String(item.used_for || '').trim(), confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null, consulted_at: item.consulted_at || new Date().toISOString() }; }).filter(source => { if (!hasRealUrl(source.url) || seen.has(source.url)) return false; seen.add(source.url); return true; });
+    return raw.map((source, index) => { const item = typeof source === 'string' ? { url: source } : (source || {}); const url = cleanUrl(extractUrlsFromAny(item.url || item)[0] || ''); return { name: String(item.name || item.title || (url ? new URL(url).hostname : `Fuente ${index + 1}`)).trim(), url, source_type: String(item.source_type || item.type || '').trim(), original: item.original || item, used_for: String(item.used_for || '').trim(), confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null, consulted_at: item.consulted_at || new Date().toISOString() }; }).filter(source => { const key = canonicalSourceKey(source.url); if (!hasRealUrl(source.url) || seen.has(key)) return false; seen.add(key); return true; });
   }
   function isConcreteScientificName(value) { const name = String(value || '').trim(); return /^[A-Z][a-z-]+ [a-z][a-z-]+(?:\s+var\.\s+[a-z-]+)?$/.test(name) && !UNCERTAIN_TAXONOMY.test(name); }
   function valueFor(entry, field) {
@@ -177,5 +206,5 @@
   function validateTemplate(entry) { const type = entry.entry_type || 'general'; return templateFor(type).map(section => ({ id: section.id, label: section.label, required: section.required, valid: section.fields.every(field => !invalidFieldReason(entry, field.id)), fields: section.fields.map(field => ({ ...field, valid: !invalidFieldReason(entry, field.id), error: invalidFieldReason(entry, field.id) })) })); }
   function audit(entry) { const errors = []; validateTemplate(entry).forEach(section => section.fields.forEach(field => { if (!field.valid) errors.push(`${section.label} · ${field.label}: ${field.error}`); })); return { approved: errors.length === 0, errors, missing_fields: missingFields(entry), template: validateTemplate(entry), sources: normalizeSources(entry.sources) }; }
 
-  return { STATUSES, BIOLOGICAL_TYPES, PRODUCT_TYPES, REEF_SAFE, CONTRACTS, LABELS, SECTION_LABELS, TEMPLATE_ORDER, fieldRule, sectionFor, templateFor, templatePrompt, normalizeSources, isConcreteScientificName, hasNumericValue, valueFor, invalidFieldReason, missingFields, validateTemplate, audit };
+  return { STATUSES, BIOLOGICAL_TYPES, PRODUCT_TYPES, REEF_SAFE, SOURCE_POLICY, CONTRACTS, LABELS, SECTION_LABELS, TEMPLATE_ORDER, fieldRule, sectionFor, templateFor, templatePrompt, normalizeSources, isConcreteScientificName, hasNumericValue, valueFor, invalidFieldReason, missingFields, validateTemplate, audit };
 });
