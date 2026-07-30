@@ -1,6 +1,7 @@
 .generator-queue {
   display: grid;
   gap: 10px;
+  padding-bottom: calc(104px + env(safe-area-inset-bottom));
 }
 
 .generator-job {
@@ -9,6 +10,7 @@
   border: 1px solid var(--line);
   border-radius: 18px;
   background: rgba(255, 255, 255, .045);
+  scroll-margin-top: calc(12px + env(safe-area-inset-top));
 }
 
 .generator-job-head {
@@ -110,6 +112,11 @@
 }
 
 @media (max-width: 430px) {
+  body:has(.generator-queue) #app {
+    padding-top: calc(10px + env(safe-area-inset-top));
+    padding-bottom: calc(116px + env(safe-area-inset-bottom));
+  }
+
   .generator-job-head {
     grid-template-columns: auto minmax(0, 1fr);
   }
