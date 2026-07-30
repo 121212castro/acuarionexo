@@ -78,6 +78,9 @@ const automaticGenerator = `## Biblioteca / generador automático administrativo
 - \`supabase/functions/library-identify/index.ts\`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
 - \`supabase/functions/library-generate-draft/index.ts\`: inicia y consulta respuestas asíncronas de OpenAI; audita cada resultado y separa cada reparación en otra respuesta.
 - \`supabase/functions/library-generation-worker/index.ts\`: consume una etapa persistente de la cola en cada ejecución, sin depender del navegador.
+- \`supabase/functions/_shared/library-v3.ts\`: concentra la auditoría del servidor; reconoce las mezclas comerciales multiespecíficas por su identidad validada sin exigir una especie única.
+- El trabajador conserva el \`scientific_name\` multiespecífico confirmado y garantiza que \`data.culture_type\` y \`data.identification\` declaren expresamente la mezcla.
+- \`data.ai_notes\` debe terminar como texto técnico útil; si la IA devuelve un objeto, el trabajador lo serializa antes de auditarlo.
 - \`supabase/migrations/20260729233000_library_generation_worker.sql\`: programa el trabajador con pg_cron y pg_net y autentica la llamada con Supabase Vault.
 - \`library_generation_jobs.identify_result.requested_brand\`: conserva la marca común sin crear un contrato de datos paralelo.
 - \`library_generation_jobs.identify_result.generation_state\`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
@@ -248,6 +251,9 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - library-identify: identificación con contexto obligatorio de marca o fabricante.
 - library-generate-draft: generación asíncrona, consulta, auditoría y reparación por etapas.
 - library-generation-worker: consumidor automático de una etapa persistente por ejecución.
+- library-v3.ts: auditoría compartida del servidor con soporte explícito para mezclas comerciales multiespecíficas.
+- El trabajador conserva scientific_name, culture_type e identification de la identidad multiespecífica confirmada.
+- ai_notes se normaliza a texto técnico útil antes de la auditoría.
 - 20260729233000_library_generation_worker.sql: programación cada minuto mediante pg_cron, pg_net y Vault.
 - identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
 - queue_order: orden estable asignado por la base de datos.
