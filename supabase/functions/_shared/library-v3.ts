@@ -114,8 +114,11 @@ function fieldIsPoor(field: string, value: unknown) {
   if (value == null || value === "" || (Array.isArray(value) && !value.length)) return true;
   if (numericOrShortFields.has(field)) return false;
   if (typeof value === "number" || typeof value === "boolean") return false;
-  const text = clean(value, 5000);
-  if (text.length < 35) return true;
+  const text = clean(
+    typeof value === "object" ? JSON.stringify(value) : value,
+    5000
+  );
+  if (text.length < 20) return true;
   if (/\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i.test(text)) return true;
   if (/requiere buena calidad de agua|mantener par[aá]metros estables|alimentaci[oó]n variada|compatible con peces pac[ií]ficos/i.test(text)) return true;
   return false;
