@@ -1,0 +1,144 @@
+name: Hotfix microfauna audit
+
+on:
+  push:
+    paths:
+      - '.github/workflows/hotfix-microfauna-audit.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply coordinated hotfix
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  if new in text:
+                      return
+                  raise SystemExit(f'Pattern not found in {path}: {old[:100]}')
+              p.write_text(text.replace(old, new))
+
+          shared = 'supabase/functions/_shared/library-v3.ts'
+          replace(shared,
+          '''export function multiTaxonMicrofauna(entry: any) {
+            if (entry?.entry_type !== "microfauna") return false;
+            const taxa = clean(entry?.scientific_name, 500).split(/\\s*\\+\\s*/).map(value => value.trim()).filter(Boolean);
+            if (taxa.length < 2) return false;
+            const validTaxon = (taxon: string) => concreteScientificName(taxon) || /^[A-Z][a-z-]+(?:\\s+sp\\.)?$/.test(taxon);
+            const description = `${clean(entry?.data?.culture_type, 500)} ${clean(entry?.data?.identification, 2000)}`;
+            return taxa.every(validTaxon) && /\\b(mezcla|multiespec[ií]fic[ao])\\b/i.test(description);
+          }
+          ''',
+          '''export function genusLevelMicrofauna(entry: any) {
+            if (entry?.entry_type !== "microfauna") return false;
+            return /^[A-Z][a-z-]+\\s+sp\\.$/.test(clean(entry?.scientific_name, 200));
+          }
+          export function multiTaxonMicrofauna(entry: any) {
+            if (entry?.entry_type !== "microfauna") return false;
+            const taxa = clean(entry?.scientific_name, 500).split(/\\s*\\+\\s*/).map(value => value.trim()).filter(Boolean);
+            if (taxa.length < 2) return false;
+            const validTaxon = (taxon: string) => concreteScientificName(taxon) || /^[A-Z][a-z-]+(?:\\s+sp\\.)?$/.test(taxon);
+            const description = `${clean(entry?.data?.culture_type, 500)} ${clean(entry?.data?.identification, 2000)}`;
+            return taxa.every(validTaxon) && /\\b(mezcla|multiespec[ií]fic[ao])\\b/i.test(description);
+          }
+          ''')
+          replace(shared,
+          '''if (biologicalTypes.has(entry.entry_type) && !multiTaxonMicrofauna(entry) && !concreteScientificName(entry.scientific_name)) errors.push("La ficha biológica no tiene una especie concreta.");''',
+          '''if (biologicalTypes.has(entry.entry_type) && !genusLevelMicrofauna(entry) && !multiTaxonMicrofauna(entry) && !concreteScientificName(entry.scientific_name)) errors.push("La ficha biológica no tiene una especie concreta ni una identificación taxonómica válida para microfauna comercial.");''')
+          replace(shared,
+          '''  if (previousResponseId) body.previous_response_id = previousResponseId;
+            else {
+              body.tools = [{ type: "web_search_preview" }];
+              body.tool_choice = { type: "web_search_preview" };
+            }
+          ''',
+          '''  if (previousResponseId) body.previous_response_id = previousResponseId;
+            body.tools = [{ type: "web_search_preview" }];
+            body.tool_choice = { type: "web_search_preview" };
+          ''')
+
+          worker = 'supabase/functions/library-generation-worker/index.ts'
+          replace(worker,
+          '''  concreteScientificName,
+            contractPrompt,''',
+          '''  concreteScientificName,
+            genusLevelMicrofauna,
+            contractPrompt,''')
+          replace(worker,
+          '''  const isMultispeciesMix = identity.entry_type === "microfauna" &&
+              identity.is_multispecies_mix === true;''',
+          '''  const isMultispeciesMix = identity.entry_type === "microfauna" &&
+              identity.is_multispecies_mix === true;
+            const preserveMicrofaunaIdentity = isMultispeciesMix || genusLevelMicrofauna(identity);''')
+          replace(worker,
+          '''      isMultispeciesMix
+                ? identity.scientific_name
+                : (parsed.scientific_name || identity.scientific_name),''',
+          '''      preserveMicrofaunaIdentity
+                ? identity.scientific_name
+                : (parsed.scientific_name || identity.scientific_name),''')
+          replace(worker,
+          '''      "Para biología exige especie concreta, salvo mezclas multiespecíficas comerciales de microfauna verificadas.",''',
+          '''      "Para biología exige especie concreta. En microfauna comercial acepta también una identificación taxonómica real a nivel de género escrita como Genus sp. cuando el fabricante no publica la especie; no inventes una especie para completar el binomio. También acepta mezclas multiespecíficas verificadas.",''')
+          replace(worker,
+          '''    concreteScientificName(parsed.scientific_name) ||
+              multiTaxonMicrofauna(identifiedEntry);''',
+          '''    concreteScientificName(parsed.scientific_name) ||
+              genusLevelMicrofauna(identifiedEntry) ||
+              multiTaxonMicrofauna(identifiedEntry);''')
+          replace(worker,
+          '''        identity.is_multispecies_mix === true
+                  ? "Es una mezcla multiespecífica: conserva exactamente scientific_name de la identidad validada y declara expresamente la mezcla en data.culture_type y data.identification."
+                  : "",''',
+          '''        identity.is_multispecies_mix === true
+                  ? "Es una mezcla multiespecífica: conserva exactamente scientific_name de la identidad validada y declara expresamente la mezcla en data.culture_type y data.identification."
+                  : genusLevelMicrofauna(identity)
+                    ? "La identidad comercial está confirmada solo a nivel de género: conserva exactamente scientific_name con Genus sp.; no inventes una especie concreta y explica esa limitación en data.identification."
+                    : "",''')
+          replace(worker,
+          '''        "Mantén o mejora sources con URLs reales y used_for."''',
+          '''        `Fuentes actualmente conservadas: ${JSON.stringify(audit.sources || [])}`,
+                  "Investiga de nuevo cuando falte una fuente. Devuelve al menos tres sources con URL real, nombre, source_type y used_for no vacío; para microfauna incluye una base especializada como WoRMS, GBIF o literatura científica aplicable.",
+                  "Mantén o mejora sources con URLs reales y used_for."''')
+
+          front = 'src/library/core/library-schema-rules.js'
+          replace(front,
+          '''  function isMultiTaxonMicrofauna(entry) {''',
+          '''  function isGenusLevelMicrofauna(entry) {
+              return entry?.entry_type === 'microfauna' && /^[A-Z][a-z-]+\\s+sp\\.$/.test(String(entry?.scientific_name || '').trim());
+            }
+
+            function isMultiTaxonMicrofauna(entry) {''')
+          replace(front,
+          '''if (field.validator === 'scientificName' && !isMultiTaxonFlexibleField(entry, field.id) && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta con binomio científico válido.';''',
+          '''if (field.validator === 'scientificName' && !isGenusLevelMicrofauna(entry) && !isMultiTaxonFlexibleField(entry, field.id) && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta o, en microfauna comercial, una identificación real a nivel de género como Genus sp.';''')
+          replace(front,
+          '''if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !isMultiTaxonMicrofauna(cleaned) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta.');''',
+          '''if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !isGenusLevelMicrofauna(cleaned) && !isMultiTaxonMicrofauna(cleaned) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta ni una identificación taxonómica válida para microfauna comercial.');''')
+          PY
+      - name: Commit hotfix
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required'
+            exit 0
+          fi
+          git config user.name 'AcuarioNexo Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add supabase/functions/_shared/library-v3.ts supabase/functions/library-generation-worker/index.ts src/library/core/library-schema-rules.js
+          git commit -m 'Aceptar microfauna a nivel de género y reparar fuentes'
+          git push
