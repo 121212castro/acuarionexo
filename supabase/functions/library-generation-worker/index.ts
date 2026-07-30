@@ -38,10 +38,31 @@ function withoutGenerationState(identity: any) {
 }
 
 function buildEntry(userId: string, identity: any, parsed: any, normalizedSources: any[], model: string) {
+  const isMultispeciesMix = identity.entry_type === "microfauna" &&
+    identity.is_multispecies_mix === true;
+  const parsedData = parsed.data && typeof parsed.data === "object" ? parsed.data : {};
+  const data = {
+    ...parsedData,
+    ...(isMultispeciesMix ? {
+      culture_type: clean(parsedData.culture_type, 1000) ||
+        "Mezcla viva multiespecífica comercial.",
+      identification: clean(parsedData.identification, 3000) ||
+        clean(identity.sections?.identity, 3000) ||
+        `Mezcla multiespecífica identificada como ${clean(identity.scientific_name, 500)}.`
+    } : {}),
+    ai_notes: typeof parsedData.ai_notes === "object" && parsedData.ai_notes !== null
+      ? JSON.stringify(parsedData.ai_notes)
+      : parsedData.ai_notes
+  };
   return {
     user_id: userId,
     title: clean(parsed.title || identity.title, 180),
-    scientific_name: clean(parsed.scientific_name || identity.scientific_name, 180) || null,
+    scientific_name: clean(
+      isMultispeciesMix
+        ? identity.scientific_name
+        : (parsed.scientific_name || identity.scientific_name),
+      500
+    ) || null,
     entry_type: identity.entry_type,
     status: "review",
     visibility: "private",
@@ -49,7 +70,7 @@ function buildEntry(userId: string, identity: any, parsed: any, normalizedSource
     cover_url: null,
     photo_url: null,
     sections: parsed.sections && typeof parsed.sections === "object" ? parsed.sections : {},
-    data: parsed.data && typeof parsed.data === "object" ? parsed.data : {},
+    data,
     tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 20) : [],
     identity_confirmed: true,
     confidence: Number(identity.confidence) || null,
@@ -193,6 +214,10 @@ async function generateJob(serviceClient: any, job: any) {
         "Contrasta fuentes reales. Mínimo dos URLs reales sobre la misma entidad.",
         "Cada dato debe ser rastreable con sources[].used_for.",
         "No devuelvas una ficha mínima: todos los campos deben contener datos útiles o una explicación verificable de que el fabricante no los publica.",
+        "ai_notes debe ser texto útil de al menos 20 caracteres; no devuelvas un objeto ni una lista en ese campo.",
+        identity.is_multispecies_mix === true
+          ? "Es una mezcla multiespecífica: conserva exactamente scientific_name de la identidad validada y declara expresamente la mezcla en data.culture_type y data.identification."
+          : "",
         "Prohibido usar: bajo, medio, alto, moderado, suele, normalmente, aproximadamente, mantener parámetros estables, compatible con peces pacíficos.",
         "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
       ].join("\n\n")
