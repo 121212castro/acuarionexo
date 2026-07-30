@@ -37,6 +37,16 @@ function withoutGenerationState(identity: any) {
   return result;
 }
 
+function normalizedLibraryTitle(value: unknown) {
+  return clean(value, 180)
+    .normalize("NFD")
+    .replace(/\p{M}/gu, "")
+    .toLocaleLowerCase("es-ES")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
 function buildEntry(userId: string, identity: any, parsed: any, normalizedSources: any[], model: string) {
   const isMultispeciesMix = identity.entry_type === "microfauna" &&
     identity.is_multispecies_mix === true;
@@ -163,24 +173,23 @@ async function identifyJob(serviceClient: any, job: any) {
     return { id: job.id, subject: job.subject, phase: "blocked" };
   }
 
-  let duplicateQuery = serviceClient.from("library_entries")
+  const { data: possibleDuplicates, error: duplicateError } = await serviceClient.from("library_entries")
     .select("id,title")
-    .eq("entry_type", resolvedType)
-    .limit(1);
-  duplicateQuery = identity.scientific_name
-    ? duplicateQuery.ilike("scientific_name", identity.scientific_name)
-    : duplicateQuery.ilike("title", identity.title || commonName);
-  const { data: duplicates, error: duplicateError } = await duplicateQuery;
+    .eq("entry_type", resolvedType);
   if (duplicateError) throw duplicateError;
-  if (duplicates?.[0]) {
+  const requestedTitle = normalizedLibraryTitle(identity.title || commonName);
+  const duplicate = (possibleDuplicates || []).find(
+    (entry: any) => normalizedLibraryTitle(entry.title) === requestedTitle
+  );
+  if (duplicate) {
     await serviceClient.from("library_generation_jobs").update({
       status: "blocked",
       progress: 100,
       entry_type: resolvedType,
       identify_result: identity,
-      library_entry_id: duplicates[0].id,
+      library_entry_id: duplicate.id,
       error_code: "duplicate_entry",
-      error_message: `Ya existe una ficha: ${duplicates[0].title}.`
+      error_message: `Ya existe una ficha con el mismo nombre: ${duplicate.title}.`
     }).eq("id", job.id);
     return { id: job.id, subject: job.subject, phase: "duplicate" };
   }

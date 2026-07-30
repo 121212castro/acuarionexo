@@ -86,6 +86,7 @@ const automaticGenerator = `## Biblioteca / generador automático administrativo
 - \`library_generation_jobs.identify_result.generation_state\`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
 - \`library_generation_jobs.queue_order\`: fija el orden de entrada aunque varias filas se inserten en el mismo instante.
 - Los nombres se limpian de numeración antes de insertarse y procesarse.
+- Una ficha solo se bloquea como duplicada cuando su nombre completo normalizado coincide con otro título de la misma categoría ya guardado en la biblioteca; compartir especie, género, fabricante o palabras parciales no bloquea.
 - El orden de la cola es el orden de entrada.
 - Supabase despierta el trabajador cada minuto; la pantalla solo consulta el estado y puede cerrarse sin detener el proceso.
 - Ninguna función espera encadenada la generación y tres reparaciones: cada llamada queda por debajo del límite de ejecución de Supabase.
@@ -261,6 +262,7 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
 - queue_order: orden estable asignado por la base de datos.
 - Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
+- Los duplicados se comparan por nombre completo normalizado dentro de la categoría; scientific_name, fabricante y coincidencias parciales nunca bloquean por sí solos.
 
 ENLACE EXTERNO OPCIONAL
 - Propiedad única: data.external_link.

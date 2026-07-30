@@ -136,6 +136,23 @@ function checkDocs() {
   }
 }
 
+function checkGeneratorDuplicateRule() {
+  const worker = read('supabase/functions/library-generation-worker/index.ts');
+  if (worker.includes('duplicateQuery.ilike("scientific_name"')) {
+    fail('El generador no puede bloquear productos distintos por compartir scientific_name.');
+  }
+  if (!worker.includes('normalizedLibraryTitle(entry.title) === requestedTitle')) {
+    fail('El generador debe comparar duplicados por el nombre completo normalizado.');
+  }
+  const normalized = value => String(value || '').trim().normalize('NFD').replace(/\p{M}/gu, '').toLocaleLowerCase('es-ES').replace(/[^\p{L}\p{N}]+/gu, ' ').trim().replace(/\s+/g, ' ');
+  if (normalized('Artemia nauplio') === normalized('Artemia subadulta ultraconcentrada')) {
+    fail('Dos productos de Artemia con nombres distintos se consideran duplicados.');
+  }
+  if (normalized('  ARTEMIA  NÁUPLIO ') !== normalized('Artemia nauplio')) {
+    fail('El mismo nombre con diferencias de formato no se reconoce como duplicado.');
+  }
+}
+
 function mockElement(id) {
   return { id, value:'', innerHTML:'', textContent:'', style:{}, dataset:{}, options:[], onclick:null,
     classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, remove(){}, insertAdjacentHTML(){}, scrollIntoView(){}, prepend(){}, appendChild(){}, click(){}, setAttribute(){}, removeAttribute(){},
@@ -198,6 +215,6 @@ async function checkLoad() {
   }
 }
 
-try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
+try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); checkGeneratorDuplicateRule(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
 if (errors.length) { console.error('AcuarioNexo validation failed:'); errors.forEach(e => console.error(`- ${e}`)); process.exit(1); }
 console.log('AcuarioNexo validation OK');

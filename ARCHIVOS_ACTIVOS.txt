@@ -143,6 +143,7 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
 - queue_order: orden estable asignado por la base de datos.
 - Los nombres se limpian antes de guardarse y la cola mantiene el orden de entrada.
+- Los duplicados se comparan por nombre completo normalizado dentro de la categoría; scientific_name, fabricante y coincidencias parciales nunca bloquean por sí solos.
 
 ENLACE EXTERNO OPCIONAL
 - Propiedad única: data.external_link.

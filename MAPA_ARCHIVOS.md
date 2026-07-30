@@ -86,6 +86,7 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `library_generation_jobs.identify_result.generation_state`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
 - `library_generation_jobs.queue_order`: fija el orden de entrada aunque varias filas se inserten en el mismo instante.
 - Los nombres se limpian de numeración antes de insertarse y procesarse.
+- Una ficha solo se bloquea como duplicada cuando su nombre completo normalizado coincide con otro título de la misma categoría ya guardado en la biblioteca; compartir especie, género, fabricante o palabras parciales no bloquea.
 - El orden de la cola es el orden de entrada.
 - Supabase despierta el trabajador cada minuto; la pantalla solo consulta el estado y puede cerrarse sin detener el proceso.
 - Ninguna función espera encadenada la generación y tres reparaciones: cada llamada queda por debajo del límite de ejecución de Supabase.
