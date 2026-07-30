@@ -12,10 +12,27 @@ if (!report?.approved) throw new Error(`Contratos inválidos:\n${(report?.errors
 
 const biological = new Set(S.BIOLOGICAL_TYPES || []);
 const topLevel = new Set(['title', 'scientific_name', 'summary', 'sources']);
-const sourceList = [
-  { name: 'Fuente oficial A', url: 'https://example.com/source-a', used_for: 'Verificación técnica completa del formulario.' },
-  { name: 'Fuente oficial B', url: 'https://example.org/source-b', used_for: 'Contraste independiente de campos y parámetros.' }
-];
+function sourcesFor(type) {
+  const specialized = {
+    pez_marino: ['FishBase', 'https://www.fishbase.se/summary/Amphiprion-ocellaris.html'],
+    pez_dulce: ['FishBase', 'https://www.fishbase.se/summary/Pterophyllum-scalare.html'],
+    planta: ['Plants of the World Online', 'https://powo.science.kew.org/taxon/example'],
+    coral: ['WoRMS', 'https://www.marinespecies.org/aphia.php?p=taxdetails&id=1'],
+    invertebrado: ['WoRMS', 'https://www.marinespecies.org/aphia.php?p=taxdetails&id=2'],
+    microfauna: ['WoRMS', 'https://www.marinespecies.org/aphia.php?p=taxdetails&id=3'],
+    fitoplancton: ['AlgaeBase', 'https://www.algaebase.org/search/species/detail/?species_id=1']
+  }[type];
+  if (specialized) return [
+    { name: specialized[0], url: specialized[1], source_type: 'base especializada', used_for: 'Identidad, taxonomía y distribución.' },
+    { name: 'IUCN o publicación primaria', url: 'https://www.iucnredlist.org/species/example', source_type: 'fuente primaria', used_for: 'Biología y conservación contrastadas.' },
+    { name: 'Referencia complementaria', url: 'https://example.org/reference', source_type: 'referencia fiable', used_for: 'Contraste independiente de parámetros.' }
+  ];
+  return [
+    { name: 'Fabricante oficial', url: 'https://manufacturer.example/product', source_type: 'fabricante oficial', used_for: 'Identidad, versión y especificaciones declaradas.' },
+    { name: 'Ficha técnica oficial', url: 'https://manufacturer.example/datasheet', source_type: 'ficha técnica', used_for: 'Composición, uso y advertencias.' },
+    { name: 'Referencia independiente', url: 'https://example.org/reference', source_type: 'referencia fiable', used_for: 'Contraste independiente del producto exacto.' }
+  ];
+}
 
 function longText(field) {
   return `Dato concreto y verificable para ${field}, con contexto suficiente para cumplir exactamente su regla contractual.`;
@@ -24,7 +41,7 @@ function longText(field) {
 function valueFor(field, type) {
   if (field === 'title') return `Ficha completa de prueba ${type}`;
   if (field === 'scientific_name') return 'Amphiprion ocellaris';
-  if (field === 'sources') return sourceList;
+  if (field === 'sources') return sourcesFor(type);
   const definition = S.completeTemplateFor(type).flatMap(section => section.fields).find(item => item.id === field);
   if (definition?.allowed?.length) return definition.allowed[0];
   if (definition?.type === 'number') return 10;
@@ -47,13 +64,23 @@ function completeEntry(type, contract) {
     summary: `Resumen completo y verificable para la ficha de prueba del tipo ${type}.`,
     sections: { summary: `Resumen completo y verificable para la ficha de prueba del tipo ${type}.` },
     data,
-    sources: sourceList
+    sources: sourcesFor(type)
   };
 }
 
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 const failures = [];
+for (const [type, contract] of Object.entries(S.CONTRACTS || {})) {
+  const valid = completeEntry(type, contract);
+  const onlyTwo = clone(valid);
+  onlyTwo.sources = onlyTwo.sources.slice(0, 2);
+  if (S.audit(onlyTwo).approved) failures.push(`${type}.sources: aprobó una ficha con solo dos fuentes.`);
+
+  const noUsedFor = clone(valid);
+  delete noUsedFor.sources[0].used_for;
+  if (S.audit(noUsedFor).approved) failures.push(`${type}.sources: aprobó una fuente sin used_for.`);
+}
 for (const [type, contract] of Object.entries(S.CONTRACTS || {})) {
   const template = S.completeTemplateFor(type);
   const fields = template.flatMap(section => section.fields);

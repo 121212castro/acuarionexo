@@ -85,6 +85,36 @@ export function normalizeSources(value: unknown): SourceItem[] {
     return { name: clean(item.name || item.title || hostname || `Fuente ${index + 1}`, 180), url, source_type: clean(item.source_type || item.type, 80), original: item.original || item, used_for: clean(item.used_for, 500), confidence: Number.isFinite(Number(item.confidence)) ? Number(item.confidence) : null, consulted_at: item.consulted_at || new Date().toISOString() };
   }).filter(source => { if (!realUrl(source.url) || seen.has(source.url)) return false; seen.add(source.url); return true; }).slice(0, 20);
 }
+const sourceDomains: Record<string, string[]> = {
+  pez_marino: ["fishbase.se", "catalogoffishes.org", "marinespecies.org", "iucnredlist.org", "gbif.org"],
+  pez_dulce: ["fishbase.se", "catalogoffishes.org", "iucnredlist.org", "gbif.org"],
+  planta: ["powo.science.kew.org", "worldfloraonline.org", "tropicos.org", "gbif.org"],
+  coral: ["marinespecies.org", "coraltraits.org", "iucnredlist.org", "gbif.org"],
+  invertebrado: ["marinespecies.org", "iucnredlist.org", "gbif.org"],
+  microfauna: ["marinespecies.org", "algaebase.org", "gbif.org"]
+};
+const officialSourceType = /\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\b/i;
+const weakSourceDomain = /\b(wikipedia\.org|facebook\.com|instagram\.com|amazon\.|ebay\.|aliexpress\.|mercadolibre\.|reddit\.com)\b/i;
+function sourceHostname(source: SourceItem) { try { return new URL(source.url).hostname.toLowerCase().replace(/^www\./, ""); } catch (_) { return ""; } }
+function matchesDomain(hostname: string, domains: string[]) { return domains.some(domain => hostname === domain || hostname.endsWith(`.${domain}`)); }
+export function sourcePolicy(entryType: string, value: unknown) {
+  const sources = normalizeSources(value);
+  const errors: string[] = [];
+  if (sources.length < 3) errors.push("Se requieren al menos tres fuentes reales.");
+  if (sources.some(source => !clean(source.used_for, 500))) errors.push("Cada fuente debe indicar en used_for qué datos respalda.");
+  const specializedDomains = sourceDomains[entryType] || [];
+  const hasSpecialized = sources.some(source => matchesDomain(sourceHostname(source), specializedDomains));
+  if (biologicalTypes.has(entryType) && !hasSpecialized) {
+    errors.push("Falta una base especializada obligatoria para esta categoría.");
+  }
+  if (productTypes.has(entryType)) {
+    const hasOfficial = sources.some(source => officialSourceType.test(`${source.source_type || ""} ${source.name || ""}`) && !weakSourceDomain.test(sourceHostname(source)));
+    if (!hasOfficial) errors.push("Falta una fuente oficial del fabricante, manual, prospecto o ficha técnica.");
+  }
+  const usefulIndependent = sources.filter(source => !weakSourceDomain.test(sourceHostname(source)));
+  if (usefulIndependent.length < 2) errors.push("Se requieren al menos dos fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.");
+  return { approved: errors.length === 0, errors, sources, source_count: sources.length, has_specialized: hasSpecialized };
+}
 export function concreteScientificName(value: unknown) { const name = clean(value, 200); return /^[A-Z][a-z-]+ [a-z][a-z-]+(?:\s+var\.\s+[a-z-]+)?$/.test(name) && !/\b(?:spp?|cf|aff)\.?\b/i.test(name); }
 export function multiTaxonMicrofauna(entry: any) {
   if (entry?.entry_type !== "microfauna") return false;
@@ -106,7 +136,11 @@ export function contractPrompt(entryType: string, fields: string[]) {
     "Añade user_summary: resumen claro para el usuario final. Añade ai_notes: datos estructurados para que la IA pueda tomar decisiones después.",
     "Devuelve sections agrupadas por apartados legibles para mostrar la ficha completa.",
     `Apartados de referencia: ${JSON.stringify(contractSections)}.`,
-    "sources debe incluir URLs reales y used_for explicando qué dato justifica cada fuente."
+    "sources debe incluir al menos tres URLs reales y used_for explicando qué dato justifica cada fuente.",
+    "Fuentes obligatorias: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable elegida por la investigación.",
+    "Para productos comerciales, la fuente oficial debe ser el fabricante, manual, prospecto o ficha técnica; si no existe accesible, documenta una fuente primaria equivalente.",
+    "Para peces usa FishBase, Catalog of Fishes, WoRMS cuando sea marino, IUCN o GBIF. Para plantas usa POWO, World Flora Online, Tropicos o GBIF. Para corales, invertebrados y microfauna usa WoRMS, Coral Traits, AlgaeBase, GBIF o literatura científica según corresponda.",
+    "Wikipedia puede aportar información general como fuente complementaria, pero no sustituye la fuente oficial o especializada."
   ].join("\n");
 }
 
@@ -125,12 +159,12 @@ function fieldIsPoor(field: string, value: unknown) {
 }
 
 export function auditEntry(entry: any) {
-  const errors: string[] = []; const warnings: string[] = []; const sources = normalizeSources(entry.sources); const data = entry.data && typeof entry.data === "object" ? entry.data : {}; const required = contracts[entry.entry_type] || ["title", "sources"];
-  const missing = required.filter(field => { if (field === "sources") return sources.length < 2; const value = data[field] ?? entry[field]; return value == null || value === "" || (Array.isArray(value) && !value.length); });
+  const errors: string[] = []; const warnings: string[] = []; const sourceAudit = sourcePolicy(entry.entry_type, entry.sources); const sources = sourceAudit.sources; const data = entry.data && typeof entry.data === "object" ? entry.data : {}; const required = contracts[entry.entry_type] || ["title", "sources"];
+  const missing = required.filter(field => { if (field === "sources") return sources.length < 3; const value = data[field] ?? entry[field]; return value == null || value === "" || (Array.isArray(value) && !value.length); });
   const poor = required.filter(field => field !== "sources" && !missing.includes(field) && fieldIsPoor(field, data[field] ?? entry[field]));
   if (!entry.identity_confirmed) errors.push("Identificación insuficiente.");
   if (biologicalTypes.has(entry.entry_type) && !multiTaxonMicrofauna(entry) && !concreteScientificName(entry.scientific_name)) errors.push("La ficha biológica no tiene una especie concreta.");
-  if (sources.length < 2) errors.push("Se requieren al menos dos URLs reales.");
+  errors.push(...sourceAudit.errors);
   if (missing.length) errors.push(`Campos obligatorios incompletos: ${missing.join(", ")}.`);
   if (poor.length) errors.push(`Campos pobres o genéricos: ${poor.join(", ")}.`);
   const text = JSON.stringify(data);

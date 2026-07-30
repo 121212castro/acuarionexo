@@ -11,6 +11,18 @@
   const IMPRECISE_TEXT = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
   const INTERNAL_TRACE = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
   const URL_PATTERN = /https?:\/\//i;
+  const PRODUCT_TYPES = new Set(['producto', 'medicamento', 'sal', 'aditivo', 'alimento', 'test', 'equipamiento']);
+  const SOURCE_DOMAINS = {
+    pez_marino: ['fishbase.se', 'catalogoffishes.org', 'marinespecies.org', 'iucnredlist.org', 'gbif.org'],
+    pez_dulce: ['fishbase.se', 'catalogoffishes.org', 'iucnredlist.org', 'gbif.org'],
+    planta: ['powo.science.kew.org', 'worldfloraonline.org', 'tropicos.org', 'gbif.org'],
+    coral: ['marinespecies.org', 'coraltraits.org', 'iucnredlist.org', 'gbif.org'],
+    invertebrado: ['marinespecies.org', 'iucnredlist.org', 'gbif.org'],
+    microfauna: ['marinespecies.org', 'algaebase.org', 'gbif.org'],
+    fitoplancton: ['algaebase.org', 'marinespecies.org', 'gbif.org']
+  };
+  const OFFICIAL_SOURCE_TYPE = /\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\b/i;
+  const WEAK_SOURCE_DOMAIN = /\b(wikipedia\.org|facebook\.com|instagram\.com|amazon\.|ebay\.|aliexpress\.|mercadolibre\.|reddit\.com)\b/i;
 
   // Los campos identificativos no son párrafos narrativos. Un nombre, marca,
   // familia, modelo o código válido puede ser corto y no debe rellenarse con
@@ -61,6 +73,26 @@
 
   function unique(list) {
     return [...new Set((list || []).map(value => String(value || '').trim()).filter(Boolean))];
+  }
+
+  function sourcePolicy(entryType, value) {
+    const sources = S.normalizeSources(value);
+    const errors = [];
+    const hostname = source => { try { return new URL(source.url).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { return ''; } };
+    const matches = (host, domains) => domains.some(domain => host === domain || host.endsWith(`.${domain}`));
+    if (sources.length < 3) errors.push('Se requieren al menos 3 fuentes reales con URL completa.');
+    if (sources.some(source => !String(source.used_for || '').trim())) errors.push('Cada fuente debe indicar qué datos respalda.');
+    const specialized = SOURCE_DOMAINS[entryType] || [];
+    if (BIOLOGICAL_TYPES.has(entryType) && !sources.some(source => matches(hostname(source), specialized))) {
+      errors.push('Falta una base especializada obligatoria para esta categoría.');
+    }
+    if (PRODUCT_TYPES.has(entryType) && !sources.some(source => OFFICIAL_SOURCE_TYPE.test(`${source.source_type || ''} ${source.name || ''}`) && !WEAK_SOURCE_DOMAIN.test(hostname(source)))) {
+      errors.push('Falta una fuente oficial del fabricante, manual, prospecto o ficha técnica.');
+    }
+    if (sources.filter(source => !WEAK_SOURCE_DOMAIN.test(hostname(source))).length < 2) {
+      errors.push('Se requieren al menos 2 fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.');
+    }
+    return { approved: errors.length === 0, errors, sources };
   }
 
   function valueFor(entry, field) {
@@ -115,7 +147,7 @@
   function validateField(entry, field) {
     const value = valueFor(entry, field.id);
     if (field.id === 'sources') {
-      return S.normalizeSources(value).length >= 2 ? '' : 'Se requieren al menos 2 fuentes reales con URL completa.';
+      return sourcePolicy(entry.entry_type, value).errors.join(' ');
     }
     if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return 'Campo obligatorio vacío.';
     if (field.allowed?.length && !field.allowed.includes(String(value).trim())) {
@@ -222,6 +254,8 @@
     if (cleaned.entry_type === 'pez_marino' && /\bGH\b/i.test(JSON.stringify(cleaned.data || {}))) errors.push('GH no es un parámetro contractual para pez marino.');
 
     const sources = S.normalizeSources(cleaned.sources);
+    const sourceAudit = sourcePolicy(cleaned.entry_type, cleaned.sources);
+    errors.push(...sourceAudit.errors.map(error => `Fuentes · ${error}`));
     return {
       approved: unique(errors).length === 0,
       errors: unique(errors),
@@ -246,5 +280,6 @@
   S.topLevelFields = Array.from(TOP_LEVEL_FIELDS);
   S.cleanEntryForAudit = cleanEntry;
   S.contractIntegrityReport = contractIntegrityReport;
+  S.sourcePolicy = sourcePolicy;
   S.__strictContractApplied = true;
 })();

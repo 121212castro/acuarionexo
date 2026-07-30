@@ -47,7 +47,7 @@ Deno.serve(async (req: Request) => {
         [
           `Identidad validada: ${JSON.stringify(identity)}`,
           contractPrompt(entryType, fields),
-          "Contrasta fuentes reales. Mínimo dos URLs reales sobre la misma entidad.",
+          "Contrasta fuentes reales y cumple la política obligatoria de tres fuentes: oficial o primaria, especializada por categoría y una tercera fiable.",
           "Cada dato debe ser rastreable con sources[].used_for.",
           "No devuelvas una ficha mínima: todos los campos del contrato deben estar cubiertos con datos útiles o null si no son verificables.",
           "Prohibido usar: bajo, medio, alto, moderado, suele, normalmente, aproximadamente, mantener parámetros estables, compatible con peces pacíficos.",

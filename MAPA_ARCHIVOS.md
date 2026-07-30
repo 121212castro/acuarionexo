@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-library-worker-20260729-2359`
+`release-source-policy-20260730`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -101,7 +101,10 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - Campos descriptivos: usan la longitud mínima indicada por el contrato.
 - `reef_safe`: solo `Sí`, `Sí con precaución` o `No`; la explicación pertenece a `reef_safe_notes`.
 - `summary`: mínimo 20 caracteres.
-- `sources`: mínimo dos fuentes reales con URL completa.
+- `sources`: mínimo tres fuentes reales con URL completa y `used_for`: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable.
+- Para productos comerciales manda el fabricante, manual, prospecto o ficha técnica. Para peces, plantas, corales, invertebrados y microfauna se exige una base especializada de su categoría.
+- Wikipedia puede complementar peces y plantas, pero nunca sustituye la fuente oficial, primaria o especializada.
+- La generación, reparación y auditoría comparten esta política y bloquean la ficha cuando la combinación de fuentes no se cumple.
 
 ## Biblioteca / enlace externo opcional
 

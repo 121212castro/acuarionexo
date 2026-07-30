@@ -211,7 +211,7 @@ async function generateJob(serviceClient: any, job: any) {
       [
         `Identidad validada: ${JSON.stringify(withoutGenerationState(identity))}`,
         contractPrompt(identity.entry_type, fields),
-        "Contrasta fuentes reales. Mínimo dos URLs reales sobre la misma entidad.",
+        "Contrasta fuentes reales y cumple la política obligatoria de tres fuentes: oficial o primaria, especializada por categoría y una tercera fiable.",
         "Cada dato debe ser rastreable con sources[].used_for.",
         "No devuelvas una ficha mínima: todos los campos deben contener datos útiles o una explicación verificable de que el fabricante no los publica.",
         "ai_notes debe ser texto útil de al menos 20 caracteres; no devuelvas un objeto ni una lista en ese campo.",
