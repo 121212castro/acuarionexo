@@ -136,6 +136,9 @@ BIBLIOTECA · GENERADOR AUTOMATICO
 - library-identify: identificación con contexto obligatorio de marca o fabricante.
 - library-generate-draft: generación asíncrona, consulta, auditoría y reparación por etapas.
 - library-generation-worker: consumidor automático de una etapa persistente por ejecución.
+- library-v3.ts: auditoría compartida del servidor con soporte explícito para mezclas comerciales multiespecíficas.
+- El trabajador conserva scientific_name, culture_type e identification de la identidad multiespecífica confirmada.
+- ai_notes se normaliza a texto técnico útil antes de la auditoría.
 - 20260729233000_library_generation_worker.sql: programación cada minuto mediante pg_cron, pg_net y Vault.
 - identify_result.generation_state: estado persistente de la respuesta de OpenAI para reanudarla.
 - queue_order: orden estable asignado por la base de datos.
