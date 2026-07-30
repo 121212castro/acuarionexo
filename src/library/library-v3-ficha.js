@@ -314,7 +314,10 @@
 
   function formFields(x) {
     return S.templateFor(x.entry_type).map(sec => `<fieldset><legend>${esc(sec.label)}</legend>${sec.fields.map(f => {
-      if (f.id === 'sources') return '';
+      if (f.id === 'sources') {
+        const sources = S.normalizeSources(x.sources);
+        return `<label>Fuentes editables</label><textarea id="libSourcesRaw" placeholder="Nombre | URL | dato que justifica">${esc(sourceText(x.sources))}</textarea>${sources.length < 3 ? emptyHint() : ''}<p class="small">Mínimo 3: una oficial o primaria, una base especializada de la categoría y una tercera fuente fiable. Cada línea debe indicar qué datos respalda.</p>`;
+      }
       const raw = x.data?.[f.id] ?? x[f.id] ?? '';
       const textParameter = f.type === 'number' && keepsTextParameter(x, f.id);
       const value = f.type === 'number' && !textParameter ? (numberFrom(raw) || '') : raw;
@@ -359,7 +362,7 @@
     const x = row(id);
     if (!x) return returnToLibrarySource();
     const audit = S.audit(x);
-    render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}"><label>Fuentes editables</label><textarea id="libSourcesRaw" placeholder="Nombre | URL | dato que justifica">${esc(sourceText(x.sources))}</textarea>${S.normalizeSources(x.sources).length < 2 ? emptyHint() : ''}${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
+    render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}">${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
   };
 
   window.guardarFicha = async function (id) {

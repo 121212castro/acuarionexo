@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `release-source-policy-20260730`.
+Build actual: `library-source-policy-fix-20260730`.
 
 ## Navegación administrativa global
 

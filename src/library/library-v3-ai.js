@@ -28,7 +28,7 @@
         'Cada valor debe ser concreto y útil para AcuarioNexo.',
         'No uses bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.',
         'No incluyas URLs dentro de campos de texto; las URLs solo pueden ir en sources.',
-        'sources debe contener al menos 2 fuentes reales con URL completa y dato que justifica.'
+        'sources debe contener al menos 3 fuentes reales con URL completa y dato que justifica: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable.'
       ]
     };
   }
@@ -62,7 +62,7 @@
         required_fields: contract.required_fields,
         require_complete: true,
         reject_empty_fields: true,
-        minimum_sources: 2
+        minimum_sources: 3
       });
       await biblioteca();
       formFicha(data.data.id);

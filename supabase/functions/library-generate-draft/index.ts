@@ -33,7 +33,7 @@ Deno.serve(async (req: Request) => {
     const identity = payload.identify_result || {};
     const sources = normalizeSources(identity.sources);
     if (identity.identity_confirmed !== true) return errorJson("identity_required", "Identificación insuficiente. No se puede crear ficha.", 409);
-    if (sources.length < 2) return errorJson("sources_required", "Se requieren al menos dos URLs reales.", 409);
+    if (sources.length < 2) return errorJson("sources_required", "La identidad debe estar confirmada con al menos dos URLs reales antes de generar.", 409);
 
     const entryType = clean(identity.entry_type || payload.entry_type, 80);
     const fields = contracts[entryType];
@@ -66,7 +66,7 @@ Deno.serve(async (req: Request) => {
     const parsed = polled.parsed;
     const model = clean(Deno.env.get("OPENAI_MODEL") || "gpt-4.1-mini", 80);
     let normalizedSources = normalizeSources([...(parsed.sources || []), ...sources]);
-    if (normalizedSources.length < 2) return errorJson("sources_required", "La investigación no mantuvo dos fuentes reales.", 502);
+    if (normalizedSources.length < 3) return errorJson("sources_required", "La investigación no obtuvo las tres fuentes reales obligatorias.", 502);
 
     let row = buildRow(user.id, identity, parsed, entryType, normalizedSources, model, payload);
     const audit = auditEntry(row);

@@ -83,6 +83,7 @@
       sections: { summary: '' },
       sources: [
         { name: '', url: 'https://...', used_for: '' },
+        { name: '', url: 'https://...', used_for: '' },
         { name: '', url: 'https://...', used_for: '' }
       ]
     }, null, 2);
@@ -109,7 +110,7 @@
       '- No uses: bajo, medio, alto, moderado, suele, normalmente ni aproximadamente.',
       '- No pongas URLs dentro de los apartados de texto visible.',
       '- El apartado Fuentes es obligatorio y debe ir al final de la ficha visible.',
-      '- Fuentes debe tener mínimo 2 fuentes reales con URL completa.',
+      '- Fuentes debe tener mínimo 3 fuentes reales con URL completa: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable.',
       '- Formato visible obligatorio de cada fuente: Nombre de fuente | URL completa | dato que justifica.',
       '- El JSON estructurado debe repetir esas mismas fuentes en sources[].',
       '- Si no encuentras URL real para una fuente, no la uses.',
@@ -154,7 +155,7 @@
       const parsed = normalizePayload(payload, val('chatCreateType') || payload.entry_type || 'pez_marino');
       if (!parsed.title) throw new Error('El JSON estructurado no trae title.');
       const normalizedSources = S().normalizeSources(parsed.sources);
-      if (normalizedSources.length < 2) throw new Error('El JSON estructurado debe traer mínimo 2 fuentes reales con URL en sources.');
+      if (normalizedSources.length < 3) throw new Error('El JSON estructurado debe traer mínimo 3 fuentes reales con URL en sources.');
       const row = {
         user_id: state.user.id,
         title: parsed.title,

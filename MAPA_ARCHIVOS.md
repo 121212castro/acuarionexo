@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-source-policy-20260730`
+`library-source-policy-fix-20260730`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 

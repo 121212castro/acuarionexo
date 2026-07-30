@@ -21,7 +21,7 @@
   function fieldRuleText(field, flexibleMultiTaxon = false) {
     const rules = [`clave JSON: ${jsonPath(field)}`];
     if (field.id === 'sources') {
-      rules.push('mínimo 2 fuentes reales con URL completa, name y used_for');
+      rules.push('mínimo 3 fuentes reales con URL completa, name y used_for; una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable');
     } else if (field.allowed?.length) {
       rules.push(`usa exactamente uno de estos valores: ${field.allowed.join(' | ')}`);
       rules.push('no desarrolles ni amplíes este valor dentro del mismo campo');
@@ -67,6 +67,7 @@
       sections: { summary: '' },
       sources: [
         { name: '', url: 'https://...', used_for: '' },
+        { name: '', url: 'https://...', used_for: '' },
         { name: '', url: 'https://...', used_for: '' }
       ]
     }, null, 2);
@@ -101,7 +102,7 @@
       '- Los identificadores, marcas, modelos, unidades y códigos no necesitan texto de relleno.',
       '- Los campos descriptivos deben alcanzar la longitud indicada y aportar información útil.',
       '- No incluyas URLs en campos de texto. Las URLs van únicamente en sources[].',
-      '- sources[] debe contener al menos 2 fuentes reales, cada una con name, url y used_for.',
+      '- sources[] debe contener al menos 3 fuentes reales, cada una con name, url y used_for: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable.',
       '- Antes de responder, comprueba que el JSON pasa exactamente estas mismas reglas.',
       '',
       'SALIDA OBLIGATORIA:',

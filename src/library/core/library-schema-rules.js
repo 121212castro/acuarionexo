@@ -254,8 +254,6 @@
     if (cleaned.entry_type === 'pez_marino' && /\bGH\b/i.test(JSON.stringify(cleaned.data || {}))) errors.push('GH no es un parámetro contractual para pez marino.');
 
     const sources = S.normalizeSources(cleaned.sources);
-    const sourceAudit = sourcePolicy(cleaned.entry_type, cleaned.sources);
-    errors.push(...sourceAudit.errors.map(error => `Fuentes · ${error}`));
     return {
       approved: unique(errors).length === 0,
       errors: unique(errors),

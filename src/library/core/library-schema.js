@@ -160,7 +160,7 @@
   }
   function invalidFieldReason(entry, field) {
     const rule = fieldRule(field);
-    if (field === 'sources') return normalizeSources(entry.sources).length >= 2 ? '' : 'Se requieren al menos 2 fuentes reales.';
+    if (field === 'sources') return normalizeSources(entry.sources).length >= 3 ? '' : 'Se requieren al menos 3 fuentes reales.';
     const value = valueFor(entry, field);
     if (value == null || value === '' || (Array.isArray(value) && !value.length)) return 'Campo obligatorio vacío.';
     if (rule.type === 'number' && !hasNumericValue(value)) return 'Debe incluir un valor numérico válido.';
