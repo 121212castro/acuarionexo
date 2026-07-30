@@ -1,0 +1,78 @@
+name: Auto-route library category
+
+on:
+  push:
+    paths:
+      - '.github/workflows/auto-route-library-category.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Apply category auto-routing
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('supabase/functions/library-generation-worker/index.ts')
+          text = path.read_text()
+
+          old = '''        "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
+'''
+          new = '''        `Revisa de nuevo la categoría real y devuelve detected_entry_type con exactamente uno de estos valores: ${allowedTypes.join(", ")}.`,
+        "Distingue organismo vivo, cultivo vivo, alimento, aditivo, medicamento, test, equipamiento y producto comercial por su función real; no uses la sección desde la que fue enviado como prueba de categoría.",
+        "Devuelve exactamente: title, scientific_name, detected_entry_type, summary, data, sections, tags y sources."
+'''
+          if old not in text and new not in text:
+              raise SystemExit('No se encontró el prompt de salida del generador')
+          text = text.replace(old, new)
+
+          old = '''  const parsed = polled.parsed;
+  const sources = normalizeSources([...(parsed.sources || []), ...(identity.sources || [])]);
+'''
+          new = '''  const parsed = polled.parsed;
+  const detectedType = clean(parsed.detected_entry_type, 80);
+  if (allowedTypes.includes(detectedType) && detectedType !== identity.entry_type) {
+    const correctedIdentity = {
+      ...withoutGenerationState(identity),
+      entry_type: detectedType,
+      category_corrected_from: identity.entry_type,
+      category_corrected_at: new Date().toISOString()
+    };
+    await serviceClient.from("library_generation_jobs").update({
+      status: "generating",
+      progress: 45,
+      entry_type: detectedType,
+      identify_result: correctedIdentity,
+      error_code: null,
+      error_message: `Categoría corregida automáticamente: ${identity.entry_type} → ${detectedType}.`
+    }).eq("id", job.id);
+    return { id: job.id, subject: job.subject, phase: "category_rerouted", from: identity.entry_type, to: detectedType };
+  }
+  const sources = normalizeSources([...(parsed.sources || []), ...(identity.sources || [])]);
+'''
+          if old not in text and new not in text:
+              raise SystemExit('No se encontró el punto de reubicación de categoría')
+          text = text.replace(old, new)
+
+          path.write_text(text)
+          PY
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add supabase/functions/library-generation-worker/index.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Reubicar fichas automáticamente en su categoría real"
+          git push
