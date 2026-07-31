@@ -1,0 +1,63 @@
+.library-review-problem {
+  border: 1px solid rgba(255, 85, 112, .85) !important;
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(255, 85, 112, .09) !important;
+  box-shadow: 0 0 0 1px rgba(255, 85, 112, .18) inset;
+}
+
+.library-review-problem > label,
+.library-review-problem label {
+  color: #ff9aaa !important;
+}
+
+.library-review-problem input,
+.library-review-problem textarea,
+.library-review-problem select,
+input.library-review-control,
+textarea.library-review-control,
+select.library-review-control {
+  border-color: #ff5570 !important;
+  background: rgba(80, 8, 24, .72) !important;
+  box-shadow: 0 0 0 2px rgba(255, 85, 112, .12) !important;
+}
+
+.library-review-reason {
+  margin: 6px 0 0;
+  color: #ffd0d8;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 750;
+}
+
+.library-review-problem.library-review-edited {
+  border-color: rgba(245, 158, 11, .85) !important;
+  background: rgba(245, 158, 11, .08) !important;
+}
+
+.library-review-problem.library-review-edited > label,
+.library-review-problem.library-review-edited label,
+.library-review-problem.library-review-edited .library-review-reason {
+  color: #fde68a !important;
+}
+
+.library-review-problem.library-review-edited input,
+.library-review-problem.library-review-edited textarea,
+.library-review-problem.library-review-edited select {
+  border-color: #f59e0b !important;
+  background: rgba(74, 43, 5, .72) !important;
+}
+
+.library-review-summary {
+  margin: 10px 0;
+  padding: 12px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 85, 112, .65);
+  background: rgba(255, 85, 112, .1);
+  color: #ffd8df;
+}
+
+.library-review-summary strong {
+  display: block;
+  margin-bottom: 5px;
+}
