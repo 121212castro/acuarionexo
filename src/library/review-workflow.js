@@ -12,6 +12,26 @@
   }
   function array(value) { return Array.isArray(value) ? value : []; }
 
+  function isMultiTaxonMicrofauna(entry) {
+    if (entry?.entry_type !== 'microfauna') return false;
+    const taxa = String(entry?.scientific_name || '')
+      .split(/\s*\+\s*/)
+      .map(item => item.trim())
+      .filter(Boolean);
+    if (taxa.length < 2) return false;
+    const description = `${entry?.data?.culture_type || ''} ${entry?.data?.identification || ''}`;
+    return /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);
+  }
+
+  function preservesExplanatoryText(entry, field) {
+    return isMultiTaxonMicrofauna(entry) && [
+      'temperature_min',
+      'temperature_max',
+      'salinity_min',
+      'salinity_max'
+    ].includes(field?.id);
+  }
+
   function parseSources(text, normalizeSources) {
     const rows = String(text || '').split('\n').map(line => line.trim()).filter(Boolean);
     const sources = rows.map((line, index) => {
@@ -35,7 +55,7 @@
       const control = byId(`libData_${field.id}`);
       if (!control) return;
       if (control.type === 'checkbox') data[field.id] = !!control.checked;
-      else if (field.type === 'number') data[field.id] = numberValue(control.value);
+      else if (field.type === 'number' && !preservesExplanatoryText(entry, field)) data[field.id] = numberValue(control.value);
       else data[field.id] = String(control.value ?? '').trim();
     }));
 
@@ -84,7 +104,7 @@
       review_required: audit?.approved !== true,
       requires_review: audit?.approved !== true,
       audited_at: new Date().toISOString(),
-      engine: 'library-schema-review-save-v1',
+      engine: 'library-schema-review-save-v2',
       contract_source: 'LibrarySchema'
     };
   }
