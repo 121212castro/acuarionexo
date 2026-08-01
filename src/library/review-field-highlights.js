@@ -71,10 +71,8 @@
     const text = clean(message);
     if (!text) return '';
     const candidates = [];
-    const middle = text.split('·').map(part => clean(part)).filter(Boolean);
-    candidates.push(...middle);
-    const colon = text.split(':').map(part => clean(part)).filter(Boolean);
-    candidates.push(...colon);
+    candidates.push(...text.split('·').map(part => clean(part)).filter(Boolean));
+    candidates.push(...text.split(':').map(part => clean(part)).filter(Boolean));
     candidates.push(text);
     for (const candidate of candidates) {
       const normalized = norm(candidate);
@@ -103,23 +101,27 @@
   }
 
   function clearMarks() {
-    document.querySelectorAll('.library-review-problem').forEach(node => {
-      node.classList.remove('library-review-problem', 'library-review-edited');
+    document.querySelectorAll('.library-review-problem,.library-review-valid,.library-review-edited').forEach(node => {
+      node.classList.remove('library-review-problem', 'library-review-valid', 'library-review-edited');
     });
-    document.querySelectorAll('.library-review-control').forEach(node => node.classList.remove('library-review-control'));
+    document.querySelectorAll('.library-review-control,.library-review-control-valid').forEach(node => {
+      node.classList.remove('library-review-control', 'library-review-control-valid');
+    });
     document.querySelectorAll('.library-review-reason,.library-review-summary').forEach(node => node.remove());
   }
 
   function hostFor(control) {
-    return control.closest('.form-grid > div, .item, .library-field, .field, section, details') || control.parentElement;
+    return control.closest('.form-grid > div, .library-field, .field, .library-form-field, .item') || control.parentElement;
   }
 
   function markField(fieldId, reasons) {
     const control = controlFor(fieldId);
     if (!control) return false;
+    control.classList.remove('library-review-control-valid');
     control.classList.add('library-review-control');
     const host = hostFor(control);
     if (!host) return false;
+    host.classList.remove('library-review-valid');
     host.classList.add('library-review-problem');
     const reason = document.createElement('p');
     reason.className = 'library-review-reason';
@@ -134,13 +136,32 @@
     return true;
   }
 
+  function hasUsableValue(control) {
+    if (!control || control.disabled) return false;
+    if (control.type === 'file' || control.type === 'button' || control.type === 'submit' || control.type === 'hidden') return false;
+    if (control.type === 'checkbox' || control.type === 'radio') return control.checked;
+    const value = clean(control.value);
+    return value !== '' && !/^(n\/?d|no localizado|sin datos|pendiente)$/i.test(value);
+  }
+
+  function markValidFields() {
+    const root = document.getElementById('libTitle')?.closest('form, .panel, section') || document;
+    root.querySelectorAll('input[id^="lib"], textarea[id^="lib"], select[id^="lib"]').forEach(control => {
+      if (control.classList.contains('library-review-control') || !hasUsableValue(control)) return;
+      const host = hostFor(control);
+      if (!host || host.classList.contains('library-review-problem')) return;
+      control.classList.add('library-review-control-valid');
+      host.classList.add('library-review-valid');
+    });
+  }
+
   function addSummary(entry, total, unlocated) {
     if (!total) return;
     const anchor = document.getElementById('libTitle')?.closest('form, .panel, section') || document.getElementById('libTitle')?.parentElement;
     if (!anchor) return;
     const box = document.createElement('div');
     box.className = 'library-review-summary';
-    box.innerHTML = `<strong>Campos pendientes de revisión: ${total}</strong><span>Los apartados en rojo se pueden completar o corregir manualmente.${unlocated ? ` Hay ${unlocated} incidencia(s) general(es) sin campo único asociado.` : ''}</span>`;
+    box.innerHTML = `<strong>Campos pendientes de revisión: ${total}</strong><span>Verde: dato cumplimentado sin incidencia asociada. Rojo: dato ausente o incorrecto. Amarillo: campo modificado y pendiente de guardar.${unlocated ? ` Hay ${unlocated} incidencia(s) general(es) sin campo único asociado.` : ''}</span>`;
     anchor.insertBefore(box, anchor.firstChild);
   }
 
@@ -152,6 +173,7 @@
     problems.forEach((reasons, fieldId) => {
       if (markField(fieldId, reasons)) marked += 1;
     });
+    markValidFields();
     const totalFlags = validation(entry).flags.length + validation(entry).missing.length + validation(entry).invalid.length;
     addSummary(entry, problems.size || totalFlags, Math.max(0, totalFlags - marked));
   }
