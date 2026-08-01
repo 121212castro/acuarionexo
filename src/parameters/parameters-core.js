@@ -17,24 +17,66 @@
     return raw.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
   }
 
+  function parameterTestId(test) {
+    return String(test?.id || '').trim();
+  }
+
   function parameterTestLabel(test) {
     const data = test?.data || {};
     const brand = data.brand || data.manufacturer || '';
     const model = data.product_code || '';
     const title = test?.title || 'Test sin nombre';
-    return [brand, model, title].map(x => String(x || '').trim()).filter((value, index, list) => value && list.indexOf(value) === index).join(' · ');
+    const method = data.method || data.test_type || '';
+    const range = data.range || '';
+    return [brand, model, title, method, range]
+      .map(x => String(x || '').trim())
+      .filter((value, index, list) => value && list.indexOf(value) === index)
+      .join(' · ');
   }
 
   function parameterKeysForTest(test) {
     const data = test?.data || {};
-    return [data.primary_field, data.parameter, data.measured_ion_or_compound]
-      .map(normalizeTestParameter)
-      .filter(Boolean);
+    return [
+      data.primary_field,
+      data.parameter,
+      data.parameter_target,
+      data.measured_ion_or_compound,
+      data.intended_use,
+      test?.title
+    ].map(normalizeTestParameter).filter(Boolean);
+  }
+
+  function testMatchesParameter(test, parameterKey) {
+    const target = normalizeTestParameter(parameterKey);
+    const keys = parameterKeysForTest(test);
+    if (keys.includes(target)) return true;
+    const aliases = {
+      salinity_ppt: ['salinity', 'salinidad', 'salt', 'ppt'],
+      salinity_sg: ['salinity', 'salinidad', 'specific_gravity', 'sg', 'densidad'],
+      ph: ['ph'],
+      kh_dkh: ['kh', 'alkalinity', 'alcalinidad', 'dkh'],
+      gh: ['gh', 'general_hardness', 'dureza_general'],
+      ammonia_nh3: ['ammonia', 'amonio', 'amoniaco', 'nh3'],
+      ammonium_nh4: ['ammonium', 'amonio', 'nh4'],
+      nitrite_no2: ['nitrite', 'nitrito', 'no2'],
+      nitrate_no3: ['nitrate', 'nitrato', 'no3'],
+      phosphate_po4: ['phosphate', 'fosfato', 'po4'],
+      calcium_ca: ['calcium', 'calcio', 'ca'],
+      magnesium_mg: ['magnesium', 'magnesio', 'mg'],
+      potassium_k: ['potassium', 'potasio'],
+      iodine_i: ['iodine', 'iodo'],
+      iron_fe: ['iron', 'hierro'],
+      copper_cu: ['copper', 'cobre'],
+      oxygen_o2: ['oxygen', 'oxigeno', 'o2'],
+      chlorine_cl2: ['chlorine', 'cloro', 'cl2'],
+      tds: ['tds', 'conductivity', 'conductividad']
+    };
+    const accepted = (aliases[target] || []).map(normalizeTestParameter);
+    return keys.some(key => accepted.includes(key));
   }
 
   function testsForParameter(tests, parameterKey) {
-    const target = normalizeTestParameter(parameterKey);
-    return (tests || []).filter(test => parameterKeysForTest(test).includes(target));
+    return (tests || []).filter(test => testMatchesParameter(test, parameterKey));
   }
 
   async function loadParameterTests(force = false) {
@@ -52,21 +94,42 @@
     return parameterTestsCache;
   }
 
-  function parameterTestOptions(parameterKey, tests, selected = '') {
+  function optionForTest(test, selected) {
     const { esc } = A();
+    const id = parameterTestId(test);
+    const label = parameterTestLabel(test);
+    return `<option value="${esc(id)}" ${id === selected ? 'selected' : ''}>${esc(label)}</option>`;
+  }
+
+  function parameterTestOptions(parameterKey, tests, selected = '') {
     const matching = testsForParameter(tests, parameterKey);
-    return `<option value="">Seleccionar test...</option>${matching.map(test => {
-      const label = parameterTestLabel(test);
-      return `<option value="${esc(label)}" ${label === selected ? 'selected' : ''}>${esc(label)}</option>`;
-    }).join('')}<option value="__manual__">Otro test o método</option>`;
+    return `<option value="">Seleccionar test...</option>${matching.map(test => optionForTest(test, selected)).join('')}<option value="__manual__">Otro test o método</option>`;
   }
 
   function allParameterTestOptions(tests, selected = '') {
+    return `<option value="">Seleccionar test...</option>${(tests || []).map(test => optionForTest(test, selected)).join('')}<option value="__manual__">Otro test o método</option>`;
+  }
+
+  function parameterMethodLabel(test) {
+    const data = test?.data || {};
+    return String(data.method || data.test_type || 'Método indicado por el fabricante').trim();
+  }
+
+  function parameterMethodOptions(test, selected = '') {
     const { esc } = A();
-    return `<option value="">Seleccionar test...</option>${(tests || []).map(test => {
-      const label = parameterTestLabel(test);
-      return `<option value="${esc(label)}" ${label === selected ? 'selected' : ''}>${esc(label)}</option>`;
-    }).join('')}<option value="__manual__">Otro test o método</option>`;
+    if (!test) return '<option value="">Selecciona primero un test...</option>';
+    const data = test.data || {};
+    const raw = [data.method, data.test_type]
+      .flatMap(value => String(value || '').split(/[;|\n]+/))
+      .map(value => value.trim())
+      .filter(Boolean);
+    const methods = raw.filter((value, index, list) => list.indexOf(value) === index);
+    if (!methods.length) methods.push('Método indicado por el fabricante');
+    return methods.map(method => `<option value="${esc(method)}" ${method === selected ? 'selected' : ''}>${esc(method)}</option>`).join('');
+  }
+
+  function findParameterTest(tests, id) {
+    return (tests || []).find(test => parameterTestId(test) === String(id || '')) || null;
   }
 
   function paramActionPanel() {
@@ -103,15 +166,8 @@
     const { esc, dateText, aiParameterLabels } = A();
     const stateInfo = paramVisualState(aq, row);
     const label = aiParameterLabels[key] || row?.parameter_label || key;
-    if (!row) {
-      return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formMedicionCompleta('weekly')"><b>${esc(label)}</b><strong>Pendiente</strong><span class="status-pill">${esc(stateInfo.label)}</span></button>`;
-    }
-    return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formMedicionCompleta('weekly')">
-      <b>${esc(label)}</b>
-      <strong>${esc(paramDisplayValue(row))}</strong>
-      <span class="status-pill">${esc(stateInfo.label)}</span>
-      <small>${dateText(row.measured_at || row.created_at)}</small>
-    </button>`;
+    if (!row) return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formMedicionCompleta('weekly')"><b>${esc(label)}</b><strong>Pendiente</strong><span class="status-pill">${esc(stateInfo.label)}</span></button>`;
+    return `<button class="date-param param-latest ${stateInfo.cls}" onclick="formMedicionCompleta('weekly')"><b>${esc(label)}</b><strong>${esc(paramDisplayValue(row))}</strong><span class="status-pill">${esc(stateInfo.label)}</span><small>${dateText(row.measured_at || row.created_at)}</small></button>`;
   }
 
   function paramLatestPanel(aq, rows) {
@@ -121,11 +177,7 @@
       const row = latest[key] || (key === 'salinity_ppt' ? latest.salinity_sg : null);
       return paramTileHtml(aq, key, row);
     }).join('');
-    return `<div class="param-aq-card">
-      <h3>Última medición</h3>
-      <div class="param-legend"><span class="ok">Bien</span><span class="warn">Precaución</span><span class="alert">Alerta</span><span class="risk">Riesgo</span></div>
-      <div class="date-body param-latest-grid">${tiles}</div>
-    </div>`;
+    return `<div class="param-aq-card"><h3>Última medición</h3><div class="param-legend"><span class="ok">Bien</span><span class="warn">Precaución</span><span class="alert">Alerta</span><span class="risk">Riesgo</span></div><div class="date-body param-latest-grid">${tiles}</div></div>`;
   }
 
   function paramAgeDays(row) {
@@ -141,8 +193,8 @@
     const label = aiParameterLabels[key] || row?.parameter_label || key;
     const value = row ? paramDisplayValue(row) : 'pendiente';
     if (!row) return `Falta ${label}. Regístralo antes de tomar decisiones sobre el acuario.`;
-    if (stateInfo.label === 'Riesgo') return `${label} está en riesgo (${value}). Repite la medición, confirma con otro test si puedes y revisa cambios recientes antes de corregir.`;
-    if (stateInfo.label === 'Alerta') return `${label} está en alerta (${value}). No corrijas a ciegas: confirma tendencia con una nueva medición.`;
+    if (stateInfo.label === 'Riesgo') return `${label} está en riesgo (${value}). Repite la medición con el mismo método o confirma con otro antes de corregir.`;
+    if (stateInfo.label === 'Alerta') return `${label} está en alerta (${value}). Confirma test, método, escala y tendencia antes de corregir.`;
     if (stateInfo.label === 'Precaución') return `${label} necesita revisión (${value}). Comprueba si la medición está antigua o fuera de rutina.`;
     return '';
   }
@@ -153,20 +205,9 @@
     const monthly = rows.find(r => r.source === 'monthly' || /mensual/i.test(r.method || ''));
     const icp = rows.find(r => r.source === 'icp' || /icp|laboratorio/i.test(r.method || ''));
     function item(title, row, action) {
-      return `<button class="param-cycle-card" onclick="${action}">
-        <b>${esc(title)}</b>
-        <strong>${row ? esc(dateText(row.measured_at || row.created_at)) : 'Pendiente'}</strong>
-        <small>${row ? esc(row.method || row.source || 'Registrado') : 'Crear registro'}</small>
-      </button>`;
+      return `<button class="param-cycle-card" onclick="${action}"><b>${esc(title)}</b><strong>${row ? esc(dateText(row.measured_at || row.created_at)) : 'Pendiente'}</strong><small>${row ? esc(row.method || row.source || 'Registrado') : 'Crear registro'}</small></button>`;
     }
-    return `<div class="param-aq-card">
-      <h3>Ciclos de medición</h3>
-      <div class="param-cycle-grid">
-        ${item('Semanal', weekly, "formMedicionCompleta('weekly')")}
-        ${item('Mensual', monthly, "formMedicionCompleta('monthly')")}
-        ${item('ICP', icp, "formMedicionCompleta('icp')")}
-      </div>
-    </div>`;
+    return `<div class="param-aq-card"><h3>Ciclos de medición</h3><div class="param-cycle-grid">${item('Semanal', weekly, "formMedicionCompleta('weekly')")}${item('Mensual', monthly, "formMedicionCompleta('monthly')")}${item('ICP', icp, "formMedicionCompleta('icp')")}</div></div>`;
   }
 
   function paramHistoryHtml(rows) {
@@ -174,15 +215,11 @@
     if (!rows.length) return msg('Sin mediciones todavía.');
     return `<div class="date-list">${rows.map(function (r) {
       const key = normalizeMeasurementKey(r);
-      return `<div class="item param-history-row">
-        <b>${esc(r.parameter_label || aiParameterLabels[key] || key || 'Parámetro')}</b>
-        <p>${esc(paramDisplayValue(r))}</p>
-        <p class="small">${dateText(r.measured_at || r.created_at)}${r.method ? ' · ' + esc(r.method) : ''}${r.source ? ' · ' + esc(r.source) : ''}${r.notes ? ' · ' + esc(r.notes) : ''}</p>
-      </div>`;
+      return `<div class="item param-history-row"><b>${esc(r.parameter_label || aiParameterLabels[key] || key || 'Parámetro')}</b><p>${esc(paramDisplayValue(r))}</p><p class="small">${dateText(r.measured_at || r.created_at)}${r.method ? ' · ' + esc(r.method) : ''}${r.source ? ' · ' + esc(r.source) : ''}${r.notes ? ' · ' + esc(r.notes) : ''}</p></div>`;
     }).join('')}</div>`;
   }
 
   window.ANX = window.ANX || {};
-  Object.assign(window.ANX, { paramKeysForAquarium, normalizeTestParameter, parameterTestLabel, parameterKeysForTest, testsForParameter, loadParameterTests, parameterTestOptions, allParameterTestOptions, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml });
-  window.ANX.ParametersCore = { paramKeysForAquarium, normalizeTestParameter, parameterTestLabel, parameterKeysForTest, testsForParameter, loadParameterTests, parameterTestOptions, allParameterTestOptions, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml };
+  Object.assign(window.ANX, { paramKeysForAquarium, normalizeTestParameter, parameterTestId, parameterTestLabel, parameterKeysForTest, testMatchesParameter, testsForParameter, loadParameterTests, parameterTestOptions, allParameterTestOptions, parameterMethodLabel, parameterMethodOptions, findParameterTest, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml });
+  window.ANX.ParametersCore = { paramKeysForAquarium, normalizeTestParameter, parameterTestId, parameterTestLabel, parameterKeysForTest, testMatchesParameter, testsForParameter, loadParameterTests, parameterTestOptions, allParameterTestOptions, parameterMethodLabel, parameterMethodOptions, findParameterTest, paramActionPanel, paramDisplayValue, paramVisualState, paramTileHtml, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml };
 })();
