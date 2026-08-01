@@ -153,7 +153,7 @@
 
   function wrapFormFicha() {
     const original = window.formFicha;
-    if (typeof original !== 'function' || wrapped.has(original)) return false;
+    if (typeof original !== 'function' || wrapped.has(original) || original.__anxReviewHighlightsWrapped || original.__anxReviewWorkflowWrapped) return false;
     const wrapper = function (id) {
       const result = original.apply(this, arguments);
       const apply = () => { try { markEntry(ANX.LibraryV3Core?.row?.(id)); } catch (_) {} };
@@ -161,7 +161,11 @@
       else setTimeout(apply,0);
       return result;
     };
-    wrapped.add(original); wrapped.add(wrapper); window.formFicha = wrapper; return true;
+    wrapper.__anxReviewHighlightsWrapped = true;
+    wrapped.add(original);
+    wrapped.add(wrapper);
+    window.formFicha = wrapper;
+    return true;
   }
 
   const timer = setInterval(() => { if (wrapFormFicha()) clearInterval(timer); }, 250);
