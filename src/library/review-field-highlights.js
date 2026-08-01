@@ -8,13 +8,32 @@
     .replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9_]+/g, ' ').trim().replace(/\s+/g, ' ');
 
   function validation(entry) {
+    // La fuente de verdad es siempre el contrato cargado en esta versión.
+    // validation_result puede pertenecer a una auditoría anterior y no debe
+    // volver a marcar como vacíos campos que el contrato actual acepta.
+    const schema = ANX.LibraryV3Core?.S || ANX.LibrarySchema;
+    try {
+      const live = typeof schema?.audit === 'function' ? schema.audit(entry) : null;
+      if (live && typeof live === 'object') {
+        return {
+          errors: array(live.errors),
+          missing: array(live.missing_fields),
+          invalid: array(live.invalid_fields),
+          warnings: array(live.warnings).concat(array(live.review_flags)),
+          poor: array(live.poor_fields),
+          source: 'live'
+        };
+      }
+    } catch (_) {}
+
     const result = entry?.validation_result && typeof entry.validation_result === 'object' ? entry.validation_result : {};
     return {
       errors: array(result.errors),
       missing: array(result.missing_fields),
       invalid: array(result.invalid_fields),
-      warnings: array(result.review_flags),
-      poor: array(result.poor_fields)
+      warnings: array(result.review_flags).concat(array(result.warnings)),
+      poor: array(result.poor_fields),
+      source: 'stored'
     };
   }
 
@@ -73,7 +92,7 @@
     v.errors.forEach(message => add(fieldFromMessage(message, aliases), 'error', clean(message)));
     v.poor.forEach(field => add(clean(field), 'warning', 'Hay contenido, pero necesita más precisión o respaldo documental.'));
     v.warnings.forEach(message => add(fieldFromMessage(message, aliases), 'warning', clean(message)));
-    return { states, unlocated };
+    return { states, unlocated, validationSource: v.source };
   }
 
   function clearMarks() {
@@ -133,7 +152,7 @@
   function addSummary(root, counts, unlocated) {
     const box = document.createElement('div');
     box.className = 'library-review-summary';
-    box.innerHTML = `<strong>Revisión por campo: ${counts.error} error(es), ${counts.warning} advertencia(s)</strong><span>Verde: cumplimentado sin incidencia. Amarillo: contenido presente que requiere precisión o fuente. Rojo: vacío obligatorio o error confirmado. Gris: opcional sin evaluar.${unlocated ? ` Hay ${unlocated} incidencia(s) generales sin campo asociado.` : ''}</span>`;
+    box.innerHTML = `<strong>Revisión por campo: ${counts.error} error(es), ${counts.warning} advertencia(s)</strong><span>Verde: cumplimentado y aceptado por el contrato actual. Amarillo: contenido presente que requiere precisión o fuente. Rojo: vacío obligatorio o error confirmado. Gris: opcional sin evaluar.${unlocated ? ` Hay ${unlocated} incidencia(s) generales sin campo asociado.` : ''}</span>`;
     root.insertBefore(box, root.firstChild);
   }
 
@@ -153,5 +172,5 @@
   // Este módulo no intercepta ni sustituye formFicha. Solo pinta estados cuando
   // el flujo oficial de Biblioteca lo invoca. review-workflow.js es el único
   // propietario del ciclo abrir/guardar/revalidar de una ficha.
-  ANX.LibraryReviewHighlights = { markEntry, collectStates, clearMarks };
+  ANX.LibraryReviewHighlights = { markEntry, collectStates, clearMarks, validation };
 })();
