@@ -1,7 +1,6 @@
 /* AcuarioNexo · estados de revisión por campo */
 (function () {
   const ANX = window.ANX = window.ANX || {};
-  const wrapped = new WeakSet();
 
   const clean = value => String(value ?? '').trim();
   const array = value => Array.isArray(value) ? value : [];
@@ -151,27 +150,8 @@
     addSummary(root, counts, result.unlocated.length);
   }
 
-  function wrapFormFicha() {
-    const original = window.formFicha;
-    if (typeof original !== 'function' || wrapped.has(original) || original.__anxReviewHighlightsWrapped || original.__anxReviewWorkflowWrapped) return false;
-    const wrapper = function (id) {
-      const result = original.apply(this, arguments);
-      const apply = () => { try { markEntry(ANX.LibraryV3Core?.row?.(id)); } catch (_) {} };
-      if (result && typeof result.then === 'function') result.finally(() => setTimeout(apply,0));
-      else setTimeout(apply,0);
-      return result;
-    };
-    wrapper.__anxReviewHighlightsWrapped = true;
-    wrapped.add(original);
-    wrapped.add(wrapper);
-    window.formFicha = wrapper;
-    return true;
-  }
-
-  const timer = setInterval(() => { if (wrapFormFicha()) clearInterval(timer); }, 250);
-  setTimeout(() => clearInterval(timer), 30000);
-  new MutationObserver(() => { if (typeof window.formFicha === 'function') wrapFormFicha(); })
-    .observe(document.documentElement, { childList:true, subtree:true });
-
-  ANX.LibraryReviewHighlights = { markEntry, collectStates };
+  // Este módulo no intercepta ni sustituye formFicha. Solo pinta estados cuando
+  // el flujo oficial de Biblioteca lo invoca. review-workflow.js es el único
+  // propietario del ciclo abrir/guardar/revalidar de una ficha.
+  ANX.LibraryReviewHighlights = { markEntry, collectStates, clearMarks };
 })();
