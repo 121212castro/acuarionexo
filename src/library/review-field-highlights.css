@@ -22,6 +22,30 @@ select.library-review-control {
   box-shadow: 0 0 0 2px rgba(255, 85, 112, .12) !important;
 }
 
+.library-review-valid {
+  border: 1px solid rgba(52, 211, 153, .72) !important;
+  border-radius: 16px;
+  padding: 10px;
+  background: rgba(16, 185, 129, .08) !important;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, .15) inset;
+}
+
+.library-review-valid > label,
+.library-review-valid label {
+  color: #9ff3cf !important;
+}
+
+.library-review-valid input,
+.library-review-valid textarea,
+.library-review-valid select,
+input.library-review-control-valid,
+textarea.library-review-control-valid,
+select.library-review-control-valid {
+  border-color: #34d399 !important;
+  background: rgba(5, 64, 48, .56) !important;
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, .1) !important;
+}
+
 .library-review-reason {
   margin: 6px 0 0;
   color: #ffd0d8;
