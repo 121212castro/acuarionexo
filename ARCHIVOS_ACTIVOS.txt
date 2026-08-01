@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: library-source-policy-fix-20260730.
-- app-version.json: library-source-policy-fix-20260730.
-- manifest.webmanifest: library-source-policy-fix-20260730.
+- index.html: library-audit-action-fix-20260801.
+- app-version.json: library-audit-action-fix-20260801.
+- manifest.webmanifest: library-audit-action-fix-20260801.
 
 ARCHIVOS ACTIVOS
 - acuarionexo-ajustes.json
@@ -73,6 +73,9 @@ ARCHIVOS ACTIVOS
 - src/library/library-v3-images.js
 - src/library/library-v3-template.js
 - src/library/library-v3.js
+- src/library/review-field-highlights.css
+- src/library/review-field-highlights.js
+- src/library/review-workflow.js
 - src/library/ui/library.js
 - src/map/map-interactions.js
 - src/map/map-markers.js

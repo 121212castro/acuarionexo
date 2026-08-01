@@ -232,6 +232,13 @@
 
   async function applyStructuredJson(id, parsed, x, box) {
     const payload = structuredPayload(parsed, x);
+    Object.assign(payload, {
+      status: 'review',
+      validation_result: null,
+      validated_by: null,
+      validated_at: null,
+      published_at: null
+    });
     const merged = { ...x, ...payload };
     const { error } = await supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', state.user.id);
     if (error) throw error;
@@ -361,20 +368,31 @@
   window.formFicha = function (id) {
     const x = row(id);
     if (!x) return returnToLibrarySource();
-    const audit = S.audit(x);
+    const audit = S.effectiveAudit(x);
     render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}">${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
+    setTimeout(() => window.ANX.LibraryReviewWorkflow?.decorateReviewForm?.(id), 0);
   };
 
   window.guardarFicha = async function (id) {
     const x = row(id), box = byId('x');
     try {
+      if (String(x?.status || '').toLowerCase() === 'review' && window.ANX.LibraryReviewWorkflow?.saveReview) {
+        return await window.ANX.LibraryReviewWorkflow.saveReview(id);
+      }
       const payload = read(x);
       const merged = { ...x, ...payload };
       assertComplete(merged, 'No se puede guardar');
+      Object.assign(payload, {
+        status: 'review',
+        validation_result: null,
+        validated_by: null,
+        validated_at: null,
+        published_at: null
+      });
       const { error } = await supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', state.user.id);
       if (error) throw error;
       Object.assign(x, payload);
-      box.innerHTML = msg('Ficha guardada completa.', 'success');
+      box.innerHTML = msg('Ficha guardada completa. La aprobación anterior se ha retirado; audita y publica esta versión.', 'success');
     } catch (e) {
       box.innerHTML = e.audit ? auditHtml(e.audit) : msg(e.message, 'error');
     }

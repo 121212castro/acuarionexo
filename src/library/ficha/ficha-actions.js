@@ -101,7 +101,7 @@
       button = byId(`libraryAddButton_${id}`);
       const x = row(id);
       if (!x) throw new Error('Ficha no encontrada.');
-      const audit = Core.S.audit(x);
+      const audit = Core.S.effectiveAudit(x);
       if (!fichaCanBeAdded(x, audit)) {
         const errors = (audit.errors || []).slice(0, 4).join(' · ');
         throw new Error(errors ? `La ficha debe corregirse antes de añadirla: ${errors}` : 'La ficha debe superar la auditoría antes de añadirse.');
@@ -227,21 +227,24 @@
     return `${addButton}${editButton}${publishButton}${deleteButton}`;
   }
 
-  function handleLibraryAction(event) {
-    const button = event.target.closest('[data-library-add-id]');
-    if (!button) return;
-    event.preventDefault();
-    event.stopPropagation();
-    addToAquarium(button.dataset.libraryAddId);
+  function bindLibraryActions() {
+    document.querySelectorAll('[data-library-add-id]').forEach(function (button) {
+      if (button.dataset.libraryActionBound === 'true') return;
+      button.dataset.libraryActionBound = 'true';
+      button.addEventListener('click', function (event) {
+        event.preventDefault();
+        event.stopPropagation();
+        void addToAquarium(button.dataset.libraryAddId);
+      });
+    });
   }
 
-  document.addEventListener('click', handleLibraryAction);
   window.publicarFicha = validateAndPublish;
 
   window.verFicha = function (id) {
     const x = row(id);
     if (!x) return returnToLibrarySource();
-    const audit = Core.S.audit(x);
+    const audit = Core.S.effectiveAudit(x);
     render(`<section class="library-detail">
       ${libraryInfoNotice()}
       ${libraryBackButton()}
@@ -257,7 +260,8 @@
       <h3>Fuentes</h3>
       ${sources(x.sources)}
     </section>`, 'biblioteca');
+    bindLibraryActions();
   };
 
-  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaExternalLink, normalizedExternalLink, fichaInformation, fichaCanBeAdded, actionButtons, addToAquarium, validateAndPublish, validationDetails };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaExternalLink, normalizedExternalLink, fichaInformation, fichaCanBeAdded, actionButtons, bindLibraryActions, addToAquarium, validateAndPublish, validationDetails };
 })();

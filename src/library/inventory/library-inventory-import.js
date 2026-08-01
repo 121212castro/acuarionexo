@@ -5,6 +5,7 @@
   const types = [
     ['pez_marino', 'Pez marino'], ['pez_dulce', 'Pez de agua dulce'], ['coral', 'Coral'],
     ['invertebrado', 'Invertebrado'], ['planta', 'Planta'], ['microfauna', 'Microfauna'],
+    ['fitoplancton', 'Fitoplancton y microalgas'],
     ['producto', 'Producto'], ['medicamento', 'Medicamento'], ['sal', 'Sal'], ['aditivo', 'Aditivo'],
     ['alimento', 'Alimento'], ['equipamiento', 'Equipo'], ['test', 'Test'], ['general', 'General']
   ];
@@ -15,14 +16,14 @@
   function inventoryScopeForType(type) {
     if (type === 'equipamiento') return 'aquarium';
     if (productTypes.has(type)) return 'general';
-    if (['pez_marino', 'pez_dulce', 'coral', 'invertebrado', 'planta', 'microfauna'].includes(type)) return 'aquarium';
+    if (['pez_marino', 'pez_dulce', 'coral', 'invertebrado', 'planta', 'microfauna', 'fitoplancton'].includes(type)) return 'aquarium';
     return 'general';
   }
 
   function inventoryCategoryFor(row) {
     const map = {
       pez_marino: 'Peces marinos', pez_dulce: 'Peces', coral: 'Corales', invertebrado: 'Invertebrados',
-      planta: 'Plantas', microfauna: 'Microfauna', equipamiento: 'Equipos', producto: 'Productos',
+      planta: 'Plantas', microfauna: 'Microfauna', fitoplancton: 'Fitoplancton y microalgas', equipamiento: 'Equipos', producto: 'Productos',
       medicamento: 'Medicamentos', sal: 'Sales', aditivo: 'Aditivos', alimento: 'Alimentos', test: 'Tests'
     };
     return map[row.entry_type || 'general'] || typeName(row.entry_type);
@@ -30,7 +31,7 @@
 
   function fichaCompleta(row) {
     if (!row) return false;
-    try { return !!window.ANX.LibrarySchema.audit(row).approved; }
+    try { return !!window.ANX.LibrarySchema.effectiveAudit(row).approved; }
     catch (_) { return false; }
   }
 

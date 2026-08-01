@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-source-policy-fix-20260730`
+`library-audit-action-fix-20260801`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -29,6 +29,7 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `settings.css`
 - `support.css`
 - `status.css`
+- `src/library/review-field-highlights.css`
 - `config.js`
 - `app.js`
 - `src/aquariums/aquariums-core.js`
@@ -42,6 +43,8 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/auth/auth.js`
 - `update-manager.js`
 - `notifications.js`
+- `src/library/review-field-highlights.js`
+- `src/library/review-workflow.js`
 - `manifest.webmanifest`
 
 ## Módulos bajo demanda

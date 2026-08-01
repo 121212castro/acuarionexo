@@ -176,5 +176,27 @@ if (!S.audit(multispecies).approved) {
   failures.push(`microfauna: una mezcla comercial con taxones spp. fue rechazada: ${S.audit(multispecies).errors.join(' | ')}`);
 }
 
+const previouslyApproved = completeEntry('pez_dulce', S.CONTRACTS.pez_dulce);
+previouslyApproved.sources = [];
+previouslyApproved.status = 'published';
+previouslyApproved.validation_result = {
+  approved: true,
+  errors: [],
+  source_count: 3,
+  audited_at: '2026-08-01T12:00:00.000Z',
+  engine: 'server-audit-test'
+};
+previouslyApproved.validated_at = '2026-08-01T12:00:00.000Z';
+previouslyApproved.updated_at = '2026-08-01T12:00:01.000Z';
+if (S.audit(previouslyApproved).approved) failures.push('Auditoría vigente: aceptó una ficha incompleta por su estado persistido.');
+if (!S.effectiveAudit(previouslyApproved).approved || !S.effectiveAudit(previouslyApproved).authoritative) {
+  failures.push('Auditoría efectiva: no respetó una aprobación autoritativa de una ficha publicada sin cambios.');
+}
+
+const staleGeneratedReview = { ...previouslyApproved, status: 'review', updated_at: '2026-08-01T12:10:00.000Z', validation_result: { ...previouslyApproved.validation_result, generated_audit: true } };
+if (S.effectiveAudit(staleGeneratedReview).approved) {
+  failures.push('Auditoría efectiva: reutilizó la aprobación de un borrador modificado después de generarse.');
+}
+
 if (failures.length) throw new Error(`Auditoría de enlace contrato-plantilla-validación fallida:\n${failures.join('\n')}`);
 console.log(`Auditoría correcta: ${Object.keys(S.CONTRACTS).length} tipos enlazados campo por campo con su plantilla y validación.`);

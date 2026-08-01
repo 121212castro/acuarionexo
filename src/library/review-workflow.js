@@ -1,8 +1,6 @@
 /* AcuarioNexo · flujo completo de fichas en revisión */
 (function () {
   const ANX = window.ANX = window.ANX || {};
-  let wrappedSave = null;
-  let wrappedForm = null;
 
   function byId(id) { return document.getElementById(id); }
   function value(id) { return String(byId(id)?.value ?? '').trim(); }
@@ -139,25 +137,6 @@
     return refreshed;
   }
 
-  function wrapSave() {
-    const original = window.guardarFicha;
-    if (typeof original !== 'function' || original === wrappedSave || original.__anxReviewWrapped) return false;
-    const wrapper = async function (id) {
-      const entry = ANX.LibraryV3Core?.row?.(id);
-      if (!entry || String(entry.status).toLowerCase() !== 'review') return original.apply(this, arguments);
-      const box = byId('x');
-      try {
-        return await saveReview(id);
-      } catch (error) {
-        if (box) box.innerHTML = ANX.msg(error?.message || 'No se pudo guardar la ficha en revisión.', 'error');
-      }
-    };
-    wrapper.__anxReviewWrapped = true;
-    wrappedSave = wrapper;
-    window.guardarFicha = wrapper;
-    return true;
-  }
-
   function addDeleteButton(id) {
     const entry = ANX.LibraryV3Core?.row?.(id);
     if (!entry || String(entry.status).toLowerCase() !== 'review' || byId('libraryReviewDeleteButton')) return;
@@ -172,35 +151,11 @@
     saveButton.insertAdjacentElement('afterend', button);
   }
 
-  function wrapForm() {
-    const original = window.formFicha;
-    if (typeof original !== 'function' || original === wrappedForm || original.__anxReviewWorkflowWrapped) return false;
-    const wrapper = function (id) {
-      const result = original.apply(this, arguments);
-      const finish = () => {
-        wrapSave();
-        addDeleteButton(id);
-        const entry = ANX.LibraryV3Core?.row?.(id);
-        ANX.LibraryReviewHighlights?.markEntry?.(entry);
-      };
-      if (result && typeof result.finally === 'function') result.finally(() => setTimeout(finish, 0));
-      else setTimeout(finish, 0);
-      return result;
-    };
-    wrapper.__anxReviewWorkflowWrapped = true;
-    wrappedForm = wrapper;
-    window.formFicha = wrapper;
-    return true;
+  function decorateReviewForm(id) {
+    addDeleteButton(id);
+    const entry = ANX.LibraryV3Core?.row?.(id);
+    ANX.LibraryReviewHighlights?.markEntry?.(entry);
   }
 
-  function install() {
-    wrapSave();
-    wrapForm();
-  }
-
-  const timer = setInterval(install, 250);
-  setTimeout(() => clearInterval(timer), 60000);
-  new MutationObserver(install).observe(document.documentElement, { childList: true, subtree: true });
-
-  ANX.LibraryReviewWorkflow = { saveReview, readReviewPayload, persistedReviewAudit, install };
+  ANX.LibraryReviewWorkflow = { saveReview, readReviewPayload, persistedReviewAudit, decorateReviewForm };
 })();

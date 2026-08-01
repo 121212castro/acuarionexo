@@ -117,12 +117,16 @@ function checkFichaOwnership() {
   if (actionsCode.includes('Añadir a mi inventario')) fail('Texto prohibido en vista de ficha: Añadir a mi inventario.');
   if (!actionsCode.includes('cover_url') || !actionsCode.includes('photo_url')) fail('La vista de ficha debe mostrar portada y foto al abrir.');
   if (!actionsCode.includes('fichaInformation')) fail('La vista de ficha debe mostrar la información estructurada.');
+  if (!actionsCode.includes('bindLibraryActions()')) fail('La vista de ficha debe enlazar el botón Añadir directamente después de renderizar.');
+  if (actionsCode.includes("document.addEventListener('click', handleLibraryAction)")) fail('El botón Añadir no debe depender de delegación global de clics.');
   for (const label of ['Editar', 'Publicar', 'Borrar']) if (!actionsCode.includes(label)) fail(`Falta botón de ficha: ${label}.`);
   if (fichaCode.includes('window.verFicha')) fail('library-v3-ficha.js no debe definir window.verFicha.');
   if (!imagesCode.includes("'cover_url','coverFile'")) fail('library-v3-images.js debe mantener Foto portada.');
   if (!imagesCode.includes("'photo_url','photoFile'")) fail('library-v3-images.js debe mantener Foto al abrir ficha.');
   const loaderCode = read('src/core/module-loader.js');
   if (loaderCode.includes('ficha-image-clean.js')) fail('El cargador no puede incluir ficha-image-clean.js.');
+  const importerCode = read('src/library/inventory/library-inventory-import.js');
+  if (!importerCode.includes('LibrarySchema.effectiveAudit(row)')) fail('El importador debe consumir la misma auditoría efectiva que la ficha.');
 }
 
 function checkDocs() {

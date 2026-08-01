@@ -36,6 +36,11 @@
         entry_type: entryType,
         data: {},
         sections: { summary: x.summary || '' },
+        status: 'review',
+        validation_result: null,
+        validated_by: null,
+        validated_at: null,
+        published_at: null,
         updated_at: new Date().toISOString()
       };
       const { error } = await ANX.supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', ANX.state.user.id);

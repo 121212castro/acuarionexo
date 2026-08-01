@@ -14,7 +14,7 @@
   const SPECIALIZED = SOURCE_POLICY.specializedDomains || {};
   const OFFICIAL = new RegExp(SOURCE_POLICY.officialSourcePattern || '\\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|sds)\\b', 'i');
   const WEAK = new RegExp(SOURCE_POLICY.weakSourceDomainPattern || '\\b(wikipedia\\.org|facebook\\.com|instagram\\.com|amazon\\.|ebay\\.|aliexpress\\.|reddit\\.com)\\b', 'i');
-  const URL = /https?:\/\//i;
+  const URL_PATTERN = /https?:\/\//i;
   const INTERNAL = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
   const IMPRECISE = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
   const IDENTIFIERS = new Set(['title','scientific_name','common_names','synonyms','manufacturer','brand','product_code','family','order_name','class_name','category','equipment_type','food_type','culture_type','coral_type','plant_type','test_type','parameter','method','reading_unit','data_type','internal_unit','primary_field','active_ingredient','reagent_code','standard_code','lot']);
@@ -100,7 +100,7 @@
     const text = clean(typeof value === 'object' ? JSON.stringify(value) : value);
     if (field.type === 'number' && !flexibleMicrofauna(entry, field.id) && !/\d+(?:[.,]\d+)?/.test(text)) return 'Debe incluir un valor numérico o rango concreto.';
     if (field.type !== 'number' && !field.allowed?.length && text.length < Number(field.minLength || 1)) return `Debe tener al menos ${field.minLength || 1} caracteres.`;
-    if (URL.test(text)) return 'Las URLs solo pueden aparecer en Fuentes.';
+    if (URL_PATTERN.test(text)) return 'Las URLs solo pueden aparecer en Fuentes.';
     if (INTERNAL.test(text)) return 'Contiene trazas internas de la aplicación.';
     return '';
   }
@@ -140,7 +140,7 @@
     const summary = clean(valueFor(entry, 'summary'));
     if (!summary) { errors.push('Resumen · Resumen: Campo obligatorio vacío.'); missing.push('summary'); }
     else if (summary.length < 20) { errors.push('Resumen · Resumen: Debe tener al menos 20 caracteres.'); invalid.push('summary'); }
-    if (URL.test(summary)) errors.push('Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.');
+    if (URL_PATTERN.test(summary)) errors.push('Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.');
     const imprecise = JSON.stringify({ summary, data: entry?.data || {} }).match(IMPRECISE);
     if (imprecise) warnings.push(`Revisar expresión contextual: ${imprecise[0]}.`);
     return {
@@ -154,6 +154,35 @@
       sources: S.normalizeSources(entry?.sources),
       engine: 'library-contract-engine-v2'
     };
+  }
+
+  function persistedAudit(entry) {
+    const result = entry?.validation_result;
+    if (!result || result.approved !== true) return null;
+    const status = clean(entry?.status).toLowerCase();
+    const generated = result.generated_audit === true;
+    const auditedAt = Date.parse(result.audited_at || entry?.validated_at || '');
+    const updatedAt = Date.parse(entry?.updated_at || '');
+    const unchangedGeneratedDraft = generated && Number.isFinite(auditedAt) && Number.isFinite(updatedAt) && updatedAt <= auditedAt + 5000;
+    if (!['validated', 'published'].includes(status) && !unchangedGeneratedDraft) return null;
+    return {
+      approved: true,
+      errors: [],
+      warnings: unique(result.warnings),
+      missing_fields: [],
+      invalid_fields: [],
+      poor_fields: [],
+      source_count: Number(result.source_count || S.normalizeSources(entry?.sources).length),
+      sources: S.normalizeSources(entry?.sources),
+      engine: result.engine || 'persisted-library-audit',
+      authoritative: true
+    };
+  }
+
+  function effectiveAudit(entry) {
+    const current = audit(entry);
+    if (current.approved) return current;
+    return persistedAudit(entry) || current;
   }
 
   function contractIntegrityReport() {
@@ -181,6 +210,8 @@
   }));
   S.missingFields = entry => unique(audit(entry).missing_fields);
   S.audit = audit;
+  S.persistedAudit = persistedAudit;
+  S.effectiveAudit = effectiveAudit;
   S.sourcePolicy = sourcePolicy;
   S.isConcreteScientificName = concreteScientificName;
   S.isMultiTaxonMicrofauna = multiTaxonMicrofauna;

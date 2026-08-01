@@ -571,7 +571,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -580,7 +580,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -589,7 +589,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -598,7 +598,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Sinónimos",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -607,7 +607,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Familia",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -616,7 +616,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Orden",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -625,7 +625,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Clase",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1036,7 +1036,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1045,7 +1045,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -1054,7 +1054,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1063,7 +1063,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Sinónimos",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1072,7 +1072,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Familia",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1081,7 +1081,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Orden",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1090,7 +1090,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Clase",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1452,7 +1452,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1461,7 +1461,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -1470,7 +1470,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1479,7 +1479,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Sinónimos",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1488,7 +1488,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Familia",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1497,7 +1497,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de coral",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1926,7 +1926,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1935,7 +1935,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -1944,7 +1944,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1953,7 +1953,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Sinónimos",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -1962,7 +1962,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Familia",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2319,7 +2319,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2328,7 +2328,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -2337,7 +2337,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2346,7 +2346,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Sinónimos",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2355,7 +2355,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Familia",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2364,7 +2364,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de planta",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2681,7 +2681,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2690,7 +2690,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -2699,7 +2699,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2708,7 +2708,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de cultivo",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2944,7 +2944,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2953,7 +2953,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre científico",
         "section": "identity",
         "type": "text",
-        "minLength": 3,
+        "minLength": 1,
         "allowed": null,
         "validator": "scientificName"
       },
@@ -2962,7 +2962,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Otros nombres comunes",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2971,7 +2971,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Sinónimos",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2980,7 +2980,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Familia",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -2989,7 +2989,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Clase",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3007,7 +3007,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de cultivo",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3297,7 +3297,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3306,7 +3306,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3315,7 +3315,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3333,7 +3333,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Categoría",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3506,7 +3506,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3515,7 +3515,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3524,7 +3524,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3724,7 +3724,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3733,7 +3733,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3742,7 +3742,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3942,7 +3942,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3951,7 +3951,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3960,7 +3960,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -3978,7 +3978,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de alimento",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4142,7 +4142,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4151,7 +4151,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4160,7 +4160,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4259,7 +4259,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Principio activo",
         "section": "dose",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4369,7 +4369,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4378,7 +4378,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4387,7 +4387,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4405,7 +4405,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de test",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4720,7 +4720,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Método",
         "section": "reading",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4819,7 +4819,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Campo principal",
         "section": "mapping",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4837,7 +4837,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Tipo de dato",
         "section": "mapping",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4974,7 +4974,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Nombre común / producto",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4983,7 +4983,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Fabricante",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -4992,7 +4992,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Marca",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },
@@ -5010,7 +5010,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Equipment type",
         "section": "identity",
         "type": "text",
-        "minLength": 2,
+        "minLength": 1,
         "allowed": null,
         "validator": null
       },

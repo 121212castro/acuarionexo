@@ -170,7 +170,6 @@
   }
 
   // Este módulo no intercepta ni sustituye formFicha. Solo pinta estados cuando
-  // el flujo oficial de Biblioteca lo invoca. review-workflow.js es el único
-  // propietario del ciclo abrir/guardar/revalidar de una ficha.
+  // el propietario oficial library-v3-ficha.js lo invoca.
   ANX.LibraryReviewHighlights = { markEntry, collectStates, clearMarks, validation };
 })();
