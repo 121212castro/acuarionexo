@@ -1,279 +1,193 @@
-/* AcuarioNexo · contrato estricto y único de Biblioteca */
+/* AcuarioNexo · motor único de contrato, auditoría y publicación */
 (function () {
   const S = window.ANX?.LibrarySchema;
-  if (!S || S.__strictContractApplied) return;
+  if (!S) return;
 
-  const originalTemplateFor = S.templateFor;
-  const TOP_LEVEL_FIELDS = new Set(['title', 'scientific_name', 'summary', 'sources']);
-  const BIOLOGICAL_TYPES = new Set(S.BIOLOGICAL_TYPES || []);
-  const STATUSES = new Set(S.STATUSES || []);
-  const MIN_SUMMARY_LENGTH = 20;
-  const IMPRECISE_TEXT = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
-  const INTERNAL_TRACE = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
-  const URL_PATTERN = /https?:\/\//i;
-  const PRODUCT_TYPES = new Set(['producto', 'medicamento', 'sal', 'aditivo', 'alimento', 'test', 'equipamiento']);
+  const originalTemplateFor = S.templateFor.bind(S);
+  const TOP = new Set(['title', 'scientific_name', 'summary', 'sources']);
+  const BIO = new Set(S.BIOLOGICAL_TYPES || []);
+  const PRODUCT = new Set(['producto','medicamento','sal','aditivo','alimento','test','equipamiento']);
+  const STATUS = new Set(S.STATUSES || []);
   const SOURCE_POLICY = S.SOURCE_POLICY || {};
-  const SOURCE_DOMAINS = SOURCE_POLICY.specializedDomains || {};
-  const MINIMUM_SOURCES = Number(SOURCE_POLICY.minimumSources || 3);
-  const MINIMUM_INDEPENDENT_SOURCES = Number(SOURCE_POLICY.minimumIndependentSources || 2);
-  const OFFICIAL_SOURCE_TYPE = new RegExp(SOURCE_POLICY.officialSourcePattern || '\\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|safety data|sds)\\b', 'i');
-  const WEAK_SOURCE_DOMAIN = new RegExp(SOURCE_POLICY.weakSourceDomainPattern || '\\b(wikipedia\\.org|facebook\\.com|instagram\\.com|amazon\\.|ebay\\.|aliexpress\\.|mercadolibre\\.|reddit\\.com)\\b', 'i');
+  const MIN_SOURCES = Number(SOURCE_POLICY.minimumSources || 3);
+  const MIN_HOSTS = Number(SOURCE_POLICY.minimumIndependentSources || 2);
+  const SPECIALIZED = SOURCE_POLICY.specializedDomains || {};
+  const OFFICIAL = new RegExp(SOURCE_POLICY.officialSourcePattern || '\\b(fabricante|manufacturer|oficial|official|manual|prospecto|ficha t[eé]cnica|datasheet|sds)\\b', 'i');
+  const WEAK = new RegExp(SOURCE_POLICY.weakSourceDomainPattern || '\\b(wikipedia\\.org|facebook\\.com|instagram\\.com|amazon\\.|ebay\\.|aliexpress\\.|reddit\\.com)\\b', 'i');
+  const URL = /https?:\/\//i;
+  const INTERNAL = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
+  const IMPRECISE = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
+  const IDENTIFIERS = new Set(['title','scientific_name','common_names','synonyms','manufacturer','brand','product_code','family','order_name','class_name','category','equipment_type','food_type','culture_type','coral_type','plant_type','test_type','parameter','method','reading_unit','data_type','internal_unit','primary_field','active_ingredient','reagent_code','standard_code','lot']);
 
-  // Los campos identificativos no son párrafos narrativos. Un nombre, marca,
-  // familia, modelo o código válido puede ser corto y no debe rellenarse con
-  // texto artificial para superar una longitud mínima genérica.
-  const IDENTIFIER_FIELDS = new Set([
-    'title', 'scientific_name', 'common_names', 'synonyms',
-    'manufacturer', 'brand', 'product_code', 'family', 'order_name',
-    'class_name', 'category', 'equipment_type', 'food_type', 'culture_type',
-    'coral_type', 'plant_type', 'test_type', 'parameter', 'method',
-    'reading_unit', 'data_type', 'internal_unit', 'primary_field',
-    'active_ingredient', 'reagent_code', 'standard_code', 'lot'
-  ]);
-  const IDENTIFIER_MIN_LENGTH = {
-    title: 2,
-    scientific_name: 3,
-    common_names: 2,
-    synonyms: 2,
-    manufacturer: 2,
-    brand: 2,
-    product_code: 1,
-    family: 2,
-    order_name: 2,
-    class_name: 2,
-    category: 2,
-    equipment_type: 2,
-    food_type: 2,
-    culture_type: 2,
-    coral_type: 2,
-    plant_type: 2,
-    test_type: 2,
-    parameter: 1,
-    method: 2,
-    reading_unit: 1,
-    data_type: 2,
-    internal_unit: 1,
-    primary_field: 2,
-    active_ingredient: 2,
-    reagent_code: 1,
-    standard_code: 1,
-    lot: 1
-  };
+  const clean = value => String(value ?? '').trim();
+  const unique = list => [...new Set((list || []).map(clean).filter(Boolean))];
+  const valueFor = (entry, id) => id === 'summary'
+    ? (entry?.summary ?? entry?.sections?.summary)
+    : TOP.has(id) ? entry?.[id] : (entry?.data?.[id] ?? entry?.[id]);
 
-  function cleanEntry(entry) {
-    const data = { ...(entry?.data || {}) };
-    TOP_LEVEL_FIELDS.forEach(field => delete data[field]);
-    return { ...(entry || {}), data };
+  function host(url) {
+    try { return new URL(url).hostname.toLowerCase().replace(/^www\./, ''); }
+    catch (_) { return ''; }
   }
 
-  function unique(list) {
-    return [...new Set((list || []).map(value => String(value || '').trim()).filter(Boolean))];
+  function matchesDomain(hostname, domains) {
+    return (domains || []).some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
   }
 
-  function sourcePolicy(entryType, value) {
-    const sources = S.normalizeSources(value);
+  function sourcePolicy(entryType, raw) {
+    const sources = S.normalizeSources(raw);
     const errors = [];
-    const hostname = source => { try { return new URL(source.url).hostname.toLowerCase().replace(/^www\./, ''); } catch (_) { return ''; } };
-    const matches = (host, domains) => domains.some(domain => host === domain || host.endsWith(`.${domain}`));
-    if (sources.length < MINIMUM_SOURCES) errors.push(`Se requieren al menos ${MINIMUM_SOURCES} fuentes reales con URL completa.`);
-    if (sources.some(source => !String(source.used_for || '').trim())) errors.push('Cada fuente debe indicar qué datos respalda.');
-    const specialized = SOURCE_DOMAINS[entryType] || [];
-    if (BIOLOGICAL_TYPES.has(entryType) && !sources.some(source => matches(hostname(source), specialized))) {
+    if (sources.length < MIN_SOURCES) errors.push(`Se requieren al menos ${MIN_SOURCES} fuentes reales con URL completa.`);
+    if (sources.some(source => !clean(source.used_for))) errors.push('Cada fuente debe indicar qué datos respalda en used_for.');
+    if (BIO.has(entryType) && !sources.some(source => matchesDomain(host(source.url), SPECIALIZED[entryType] || []))) {
       errors.push('Falta una base especializada obligatoria para esta categoría.');
     }
-    if (PRODUCT_TYPES.has(entryType) && !sources.some(source => OFFICIAL_SOURCE_TYPE.test(`${source.source_type || ''} ${source.name || ''}`) && !WEAK_SOURCE_DOMAIN.test(hostname(source)))) {
+    if (PRODUCT.has(entryType) && !sources.some(source => OFFICIAL.test(`${source.source_type || ''} ${source.name || ''}`) && !WEAK.test(host(source.url)))) {
       errors.push('Falta una fuente oficial del fabricante, manual, prospecto o ficha técnica.');
     }
-    const reliableHosts = new Set(sources.map(hostname).filter(host => host && !WEAK_SOURCE_DOMAIN.test(host)));
-    if (reliableHosts.size < MINIMUM_INDEPENDENT_SOURCES) {
-      errors.push(`Se requieren al menos ${MINIMUM_INDEPENDENT_SOURCES} fuentes fiables que no sean Wikipedia, redes sociales o marketplaces.`);
-    }
-    return { approved: errors.length === 0, errors, sources };
+    const reliableHosts = new Set(sources.map(source => host(source.url)).filter(name => name && !WEAK.test(name)));
+    if (reliableHosts.size < MIN_HOSTS) errors.push(`Se requieren al menos ${MIN_HOSTS} dominios fiables independientes.`);
+    return { approved: errors.length === 0, errors, sources, source_count: sources.length };
   }
 
-  function valueFor(entry, field) {
-    if (field === 'title') return entry?.title;
-    if (field === 'scientific_name') return entry?.scientific_name;
-    if (field === 'summary') return entry?.summary ?? entry?.sections?.summary;
-    if (field === 'sources') return entry?.sources;
-    return entry?.data?.[field] ?? entry?.[field];
+  function concreteScientificName(value) {
+    const name = clean(value);
+    return /^[A-Z][a-z-]+\s+[a-z][a-z-]+(?:\s+var\.\s+[a-z-]+)?$/.test(name) && !/\b(?:spp?|cf|aff)\.?\b/i.test(name);
   }
 
-  function isMultiTaxonMicrofauna(entry) {
+  function genusOnlyMicrofauna(entry) {
     if (entry?.entry_type !== 'microfauna') return false;
-    const scientificName = String(entry?.scientific_name || '').trim();
-    const taxa = scientificName.split(/\s*\+\s*/).map(value => value.trim()).filter(Boolean);
-    if (taxa.length < 2) return false;
-    const validTaxon = taxon => S.isConcreteScientificName(taxon) ||
-      /^[A-Z][a-z-]+\s+spp?\.$/.test(taxon) ||
-      /^[A-Z][a-z-]+$/.test(taxon);
-    const description = `${entry?.data?.culture_type || ''} ${entry?.data?.identification || ''}`;
-    return taxa.every(validTaxon) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(description);
+    const name = clean(entry.scientific_name);
+    if (!/^[A-Z][a-z-]+\s+sp\.$/.test(name)) return false;
+    const context = `${clean(entry?.data?.culture_type)} ${clean(entry?.data?.identification)} ${clean(entry?.data?.ai_notes)}`;
+    return /\b(g[eé]nero|especie no publicada|especie no confirmada|identificad[ao].*g[eé]nero|sp\.)\b/i.test(context);
   }
 
-  function isMultiTaxonFlexibleField(entry, fieldId) {
-    return isMultiTaxonMicrofauna(entry) && [
-      'scientific_name',
-      'temperature_min',
-      'temperature_max',
-      'salinity_min',
-      'salinity_max'
-    ].includes(fieldId);
+  function multiTaxonMicrofauna(entry) {
+    if (entry?.entry_type !== 'microfauna') return false;
+    const taxa = clean(entry.scientific_name).split(/\s*\+\s*/).filter(Boolean);
+    if (taxa.length < 2) return false;
+    const valid = taxon => concreteScientificName(taxon) || /^[A-Z][a-z-]+(?:\s+spp?\.)?$/.test(taxon);
+    const context = `${clean(entry?.data?.culture_type)} ${clean(entry?.data?.identification)}`;
+    return taxa.every(valid) && /\b(mezcla|multiespec[ií]fic[ao])\b/i.test(context);
+  }
+
+  function flexibleMicrofauna(entry, id) {
+    return (multiTaxonMicrofauna(entry) || genusOnlyMicrofauna(entry)) && ['scientific_name','temperature_min','temperature_max','salinity_min','salinity_max'].includes(id);
   }
 
   function normalizedTemplate(type) {
     return originalTemplateFor(type).map(section => ({
       ...section,
-      fields: section.fields.map(field => ({
+      fields: (section.fields || []).map(field => ({
         ...field,
         type: field.allowed?.length ? 'enum' : field.type,
-        minLength: field.allowed?.length
-          ? 1
-          : (IDENTIFIER_FIELDS.has(field.id)
-              ? Number(IDENTIFIER_MIN_LENGTH[field.id] || 1)
-              : Number(field.minLength || 1))
+        minLength: field.allowed?.length ? 1 : (IDENTIFIERS.has(field.id) ? 1 : Number(field.minLength || 1))
       }))
     }));
   }
 
-  function fieldDefinition(type, fieldId) {
-    return normalizedTemplate(type).flatMap(section => section.fields).find(field => field.id === fieldId) || null;
+  function fieldDefinition(type, id) {
+    return normalizedTemplate(type).flatMap(section => section.fields).find(field => field.id === id) || null;
   }
 
   function validateField(entry, field) {
     const value = valueFor(entry, field.id);
-    if (field.id === 'sources') {
-      return sourcePolicy(entry.entry_type, value).errors.join(' ');
-    }
-    if (value == null || value === '' || (Array.isArray(value) && value.length === 0)) return 'Campo obligatorio vacío.';
-    if (field.allowed?.length && !field.allowed.includes(String(value).trim())) {
-      return `Valor no permitido. Usa exactamente: ${field.allowed.join(' | ')}.`;
-    }
-    if (field.validator === 'scientificName' && !isMultiTaxonFlexibleField(entry, field.id) && !S.isConcreteScientificName(value)) return 'Debe ser una especie concreta con binomio científico válido.';
-    const text = String(value).trim();
-    if (field.type === 'number' && !isMultiTaxonFlexibleField(entry, field.id) && !S.hasNumericValue(value)) return 'Debe incluir un valor numérico o rango concreto.';
-    if (field.type !== 'number' && !field.allowed?.length && text.length < Number(field.minLength || 1)) {
-      return `Debe tener al menos ${Number(field.minLength || 1)} caracteres.`;
-    }
-    if (field.id !== 'sources' && URL_PATTERN.test(text)) return 'Las URLs solo pueden aparecer en Fuentes.';
-    if (INTERNAL_TRACE.test(text)) return 'Contiene trazas internas de la aplicación.';
+    if (field.id === 'sources') return sourcePolicy(entry.entry_type, value).errors.join(' ');
+    if (value == null || value === '' || (Array.isArray(value) && !value.length)) return 'Campo obligatorio vacío.';
+    if (field.allowed?.length && !field.allowed.includes(clean(value))) return `Valor no permitido. Usa exactamente: ${field.allowed.join(' | ')}.`;
+    if (field.validator === 'scientificName' && !flexibleMicrofauna(entry, field.id) && !concreteScientificName(value)) return 'Debe ser un binomio científico válido.';
+    const text = clean(typeof value === 'object' ? JSON.stringify(value) : value);
+    if (field.type === 'number' && !flexibleMicrofauna(entry, field.id) && !/\d+(?:[.,]\d+)?/.test(text)) return 'Debe incluir un valor numérico o rango concreto.';
+    if (field.type !== 'number' && !field.allowed?.length && text.length < Number(field.minLength || 1)) return `Debe tener al menos ${field.minLength || 1} caracteres.`;
+    if (URL.test(text)) return 'Las URLs solo pueden aparecer en Fuentes.';
+    if (INTERNAL.test(text)) return 'Contiene trazas internas de la aplicación.';
     return '';
   }
 
   function completeTemplate(type) {
-    return normalizedTemplate(type).map(section => ({
-      ...section,
-      fields: section.fields.map(field => ({ ...field }))
-    }));
+    return normalizedTemplate(type).map(section => ({ ...section, fields: section.fields.map(field => ({ ...field })) }));
   }
 
   function publicTemplate(type) {
     return completeTemplate(type).map(section => ({
       ...section,
-      fields: section.fields.filter(field => !['title', 'scientific_name'].includes(field.id))
+      fields: section.fields.filter(field => !['title','scientific_name'].includes(field.id))
     })).filter(section => section.fields.length);
   }
 
-  function validateTemplate(entry) {
-    return completeTemplate(entry?.entry_type || 'producto').map(section => ({
-      id: section.id,
-      label: section.label,
-      required: true,
-      valid: section.fields.every(field => !validateField(entry, field)),
-      fields: section.fields.map(field => {
+  function audit(entry) {
+    const errors = [];
+    const warnings = [];
+    const missing = [];
+    const invalid = [];
+    const type = clean(entry?.entry_type);
+    if (!STATUS.has(entry?.status)) errors.push('Estado no permitido.');
+    if (!entry?.identity_confirmed) errors.push('Identificación insuficiente.');
+    if (BIO.has(type) && !multiTaxonMicrofauna(entry) && !genusOnlyMicrofauna(entry) && !concreteScientificName(entry?.scientific_name)) {
+      errors.push('La ficha biológica no tiene una identificación científica válida para su categoría.');
+    }
+    for (const section of completeTemplate(type)) {
+      for (const field of section.fields) {
         const error = validateField(entry, field);
-        return { ...field, required: true, valid: !error, error };
-      })
-    }));
-  }
-
-  function missingFields(entry) {
-    const missing = validateTemplate(entry)
-      .flatMap(section => section.fields)
-      .filter(field => !field.valid)
-      .map(field => field.id);
-    const summary = String(valueFor(entry, 'summary') || '').trim();
-    if (summary.length < MIN_SUMMARY_LENGTH) missing.push('summary');
-    return unique(missing);
+        if (!error) continue;
+        const value = valueFor(entry, field.id);
+        if (field.id === 'sources' || value == null || value === '' || (Array.isArray(value) && !value.length)) missing.push(field.id);
+        else invalid.push(field.id);
+        errors.push(`${section.label} · ${field.label}: ${error}`);
+      }
+    }
+    const summary = clean(valueFor(entry, 'summary'));
+    if (!summary) { errors.push('Resumen · Resumen: Campo obligatorio vacío.'); missing.push('summary'); }
+    else if (summary.length < 20) { errors.push('Resumen · Resumen: Debe tener al menos 20 caracteres.'); invalid.push('summary'); }
+    if (URL.test(summary)) errors.push('Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.');
+    const imprecise = JSON.stringify({ summary, data: entry?.data || {} }).match(IMPRECISE);
+    if (imprecise) warnings.push(`Revisar expresión contextual: ${imprecise[0]}.`);
+    return {
+      approved: unique(errors).length === 0,
+      errors: unique(errors),
+      warnings: unique(warnings),
+      missing_fields: unique(missing),
+      invalid_fields: unique(invalid),
+      poor_fields: [],
+      source_count: S.normalizeSources(entry?.sources).length,
+      sources: S.normalizeSources(entry?.sources),
+      engine: 'library-contract-engine-v2'
+    };
   }
 
   function contractIntegrityReport() {
     const errors = [];
     Object.entries(S.CONTRACTS || {}).forEach(([type, contract]) => {
-      const template = completeTemplate(type);
-      const fields = template.flatMap(section => section.fields);
-      const ids = fields.map(field => field.id);
-      const duplicates = contract.filter((field, index) => contract.indexOf(field) !== index);
-      if (!Array.isArray(contract) || !contract.length) errors.push(`${type}: contrato vacío.`);
-      if (duplicates.length) errors.push(`${type}: campos duplicados: ${unique(duplicates).join(', ')}.`);
-      contract.forEach(field => {
-        if (!ids.includes(field)) errors.push(`${type}: ${field} no aparece en la plantilla.`);
-        const definition = fields.find(item => item.id === field);
-        if (!definition?.label) errors.push(`${type}: ${field} no tiene etiqueta visible.`);
-        if (!definition?.section) errors.push(`${type}: ${field} no tiene apartado.`);
-        if (definition?.allowed?.length && definition.minLength !== 1) errors.push(`${type}: ${field} mezcla valores cerrados con longitud textual.`);
-      });
-      ids.forEach(field => { if (!contract.includes(field)) errors.push(`${type}: la plantilla contiene ${field}, pero el contrato no.`); });
-      if (!contract.includes('title')) errors.push(`${type}: falta title.`);
-      if (!contract.includes('sources')) errors.push(`${type}: falta sources.`);
-      if (BIOLOGICAL_TYPES.has(type) && !contract.includes('scientific_name')) errors.push(`${type}: falta scientific_name.`);
+      const ids = completeTemplate(type).flatMap(section => section.fields.map(field => field.id));
+      contract.forEach(id => { if (!ids.includes(id)) errors.push(`${type}: ${id} no aparece en la plantilla.`); });
+      ids.forEach(id => { if (!contract.includes(id)) errors.push(`${type}: ${id} no aparece en el contrato.`); });
     });
     return { approved: errors.length === 0, errors, types: Object.keys(S.CONTRACTS || {}).length };
-  }
-
-  function audit(entry) {
-    const cleaned = cleanEntry(entry);
-    const errors = [];
-    const warnings = [];
-    if (!STATUSES.has(cleaned.status)) errors.push('Estado no permitido.');
-    if (!cleaned.identity_confirmed) errors.push('Identificación insuficiente.');
-    if (BIOLOGICAL_TYPES.has(cleaned.entry_type) && !isMultiTaxonMicrofauna(cleaned) && !S.isConcreteScientificName(cleaned.scientific_name)) errors.push('La ficha biológica no tiene una especie concreta.');
-
-    validateTemplate(cleaned).forEach(section => section.fields.forEach(field => {
-      if (!field.valid) errors.push(`${section.label} · ${field.label}: ${field.error}`);
-    }));
-
-    const summary = String(valueFor(cleaned, 'summary') || '').trim();
-    if (!summary) errors.push('Resumen · Resumen: Campo obligatorio vacío.');
-    else if (summary.length < MIN_SUMMARY_LENGTH) errors.push(`Resumen · Resumen: Debe tener al menos ${MIN_SUMMARY_LENGTH} caracteres.`);
-    if (URL_PATTERN.test(summary)) errors.push('Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.');
-
-    // Las expresiones dependientes del contexto no bloquean el guardado. Se
-    // muestran como aviso para revisión editorial, porque pueden ser correctas
-    // en reproducción, comportamiento, iluminación, flujo o compatibilidad.
-    const narrativeText = JSON.stringify({ summary, data: cleaned.data || {} });
-    const impreciseMatch = narrativeText.match(IMPRECISE_TEXT);
-    if (impreciseMatch) warnings.push(`Revisar expresión contextual: ${impreciseMatch[0]}.`);
-
-    const integrity = contractIntegrityReport();
-    if (!integrity.approved) errors.push(...integrity.errors.map(error => `Contrato interno · ${error}`));
-    if (cleaned.entry_type === 'pez_marino' && /\bGH\b/i.test(JSON.stringify(cleaned.data || {}))) errors.push('GH no es un parámetro contractual para pez marino.');
-
-    const sources = S.normalizeSources(cleaned.sources);
-    return {
-      approved: unique(errors).length === 0,
-      errors: unique(errors),
-      warnings: unique(warnings),
-      missing_fields: missingFields(cleaned),
-      source_count: sources.length,
-      sources,
-      template: validateTemplate(cleaned),
-      contract_integrity: integrity
-    };
   }
 
   S.templateFor = publicTemplate;
   S.completeTemplateFor = completeTemplate;
   S.fieldDefinition = fieldDefinition;
   S.validateField = validateField;
-  S.validateTemplate = validateTemplate;
-  S.missingFields = missingFields;
+  S.validateTemplate = entry => completeTemplate(entry.entry_type).map(section => ({
+    ...section,
+    required: true,
+    valid: section.fields.every(field => !validateField(entry, field)),
+    fields: section.fields.map(field => {
+      const error = validateField(entry, field);
+      return { ...field, required: true, valid: !error, error };
+    })
+  }));
+  S.missingFields = entry => unique(audit(entry).missing_fields);
   S.audit = audit;
-  S.requiredFieldsForType = type => Array.from(S.CONTRACTS?.[type] || []);
-  S.isRequiredFieldForEntry = (entry, field) => (S.CONTRACTS?.[entry?.entry_type] || []).includes(field) || field === 'summary';
-  S.topLevelFields = Array.from(TOP_LEVEL_FIELDS);
-  S.cleanEntryForAudit = cleanEntry;
-  S.contractIntegrityReport = contractIntegrityReport;
   S.sourcePolicy = sourcePolicy;
+  S.isConcreteScientificName = concreteScientificName;
+  S.isMultiTaxonMicrofauna = multiTaxonMicrofauna;
+  S.isGenusOnlyMicrofauna = genusOnlyMicrofauna;
+  S.contractIntegrityReport = contractIntegrityReport;
+  S.requiredFieldsForType = type => [...(S.CONTRACTS?.[type] || [])];
+  S.isRequiredFieldForEntry = (entry, field) => (S.CONTRACTS?.[entry?.entry_type] || []).includes(field) || field === 'summary';
+  S.topLevelFields = [...TOP];
   S.__strictContractApplied = true;
 })();
