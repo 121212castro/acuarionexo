@@ -116,6 +116,89 @@
     })).filter(section => section.fields.length);
   }
 
+  function contractForAI(type) {
+    const fields = {};
+    const sections = completeTemplate(type).map(section => {
+      const ids = section.fields.map(field => {
+        fields[field.id] = {
+          path: TOP.has(field.id) ? field.id : `data.${field.id}`,
+          label: field.label,
+          section: section.label,
+          type: field.allowed?.length ? 'enum' : field.type,
+          required: true,
+          min_length: Number(field.minLength || 1),
+          allowed: field.allowed?.length ? [...field.allowed] : null,
+          validation_rule: field.id === 'sources'
+            ? `Mínimo ${MIN_SOURCES} fuentes reales; cada una con name, url y used_for; mínimo ${MIN_HOSTS} dominios fiables independientes.`
+            : field.allowed?.length
+              ? `Usar exactamente uno de estos valores: ${field.allowed.join(' | ')}.`
+              : field.type === 'number'
+                ? 'Debe contener un valor numérico o un rango concreto con unidad y contexto.'
+                : `Debe contener texto útil y concreto de al menos ${Number(field.minLength || 1)} caracteres, sin URLs.`,
+          example_constraint: field.id === 'reef_safe'
+            ? 'No ampliar este campo: la explicación va exclusivamente en reef_safe_notes.'
+            : null
+        };
+        return field.id;
+      });
+      return { id: section.id, label: section.label, fields: ids };
+    });
+    return {
+      version: 'library-contract-engine-v3-single-source',
+      entry_type: type,
+      required_fields: [...(S.CONTRACTS?.[type] || [])],
+      top_level_fields: [...TOP],
+      fields,
+      sections,
+      summary: {
+        path: 'summary',
+        required: true,
+        min_length: 20,
+        duplicate_at: 'sections.summary',
+        rule: 'summary y sections.summary deben ser idénticos y tener al menos 20 caracteres.'
+      },
+      source_policy: {
+        minimum_sources: MIN_SOURCES,
+        minimum_independent_domains: MIN_HOSTS,
+        specialized_domains: SPECIALIZED[type] || [],
+        official_required: PRODUCT.has(type)
+      },
+      global_rules: [
+        'No omitir ningún campo obligatorio.',
+        'No inventar datos ni completar por inferencia una especie, versión, código, dosis, parámetro o procedimiento.',
+        'No incluir URLs fuera de sources[].',
+        'No usar bajo, medio, alto, moderado, normalmente, suele ni aproximadamente.',
+        'La ficha visible y el JSON deben contener los mismos datos.',
+        'Los campos enum deben usar exactamente uno de los valores permitidos, sin explicación añadida.',
+        'Las explicaciones de campos enum deben ir en el campo de detalle correspondiente.'
+      ]
+    };
+  }
+
+  function promptForAI(type) {
+    const contract = contractForAI(type);
+    const lines = [
+      `CONTRATO TÉCNICO OBLIGATORIO DE ACUARIONEXO — ${type}`,
+      '',
+      'Este contrato procede directamente del mismo motor que valida la ficha al guardarla. No lo resumas ni lo reinterpretres.',
+      '',
+      `REGLAS GLOBALES:\n- ${contract.global_rules.join('\n- ')}`,
+      '',
+      'REGLAS EXACTAS POR CAMPO:'
+    ];
+    contract.sections.forEach(section => {
+      lines.push('', `${section.label}:`);
+      section.fields.forEach(id => {
+        const field = contract.fields[id];
+        const allowed = field.allowed ? ` Valores permitidos: ${field.allowed.join(' | ')}.` : '';
+        lines.push(`- ${id} (${field.path}): ${field.validation_rule}${allowed}`);
+      });
+    });
+    lines.push('', `FUENTES: mínimo ${contract.source_policy.minimum_sources}; dominios especializados admitidos: ${contract.source_policy.specialized_domains.join(', ') || 'no aplica'}.`);
+    lines.push('', 'Devuelve primero la ficha visible y después el JSON entre ACUARIONEXO_JSON_START y ACUARIONEXO_JSON_END.');
+    return lines.join('\n');
+  }
+
   function audit(entry) {
     const errors = [];
     const warnings = [];
@@ -152,7 +235,7 @@
       poor_fields: [],
       source_count: S.normalizeSources(entry?.sources).length,
       sources: S.normalizeSources(entry?.sources),
-      engine: 'library-contract-engine-v2'
+      engine: 'library-contract-engine-v3-single-source'
     };
   }
 
@@ -213,6 +296,8 @@
   S.persistedAudit = persistedAudit;
   S.effectiveAudit = effectiveAudit;
   S.sourcePolicy = sourcePolicy;
+  S.contractForAI = contractForAI;
+  S.promptForAI = promptForAI;
   S.isConcreteScientificName = concreteScientificName;
   S.isMultiTaxonMicrofauna = multiTaxonMicrofauna;
   S.isGenusOnlyMicrofauna = genusOnlyMicrofauna;
