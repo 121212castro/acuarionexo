@@ -1,4 +1,4 @@
-/* AcuarioNexo · generador único de fichas V2 */
+/* AcuarioNexo · generador único de fichas V3 · contrato único */
 (function () {
   const { supabase, state, esc, byId, val, msg, render } = window.ANX;
   const { types, libraryInfoNotice, S } = window.ANX.LibraryV3Core;
@@ -15,44 +15,8 @@
   }
 
   function contractFor(entryType) {
-    const fields = {};
-    const sections = [];
-    const template = S.completeTemplateFor ? S.completeTemplateFor(entryType) : S.templateFor(entryType);
-    template.forEach(section => {
-      const ids = [];
-      (section.fields || []).forEach(field => {
-        ids.push(field.id);
-        fields[field.id] = {
-          path: ['title','scientific_name','summary','sources'].includes(field.id) ? field.id : `data.${field.id}`,
-          label: field.label,
-          section: section.label,
-          type: field.allowed?.length ? 'enum' : field.type,
-          allowed: field.allowed || null,
-          min_length: Number(field.minLength || 1),
-          rule: field.id === 'sources'
-            ? 'Mínimo tres fuentes reales con name, url y used_for.'
-            : field.type === 'number'
-              ? 'Valor numérico o rango concreto; para mezclas de microfauna se admite explicación documentada cuando no existe valor conjunto.'
-              : 'Texto útil, concreto, sin URLs.'
-        };
-      });
-      sections.push({ id: section.id, label: section.label, fields: ids });
-    });
-    return {
-      version: 'library-contract-engine-v2',
-      entry_type: entryType,
-      required_fields: [...(S.CONTRACTS?.[entryType] || [])],
-      fields,
-      sections,
-      source_policy: {
-        minimum: 3,
-        specialized_domains: S.SOURCE_POLICY?.specializedDomains?.[entryType] || [],
-        official_required: ['producto','medicamento','sal','aditivo','alimento','test','equipamiento'].includes(entryType)
-      },
-      accepted_identity_modes: entryType === 'microfauna'
-        ? ['binomial', 'multi_taxon_mix', 'genus_sp_with_documented_reason']
-        : ['binomial_or_exact_product_identity']
-    };
+    if (!S.contractForAI) throw new Error('El contrato canónico no está disponible. Actualiza la aplicación.');
+    return S.contractForAI(entryType);
   }
 
   function buildEntry(parsed, entryType) {
@@ -70,13 +34,13 @@
       sources: S.normalizeSources(parsed.sources || []),
       identity_confirmed: true,
       identify_result: {
-        source: 'generator-v2',
+        source: 'generator-v3-canonical-contract',
         identity_confirmed: true,
         title: String(parsed.title || '').trim(),
         scientific_name: String(parsed.scientific_name || '').trim(),
         entry_type: entryType
       },
-      ai_model: 'library-generator-v2',
+      ai_model: 'library-generator-v3-canonical-contract',
       ai_generated_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -84,7 +48,7 @@
 
   function auditHtml(audit) {
     if (!audit || audit.approved) return '';
-    return `<div class="error"><strong>La ficha no se guardó.</strong><ul>${(audit.errors || []).slice(0, 20).map(error => `<li>${esc(error)}</li>`).join('')}</ul></div>`;
+    return `<div class="error"><strong>La ficha no se guardó.</strong><ul>${(audit.errors || []).slice(0, 30).map(error => `<li>${esc(error)}</li>`).join('')}</ul></div>`;
   }
 
   async function pollUntilDone(responseId, box, phase) {
@@ -125,8 +89,36 @@
     return { entry, audit };
   }
 
+  async function copyText(text) {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const area = document.createElement('textarea');
+    area.value = text;
+    area.style.position = 'fixed';
+    area.style.opacity = '0';
+    document.body.appendChild(area);
+    area.select();
+    document.execCommand('copy');
+    area.remove();
+  }
+
+  window.copiarEsquemaExacto = async function () {
+    const box = byId('aiBox');
+    try {
+      const entryType = val('entryType');
+      if (!entryType || !S.CONTRACTS?.[entryType]) throw new Error('Selecciona una categoría válida.');
+      if (!S.promptForAI) throw new Error('El contrato visible no está sincronizado con el validador. Actualiza la aplicación.');
+      await copyText(S.promptForAI(entryType));
+      if (box) box.innerHTML = msg('Esquema exacto copiado desde el mismo contrato que valida la ficha.', 'success');
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo copiar el esquema.', 'error');
+    }
+  };
+
   window.nuevaFichaV3 = function () {
-    render(`<section class="panel">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><h2>Generador de fichas</h2><div class="notice">Genera, audita y corrige antes de guardar. Una ficha con errores no entra en la biblioteca.</div><label>Tipo exacto</label><select id="entryType">${types.filter(([key]) => key !== 'all').map(([key,name]) => `<option value="${key}">${esc(name)}</option>`).join('')}</select><label>Nombre exacto del organismo, variedad o producto</label><input id="generatorSubject" placeholder="Ej. Nuclear Mix — Power Aquaculture"><label>Nombre científico conocido (opcional)</label><input id="generatorScientific" placeholder="Ej. Megacalanus sp."><button class="primary" onclick="generarFichaV2()">Investigar y crear ficha</button><div id="aiBox"></div></section>`, 'biblioteca');
+    render(`<section class="panel">${libraryInfoNotice()}<button onclick="biblioteca()">← Biblioteca</button><h2>Generador de fichas</h2><div class="notice">El esquema visible, el generador y el validador usan ahora el mismo contrato. No existen reglas ocultas separadas.</div><label>Tipo exacto</label><select id="entryType">${types.filter(([key]) => key !== 'all').map(([key,name]) => `<option value="${key}">${esc(name)}</option>`).join('')}</select><button onclick="copiarEsquemaExacto()">Copiar esquema exacto</button><label>Nombre exacto del organismo, variedad o producto</label><input id="generatorSubject" placeholder="Ej. Nuclear Mix — Power Aquaculture"><label>Nombre científico conocido (opcional)</label><input id="generatorScientific" placeholder="Ej. Megacalanus sp."><button class="primary" onclick="generarFichaV2()">Investigar y crear ficha</button><div id="aiBox"></div></section>`, 'biblioteca');
   };
 
   window.generarFichaV2 = async function () {
@@ -138,7 +130,7 @@
       if (!entryType || !S.CONTRACTS?.[entryType]) throw new Error('Selecciona una categoría válida.');
       if (!subject) throw new Error('Escribe el nombre exacto de la ficha.');
       const contract = contractFor(entryType);
-      box.innerHTML = msg(`Investigando ${subject} y comprobando ${contract.required_fields.length} campos...`);
+      box.innerHTML = msg(`Investigando ${subject} y comprobando ${contract.required_fields.length} campos con el contrato canónico...`);
       const { entry, audit } = await generateAndAudit({
         entry_type: entryType,
         subject,
@@ -160,7 +152,7 @@
           review_required: false,
           requires_review: false,
           audited_at: new Date().toISOString(),
-          engine: 'library-generator-v2-client-audit'
+          engine: 'library-generator-v3-canonical-contract'
         }
       };
       const { data, error } = await supabase.from('library_entries').insert(row).select('*').single();
