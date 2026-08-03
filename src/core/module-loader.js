@@ -21,7 +21,8 @@
       'src/library/library-v3.js',
       'src/library/ficha/ficha-type-tools.js',
       'src/library/ficha/ficha-chat-import.js',
-      'src/library/core/library-admin-policy.js'
+      'src/library/core/library-admin-policy.js',
+      'src/library/audit-fallback.js'
     ],
     animales: [
       'src/animals/animals-core.js',
