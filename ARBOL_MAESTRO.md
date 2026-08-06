@@ -38,6 +38,16 @@ Build actual: `library-audit-action-fix-20260801`.
 
 Una ficha no puede avanzar por estado, validación de IA ni publicación si falla `LibrarySchema.audit`.
 
+## Asistente IA / contrato oficial Fase 1
+
+`ASISTENTE_IA_CONTRATO.md`
+→ documenta comportamiento, límites, prioridades y trazabilidad
+→ `src/assistant/core/assistant-contract.js` expone la fuente machine-readable única
+→ las fases de búsqueda, contexto, servidor e interfaz deben consumir ese contrato
+→ ninguna fase puede introducir prompts paralelos, reglas duplicadas ni estados de confianza alternativos
+
+La Fase 1 define modos, intenciones, prioridad de fuentes, acceso por estado de ficha, requisitos mínimos de contexto, reglas de selección, estados de confianza, prohibiciones y forma obligatoria de respuesta. Todavía no implementa búsqueda, contexto del acuario, llamada al modelo ni interfaz conversacional.
+
 ## Biblioteca / cadena única de contrato
 
 - `src/library/core/library-schema.js`: define los 14 contratos, campos, etiquetas, apartados y política de fuentes.
@@ -107,6 +117,8 @@ Una ficha no puede avanzar por estado, validación de IA ni publicación si fall
 - `index.html`: estructura de la cabecera y botón global Admin.
 - `src/auth/auth-core.js`: visibilidad de controles de sesión y del acceso Admin.
 - `src/admin/admin-core.js`: autorización y rol administrativo.
+- `src/assistant/core/assistant-contract.js`: comportamiento, límites, prioridades, estados de confianza y forma de respuesta del Asistente IA.
+- `ASISTENTE_IA_CONTRATO.md`: especificación humana del mismo contrato.
 - `src/library/core/library-schema.js`: contratos y metadatos base.
 - `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
 - `src/library/library-v3-template.js`: instrucciones y esqueleto JSON para el Chat.
