@@ -59,6 +59,12 @@
       'src/microfauna/microfauna-save.js',
       'src/microfauna/microfauna.js'
     ],
+    assistant: [
+      'src/assistant/core/assistant-contract.js',
+      'src/assistant/core/assistant-library-search.js',
+      'src/assistant/core/assistant-aquarium-context.js',
+      'src/assistant/assistant-portal.js'
+    ],
     ia: [
       'src/inventory/inventory-core.js',
       'src/ai/ai.js',
@@ -215,6 +221,7 @@
   proxy('fotos', 'fotos', 'Fotos', 'acuarios');
   proxy('inventario', 'inventario', 'Inventario', 'inventario');
   proxy('microfauna', 'microfauna', 'Microfauna', 'microfauna');
+  proxy('assistantPortal', 'assistant', 'Asistente AcuarioNexo', 'inicio');
   proxy('iaAcuarioNexo', 'ia', 'Inteligencia artificial', 'avisos');
   proxy('parametros', 'parametros', 'Parámetros', 'acuarios');
   proxy('tareasAcuario', 'tareas', 'Tareas', 'acuarios');
