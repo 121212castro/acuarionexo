@@ -61,6 +61,15 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - Los usuarios sin rol administrativo no ven el botón.
 - No se permiten botones Admin duplicados dentro de pantallas concretas.
 
+## Asistente IA / contrato oficial Fase 1
+
+- `ASISTENTE_IA_CONTRATO.md`: especificación humana de comportamiento, límites, prioridades, trazabilidad y alcance de la Fase 1.
+- `src/assistant/core/assistant-contract.js`: fuente machine-readable única del contrato del Asistente IA.
+- Define modos `general` y `aquarium`, intenciones, prioridad de fuentes, estados de ficha permitidos, estados de confianza, requisitos mínimos de contexto, reglas de selección y forma obligatoria de respuesta.
+- Las futuras piezas de búsqueda, contexto, servidor e interfaz deben consumir este contrato.
+- Esta fase no está cargada todavía por `index.html` ni por `module-loader.js`; su activación corresponde a las fases de implementación posteriores.
+- No se permiten prompts paralelos, contratos alternativos, hotfix ni lógica duplicada del asistente.
+
 ## Biblioteca / cadena única de contrato
 
 - `src/library/core/library-schema.js`: define los 14 contratos, campos, etiquetas, apartados y política de fuentes.
@@ -130,6 +139,8 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `index.html`: estructura de la cabecera y botón global Admin.
 - `src/auth/auth-core.js`: visibilidad de controles de sesión y del acceso Admin.
 - `src/admin/admin-core.js`: autorización y rol administrativo.
+- `src/assistant/core/assistant-contract.js`: comportamiento, límites, prioridades, estados de confianza y forma de respuesta del Asistente IA.
+- `ASISTENTE_IA_CONTRATO.md`: especificación humana del mismo contrato.
 - `src/library/core/library-schema.js`: contratos y metadatos base.
 - `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
 - `src/library/library-v3-template.js`: instrucciones y esqueleto JSON para el Chat.
