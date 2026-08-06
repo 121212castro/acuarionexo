@@ -16,6 +16,7 @@
       const alertsHtml = (stats.alerts || []).map(dashboardAlertCard).join('') || emptyLine('Sin avisos importantes.');
       const activityHtml = (stats.recentActivity || []).map(dashboardActivityCard).join('') || emptyLine('Sin actividad reciente.');
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Inicio</h2><p>Resumen general de la app</p></div></section>
+        <section class="panel"><div class="panel-head"><h2>Asistente AcuarioNexo</h2></div><p>Consulta la biblioteca o analiza uno de tus acuarios con sus datos reales.</p><button class="primary assistant-home-button" onclick="assistantPortal()">Hablar con AcuarioNexo IA</button></section>
         <section class="panel"><div class="panel-head"><h2>Estado general</h2></div><div class="quick-actions">
           ${dashboardStat('Acuarios activos', String(list.length))}
           ${dashboardStat('Litros gestionados', liters ? `${liters.toFixed(1)} L` : 'Sin datos')}
