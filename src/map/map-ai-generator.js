@@ -44,6 +44,20 @@
     return Number.isFinite(value) ? value : null;
   }
 
+  function markerFromEntity(entity) {
+    const type = ['rock', 'plant', 'coral', 'equipment', 'fish'].includes(entity.entity_type) ? entity.entity_type : 'other';
+    return {
+      id: entity.id,
+      label: entity.label,
+      type,
+      note: entity.note || '',
+      x: entity.x,
+      y: entity.y,
+      z: entity.z,
+      size: Math.max(6, Math.min(32, Number(entity.size) || 14))
+    };
+  }
+
   async function generate() {
     const status = document.getElementById('mapAiStatus');
     try {
@@ -65,6 +79,8 @@
       const validation = ANX.MapAiGeneratorContract.validate(response.data.data);
       if (!validation.approved) throw new Error(validation.errors.join(' · '));
       const map = ANX.MapAiGeneratorContract.toMapV3(validation.project);
+      map.markers = (map.entities || []).map(markerFromEntity);
+      map.selected_id = map.markers[0]?.id || '';
       window.__aqMap = ANX.MapState.normalizeMap(map, ANX.currentAquarium?.());
       ANX.MapMain.renderMapIA(window.__aqMap);
       requestAnimationFrame(function () {
@@ -87,5 +103,5 @@
 
   window.toggleMapAiGenerator = toggle;
   window.generateMapAiProject = generate;
-  ANX.MapAiGenerator = { formHtml, generate, toggle, lastProject: null };
+  ANX.MapAiGenerator = { formHtml, generate, toggle, markerFromEntity, lastProject: null };
 })();
