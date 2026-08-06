@@ -5,6 +5,17 @@
   const { esc, render, byId, msg } = ANX;
   const { row, sources, typeName, statusName, libraryInfoNotice, responsiveImage, libraryBackButton, returnToLibrarySource } = Core;
 
+  const CLASSIFICATION_FIELDS = [
+    ['ecosystem', 'Medio'],
+    ['environment', 'Entorno'],
+    ['target_animals', 'Animales'],
+    ['target_groups', 'Grupos recomendados'],
+    ['diet_type', 'Tipo de dieta'],
+    ['food_form', 'Formato'],
+    ['feeding_zone', 'Zona de alimentación'],
+    ['life_stage', 'Etapa']
+  ];
+
   function actionScope(entryType) {
     const resolver = ANX.LibraryInventoryImport?.inventoryScopeForType;
     return typeof resolver === 'function' ? resolver(entryType) : 'general';
@@ -61,6 +72,33 @@
     if (Array.isArray(value)) return esc(value.join(', '));
     if (typeof value === 'object') return esc(Object.values(value).filter(v => v != null && v !== '').join(', '));
     return esc(value);
+  }
+
+  function classificationText(value) {
+    return String(value || '')
+      .trim()
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, letter => letter.toUpperCase());
+  }
+
+  function classificationValues(value) {
+    const list = Array.isArray(value) ? value : (value == null || value === '' ? [] : [value]);
+    return [...new Set(list.map(classificationText).filter(Boolean))];
+  }
+
+  function fichaClassification(x) {
+    const classification = x?.data?.ai_classification;
+    if (!classification || typeof classification !== 'object' || Array.isArray(classification)) return '';
+    const rows = CLASSIFICATION_FIELDS.map(([key, label]) => {
+      const values = classificationValues(classification[key]);
+      if (!values.length) return '';
+      return `<div class="library-detail-field library-classification-field"><dt>${esc(label)}</dt><dd>${values.map(esc).join(', ')}</dd></div>`;
+    }).filter(Boolean).join('');
+    if (!rows) return '';
+    return `<section class="library-detail-section library-classification" aria-label="Clasificación AcuarioNexo">
+      <h3>Clasificación AcuarioNexo</h3>
+      <dl>${rows}</dl>
+    </section>`;
   }
 
   function fichaInformation(x) {
@@ -256,12 +294,15 @@
       ${fichaExternalLink(x)}
       <div class="image-actions">${actionButtons(x, audit)}</div>
       <div id="libraryActionStatus"></div>
-      <div class="library-detail-information">${fichaInformation(x)}</div>
+      <div class="library-detail-information">
+        ${fichaClassification(x)}
+        ${fichaInformation(x)}
+      </div>
       <h3>Fuentes</h3>
       ${sources(x.sources)}
     </section>`, 'biblioteca');
     bindLibraryActions();
   };
 
-  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaExternalLink, normalizedExternalLink, fichaInformation, fichaCanBeAdded, actionButtons, bindLibraryActions, addToAquarium, validateAndPublish, validationDetails };
+  ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaExternalLink, normalizedExternalLink, fichaClassification, fichaInformation, fichaCanBeAdded, actionButtons, bindLibraryActions, addToAquarium, validateAndPublish, validationDetails };
 })();
