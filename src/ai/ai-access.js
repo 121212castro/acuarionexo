@@ -1,6 +1,8 @@
 /* AcuarioNexo · control centralizado de acceso a IA */
 (function () {
   const ANX = window.ANX = window.ANX || {};
+  let cached = null;
+  let cachedAt = 0;
 
   function roleName() {
     return String(ANX.state?.adminRole?.role || '').trim().toLowerCase();
@@ -10,43 +12,43 @@
     return !!ANX.state?.isAdmin && roleName() === 'owner';
   }
 
-  function settings() {
-    return window.AcuarioNexoSettings?.load?.() || { plan: 'free' };
-  }
-
-  function access() {
-    const current = settings();
-    if (isOwner()) {
-      return {
-        allowed: true,
-        source: 'owner',
-        plan: current.plan || 'free',
-        label: 'Propietario',
-        note: 'Acceso completo concedido por el rol owner, sin depender de una suscripción.'
+  async function refreshAccess(force) {
+    const now = Date.now();
+    if (!force && cached && now - cachedAt < 30000) return cached;
+    if (!ANX.state?.user || !ANX.supabase) {
+      cached = { allowed: false, source: 'signed_out', plan: 'none', label: 'Sin acceso', note: 'Inicia sesión.' };
+      cachedAt = now;
+      return cached;
+    }
+    try {
+      const { data, error } = await ANX.supabase.rpc('app_entitlements');
+      if (error) throw error;
+      cached = {
+        allowed: data?.ai_allowed === true,
+        source: data?.admin ? 'admin' : String(data?.plan || 'free'),
+        plan: String(data?.plan || 'free'),
+        label: data?.ai_allowed ? (data?.admin ? 'Administrador' : 'Pro') : 'Gratis',
+        note: data?.ai_allowed
+          ? 'Las funciones de IA están habilitadas para esta cuenta.'
+          : 'El plan Gratis no realiza llamadas a APIs de IA. Biblioteca y funciones manuales siguen disponibles.'
+      };
+    } catch (_) {
+      cached = {
+        allowed: isOwner(),
+        source: isOwner() ? 'owner-fallback' : 'free-fallback',
+        plan: isOwner() ? 'pro' : 'free',
+        label: isOwner() ? 'Propietario' : 'Gratis',
+        note: isOwner() ? 'Acceso de propietario.' : 'No se pudo validar el plan; IA bloqueada por seguridad.'
       };
     }
-    if (current.plan && current.plan !== 'free') {
-      return {
-        allowed: true,
-        source: 'subscription',
-        plan: current.plan,
-        label: 'Pro',
-        note: 'Acceso habilitado por el plan de la cuenta.'
-      };
-    }
-    return {
-      allowed: false,
-      source: 'free',
-      plan: current.plan || 'free',
-      label: 'Gratis',
-      note: 'Las funciones de IA requieren un plan de pago.'
-    };
+    cachedAt = now;
+    return cached;
   }
 
   function deny() {
-    const text = 'La inteligencia artificial requiere un plan Pro para esta cuenta.';
+    const text = 'Esta función usa IA/API y no está incluida en el plan Gratis. Puedes seguir usando la Biblioteca y tu acuario de forma manual.';
     if (typeof ANX.render === 'function' && typeof ANX.msg === 'function') {
-      ANX.render('<section class="panel"><h2>IA AcuarioNexo</h2>' + ANX.msg(text, 'error') + '</section>', 'avisos');
+      ANX.render('<section class="panel"><h2>Función Pro</h2>' + ANX.msg(text, 'error') + '<button onclick="dashboard()">Volver</button></section>', 'inicio');
     } else {
       alert(text);
     }
@@ -58,7 +60,8 @@
       const original = window[name];
       if (typeof original !== 'function' || original.__anxAiAccessWrapped) return;
       const wrapped = async function () {
-        if (!access().allowed) return deny();
+        const current = await refreshAccess();
+        if (!current.allowed) return deny();
         return original.apply(this, arguments);
       };
       wrapped.__anxAiAccessWrapped = true;
@@ -71,24 +74,22 @@
     if (typeof original !== 'function' || original.__anxAiAccessWrapped) return;
     const wrapped = function () {
       const result = original.apply(this, arguments);
-      const apply = function () {
-        const current = access();
-        if (!current.allowed || current.source !== 'owner') return;
+      setTimeout(async function () {
+        const current = await refreshAccess(true);
         const card = document.querySelector('.settings-premium');
         if (!card) return;
-        card.classList.add('active');
+        card.classList.toggle('active', current.allowed);
         const badge = card.querySelector('.premium-badge');
         const description = card.querySelector('p');
         const button = card.querySelector('button');
-        if (badge) badge.textContent = 'OWNER';
+        if (badge) badge.textContent = current.allowed ? current.label.toUpperCase() : 'GRATIS';
         if (description) description.textContent = current.note;
-        if (button) {
+        if (button && current.allowed && current.source === 'admin') {
           button.textContent = 'Acceso completo';
           button.classList.remove('primary');
           button.disabled = true;
         }
-      };
-      setTimeout(apply, 0);
+      }, 0);
       return result;
     };
     wrapped.__anxAiAccessWrapped = true;
@@ -101,7 +102,7 @@
     const original = core.collect;
     const wrapped = async function () {
       const data = await original.apply(this, arguments);
-      const current = access();
+      const current = await refreshAccess();
       data.ai = {
         ...(data.ai || {}),
         level: current.allowed ? 'ok' : 'warning',
@@ -122,7 +123,7 @@
     patchStatus();
   }
 
-  ANX.AIAccess = { access, isOwner, install };
+  ANX.AIAccess = { refresh: refreshAccess, isOwner, install };
   install();
   window.setInterval(install, 1000);
 })();
