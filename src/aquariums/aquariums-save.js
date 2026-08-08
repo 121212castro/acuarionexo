@@ -4,10 +4,26 @@
   const { aquariumPayload } = window.ANX.AquariumsForm;
   const { loadAquariums } = window.ANX.AquariumsCore || {};
 
+  async function accountEntitlements() {
+    try {
+      const { data, error } = await supabase.rpc('app_entitlements');
+      if (error) throw error;
+      return data || {};
+    } catch (_) {
+      return { plan: 'free', aquarium_limit: 1, ai_allowed: false };
+    }
+  }
+
   window.guardarNuevoAcuario = async function () {
     const box = byId('editAqStatus');
     if (!state.user) return login();
     try {
+      const entitlements = await accountEntitlements();
+      const limit = entitlements.aquarium_limit == null ? null : Number(entitlements.aquarium_limit);
+      if (limit !== null) {
+        const currentCount = Array.isArray(state.aquariums) ? state.aquariums.length : 0;
+        if (currentCount >= limit) throw new Error('El plan Gratis permite crear 1 acuario. Las funciones manuales y la Biblioteca siguen disponibles.');
+      }
       const insert = Object.assign({ user_id: state.user.id }, aquariumPayload());
       if (!insert.name) throw new Error('El nombre del acuario es obligatorio.');
       if (box) box.innerHTML = msg('Creando acuario...', 'notice');
