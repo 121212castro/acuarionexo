@@ -8,12 +8,67 @@ function login() {
     <label>Email</label><input id="email" type="email" autocomplete="email">
     <label>Contraseña</label><input id="password" type="password" autocomplete="current-password">
     <button class="primary" onclick="iniciar()">Entrar</button>
-    <button onclick="crear()">Crear cuenta</button>
+    <button onclick="solicitarAcceso()">Solicitar acceso</button>
+    <button onclick="activarAccesoForm()">Ya tengo acceso aprobado</button>
     <button onclick="recuperarPassword()">Olvidé mi contraseña</button>
     <div id="x"></div>
   </section>`, 'inicio', false);
 }
 window.login = login;
+
+window.solicitarAcceso = function () {
+  render(`<section class="auth-card"><h2>Solicitar acceso</h2>
+    <p class="small">AcuarioNexo está en fase de preparación. Las nuevas cuentas requieren aprobación.</p>
+    <label>Nombre</label><input id="accessName" type="text" autocomplete="name">
+    <label>Email</label><input id="accessEmail" type="email" autocomplete="email">
+    <label>Mensaje (opcional)</label><textarea id="accessMessage" rows="4" placeholder="Cuéntanos brevemente para qué quieres utilizar AcuarioNexo"></textarea>
+    <button class="primary" onclick="enviarSolicitudAcceso()">Enviar solicitud</button>
+    <button onclick="login()">Volver</button>
+    <div id="x"></div>
+  </section>`, 'inicio', false);
+};
+
+window.enviarSolicitudAcceso = async function () {
+  try {
+    const email = val('accessEmail');
+    const name = val('accessName');
+    const messageText = val('accessMessage');
+    if (!email) throw new Error('Pon tu email.');
+    const { error } = await supabase.rpc('submit_access_request', { p_email: email, p_name: name || null, p_message: messageText || null });
+    if (error) throw error;
+    byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
+  } catch (e) {
+    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
+  }
+};
+
+window.activarAccesoForm = function () {
+  render(`<section class="auth-card"><h2>Activar acceso aprobado</h2>
+    <p class="small">Usa esta opción únicamente cuando tu solicitud ya haya sido aprobada.</p>
+    <label>Email</label><input id="approvedEmail" type="email" autocomplete="email">
+    <label>Contraseña</label><input id="approvedPassword" type="password" autocomplete="new-password">
+    <button class="primary" onclick="activarAccesoAprobado()">Crear mi cuenta</button>
+    <button onclick="login()">Volver</button>
+    <div id="x"></div>
+  </section>`, 'inicio', false);
+};
+
+window.activarAccesoAprobado = async function () {
+  try {
+    const email = val('approvedEmail');
+    const password = val('approvedPassword');
+    if (!email) throw new Error('Pon el email aprobado.');
+    if (!password || password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    const check = await supabase.rpc('can_register_email', { p_email: email });
+    if (check.error) throw check.error;
+    if (!check.data) throw new Error('Este email todavía no tiene el acceso aprobado.');
+    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
+    if (error) throw error;
+    byId('x').innerHTML = msg('Cuenta creada. Revisa tu email si se solicita confirmación.', 'success');
+  } catch (e) {
+    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
+  }
+};
 
 window.recuperarPassword = function () {
   render(`<section class="auth-card"><h2>Recuperar contraseña</h2>
@@ -69,25 +124,25 @@ window.guardarNuevaPassword = async function () {
   }
 };
 
+async function userHasAppAccess() {
+  if (!state.user) return false;
+  const { data, error } = await supabase.rpc('has_app_access');
+  if (error) throw error;
+  return data === true;
+}
+
 window.iniciar = async function () {
   try {
     const { error } = await withAuthTimeout(supabase.auth.signInWithPassword({ email: val('email'), password: val('password') }));
     if (error) throw error;
+    const session = await withAuthTimeout(supabase.auth.getSession(), 8);
+    state.user = session.data.session?.user || null;
+    if (!await userHasAppAccess()) {
+      await supabase.auth.signOut();
+      clearAuthState();
+      throw new Error('Esta cuenta no tiene acceso aprobado a AcuarioNexo.');
+    }
     boot();
-  } catch (e) {
-    if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
-  }
-};
-
-window.crear = async function () {
-  try {
-    const email = val('email');
-    const password = val('password');
-    if (!email) throw new Error('Pon el email de la cuenta.');
-    if (!password) throw new Error('Pon la contraseña.');
-    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
-    if (error) throw error;
-    byId('x').innerHTML = msg('Cuenta creada. Si Supabase pide confirmación, revisa el email.', 'success');
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
@@ -98,8 +153,19 @@ async function boot() {
     const session = await withAuthTimeout(supabase.auth.getSession(), 8);
     state.user = session.data.session?.user || null;
     window.u = state.user;
-    if (state.user) await refreshAdminSafe();
-    else {
+    if (state.user) {
+      const allowed = await userHasAppAccess();
+      if (!allowed) {
+        await supabase.auth.signOut();
+        clearAuthState();
+        state.user = null;
+        window.u = null;
+        updateSessionHeader();
+        render(`<section class="auth-card"><h2>Acceso pendiente</h2>${msg('Esta cuenta no tiene acceso aprobado.', 'error')}<button class="primary" onclick="login()">Volver</button></section>`, 'inicio', false);
+        return;
+      }
+      await refreshAdminSafe();
+    } else {
       state.adminRole = null;
       state.isAdmin = false;
     }
