@@ -1,0 +1,43 @@
+/* AcuarioNexo · access request email notification */
+(function () {
+  const ANX = window.ANX || {};
+  const supabase = ANX.supabase;
+  const val = ANX.val;
+  const byId = ANX.byId;
+  const msg = ANX.msg;
+  const authMessage = ANX.authMessage || function (e) { return String(e?.message || e || 'Error'); };
+
+  if (!supabase || !val) return;
+
+  window.enviarSolicitudAcceso = async function () {
+    try {
+      const email = val('accessEmail');
+      const name = val('accessName');
+      const messageText = val('accessMessage');
+      if (!email) throw new Error('Pon tu email.');
+
+      const request = await supabase.rpc('submit_access_request', {
+        p_email: email,
+        p_name: name || null,
+        p_message: messageText || null
+      });
+      if (request.error) throw request.error;
+
+      const requestId = request.data;
+      const notice = await supabase.functions.invoke('notify-access-request', {
+        body: { request_id: requestId }
+      });
+
+      if (notice.error) {
+        throw new Error('La solicitud se guardó, pero no se pudo enviar el aviso por correo. Inténtalo de nuevo en unos minutos.');
+      }
+      if (notice.data && notice.data.error) {
+        throw new Error(notice.data.message || 'No se pudo enviar el aviso por correo.');
+      }
+
+      if (byId('x')) byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
+    } catch (e) {
+      if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
+    }
+  };
+})();
