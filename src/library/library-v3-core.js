@@ -50,7 +50,8 @@
   function card(x) {
     const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', x.title || 'Ficha');
     const title = esc(x.title || 'Ficha');
-    return `<button class="library-card library-cover-card library-cover-only" style="display:block!important;width:100%!important;height:auto!important;padding:0!important;overflow:hidden!important" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}">${cover || `<div class="library-card-cover library-no-photo">Sin portada</div>`}</button>`;
+    const noCover = `<div class="library-card-cover library-no-photo"><span class="library-no-photo-title">${title}</span><span class="library-no-photo-label">Sin portada</span></div>`;
+    return `<button class="library-card library-cover-card library-cover-only" style="display:block!important;width:100%!important;height:auto!important;padding:0!important;overflow:hidden!important" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}">${cover || noCover}</button>`;
   }
 
   function libraryInfoNotice() { return '<div id="libraryInfoNotice" class="notice"><b>Biblioteca de consulta.</b><br>Fichas verificadas para revisar compatibilidad, requisitos, riesgos y próximas compras.</div>'; }
