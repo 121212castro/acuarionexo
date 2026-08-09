@@ -169,17 +169,47 @@
     }
   };
 
+  function formatTokens(value) {
+    return new Intl.NumberFormat('es-ES').format(Number(value) || 0);
+  }
+
+  function formatUsd(value) {
+    return new Intl.NumberFormat('es-ES', { style: 'currency', currency: 'USD', minimumFractionDigits: 4, maximumFractionDigits: 4 }).format(Number(value) || 0);
+  }
+
+  function aiUsageModuleRows(items) {
+    if (!Array.isArray(items) || !items.length) return '<p class="small">Todavía no hay consumo registrado.</p>';
+    return items.map(item => `<article class="item"><b>${esc(item.module || 'Sin módulo')}</b><p class="small">${formatTokens(item.actions)} acciones · ${formatTokens(item.tokens)} tokens · ${formatUsd(item.cost_usd)}</p></article>`).join('');
+  }
+
+  function aiUsageRecentRows(items) {
+    if (!Array.isArray(items) || !items.length) return '<p class="small">Todavía no hay actividad IA registrada.</p>';
+    return items.map(item => `<article class="item"><b>${esc(item.module || 'IA')} · ${esc(item.action || 'acción')}</b><p class="small">${esc(window.ANX.dateText ? window.ANX.dateText(item.created_at) : item.created_at || '')}</p><p class="small">${esc(item.model || 'modelo sin dato')} · entrada ${formatTokens(item.input_tokens)} · salida ${formatTokens(item.output_tokens)} · total ${formatTokens(item.total_tokens)} · ${formatUsd(item.estimated_cost)}</p></article>`).join('');
+  }
+
   window.adminAiUsage = async function () {
     if (!await requireAdmin()) return;
-    render(`<section class="summary-card"><div><small>Admin</small><h2>Consumo IA</h2><p>Registro de actividad y coste</p></div></section>
-      <section class="panel"><button onclick="adminPanel()">← Admin</button>
-        <div class="quick-actions">
-          <article class="summary-card"><div><small>Acciones IA</small><h2>0</h2></div></article>
-          <article class="summary-card"><div><small>Tokens</small><h2>Pendiente</h2></div></article>
-          <article class="summary-card"><div><small>Coste estimado</small><h2>Pendiente</h2></div></article>
-        </div>
-        <p class="small">La tabla ai_usage_logs está creada. Los datos aparecerán aquí cuando conectemos cada acción IA al registrador de consumo.</p>
-      </section>`, 'admin');
+    render(`<section class="summary-card"><div><small>Admin</small><h2>Consumo IA</h2><p>Registro real de actividad, tokens y coste</p></div></section><section class="panel"><button onclick="adminPanel()">← Admin</button>${msg('Cargando contadores IA...')}</section>`, 'admin');
+    try {
+      const { data, error } = await window.ANX.supabase.rpc('admin_ai_usage_summary');
+      if (error) throw error;
+      const d = data || {};
+      render(`<section class="summary-card"><div><small>Admin</small><h2>Consumo IA</h2><p>Registro real de actividad, tokens y coste</p></div></section>
+        <section class="panel"><div class="panel-head"><h2>Totales</h2><button onclick="adminPanel()">← Admin</button></div>
+          <div class="quick-actions">
+            <article class="summary-card"><div><small>Acciones IA</small><h2>${formatTokens(d.actions)}</h2><p>Hoy: ${formatTokens(d.today_actions)} · Mes: ${formatTokens(d.month_actions)}</p></div></article>
+            <article class="summary-card"><div><small>Tokens totales</small><h2>${formatTokens(d.total_tokens)}</h2><p>Entrada: ${formatTokens(d.input_tokens)} · Salida: ${formatTokens(d.output_tokens)}</p></div></article>
+            <article class="summary-card"><div><small>Coste estimado</small><h2>${formatUsd(d.estimated_cost_usd)}</h2><p>Estimación API en USD</p></div></article>
+            <article class="summary-card"><div><small>Tokens hoy</small><h2>${formatTokens(d.today_tokens)}</h2><p>Mes: ${formatTokens(d.month_tokens)}</p></div></article>
+          </div>
+          <p class="small">El coste es una estimación calculada con el uso devuelto por la API. Las llamadas con un modelo sin tarifa configurada pueden registrar tokens sin coste estimado.</p>
+        </section>
+        <section class="panel"><div class="panel-head"><h2>Por módulo</h2></div>${aiUsageModuleRows(d.modules)}</section>
+        <section class="panel"><div class="panel-head"><h2>Últimas acciones IA</h2></div>${aiUsageRecentRows(d.recent)}</section>
+        <section class="panel"><button onclick="adminAiUsage()">↻ Actualizar contadores</button></section>`, 'admin');
+    } catch (e) {
+      render(`<section class="summary-card"><div><small>Admin</small><h2>Consumo IA</h2><p>Error</p></div></section><section class="panel"><button onclick="adminPanel()">← Admin</button>${msg(e.message || 'No se pudieron cargar los contadores IA.', 'error')}</section>`, 'admin');
+    }
   };
 
   window.ANX.Admin = { loadAdminRole, adminAllowed, roleLabel, requireAdmin, loadLibraryAdminTools };
