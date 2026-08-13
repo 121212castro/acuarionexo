@@ -43,7 +43,7 @@
 
   function aquariumCard(aq) {
     const photo = aq.__cover_url || aq.cover_photo_url || aq.cover_url || aq.photo_url || aq.image_url || '';
-    const liters = aq.manual_real_liters ?? aq.system_net_liters ?? aq.real_liters ?? aq.liters ?? '-';
+    const liters = aq.system_net_liters ?? aq.volume_liters ?? aq.real_liters ?? aq.liters ?? '-';
     const type = aquariumTypeLabel(aq.aquarium_type || aq.type || 'Acuario');
     return `<article class="tank-card" onclick="openA('${esc(aq.id)}')">
       <div class="tank-art">${photo ? `<img src="${esc(photo)}" alt="${esc(aq.name)}" loading="lazy">` : aquariumIcon(aq)}</div>
