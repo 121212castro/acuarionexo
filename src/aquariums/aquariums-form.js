@@ -22,22 +22,19 @@
   function dval(id) { return val(id) || null; }
 
   function lDisplay(a, b, h) { return ((Number(a) || 0) * (Number(b) || 0) * (Number(h) || 0) / 1000) || 0; }
-  function displacement(rock, sand) { return ((Number(rock) || 0) * 0.65) + ((Number(sand) || 0) * 0.40); }
 
   function calcVolumesFromInputs() {
     const gross = lDisplay(val('tank_length_cm'), val('tank_width_cm'), val('tank_height_cm'));
     const displayWater = lDisplay(val('tank_length_cm'), val('tank_width_cm'), val('display_water_height_cm'));
-    const displaced = displacement(val('rock_kg'), val('sand_kg'));
-    const displayNet = Math.max(0, displayWater - displaced);
+    const displayNet = displayWater;
     const sumpGross = lDisplay(val('sump_length_cm'), val('sump_width_cm'), val('sump_height_cm'));
     const sumpNet = byId('has_sump')?.checked ? lDisplay(val('sump_length_cm'), val('sump_width_cm'), val('sump_water_height_cm')) : 0;
     const systemNet = displayNet + sumpNet;
-    return { gross, displayWater, displaced, displayNet, sumpGross, sumpNet, systemNet };
+    return { gross, displayWater, displayNet, sumpGross, sumpNet, systemNet };
   }
 
   function aquariumPayload() {
     const c = calcVolumesFromInputs();
-    const manual = nval('editAqLiters');
     return {
       name: val('editAqName'),
       aquarium_type: val('editAqType') || 'reef',
@@ -63,9 +60,9 @@
       display_net_liters: c.displayNet,
       sump_net_liters: c.sumpNet,
       system_net_liters: c.systemNet,
-      real_liters: manual ?? c.systemNet,
-      manual_real_liters: manual,
-      liters: manual ?? c.systemNet,
+      real_liters: c.systemNet,
+      manual_real_liters: null,
+      liters: c.systemNet,
       volume_liters: c.systemNet,
       mounted_at: dval('mounted_at'),
       filled_at: dval('filled_at'),
@@ -94,15 +91,14 @@
   function aquariumFormHtml(aq, mode) {
     const isEdit = mode === 'edit';
     const type = aq?.aquarium_type || aq?.type || 'reef';
-    const manual = aq?.manual_real_liters ?? aq?.real_liters ?? aq?.liters ?? '';
     const general = `<label for="editAqName">Nombre</label><input id="editAqName" placeholder="Nombre del acuario" value="${esc(aq?.name || '')}">
       <label for="editAqType">Tipo</label><select id="editAqType">${selectTypeOptions(type)}</select>
       <label for="editAqLocation">Ubicación</label><input id="editAqLocation" placeholder="Ubicación" value="${esc(aq?.location || '')}">
       ${aquariumPhotoHtml(aq, isEdit)}
       <div class="aquarium-date-grid">${fdate('mounted_at','Fecha de montaje',aq?.mounted_at)}${fdate('filled_at','Fecha de llenado',aq?.filled_at)}${fdate('cycling_start_date','Inicio de ciclado',aq?.cycling_start_date)}${fdate('cycling_end_date','Fin de ciclado',aq?.cycling_end_date)}</div>`;
-    const tank = `<div class="aquarium-fields-grid">${fnum('tank_length_cm','Largo urna (cm)',aq?.tank_length_cm)}${fnum('tank_width_cm','Ancho urna (cm)',aq?.tank_width_cm)}${fnum('tank_height_cm','Alto urna (cm)',aq?.tank_height_cm)}${fnum('display_water_height_cm','Altura real de agua (cm)',aq?.display_water_height_cm)}${fnum('rock_kg','Roca (kg)',aq?.rock_kg)}${fnum('sand_kg','Arena (kg)',aq?.sand_kg)}</div>`;
-    const support = `${fcheck('has_sump','Tiene sump',!!aq?.has_sump)}<div class="aquarium-fields-grid">${fnum('sump_length_cm','Largo sump (cm)',aq?.sump_length_cm)}${fnum('sump_width_cm','Ancho sump (cm)',aq?.sump_width_cm)}${fnum('sump_height_cm','Alto sump (cm)',aq?.sump_height_cm)}${fnum('sump_water_height_cm','Altura agua sump (cm)',aq?.sump_water_height_cm)}</div>${fcheck('has_refugium','Tiene refugio',!!aq?.has_refugium)}${fnum('refugium_liters','Litros refugio',aq?.refugium_liters)}${fcheck('has_ato_reservoir','Tiene depósito de relleno',!!aq?.has_ato_reservoir)}${fnum('ato_reservoir_liters','Litros depósito relleno',aq?.ato_reservoir_liters)}`;
-    const liters = `${fnum('editAqLiters','Litros reales manuales',manual)}<div class="aquarium-volume-cards">${calcStat('Brutos urna','calcGross')}${calcStat('Display neto','calcDisplayNet')}${calcStat('Sump neto','calcSumpNet')}${calcStat('Sistema neto','calcSystemNet')}</div>`;
+    const tank = `<div class="aquarium-fields-grid">${fnum('tank_length_cm','Largo urna (cm)',aq?.tank_length_cm)}${fnum('tank_width_cm','Ancho urna (cm)',aq?.tank_width_cm)}${fnum('tank_height_cm','Alto urna (cm)',aq?.tank_height_cm)}${fnum('display_water_height_cm','Altura real de agua sobre sustrato (cm)',aq?.display_water_height_cm)}${fnum('rock_kg','Roca (kg)',aq?.rock_kg)}${fnum('sand_kg','Arena (kg)',aq?.sand_kg)}</div><p class="small">Roca y arena se guardan como datos del acuario, pero no se descuentan del volumen. Los litros se calculan directamente con largo × ancho × altura real de agua.</p>`;
+    const support = `${fcheck('has_sump','Tiene sump',!!aq?.has_sump)}<div class="aquarium-fields-grid">${fnum('sump_length_cm','Largo sump (cm)',aq?.sump_length_cm)}${fnum('sump_width_cm','Ancho sump (cm)',aq?.sump_width_cm)}${fnum('sump_height_cm','Alto sump (cm)',aq?.sump_height_cm)}${fnum('sump_water_height_cm','Altura real de agua sump (cm)',aq?.sump_water_height_cm)}</div>${fcheck('has_refugium','Tiene refugio',!!aq?.has_refugium)}${fnum('refugium_liters','Litros refugio',aq?.refugium_liters)}${fcheck('has_ato_reservoir','Tiene depósito de relleno',!!aq?.has_ato_reservoir)}${fnum('ato_reservoir_liters','Litros depósito relleno',aq?.ato_reservoir_liters)}`;
+    const liters = `<div class="aquarium-volume-cards">${calcStat('Brutos urna','calcGross')}${calcStat('Display por altura de agua','calcDisplayNet')}${calcStat('Sump por altura de agua','calcSumpNet')}${calcStat('Sistema para cálculos','calcSystemNet')}</div><p class="small">El sistema se calcula como display + sump conectado. El depósito de relleno no forma parte del volumen circulante.</p>`;
     const notes = `<label for="editAqNotes">Nota</label><textarea id="editAqNotes">${esc(aq?.notes || '')}</textarea>`;
     return `<section class="summary-card"><div><small>AcuarioNexo</small><h2>${isEdit ? 'Editar acuario' : 'Nuevo acuario'}</h2><p>${isEdit ? 'Modificar datos del sistema.' : 'Crear un sistema nuevo.'}</p></div></section>
       <section class="panel aquarium-form">
@@ -145,7 +141,6 @@
     nval,
     dval,
     lDisplay,
-    displacement,
     calcVolumesFromInputs,
     aquariumPayload,
     aquariumPhotoHtml,
