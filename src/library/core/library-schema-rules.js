@@ -18,6 +18,7 @@
   const INTERNAL = /\b(entry_type|identity_confirmed|source_context|utm_source)\b/i;
   const IMPRECISE = /\b(bajo|medio|alto|moderado|normalmente|suele|aproximadamente)\b/i;
   const IDENTIFIERS = new Set(['title','scientific_name','common_names','synonyms','manufacturer','brand','product_code','family','order_name','class_name','category','equipment_type','food_type','culture_type','coral_type','plant_type','test_type','parameter','method','reading_unit','data_type','internal_unit','primary_field','active_ingredient','reagent_code','standard_code','lot']);
+  const FACTUAL_SHORT_MIN = new Map([['composition', 2]]);
 
   const clean = value => String(value ?? '').trim();
   const unique = list => [...new Set((list || []).map(clean).filter(Boolean))];
@@ -82,7 +83,13 @@
       fields: (section.fields || []).map(field => ({
         ...field,
         type: field.allowed?.length ? 'enum' : field.type,
-        minLength: field.allowed?.length ? 1 : (IDENTIFIERS.has(field.id) ? 1 : Number(field.minLength || 1))
+        minLength: field.allowed?.length
+          ? 1
+          : IDENTIFIERS.has(field.id)
+            ? 1
+            : FACTUAL_SHORT_MIN.has(field.id)
+              ? FACTUAL_SHORT_MIN.get(field.id)
+              : Number(field.minLength || 1)
       }))
     }));
   }
