@@ -1,0 +1,54 @@
+name: Sync build version
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'app-version.json'
+      - '.github/workflows/sync-build-version.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-build-version-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Sync index and manifest with app-version
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          const version = JSON.parse(fs.readFileSync('app-version.json', 'utf8'));
+          const build = String(version.build || '').trim();
+          if (!build) throw new Error('app-version.json no contiene build.');
+
+          let index = fs.readFileSync('index.html', 'utf8');
+          index = index.replace(/window\.ACUARIONEXO_BUILD\s*=\s*['"][^'"]+['"];/, `window.ACUARIONEXO_BUILD = '${build}';`);
+          fs.writeFileSync('index.html', index);
+
+          const manifest = JSON.parse(fs.readFileSync('manifest.webmanifest', 'utf8'));
+          manifest.start_url = `./?v=${encodeURIComponent(build)}`;
+          fs.writeFileSync('manifest.webmanifest', `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+
+      - name: Commit synchronized build files when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- index.html manifest.webmanifest; then
+            echo 'Build ya sincronizado.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html manifest.webmanifest
+          git commit -m 'Sincroniza build con app-version'
+          git push
