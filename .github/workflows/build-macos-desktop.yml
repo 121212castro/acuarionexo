@@ -9,6 +9,8 @@ on:
       - 'src/**'
       - 'scripts/**'
       - 'index.html'
+      - 'app-version.json'
+      - 'manifest.webmanifest'
       - 'app.js'
       - 'config.js'
       - 'package.json'
