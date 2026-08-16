@@ -3378,7 +3378,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Composición",
         "section": "feeding",
         "type": "text",
-        "minLength": 20,
+        "minLength": 2,
         "allowed": null,
         "validator": null
       },
@@ -3587,7 +3587,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Composición",
         "section": "feeding",
         "type": "text",
-        "minLength": 20,
+        "minLength": 2,
         "allowed": null,
         "validator": null
       },
@@ -3805,7 +3805,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Composición",
         "section": "feeding",
         "type": "text",
-        "minLength": 20,
+        "minLength": 2,
         "allowed": null,
         "validator": null
       },
@@ -4005,7 +4005,7 @@ export const LIBRARY_CONTRACT = {
         "label": "Composición",
         "section": "feeding",
         "type": "text",
-        "minLength": 20,
+        "minLength": 2,
         "allowed": null,
         "validator": null
       },
