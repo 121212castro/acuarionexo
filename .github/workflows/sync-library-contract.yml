@@ -1,0 +1,47 @@
+name: Sync library contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'src/library/core/library-schema.js'
+      - 'src/library/core/library-schema-rules.js'
+      - 'scripts/generate-library-server-contract.mjs'
+      - '.github/workflows/sync-library-contract.yml'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-library-contract-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Generate server contract from client schema
+        run: node scripts/generate-library-server-contract.mjs
+
+      - name: Commit generated contract when changed
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- supabase/functions/_shared/library-contract.generated.ts; then
+            echo 'Contrato ya sincronizado.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add supabase/functions/_shared/library-contract.generated.ts
+          git commit -m 'Sincroniza contrato de biblioteca con el esquema'
+          git push
