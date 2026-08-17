@@ -3,6 +3,17 @@
   const { supabase, state, esc, byId, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
   const { loadAquariums, aquariumCard, dashboardStat, emptyLine, dashboardAlertCard, dashboardActivityCard, loadDashboardStats, refreshAdminForDashboard, aquariumTypeLabel } = window.ANX.AquariumsCore;
 
+  window.openDashboardAviso = async function (id) {
+    if (!state.user) return login();
+    try {
+      if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('tareas');
+      if (typeof window.verAviso !== 'function') throw new Error('No se pudo cargar el detalle del aviso.');
+      return window.verAviso(id);
+    } catch (error) {
+      render(msg(error.message || error, 'error'), 'inicio');
+    }
+  };
+
   window.dashboard = async function () {
     if (!state.user) return login();
     const t = token();
@@ -26,7 +37,6 @@
           <button onclick="microfauna()"><span>◌</span>Microfauna</button>
           <button onclick="biblioteca()"><span>□</span>Biblioteca</button>
           <button onclick="inventario()"><span>▤</span>Inventario</button>
-          ${state.isAdmin ? '<button onclick="adminPanel()"><span>⚙</span>Admin</button>' : ''}
         </div></section>
         <section class="panel"><div class="panel-head"><h2>Avisos importantes</h2><button onclick="tareas()">Ver todos</button></div>${alertsHtml}</section>
         <section class="panel"><div class="panel-head"><h2>Actividad reciente</h2><button onclick="tareas()">Ver historial</button></div>${activityHtml}</section>`, 'inicio');

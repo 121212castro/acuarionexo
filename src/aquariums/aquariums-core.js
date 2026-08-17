@@ -82,14 +82,14 @@
   function dashboardAlertCard(task) {
     const priority = String(task.priority || 'normal').toLowerCase();
     const label = priority === 'high' ? 'Urgente' : 'Pendiente';
-    return `<button class="item dashboard-task" onclick="verAviso('${esc(task.id)}')">
+    return `<button class="item dashboard-task" onclick="openDashboardAviso('${esc(task.id)}')">
       <b>${esc(task.title || 'Aviso')}</b>
       <span class="small">${esc(label)} · ${esc(taskDateText(task.due_at))}</span>
     </button>`;
   }
 
   function dashboardActivityCard(task) {
-    return `<button class="item dashboard-task" onclick="verAviso('${esc(task.id)}')">
+    return `<button class="item dashboard-task" onclick="openDashboardAviso('${esc(task.id)}')">
       <b>${esc(task.title || 'Aviso realizado')}</b>
       <span class="small">Realizado · ${esc(taskDateText(task.completed_at || task.updated_at))}</span>
     </button>`;
