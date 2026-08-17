@@ -15,11 +15,18 @@
     ANX.render(`<section class="summary-card"><div><small>Admin</small><h2>Solicitudes de acceso</h2><p>Control de nuevas altas</p></div></section>
       <section class="panel"><button onclick="adminPanel()">← Admin</button>${ANX.msg('Cargando solicitudes...')}</section>`, 'admin');
     try {
-      const { data, error } = await ANX.supabase.rpc('admin_access_requests');
-      if (error) throw error;
+      const [accessResult, deletionResult] = await Promise.all([
+        ANX.supabase.rpc('admin_access_requests'),
+        ANX.supabase.rpc('admin_account_deletion_requests')
+      ]);
+      if (accessResult.error) throw accessResult.error;
+      if (deletionResult.error) throw deletionResult.error;
+      const data = accessResult.data;
       const rows = Array.isArray(data) ? data : [];
       const pending = rows.filter(r => r.status === 'pending');
       const history = rows.filter(r => r.status !== 'pending');
+      const deletionRows = Array.isArray(deletionResult.data) ? deletionResult.data : [];
+      const pendingDeletions = deletionRows.filter(r => r.status === 'pending');
       const requestHtml = pending.length ? pending.map(function (r) {
         return `<article class="summary-card"><div>
           <small>${esc(new Date(r.created_at).toLocaleString('es-ES'))}</small>
@@ -39,8 +46,18 @@
         </div>`;
       }).join('') : '<p class="small">Todavía no hay historial.</p>';
 
+      const deletionHtml = pendingDeletions.length ? pendingDeletions.map(function (r) {
+        return `<article class="summary-card"><div>
+          <small>${esc(new Date(r.requested_at).toLocaleString('es-ES'))}</small>
+          <h3>${esc(r.email)}</h3>
+          ${r.reason ? `<p>${esc(r.reason)}</p>` : '<p class="small">Sin motivo indicado.</p>'}
+          <p class="small">Procesamiento manual requerido antes de eliminar la cuenta.</p>
+        </div></article>`;
+      }).join('') : '<p class="small">No hay solicitudes de eliminación pendientes.</p>';
+
       ANX.render(`<section class="summary-card"><div><small>Admin</small><h2>Solicitudes de acceso</h2><p>${pending.length} pendientes</p></div></section>
         <section class="panel"><div class="panel-head"><h2>Pendientes</h2><button onclick="adminPanel()">← Admin</button></div>${requestHtml}</section>
+        <section class="panel"><div class="panel-head"><h2>Eliminación de cuentas</h2><strong>${pendingDeletions.length} pendientes</strong></div>${deletionHtml}</section>
         <section class="panel"><div class="panel-head"><h2>Historial reciente</h2></div>${historyHtml}</section>`, 'admin');
     } catch (e) {
       ANX.render(`<section class="panel"><button onclick="adminPanel()">← Admin</button>${ANX.msg(e.message || 'No se pudieron cargar las solicitudes.', 'error')}</section>`, 'admin');

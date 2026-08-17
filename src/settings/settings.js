@@ -122,14 +122,15 @@
         row('Reducir movimiento', toggle('setMotion', s.reducedMotion, "settingsChange('reducedMotion',this.checked)"), 'Reduce animaciones y desplazamientos')
       )}
       ${section('Datos y almacenamiento', '💾',
-        row('Exportar preferencias', '<button onclick="settingsExport()">Exportar</button>', 'Descarga una copia de la configuración local') +
+        row('Descargar mis datos', '<button onclick="settingsExportData()">Descargar</button>', 'Crea un archivo JSON con tu cuenta, acuarios, registros y preferencias') +
         row('Limpiar caché', '<button onclick="settingsClearCache()">Limpiar</button>', 'No elimina acuarios ni información guardada en Supabase') +
         row('Restablecer ajustes', '<button class="danger-outline" onclick="settingsReset()">Restablecer</button>', 'Devuelve únicamente estas preferencias a sus valores iniciales')
       )}
       ${section('Privacidad', '🔐',
         row('Analítica de uso', toggle('setAnalytics', s.analytics, "settingsChange('analytics',this.checked)"), 'Desactivada por defecto') +
         row('Enviar informes de errores', toggle('setErrors', s.errorReports, "settingsChange('errorReports',this.checked)"), 'No incluye contraseñas ni tokens') +
-        row('Permisos del dispositivo', '<button onclick="settingsPermissions()">Ver estado</button>', 'Notificaciones, cámara y fotografías')
+        row('Permisos del dispositivo', '<button onclick="settingsPermissions()">Ver estado</button>', 'Notificaciones, cámara y fotografías') +
+        row('Eliminación de cuenta', '<button class="danger-outline" onclick="settingsAccountDeletion()">Gestionar</button>', 'Envía o cancela una solicitud segura; no se borra nada de inmediato')
       )}
       ${section('Diagnóstico y soporte', '🛠️',
         row('Versión', `<span class="settings-value">${esc((ANX.config && ANX.config.APP_VERSION) || 'AcuarioNexo')}</span>`, '') +
@@ -175,13 +176,67 @@
     alert(ok ? 'Registro de notificaciones solicitado correctamente.' : 'No se pudo iniciar el registro de notificaciones en este dispositivo.');
   };
 
+  window.settingsExportData = async function () {
+    const box = document.getElementById('settingsMessage');
+    try {
+      if (box) box.innerHTML = msg('Preparando la descarga...', 'notice');
+      const { data, error } = await ANX.supabase.rpc('export_my_data');
+      if (error) throw error;
+      const exportData = { ...data, local_preferences: loadSettings() };
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `acuarionexo-datos-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      if (box) box.innerHTML = msg('Copia de datos descargada.', 'success');
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo preparar la descarga.', 'error');
+    }
+  };
+
   window.settingsExport = function () {
     const blob = new Blob([JSON.stringify(loadSettings(), null, 2)], { type: 'application/json' });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'acuarionexo-ajustes.json';
+    document.body.appendChild(a);
     a.click();
+    a.remove();
     setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  };
+
+  window.settingsAccountDeletion = async function () {
+    const box = document.getElementById('settingsMessage');
+    try {
+      const current = await ANX.supabase.rpc('my_account_deletion_request');
+      if (current.error) throw current.error;
+      const request = Array.isArray(current.data) ? current.data[0] : current.data;
+
+      if (request?.status === 'pending') {
+        if (!confirm('Ya existe una solicitud de eliminación pendiente. ¿Quieres cancelarla?')) return;
+        const cancelled = await ANX.supabase.rpc('cancel_account_deletion');
+        if (cancelled.error) throw cancelled.error;
+        if (box) box.innerHTML = msg('Solicitud de eliminación cancelada.', 'success');
+        return;
+      }
+
+      if (!confirm('¿Enviar una solicitud para eliminar tu cuenta y sus datos? No se borrará nada de inmediato y podrás cancelarla mientras siga pendiente.')) return;
+      const confirmation = prompt('Para confirmar, escribe ELIMINAR');
+      if (confirmation !== 'ELIMINAR') {
+        if (box) box.innerHTML = msg('Solicitud no enviada.', 'notice');
+        return;
+      }
+
+      const reason = prompt('Motivo de la solicitud (opcional)') || null;
+      const created = await ANX.supabase.rpc('request_account_deletion', { p_reason: reason });
+      if (created.error) throw created.error;
+      if (box) box.innerHTML = msg('Solicitud enviada. La cuenta seguirá activa hasta que se complete el proceso.', 'success');
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo gestionar la solicitud.', 'error');
+    }
   };
 
   window.settingsClearCache = async function () {
