@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: library-audit-action-fix-20260801.
-- app-version.json: library-audit-action-fix-20260801.
-- manifest.webmanifest: library-audit-action-fix-20260801.
+- index.html: library-image-drag-drop-20260810-2248.
+- app-version.json: library-image-drag-drop-20260810-2248.
+- manifest.webmanifest: library-image-drag-drop-20260810-2248.
 
 ARCHIVOS ACTIVOS
 - acuarionexo-ajustes.json
@@ -33,6 +33,9 @@ ARCHIVOS ACTIVOS
 - notifications.css
 - notifications.js
 - settings.css
+- site-analytics.js
+- src/admin/admin-access.js
+- src/admin/admin-analytics.js
 - src/admin/admin-core.js
 - src/admin/admin-extra.js
 - src/admin/admin-library-generator.css
@@ -50,6 +53,11 @@ ARCHIVOS ACTIVOS
 - src/aquariums/aquariums-form.js
 - src/aquariums/aquariums-save.js
 - src/aquariums/aquariums.js
+- src/assistant/assistant-portal.js
+- src/assistant/core/assistant-aquarium-context.js
+- src/assistant/core/assistant-contract.js
+- src/assistant/core/assistant-library-search.js
+- src/auth/access-request-email.js
 - src/auth/auth-core.js
 - src/auth/auth.js
 - src/core/module-loader.js
@@ -58,6 +66,7 @@ ARCHIVOS ACTIVOS
 - src/inventory/inventory-list.js
 - src/inventory/inventory-ui.js
 - src/inventory/inventory.js
+- src/library/audit-fallback.js
 - src/library/core/library-admin-policy.js
 - src/library/core/library-invertebrate-contract.js
 - src/library/core/library-schema-rules.js
@@ -77,6 +86,8 @@ ARCHIVOS ACTIVOS
 - src/library/review-field-highlights.js
 - src/library/review-workflow.js
 - src/library/ui/library.js
+- src/map/map-ai-generator-contract.js
+- src/map/map-ai-generator.js
 - src/map/map-interactions.js
 - src/map/map-markers.js
 - src/map/map-photos.js

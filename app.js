@@ -48,6 +48,49 @@
 
   function currentAquarium() { return state.aquarium || window.q || null; }
 
+  const PRIVATE_MEDIA_BUCKETS = new Set(['aquarium-photos', 'photos', 'animal-photos']);
+  const signedPhotoCache = new Map();
+
+  function storageAsset(value) {
+    const text = String(value || '').trim();
+    if (!text) return null;
+    const storageRef = text.match(/^storage:\/\/([^/]+)\/(.+)$/i);
+    if (storageRef) return { bucket: storageRef[1], path: storageRef[2] };
+    const storageUrl = text.match(/\/storage\/v1\/object\/(?:public|sign|authenticated)\/([^/?]+)\/([^?]+)/i);
+    if (!storageUrl) return null;
+    try {
+      return { bucket: decodeURIComponent(storageUrl[1]), path: decodeURIComponent(storageUrl[2]) };
+    } catch (_) {
+      return { bucket: storageUrl[1], path: storageUrl[2] };
+    }
+  }
+
+  function storageReference(bucket, path) {
+    return `storage://${bucket}/${path}`;
+  }
+
+  async function signedPhotoUrl(value, expiresIn = 3600) {
+    const text = String(value || '').trim();
+    const asset = storageAsset(text);
+    if (!asset || !PRIVATE_MEDIA_BUCKETS.has(asset.bucket)) return text;
+    const cacheKey = `${asset.bucket}/${asset.path}`;
+    const cached = signedPhotoCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.url;
+    const { data, error } = await supabase.storage.from(asset.bucket).createSignedUrl(asset.path, expiresIn);
+    if (error) throw error;
+    const url = data?.signedUrl || '';
+    if (!url) throw new Error('No se pudo autorizar la lectura de la imagen privada.');
+    signedPhotoCache.set(cacheKey, { url, expiresAt: Date.now() + Math.max(60, expiresIn - 60) * 1000 });
+    return url;
+  }
+
+  async function hydratePrivatePhoto(row) {
+    if (!row || typeof row !== 'object') return row;
+    const source = row.image_url || row.photo_url || row.public_url || row.url || row.cover_url || '';
+    row.__signed_photo_url = source ? await signedPhotoUrl(source) : '';
+    return row;
+  }
+
   function authRedirectUrl() {
     return `${location.origin}${location.pathname}`;
   }
@@ -114,7 +157,7 @@
   }
 
   function photoUrl(row) {
-    return row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
+    return row?.__signed_photo_url || row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
   }
 
   async function uploadAquariumImage(file, folder) {
@@ -123,10 +166,10 @@
     const path = `${folder}/${state.user.id}/${aq.id}/${Date.now()}.${ext}`;
     for (const bucket of ['aquarium-photos', 'photos', 'animal-photos']) {
       const upload = await supabase.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
-      if (!upload.error) return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+      if (!upload.error) return storageReference(bucket, path);
     }
     throw new Error('No se pudo subir la foto. Revisa Storage.');
   }
 
-  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, aqHeader, aquariumIcon, photoUrl, uploadAquariumImage };
+  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadAquariumImage };
 })();

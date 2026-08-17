@@ -1,6 +1,6 @@
 /* AcuarioNexo · aquariums core */
 (function () {
-  const { supabase, state, esc, aquariumIcon, photoUrl } = window.ANX;
+  const { supabase, state, esc, aquariumIcon, photoUrl, signedPhotoUrl, hydratePrivatePhoto } = window.ANX;
 
   function aquariumTypeLabel(value) {
     const key = String(value || '').toLowerCase();
@@ -29,12 +29,20 @@
         .order('created_at', { ascending: false })
         .limit(120) : { data: [] };
       if (!photos.error) {
+        const photoRows = await Promise.all((photos.data || []).map(hydratePrivatePhoto));
         const coverByAq = {};
-        (photos.data || []).forEach(function (p) {
+        photoRows.forEach(function (p) {
+          const source = p.image_url || p.photo_url || '';
           const url = photoUrl(p);
-          if (url && p.aquarium_id && !coverByAq[p.aquarium_id]) coverByAq[p.aquarium_id] = url;
+          if (source && url && p.aquarium_id && !coverByAq[p.aquarium_id]) coverByAq[p.aquarium_id] = { source, url };
         });
-        list.forEach(function (aq) { aq.__cover_url = aq.cover_photo_url || aq.cover_url || aq.photo_url || aq.image_url || coverByAq[aq.id] || ''; });
+        await Promise.all(list.map(async function (aq) {
+          const directSource = aq.cover_photo_url || aq.cover_url || aq.photo_url || aq.image_url || '';
+          const fallback = coverByAq[aq.id] || {};
+          aq.__cover_source = directSource || fallback.source || '';
+          aq.__cover_url = directSource ? await signedPhotoUrl(directSource) : (fallback.url || '');
+          aq.__signed_photo_url = directSource ? aq.__cover_url : '';
+        }));
       }
     } catch (_) {}
     state.aquariums = list;

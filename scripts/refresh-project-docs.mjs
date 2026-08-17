@@ -19,10 +19,10 @@ function buildFromManifest() {
 }
 function quotedLocalAssets(text) {
   const found = new Set();
-  const re = /['"]([^'"]+\.(?:js|css|json|webmanifest|png)(?:\?[^'"]*)?)['"]/g;
+  const re = /(['"])([^'"\r\n]+\.(?:js|css|json|webmanifest|png)(?:\?[^'"\r\n]*)?)\1/g;
   let match;
   while ((match = re.exec(text))) {
-    const file = match[1].replace(/\?.*$/, '');
+    const file = match[2].replace(/\?.*$/, '');
     if (!/^https?:\/\//i.test(file)) found.add(file);
   }
   return [...found];

@@ -1,6 +1,6 @@
 /* AcuarioNexo · aquariums save */
 (function () {
-  const { supabase, state, byId, msg, currentAquarium, uploadAquariumImage } = window.ANX;
+  const { supabase, state, byId, msg, currentAquarium, uploadAquariumImage, signedPhotoUrl } = window.ANX;
   const { aquariumPayload } = window.ANX.AquariumsForm;
   const { loadAquariums } = window.ANX.AquariumsCore || {};
 
@@ -43,17 +43,17 @@
     const file = byId('editAqPhoto')?.files?.[0];
     if (!file) return null;
     if (!file.type || !file.type.startsWith('image/')) throw new Error('El archivo seleccionado no es una imagen válida.');
-    const publicUrl = await uploadAquariumImage(file, 'covers');
+    const photoRef = await uploadAquariumImage(file, 'covers');
     const row = {
       user_id: state.user.id,
       aquarium_id: aq.id,
       title: 'Foto principal del acuario',
-      image_url: publicUrl,
-      photo_url: publicUrl
+      image_url: photoRef,
+      photo_url: photoRef
     };
     const { error } = await supabase.from('aquarium_photos').insert(row);
     if (error) throw error;
-    return publicUrl;
+    return photoRef;
   }
 
   window.guardarEdicionAcuario = async function () {
@@ -71,8 +71,11 @@
       const selectedPhoto = byId('editAqPhoto')?.files?.[0];
       if (selectedPhoto) {
         if (box) box.innerHTML = msg('Subiendo la foto del acuario...', 'notice');
-        const publicUrl = await saveSelectedAquariumPhoto(saved);
-        if (publicUrl) saved.__cover_url = publicUrl;
+        const photoRef = await saveSelectedAquariumPhoto(saved);
+        if (photoRef) {
+          saved.__cover_source = photoRef;
+          saved.__cover_url = await signedPhotoUrl(photoRef);
+        }
       }
       if (typeof loadAquariums === 'function') {
         await loadAquariums();

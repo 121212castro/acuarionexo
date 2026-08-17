@@ -14,23 +14,26 @@
   }
 
   async function saveMapPhoto() {
-    const { supabase, state, byId, val, msg, currentAquarium, uploadAquariumImage } = A();
-    const { readMap, writeMapDraft, mapPhotos } = S();
+    const { supabase, state, byId, val, msg, currentAquarium, uploadAquariumImage, signedPhotoUrl } = A();
+    const { readMap, writeMapDraft, storedMapPhotos } = S();
     try {
       const aq = currentAquarium();
       const file = byId('mapPhotoFile')?.files?.[0];
       if (!file) throw new Error('Selecciona una foto del acuario.');
       const angle = val('mapPhotoAngle') || 'front';
       byId('x').innerHTML = msg(`Subiendo foto ${angleLabels[angle] || angle}...`);
-      const publicUrl = await uploadAquariumImage(file, 'map');
-      const row = { user_id: state.user.id, aquarium_id: aq.id, title: `Gemelo virtual · ${angleLabels[angle] || angle}`, image_url: publicUrl, photo_url: publicUrl };
+      const photoRef = await uploadAquariumImage(file, 'map');
+      const row = { user_id: state.user.id, aquarium_id: aq.id, title: `Gemelo virtual · ${angleLabels[angle] || angle}`, image_url: photoRef, photo_url: photoRef };
       const inserted = await supabase.from('aquarium_photos').insert(row);
       if (inserted.error) throw inserted.error;
-      aq.__cover_url = aq.__cover_url || publicUrl;
+      if (!aq.__cover_source) {
+        aq.__cover_source = photoRef;
+        aq.__cover_url = await signedPhotoUrl(photoRef);
+      }
       const current = window.__aqMap || readMap(aq);
-      const photos = { ...mapPhotos(current), [angle]: publicUrl };
-      const map = writeMapDraft(aq, { ...current, photos, photo_url: photos.front || publicUrl });
-      if (window.ANX.MapMain?.renderMapIA) window.ANX.MapMain.renderMapIA(map);
+      const photos = { ...storedMapPhotos(current), [angle]: photoRef };
+      const map = writeMapDraft(aq, { ...current, photos, photo_url: photos.front || photoRef });
+      if (window.ANX.MapMain?.renderMapIA) await window.ANX.MapMain.renderMapIA(map);
     } catch (e) {
       const { byId, msg } = A();
       if (byId('x')) byId('x').innerHTML = msg(e.message, 'error');

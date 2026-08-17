@@ -9,7 +9,9 @@
     const aq = currentAquarium();
     const map = writeMapDraft(aq, window.__aqMap || readMap(aq));
     try {
-      const payload = MAP_PREFIX + JSON.stringify(map);
+      const persistentMap = { ...map };
+      delete persistentMap.__signed_photos;
+      const payload = MAP_PREFIX + JSON.stringify(persistentMap);
       const result = await supabase.from('aquariums').update({ ai_summary: payload }).eq('id', aq.id);
       if (result.error) throw result.error;
       aq.ai_summary = payload;

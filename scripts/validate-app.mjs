@@ -25,10 +25,10 @@ function read(file) {
 
 function quotedLocalAssets(text) {
   const files = new Set();
-  const re = /['"]([^'"]+\.(?:html|js|css|png|webmanifest|json)(?:\?[^'"]*)?)['"]/g;
+  const re = /(['"])([^'"\r\n]+\.(?:html|js|css|png|webmanifest|json)(?:\?[^'"\r\n]*)?)\1/g;
   let match;
   while ((match = re.exec(text))) {
-    const file = clean(match[1]);
+    const file = clean(match[2]);
     if (isLocal(file)) files.add(file);
   }
   return files;

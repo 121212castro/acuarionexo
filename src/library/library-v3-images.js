@@ -23,19 +23,15 @@
     if (!allowed) throw new Error('No tienes permiso para modificar imágenes de Biblioteca.');
   }
 
-  async function uploadToAvailableBucket(path, file, contentType) {
-    const buckets = ['library-images','aquarium-photos','photos','animal-photos'];
-    let lastError = null;
-    for (const bucket of buckets) {
-      const upload = await supabase.storage.from(bucket).upload(path, file, {
-        upsert: true,
-        contentType: contentType || file.type || 'application/octet-stream',
-        cacheControl: '31536000'
-      });
-      if (!upload.error) return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
-      lastError = upload.error;
-    }
-    throw new Error(lastError?.message || 'No se pudo guardar la imagen en Storage.');
+  async function uploadLibraryImage(path, file, contentType) {
+    const bucket = 'library-images';
+    const upload = await supabase.storage.from(bucket).upload(path, file, {
+      upsert: true,
+      contentType: contentType || file.type || 'application/octet-stream',
+      cacheControl: '31536000'
+    });
+    if (upload.error) throw upload.error;
+    return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   }
 
   async function uploadResponsiveAsset(file, kind, entryType) {
@@ -44,7 +40,7 @@
     const timestamp = Date.now();
     const ext = filenameExt(file);
     const path = `library/${state.user.id}/${coverFolder(entryType)}/${kind}-${timestamp}/original.${ext}`;
-    const original = await uploadToAvailableBucket(path, file, file.type || 'application/octet-stream');
+    const original = await uploadLibraryImage(path, file, file.type || 'application/octet-stream');
     return {
       original,
       generated_at: new Date().toISOString(),

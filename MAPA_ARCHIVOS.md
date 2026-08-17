@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-audit-action-fix-20260801`
+`library-image-drag-drop-20260810-2248`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -32,15 +32,19 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `src/library/review-field-highlights.css`
 - `config.js`
 - `app.js`
+- `site-analytics.js`
 - `src/aquariums/aquariums-core.js`
 - `src/aquariums/aquariums-form.js`
 - `src/aquariums/aquariums-save.js`
 - `src/aquariums/aquariums.js`
 - `src/admin/admin-core.js`
+- `src/admin/admin-analytics.js`
+- `src/admin/admin-access.js`
 - `src/core/module-loader.js`
 - `src/library/core/library-invertebrate-contract.js`
 - `src/auth/auth-core.js`
 - `src/auth/auth.js`
+- `src/auth/access-request-email.js`
 - `update-manager.js`
 - `notifications.js`
 - `src/library/review-field-highlights.js`
@@ -60,15 +64,6 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - El botón está disponible desde cualquier pantalla y abre siempre el Panel de Administración.
 - Los usuarios sin rol administrativo no ven el botón.
 - No se permiten botones Admin duplicados dentro de pantallas concretas.
-
-## Asistente IA / contrato oficial Fase 1
-
-- `ASISTENTE_IA_CONTRATO.md`: especificación humana de comportamiento, límites, prioridades, trazabilidad y alcance de la Fase 1.
-- `src/assistant/core/assistant-contract.js`: fuente machine-readable única del contrato del Asistente IA.
-- Define modos `general` y `aquarium`, intenciones, prioridad de fuentes, estados de ficha permitidos, estados de confianza, requisitos mínimos de contexto, reglas de selección y forma obligatoria de respuesta.
-- Las futuras piezas de búsqueda, contexto, servidor e interfaz deben consumir este contrato.
-- Esta fase no está cargada todavía por `index.html` ni por `module-loader.js`; su activación corresponde a las fases de implementación posteriores.
-- No se permiten prompts paralelos, contratos alternativos, hotfix ni lógica duplicada del asistente.
 
 ## Biblioteca / cadena única de contrato
 
@@ -139,8 +134,6 @@ La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
 - `index.html`: estructura de la cabecera y botón global Admin.
 - `src/auth/auth-core.js`: visibilidad de controles de sesión y del acceso Admin.
 - `src/admin/admin-core.js`: autorización y rol administrativo.
-- `src/assistant/core/assistant-contract.js`: comportamiento, límites, prioridades, estados de confianza y forma de respuesta del Asistente IA.
-- `ASISTENTE_IA_CONTRATO.md`: especificación humana del mismo contrato.
 - `src/library/core/library-schema.js`: contratos y metadatos base.
 - `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
 - `src/library/library-v3-template.js`: instrucciones y esqueleto JSON para el Chat.

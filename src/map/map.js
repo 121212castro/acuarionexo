@@ -29,12 +29,13 @@
     return A().MapAiGenerator;
   }
 
-  function renderMapIA(map) {
+  async function renderMapIA(map) {
     const { currentAquarium, render, aqHeader } = A();
-    const { normalizeMap, readMap } = S();
+    const { normalizeMap, readMap, hydrateMapPhotos } = S();
     const { mapStageHtml, mapEditorHtml } = UI();
     const aq = currentAquarium();
-    window.__aqMap = normalizeMap(map || window.__aqMap || readMap(aq), aq);
+    const normalized = normalizeMap(map || window.__aqMap || readMap(aq), aq);
+    window.__aqMap = typeof hydrateMapPhotos === 'function' ? await hydrateMapPhotos(normalized) : normalized;
     const clean = window.__aqMap;
     const generatorHtml = A().MapAiGenerator?.formHtml ? A().MapAiGenerator.formHtml() : '<div id="mapAiGeneratorMount"></div>';
     render(aqHeader('mapa') + `<section class="panel map-panel">
@@ -54,12 +55,12 @@
     requestAnimationFrame(function () { R3D().renderMap3D(clean); });
   }
 
-  function mapaIA() {
+  async function mapaIA() {
     const { currentAquarium } = A();
     const { readMap } = S();
     const aq = currentAquarium();
     if (!aq) return window.dashboard ? window.dashboard() : null;
-    renderMapIA(readMap(aq));
+    await renderMapIA(readMap(aq));
   }
 
   window.openMapAiGenerator = async function () {

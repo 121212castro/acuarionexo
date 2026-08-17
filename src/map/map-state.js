@@ -3,7 +3,7 @@
   const MAP_PREFIX = 'ACUARIONEXO_MAP_V2:';
 
   function emptyMap(aq) {
-    const front = aq?.map_photo_url || aq?.__cover_url || aq?.cover_url || aq?.photo_url || aq?.image_url || '';
+    const front = aq?.map_photo_url || aq?.__cover_source || aq?.cover_url || aq?.photo_url || aq?.image_url || '';
     return {
       version: 2,
       photo_url: front,
@@ -71,6 +71,17 @@
   }
 
   function mapPhotos(map) {
+    const signed = map?.__signed_photos && typeof map.__signed_photos === 'object' ? map.__signed_photos : {};
+    const stored = storedMapPhotos(map);
+    return {
+      front: signed.front || stored.front,
+      left: signed.left || stored.left,
+      right: signed.right || stored.right,
+      top: signed.top || stored.top
+    };
+  }
+
+  function storedMapPhotos(map) {
     const photos = map?.photos && typeof map.photos === 'object' ? map.photos : {};
     return {
       front: photos.front || map?.photo_url || '',
@@ -80,8 +91,20 @@
     };
   }
 
+  async function hydrateMapPhotos(map) {
+    const clean = normalizeMap(map, window.ANX?.currentAquarium?.());
+    const stored = storedMapPhotos(clean);
+    const sign = window.ANX?.signedPhotoUrl;
+    if (typeof sign !== 'function') return clean;
+    const entries = await Promise.all(Object.entries(stored).map(async function ([key, value]) {
+      return [key, value ? await sign(value) : ''];
+    }));
+    clean.__signed_photos = Object.fromEntries(entries);
+    return clean;
+  }
+
   function photoCount(map) {
-    return Object.values(mapPhotos(map)).filter(Boolean).length;
+    return Object.values(storedMapPhotos(map)).filter(Boolean).length;
   }
 
   function selectedMapMarker(map) {
@@ -97,6 +120,8 @@
     writeMapDraft,
     markerTypeLabel,
     mapPhotos,
+    storedMapPhotos,
+    hydrateMapPhotos,
     photoCount,
     selectedMapMarker
   };

@@ -1,6 +1,6 @@
 /* AcuarioNexo · photos */
 (function () {
-  const { supabase, state, byId, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
+  const { supabase, state, byId, msg, token, isCurrent, currentAquarium, render, aqHeader, hydratePrivatePhoto } = window.ANX;
   const { photoCard } = window.ANX.PhotosCore;
 
   async function fotos() {
@@ -11,7 +11,8 @@
       const { data, error } = await supabase.from('aquarium_photos').select('*').eq('aquarium_id', aq.id).order('created_at', { ascending: false }).limit(60);
       if (error) throw error;
       if (!isCurrent(t)) return;
-      render(aqHeader('fotos') + `<section class="panel photos-panel"><div class="panel-head"><h2>Fotos</h2><button class="primary" onclick="formFoto()">Subir</button></div><div id="photoDeleteStatus"></div><div class="gallery-grid">${(data || []).map(photoCard).join('') || '<p class="small">Sin fotos todavía.</p>'}</div></section>`, 'acuarios');
+      const rows = await Promise.all((data || []).map(hydratePrivatePhoto));
+      render(aqHeader('fotos') + `<section class="panel photos-panel"><div class="panel-head"><h2>Fotos</h2><button class="primary" onclick="formFoto()">Subir</button></div><div id="photoDeleteStatus"></div><div class="gallery-grid">${rows.map(photoCard).join('') || '<p class="small">Sin fotos todavía.</p>'}</div></section>`, 'acuarios');
     } catch (e) {
       if (isCurrent(t)) render(aqHeader('fotos') + `<section class="panel photos-panel">${msg(e.message, 'error')}</section>`, 'acuarios');
     }
