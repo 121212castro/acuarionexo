@@ -27,8 +27,8 @@
           <p><strong>${esc(r.email)}</strong></p>
           ${r.message ? `<p>${esc(r.message)}</p>` : ''}
           <div class="quick-actions">
-            <button class="primary" onclick="adminResolveAccess('${esc(r.id)}','approved')">Aprobar</button>
-            <button onclick="adminResolveAccess('${esc(r.id)}','rejected')">Rechazar</button>
+            <button class="primary access-action" aria-label="Aprobar acceso para ${esc(r.email)}" onclick="adminResolveAccess(this,'${esc(r.id)}','approved')">✓ Aprobar acceso</button>
+            <button class="access-action" aria-label="Rechazar acceso para ${esc(r.email)}" onclick="adminResolveAccess(this,'${esc(r.id)}','rejected')">✕ Rechazar</button>
           </div>
         </div></article>`;
       }).join('') : '<p class="small">No hay solicitudes pendientes.</p>';
@@ -47,13 +47,22 @@
     }
   };
 
-  window.adminResolveAccess = async function (id, status) {
+  window.adminResolveAccess = async function (button, id, status) {
+    if (!['approved', 'rejected'].includes(status)) return;
     if (!confirm(status === 'approved' ? '¿Aprobar esta solicitud?' : '¿Rechazar esta solicitud?')) return;
+    const actions = button?.closest('.quick-actions');
+    const buttons = actions ? Array.from(actions.querySelectorAll('button')) : [];
+    buttons.forEach(item => { item.disabled = true; });
+    const previousLabel = button?.textContent;
+    if (button) button.textContent = status === 'approved' ? 'Aprobando…' : 'Rechazando…';
     try {
-      const { error } = await ANX.supabase.rpc('admin_set_access_request', { p_request_id: id, p_status: status });
+      const { data, error } = await ANX.supabase.rpc('admin_set_access_request', { p_request_id: id, p_status: status });
       if (error) throw error;
+      if (data !== true) throw new Error('La solicitud ya no está pendiente o no existe.');
       await adminAccessRequests();
     } catch (e) {
+      buttons.forEach(item => { item.disabled = false; });
+      if (button && previousLabel) button.textContent = previousLabel;
       alert(e.message || 'No se pudo actualizar la solicitud.');
     }
   };
