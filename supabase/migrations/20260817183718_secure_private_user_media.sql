@@ -3,6 +3,22 @@
 -- One legacy public library photo was stored in a user-media bucket. Preserve
 -- the published card by using its existing public library cover before privacy
 -- is enabled. The original object remains stored for later manual replacement.
+create temporary table acuarionexo_legacy_library_media
+on commit drop
+as
+select id, status, published_at
+from public.library_entries
+where photo_url like '%/storage/v1/object/public/aquarium-photos/library/%'
+  and cover_url like '%/storage/v1/object/public/library-images/%';
+
+-- Published cards must pass through the application's validated state before
+-- their media metadata can be changed by the existing guard trigger.
+update public.library_entries as entry
+set status = 'validated'
+from acuarionexo_legacy_library_media as legacy
+where entry.id = legacy.id
+  and legacy.status = 'published';
+
 update public.library_entries
 set
   photo_url = cover_url,
@@ -15,6 +31,14 @@ set
   updated_at = now()
 where photo_url like '%/storage/v1/object/public/aquarium-photos/library/%'
   and cover_url like '%/storage/v1/object/public/library-images/%';
+
+update public.library_entries as entry
+set
+  status = 'published',
+  published_at = legacy.published_at
+from acuarionexo_legacy_library_media as legacy
+where entry.id = legacy.id
+  and legacy.status = 'published';
 
 update storage.buckets
 set public = false
