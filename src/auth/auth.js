@@ -27,7 +27,7 @@ window.login = login;
 
 window.solicitarAcceso = function () {
   render(`<section class="auth-card"><h2>Solicitar acceso</h2>
-    <p class="small">AcuarioNexo está en fase de preparación. Las nuevas cuentas requieren aprobación.</p>
+    <p class="small">AcuarioNexo está en beta cerrada, sin suscripciones ni cobros. Las nuevas cuentas requieren aprobación.</p>
     <label>Nombre</label><input id="accessName" type="text" autocomplete="name">
     <label>Email</label><input id="accessEmail" type="email" autocomplete="email">
     <label>Mensaje (opcional)</label><textarea id="accessMessage" rows="4" placeholder="Cuéntanos brevemente para qué quieres utilizar AcuarioNexo"></textarea>

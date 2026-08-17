@@ -94,7 +94,7 @@
       allowed: !!window.AcuarioNexoSettings?.load?.().aiEnabled,
       plan: window.AcuarioNexoSettings?.load?.().plan || 'free',
       source: 'local',
-      note: 'Acceso comercial pendiente de validación por suscripción'
+      note: 'Beta cerrada: no hay suscripciones ni cobros activos'
     };
 
     return {

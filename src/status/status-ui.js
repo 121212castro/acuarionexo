@@ -42,7 +42,7 @@
         metric('Build publicado', app.publishedBuild),
         `<button onclick="window.AcuarioNexoUpdate?.checkVersion?.({manual:true})">Comprobar actualización</button>`),
       card('Cuenta', account.email, account.level,
-        metric('Rol', account.role) + metric('Plan', account.plan === 'free' ? 'Gratis' : 'Pro')),
+        metric('Rol', account.role) + metric('Acceso', account.plan === 'free' ? 'Beta gratuita' : 'Interno con IA')),
       card('Conexión', connection.online ? 'Dispositivo conectado' : 'Sin conexión a internet', connection.level,
         metric('Plataforma', connection.platform) + metric('Supabase', connection.supabase ? 'Cliente disponible' : 'No disponible')),
       card('Notificaciones', notifications.registered ? 'Dispositivo registrado para avisos' : 'No hay dispositivo registrado', notifications.level,
@@ -56,7 +56,7 @@
         metric('Reportes totales', support.total) + metric('Último reporte', support.latest),
         `<button onclick="support()">Abrir soporte</button>`),
       card('Inteligencia artificial', ai.enabled ? 'Acceso habilitado localmente' : 'Acceso restringido', ai.level,
-        metric('Plan', ai.plan === 'free' ? 'Gratis' : 'Pro') + metric('Acciones registradas', ai.usage) + `<p class="status-note">${esc(ai.note)}</p>`),
+        metric('Acceso', ai.plan === 'free' ? 'Beta' : 'Interno') + metric('Acciones registradas', ai.usage) + `<p class="status-note">${esc(ai.note)}</p>`),
       card('Almacenamiento local', 'Estado del navegador o contenedor nativo', storage.level,
         metric('Caché', storage.cacheAvailable ? 'Disponible' : 'No disponible') + metric('Preferencias', storage.localStorageAvailable ? 'Disponible' : 'Bloqueado'))
     ];

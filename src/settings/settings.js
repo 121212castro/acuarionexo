@@ -77,9 +77,9 @@
   function premiumCard(settings) {
     const active = settings.plan !== 'free';
     return `<article class="settings-premium ${active ? 'active' : ''}">
-      <div><span class="premium-badge">${active ? 'PRO' : 'GRATIS'}</span><h3>Inteligencia artificial</h3>
-      <p>${active ? 'Las funciones IA están habilitadas para esta cuenta.' : 'Identificación, análisis de parámetros, diagnóstico visual y planes inteligentes requieren un plan de pago.'}</p></div>
-      <button class="${active ? '' : 'primary'}" onclick="settingsPlanInfo()">${active ? 'Gestionar plan' : 'Ver funciones Pro'}</button>
+      <div><span class="premium-badge">${active ? 'INTERNO' : 'BETA'}</span><h3>${active ? 'Inteligencia artificial habilitada' : 'Beta cerrada'}</h3>
+      <p>${active ? 'Las funciones IA están habilitadas internamente para esta cuenta.' : 'El acceso es gratuito por aprobación. Durante la beta no se ofrecen suscripciones ni se realizan cobros.'}</p></div>
+      <button onclick="settingsPlanInfo()">${active ? 'Ver acceso' : 'Estado de la beta'}</button>
     </article>`;
   }
 
@@ -95,11 +95,11 @@
       <div class="settings-header"><button class="settings-back" onclick="dashboard()">←</button><div><h2>Ajustes</h2><p>Cuenta, aplicación, avisos y privacidad</p></div></div>
       ${section('Cuenta', '👤',
         row('Usuario', `<span class="settings-value">${esc(email)}</span>`, 'Sesión actual de AcuarioNexo') +
-        row('Plan actual', `<span class="settings-value">${s.plan === 'free' ? 'Gratis' : 'Pro'}</span>`, 'Las funciones premium se validarán también en el servidor') +
+        row('Acceso actual', `<span class="settings-value">${s.plan === 'free' ? 'Beta gratuita' : 'Interno con IA'}</span>`, 'No hay ninguna suscripción ni cobro activo') +
         row('Cambiar contraseña', '<button onclick="settingsPassword()">Cambiar</button>', 'Recibirás el flujo seguro de cambio de contraseña') +
         row('Cerrar sesión', '<button class="danger-outline" onclick="document.getElementById(\'logoutBtn\')?.click()">Salir</button>', '')
       )}
-      ${section('Suscripción e IA', '✨', premiumCard(s), 'La interfaz queda preparada para restringir la IA por plan; la autorización definitiva deberá comprobarse en Supabase.')}
+      ${section('Beta e IA', '✨', premiumCard(s), 'Las funciones comerciales y de IA permanecerán cerradas hasta completar pagos, condiciones y soporte.')}
       ${section('Notificaciones', '🔔',
         row('Permitir avisos', toggle('setNotifications', s.notificationsEnabled, "settingsChange('notificationsEnabled',this.checked)"), pushState) +
         row('Formato de avisos', select('setNotificationMode', s.notificationMode, [['summary','Un único resumen'],['individual','Avisos individuales']], "settingsChange('notificationMode',this.value)"), 'El resumen único será el modo recomendado') +
@@ -159,7 +159,7 @@
   };
 
   window.settingsPlanInfo = function () {
-    alert('AcuarioNexo Pro está preparado para controlar el acceso a IA. Antes del lanzamiento se conectará con la suscripción y la validación segura en Supabase.');
+    alert('AcuarioNexo está en beta cerrada y no realiza cobros. Avisaremos cuando exista una suscripción real con condiciones claras y gestión segura del pago.');
   };
 
   window.settingsPassword = function () {

@@ -27,18 +27,18 @@
         allowed: data?.ai_allowed === true,
         source: data?.admin ? 'admin' : String(data?.plan || 'free'),
         plan: String(data?.plan || 'free'),
-        label: data?.ai_allowed ? (data?.admin ? 'Administrador' : 'Pro') : 'Gratis',
+        label: data?.ai_allowed ? (data?.admin ? 'Administrador' : 'Acceso interno') : 'Beta',
         note: data?.ai_allowed
           ? 'Las funciones de IA están habilitadas para esta cuenta.'
-          : 'El plan Gratis no realiza llamadas a APIs de IA. Biblioteca y funciones manuales siguen disponibles.'
+          : 'La IA no está disponible durante la beta cerrada. Biblioteca y funciones manuales siguen disponibles.'
       };
     } catch (_) {
       cached = {
         allowed: isOwner(),
         source: isOwner() ? 'owner-fallback' : 'free-fallback',
         plan: isOwner() ? 'pro' : 'free',
-        label: isOwner() ? 'Propietario' : 'Gratis',
-        note: isOwner() ? 'Acceso de propietario.' : 'No se pudo validar el plan; IA bloqueada por seguridad.'
+        label: isOwner() ? 'Propietario' : 'Beta',
+        note: isOwner() ? 'Acceso interno de propietario.' : 'No se pudo validar el acceso; IA bloqueada por seguridad.'
       };
     }
     cachedAt = now;
@@ -46,9 +46,9 @@
   }
 
   function deny() {
-    const text = 'Esta función usa IA/API y no está incluida en el plan Gratis. Puedes seguir usando la Biblioteca y tu acuario de forma manual.';
+    const text = 'Esta función usa IA/API y no está disponible durante la beta cerrada. Puedes seguir usando la Biblioteca y tu acuario de forma manual.';
     if (typeof ANX.render === 'function' && typeof ANX.msg === 'function') {
-      ANX.render('<section class="panel"><h2>Función Pro</h2>' + ANX.msg(text, 'error') + '<button onclick="dashboard()">Volver</button></section>', 'inicio');
+      ANX.render('<section class="panel"><h2>IA no disponible en beta</h2>' + ANX.msg(text, 'error') + '<button onclick="dashboard()">Volver</button></section>', 'inicio');
     } else {
       alert(text);
     }
@@ -82,7 +82,7 @@
         const badge = card.querySelector('.premium-badge');
         const description = card.querySelector('p');
         const button = card.querySelector('button');
-        if (badge) badge.textContent = current.allowed ? current.label.toUpperCase() : 'GRATIS';
+        if (badge) badge.textContent = current.allowed ? current.label.toUpperCase() : 'BETA';
         if (description) description.textContent = current.note;
         if (button && current.allowed && current.source === 'admin') {
           button.textContent = 'Acceso completo';
