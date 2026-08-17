@@ -27,18 +27,6 @@
       });
       if (request.error) throw request.error;
 
-      const requestId = request.data;
-      const notice = await supabase.functions.invoke('notify-access-request', {
-        body: { request_id: requestId }
-      });
-
-      if (notice.error) {
-        throw new Error('La solicitud se guardó, pero no se pudo enviar el aviso por correo. Inténtalo de nuevo en unos minutos.');
-      }
-      if (notice.data && notice.data.error) {
-        throw new Error(notice.data.message || 'No se pudo enviar el aviso por correo.');
-      }
-
       if (byId('x')) byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
     } catch (e) {
       if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');

@@ -7,6 +7,7 @@
   let enabling = false;
   let nativePushStarted = false;
   let started = false;
+  let checkingAccessRequests = false;
 
   function diagnostic(stage, detail) {
     const entry = {
@@ -241,6 +242,35 @@
     }
   }
 
+  async function checkAdminAccessRequests() {
+    if (checkingAccessRequests || !window.s || !window.state?.isAdmin || !canNotify() || Notification.permission !== 'granted') return;
+    checkingAccessRequests = true;
+    try {
+      const result = await window.s.rpc('admin_access_requests');
+      if (result.error || !Array.isArray(result.data)) return;
+      const pending = result.data.filter(function (row) { return row.status === 'pending'; });
+      if (!pending.length) return;
+      const shown = new Set(JSON.parse(localStorage.getItem('acuarionexo_access_notified') || '[]'));
+      let changed = false;
+      pending.forEach(function (row) {
+        if (!row?.id || shown.has(row.id)) return;
+        new Notification('Nueva solicitud de acceso', {
+          body: (row.name || 'Sin nombre') + ' · ' + (row.email || 'Sin email'),
+          tag: 'access-request:' + row.id,
+          requireInteraction: true,
+          silent: false,
+          renotify: true
+        });
+        shown.add(row.id);
+        changed = true;
+      });
+      if (changed) localStorage.setItem('acuarionexo_access_notified', JSON.stringify(Array.from(shown).slice(-100)));
+    } catch (_) {
+    } finally {
+      checkingAccessRequests = false;
+    }
+  }
+
   async function enableNotifications() {
     if (enabling) return false;
     enabling = true;
@@ -262,6 +292,7 @@
       if (Notification.permission !== 'granted') return false;
       try { await registerFirebaseMessaging(); } catch (_) {}
       await checkDueTasks();
+      await checkAdminAccessRequests();
       return true;
     } catch (error) {
       diagnostic('enable-error', error?.message || String(error));
@@ -281,24 +312,29 @@
     setTimeout(enableNotifications, 8000);
     setTimeout(flushPendingToken, 10000);
     setTimeout(checkDueTasks, 30000);
+    setTimeout(checkAdminAccessRequests, 12000);
     setInterval(checkDueTasks, CHECK_INTERVAL_MS);
+    setInterval(checkAdminAccessRequests, 2 * 60 * 1000);
     document.addEventListener('visibilitychange', function () {
       if (!document.hidden) {
         enableNotifications();
         flushPendingToken();
         checkDueTasks();
+        checkAdminAccessRequests();
       }
     });
     window.addEventListener('focus', function () {
       enableNotifications();
       flushPendingToken();
       checkDueTasks();
+      checkAdminAccessRequests();
     });
   }
 
   window.AcuarioNexoNotifications = {
     enable: enableNotifications,
     checkDueTasks,
+    checkAdminAccessRequests,
     registerNativePush,
     registerFirebaseMessaging,
     flushPendingToken,
