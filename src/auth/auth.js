@@ -3,6 +3,15 @@
   const { config, supabase, state, byId, val, msg, isPasswordRecoveryUrl, authRedirectUrl, render } = window.ANX;
   const { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader } = window.ANX;
 
+const PASSWORD_RULE = 'La contraseña debe tener al menos 12 caracteres, mayúscula, minúscula, número y símbolo.';
+
+function assertStrongPassword(password) {
+  const value = String(password || '');
+  if (value.length < 12 || !/[a-z]/.test(value) || !/[A-Z]/.test(value) || !/[0-9]/.test(value) || !/[^A-Za-z0-9\s]/.test(value)) {
+    throw new Error(PASSWORD_RULE);
+  }
+}
+
 function login() {
   render(`<section class="auth-card"><h2>Entrar</h2>
     <label>Email</label><input id="email" type="email" autocomplete="email">
@@ -46,7 +55,8 @@ window.activarAccesoForm = function () {
   render(`<section class="auth-card"><h2>Activar acceso aprobado</h2>
     <p class="small">Usa esta opción únicamente cuando tu solicitud ya haya sido aprobada.</p>
     <label>Email</label><input id="approvedEmail" type="email" autocomplete="email">
-    <label>Contraseña</label><input id="approvedPassword" type="password" autocomplete="new-password">
+    <label>Contraseña</label><input id="approvedPassword" type="password" autocomplete="new-password" minlength="12">
+    <p class="small">Mínimo 12 caracteres con mayúscula, minúscula, número y símbolo.</p>
     <button class="primary" onclick="activarAccesoAprobado()">Crear mi cuenta</button>
     <button onclick="login()">Volver</button>
     <div id="x"></div>
@@ -58,7 +68,7 @@ window.activarAccesoAprobado = async function () {
     const email = val('approvedEmail');
     const password = val('approvedPassword');
     if (!email) throw new Error('Pon el email aprobado.');
-    if (!password || password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    assertStrongPassword(password);
     const check = await supabase.rpc('can_register_email', { p_email: email });
     if (check.error) throw check.error;
     if (!check.data) throw new Error('Este email todavía no tiene el acceso aprobado.');
@@ -96,8 +106,9 @@ function passwordRecoveryForm() {
   state.passwordRecovery = true;
   render(`<section class="auth-card"><h2>Nueva contraseña</h2>
     <p class="small">Introduce una contraseña nueva para esta cuenta.</p>
-    <label>Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password">
-    <label>Repetir contraseña</label><input id="newPassword2" type="password" autocomplete="new-password">
+    <label>Nueva contraseña</label><input id="newPassword" type="password" autocomplete="new-password" minlength="12">
+    <label>Repetir contraseña</label><input id="newPassword2" type="password" autocomplete="new-password" minlength="12">
+    <p class="small">Mínimo 12 caracteres con mayúscula, minúscula, número y símbolo.</p>
     <button class="primary" onclick="guardarNuevaPassword()">Guardar contraseña</button>
     <div id="x"></div>
   </section>`, 'inicio', false);
@@ -106,7 +117,7 @@ function passwordRecoveryForm() {
 window.guardarNuevaPassword = async function () {
   try {
     const password = val('newPassword');
-    if (password.length < 6) throw new Error('La contraseña debe tener al menos 6 caracteres.');
+    assertStrongPassword(password);
     if (password !== val('newPassword2')) throw new Error('Las contraseñas no coinciden.');
     const { error } = await supabase.auth.updateUser({ password });
     if (error) throw error;
