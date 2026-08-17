@@ -1,0 +1,18 @@
+.legal-check {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+  line-height: 1.35;
+}
+
+.legal-check input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  margin: 1px 0 0;
+  padding: 0;
+}
+
+.legal-check a {
+  color: #75c9ff;
+}

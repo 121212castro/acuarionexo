@@ -21,22 +21,31 @@
       wait_for_update: 500
     });
     var anxAnalyticsConsent = localStorage.getItem('anx_analytics_consent');
-    if (anxAnalyticsConsent === 'granted') {
+    window.loadAnxGoogleAnalytics = function () {
+      if (window.__anxGoogleAnalyticsLoaded) return;
+      window.__anxGoogleAnalyticsLoaded = true;
       gtag('consent', 'update', { analytics_storage: 'granted' });
-    }
-  </script>
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-NHRFX1F677"></script>
-  <script>
-    gtag('js', new Date());
-    gtag('config', 'G-NHRFX1F677', { anonymize_ip: true });
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=G-NHRFX1F677';
+      script.onload = function () {
+        gtag('js', new Date());
+        gtag('config', 'G-NHRFX1F677', { anonymize_ip: true });
+      };
+      document.head.appendChild(script);
+    };
+    if (anxAnalyticsConsent === 'granted') window.loadAnxGoogleAnalytics();
   </script>
   <style>
     #anxCookieBanner{position:fixed;left:16px;right:16px;bottom:16px;z-index:99999;max-width:760px;margin:0 auto;padding:14px 16px;border-radius:14px;background:#071b2d;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.35);font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:none}
     #anxCookieBanner p{margin:0 0 10px;font-size:14px;line-height:1.4}
+    #anxCookieBanner a{color:#77ccff}
     #anxCookieBanner .anx-cookie-actions{display:flex;gap:8px;flex-wrap:wrap}
     #anxCookieBanner button{border:0;border-radius:9px;padding:9px 14px;font-weight:700;cursor:pointer}
     #anxCookieAccept{background:#1ea7ff;color:#fff}
     #anxCookieReject{background:#e8eef3;color:#0b2135}
+    #anxLegalFooter{padding:16px 18px 92px;text-align:center;font:13px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#03101e;color:#b9cede}
+    #anxLegalFooter a{color:#75c9ff;margin:0 7px}
   </style>
   <script>
     window.ACUARIONEXO_BUILD = 'library-image-drag-drop-20260810-2248';
@@ -78,8 +87,9 @@
     <div class="top-actions"><button id="adminBtn" class="ghost hidden" onclick="adminPanel()" aria-label="Panel de administración" title="Panel de administración">Admin</button><button id="settingsBtn" class="ghost settings-button hidden" onclick="settings()" aria-label="Ajustes" title="Ajustes">⚙</button><button id="refreshAppBtn" class="ghost compact-refresh">↻</button><button id="logoutBtn" class="ghost hidden">Salir</button></div>
   </header>
   <main id="app"><section class="auth-card"><h2>Cargando</h2><p class="small">Comprobando la última versión...</p></section></main>
+  <footer id="anxLegalFooter"><a href="aviso-legal.html">Aviso legal</a><a href="privacidad.html">Privacidad</a><a href="condiciones.html">Condiciones</a><a href="cookies.html">Cookies</a></footer>
   <div id="anxCookieBanner" role="dialog" aria-live="polite" aria-label="Preferencias de analítica">
-    <p>AcuarioNexo utiliza analítica para conocer el uso de la web y mejorar el servicio. Puedes aceptar o rechazar la medición.</p>
+    <p>AcuarioNexo utiliza analítica opcional para conocer el uso de la web y mejorar el servicio. Puedes aceptar o rechazar la medición. <a href="cookies.html">Más información</a>.</p>
     <div class="anx-cookie-actions">
       <button id="anxCookieAccept" type="button">Aceptar analítica</button>
       <button id="anxCookieReject" type="button">Rechazar</button>
@@ -92,8 +102,12 @@
       function setConsent(value) {
         localStorage.setItem('anx_analytics_consent', value);
         gtag('consent', 'update', { analytics_storage: value === 'granted' ? 'granted' : 'denied' });
+        if (value === 'granted') window.loadAnxGoogleAnalytics?.();
         if (banner) banner.style.display = 'none';
       }
+      window.anxManageCookies = function () {
+        if (banner) banner.style.display = 'block';
+      };
       if (!stored && banner) banner.style.display = 'block';
       var accept = document.getElementById('anxCookieAccept');
       var reject = document.getElementById('anxCookieReject');
@@ -124,7 +138,7 @@
   <script>
     (async function () {
       var app = document.getElementById('app');
-      var css = ['styles.css','dashboard.css','aquarium-map.css','login-reef.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-mobile-overflow-fix.css','library-clean.css','library-images.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css','support.css','status.css','src/library/review-field-highlights.css'];
+      var css = ['styles.css','dashboard.css','aquarium-map.css','login-reef.css','legal-auth.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-mobile-overflow-fix.css','library-clean.css','library-images.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css','support.css','status.css','src/library/review-field-highlights.css'];
       var scripts = ['config.js','app.js','site-analytics.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/admin/admin-analytics.js','src/admin/admin-access.js','src/core/module-loader.js','src/library/core/library-invertebrate-contract.js','src/auth/auth-core.js','src/auth/auth.js','src/auth/access-request-email.js','update-manager.js','notifications.js','src/library/review-field-highlights.js','src/library/review-workflow.js'];
       function showError(text) { if (app) app.innerHTML = '<section class="auth-card"><h2>Error de carga</h2><p class="small">' + String(text || 'No se pudo cargar AcuarioNexo.') + '</p></section>'; }
       function loadStyle(href, version) { return new Promise(function (resolve, reject) { var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href + '?v=' + version; link.onload = resolve; link.onerror = function () { reject(new Error('No se pudo cargar ' + href)); }; document.head.appendChild(link); }); }

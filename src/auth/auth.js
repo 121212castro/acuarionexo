@@ -4,6 +4,7 @@
   const { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader } = window.ANX;
 
 const PASSWORD_RULE = 'La contraseña debe tener al menos 12 caracteres, mayúscula, minúscula, número y símbolo.';
+const LEGAL_VERSION = '2026-08-17';
 
 function assertStrongPassword(password) {
   const value = String(password || '');
@@ -31,6 +32,7 @@ window.solicitarAcceso = function () {
     <label>Nombre</label><input id="accessName" type="text" autocomplete="name">
     <label>Email</label><input id="accessEmail" type="email" autocomplete="email">
     <label>Mensaje (opcional)</label><textarea id="accessMessage" rows="4" placeholder="Cuéntanos brevemente para qué quieres utilizar AcuarioNexo"></textarea>
+    <label class="small legal-check"><input id="accessLegalAccepted" type="checkbox"><span>Acepto las <a href="condiciones.html" target="_blank" rel="noopener">condiciones de uso</a> y he leído la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
     <button class="primary" onclick="enviarSolicitudAcceso()">Enviar solicitud</button>
     <button onclick="login()">Volver</button>
     <div id="x"></div>
@@ -43,7 +45,8 @@ window.enviarSolicitudAcceso = async function () {
     const name = val('accessName');
     const messageText = val('accessMessage');
     if (!email) throw new Error('Pon tu email.');
-    const { error } = await supabase.rpc('submit_access_request', { p_email: email, p_name: name || null, p_message: messageText || null });
+    if (!byId('accessLegalAccepted')?.checked) throw new Error('Debes aceptar las condiciones y leer la política de privacidad.');
+    const { error } = await supabase.rpc('submit_access_request', { p_email: email, p_name: name || null, p_message: messageText || null, p_legal_version: LEGAL_VERSION, p_legal_accepted: true });
     if (error) throw error;
     byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
   } catch (e) {
@@ -57,6 +60,7 @@ window.activarAccesoForm = function () {
     <label>Email</label><input id="approvedEmail" type="email" autocomplete="email">
     <label>Contraseña</label><input id="approvedPassword" type="password" autocomplete="new-password" minlength="12">
     <p class="small">Mínimo 12 caracteres con mayúscula, minúscula, número y símbolo.</p>
+    <label class="small legal-check"><input id="approvedLegalAccepted" type="checkbox"><span>Acepto las <a href="condiciones.html" target="_blank" rel="noopener">condiciones de uso</a> y he leído la <a href="privacidad.html" target="_blank" rel="noopener">política de privacidad</a>.</span></label>
     <button class="primary" onclick="activarAccesoAprobado()">Crear mi cuenta</button>
     <button onclick="login()">Volver</button>
     <div id="x"></div>
@@ -69,10 +73,11 @@ window.activarAccesoAprobado = async function () {
     const password = val('approvedPassword');
     if (!email) throw new Error('Pon el email aprobado.');
     assertStrongPassword(password);
+    if (!byId('approvedLegalAccepted')?.checked) throw new Error('Debes aceptar las condiciones y leer la política de privacidad.');
     const check = await supabase.rpc('can_register_email', { p_email: email });
     if (check.error) throw check.error;
     if (!check.data) throw new Error('Este email todavía no tiene el acceso aprobado.');
-    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl() } });
+    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: authRedirectUrl(), data: { legal_version: LEGAL_VERSION, terms_accepted: true, privacy_acknowledged: true } } });
     if (error) throw error;
     byId('x').innerHTML = msg('Cuenta creada. Revisa tu email si se solicita confirmación.', 'success');
   } catch (e) {

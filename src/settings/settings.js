@@ -28,7 +28,10 @@
 
   function loadSettings() {
     try {
-      return { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') };
+      const value = { ...defaults, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') };
+      const consent = localStorage.getItem('anx_analytics_consent');
+      if (consent) value.analytics = consent === 'granted';
+      return value;
     } catch (_) {
       return { ...defaults };
     }
@@ -127,9 +130,10 @@
         row('Restablecer ajustes', '<button class="danger-outline" onclick="settingsReset()">Restablecer</button>', 'Devuelve únicamente estas preferencias a sus valores iniciales')
       )}
       ${section('Privacidad', '🔐',
-        row('Analítica de uso', toggle('setAnalytics', s.analytics, "settingsChange('analytics',this.checked)"), 'Desactivada por defecto') +
+        row('Analítica de uso', toggle('setAnalytics', s.analytics, "settingsAnalyticsConsent(this.checked)"), 'Opcional; puedes retirarla con la misma facilidad') +
         row('Enviar informes de errores', toggle('setErrors', s.errorReports, "settingsChange('errorReports',this.checked)"), 'No incluye contraseñas ni tokens') +
         row('Permisos del dispositivo', '<button onclick="settingsPermissions()">Ver estado</button>', 'Notificaciones, cámara y fotografías') +
+        row('Información legal', '<button onclick="window.open(\'privacidad.html\',\'_blank\',\'noopener\')">Consultar</button>', 'Privacidad, condiciones, cookies y aviso legal') +
         row('Eliminación de cuenta', '<button class="danger-outline" onclick="settingsAccountDeletion()">Gestionar</button>', 'Envía o cancela una solicitud segura; no se borra nada de inmediato')
       )}
       ${section('Diagnóstico y soporte', '🛠️',
@@ -157,6 +161,29 @@
   window.settingsLanguage = function (value) {
     saveSettings({ language: value });
     alert('Idioma guardado. La traducción completa se activará cuando estén incorporados los diccionarios de interfaz.');
+  };
+
+  window.settingsAnalyticsConsent = function (allowed) {
+    const value = allowed ? 'granted' : 'denied';
+    localStorage.setItem('anx_analytics_consent', value);
+    saveSettings({ analytics: !!allowed });
+    if (typeof window.gtag === 'function') {
+      window.gtag('consent', 'update', { analytics_storage: value });
+    }
+    if (allowed) window.loadAnxGoogleAnalytics?.();
+    if (!allowed) {
+      document.cookie.split(';').forEach(function (entry) {
+        const name = entry.split('=')[0].trim();
+        if (!name.startsWith('_ga')) return;
+        document.cookie = `${name}=; Max-Age=0; path=/`;
+        document.cookie = `${name}=; Max-Age=0; path=/; domain=.acuarionexo.com`;
+      });
+    } else {
+      window.ANXAnalytics?.trackPage?.(state.section || 'inicio');
+    }
+    const box = document.getElementById('settingsMessage');
+    if (box) box.innerHTML = msg(allowed ? 'Analítica aceptada.' : 'Analítica rechazada.', 'success');
+    if (!allowed) setTimeout(function () { location.reload(); }, 500);
   };
 
   window.settingsPlanInfo = function () {
