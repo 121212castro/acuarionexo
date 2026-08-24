@@ -25,9 +25,23 @@
   }
 
   async function load() {
-    const { data, error } = await supabase.from('library_entries').select('*').order('updated_at', { ascending: false }).limit(300);
-    if (error) throw error;
-    state.libraryRows = data || [];
+    const pageSize = 1000;
+    const allRows = [];
+    let from = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('library_entries')
+        .select('*')
+        .order('title', { ascending: true })
+        .order('id', { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (error) throw error;
+      const batch = data || [];
+      allRows.push(...batch);
+      if (batch.length < pageSize) break;
+      from += pageSize;
+    }
+    state.libraryRows = allRows;
   }
 
   function sources(value) {
@@ -78,7 +92,9 @@
     const f = state.libraryFilter || 'all';
     const statusFilter = Array.isArray(state.libraryStatusFilter) ? state.libraryStatusFilter : [];
     const rows = (state.libraryRows || []).filter(x => (f === 'all' || x.entry_type === f) && (!statusFilter.length || statusFilter.includes(String(x.status || '').toLowerCase())) && (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q)));
-    const visible = rows.filter(canSeeLibraryEntry);
+    const visible = rows
+      .filter(canSeeLibraryEntry)
+      .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'es', { sensitivity: 'base', numeric: true }));
     const adminReviewHeader = isAdminReturnContext() ? `<div class="panel-head"><h2>Fichas pendientes de revisión</h2><button onclick="adminPanel()">← Admin</button></div><div class="notice"><b>${visible.length} fichas pendientes.</b><br>Abre una ficha para editarla, completar sus datos y publicarla cuando supere la validación.</div>` : `<div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}`;
     render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section><section class="panel library-clean-panel">${adminReviewHeader}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
   }
