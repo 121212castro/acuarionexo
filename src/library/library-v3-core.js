@@ -12,8 +12,10 @@
   function row(id) { return (state.libraryRows || []).find(x => String(x.id) === String(id)); }
   function isAdminLibrary() { return !!state.isAdmin; }
   function isOwnLibraryEntry(x) { return !!state.user?.id && String(x.user_id || '') === String(state.user.id); }
+  function hasRealPhoto(x) { return !!String(x?.photo_url || '').trim(); }
   function canSeeLibraryEntry(x) {
     const status = String(x.status || '').toLowerCase();
+    if (!isAdminReturnContext() && !hasRealPhoto(x)) return false;
     return isAdminLibrary() || isOwnLibraryEntry(x) || ['published', 'validated'].includes(status);
   }
 
