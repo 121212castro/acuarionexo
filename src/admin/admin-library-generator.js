@@ -30,17 +30,22 @@
     const cards = jobs.map((job, index) => {
       const identity = job.identify_result || {};
       const version = identity.version || identity.product_code || identity.presentation || '';
-      const canRetry = ['blocked', 'failed', 'cancelled'].includes(job.status);
+      const checkpoint = job.checkpoint || identity.generation_state || {};
+      const phase = job.last_phase || checkpoint.phase || '';
+      const responseId = checkpoint.response_id || identity.generation_state?.response_id || '';
+      const canRetry = ['blocked', 'failed', 'cancelled'].includes(job.status) && job.retryable !== false;
       const action = job.library_entry_id
         ? '<button class="primary" onclick="adminRevisarFichas()">Añadir fotos y revisar</button>'
-        : canRetry ? `<button onclick="adminGeneratorRetry('${esc(job.id)}')">Reintentar</button>` : '';
+        : canRetry ? `<button onclick="adminGeneratorRetry('${esc(job.id)}')">${responseId ? 'Reanudar' : 'Reintentar'}</button>` : '';
       const error = job.error_message ? `<p class="generator-error">${esc(job.error_message)}</p>` : '';
+      const checkpointText = responseId ? `Sí · ${phase || 'generación'} · respuesta guardada` : (phase ? `Sí · ${phase}` : 'No');
       return `<article class="generator-job">
         <div class="generator-job-head"><span class="generator-number">${index + 1}</span><div><h3>${esc(cleanSubject(job.subject))}</h3><small>${esc(identity.brand || identity.manufacturer || identity.requested_brand || '')}</small></div><strong class="generator-status status-${esc(job.status)}">${esc(labelStatus(job.status))}</strong></div>
         <dl class="generator-meta">
           <div><dt>Categoría</dt><dd>${esc(labelType(job.entry_type))}</dd></div>
           <div><dt>Versión / referencia</dt><dd>${esc(version || 'N/D')}</dd></div>
           <div><dt>Progreso</dt><dd>${esc(job.progress)} %</dd></div>
+          <div><dt>Checkpoint</dt><dd>${esc(checkpointText)}</dd></div>
         </dl>${error}${action ? `<div class="generator-actions">${action}</div>` : ''}
       </article>`;
     }).join('');
@@ -55,18 +60,13 @@
       </section>
       <section class="panel"><div class="panel-head"><h2>Cola</h2><button onclick="adminGenerator()">Actualizar</button></div>
         <div class="generator-queue">${cards || '<p class="small">No hay trabajos.</p>'}</div>
-        <p class="small">Supabase procesa la cola en segundo plano aunque cierres la aplicación. Si no puede confirmar una identidad con fuentes reales, bloquea la ficha. Nunca publica automáticamente.</p>
+        <p class="small">Los trabajos con una respuesta de OpenAI ya guardada se reanudan desde ese checkpoint; no vuelven a empezar la investigación desde cero.</p>
       </section>`, 'admin');
   }
 
   function scheduleRefresh(delay = 15000) {
     clearTimeout(refreshTimer);
     refreshTimer = setTimeout(() => renderQueue('Procesamiento automático activo.'), delay);
-  }
-
-  async function patchJob(id, values) {
-    const { error } = await ANX.supabase.from('library_generation_jobs').update(values).eq('id', id);
-    if (error) throw error;
   }
 
   window.adminGenerator = async function () {
@@ -101,8 +101,10 @@
 
   window.adminGeneratorRetry = async function (id) {
     if (!await requireAdmin()) return;
-    await patchJob(id, { status:'pending', progress:0, error_code:null, error_message:null, started_at:null, completed_at:null });
-    await renderQueue('Trabajo devuelto a la cola.');
+    const { data, error } = await ANX.supabase.rpc('admin_resume_library_generation_job', { p_job_id: id });
+    if (error) return renderQueue(error.message || 'No se pudo reanudar el trabajo.');
+    const resumed = Array.isArray(data) ? data[0] : data;
+    await renderQueue(resumed?.status === 'generating' ? 'Trabajo reanudado desde el checkpoint guardado.' : 'Trabajo devuelto a la cola para identificación.');
     scheduleRefresh(1000);
   };
 
