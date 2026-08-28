@@ -14,6 +14,36 @@
     }
   };
 
+  window.abrirIdentificadorFoto = async function () {
+    if (!state.user) return login();
+    render(`<section class="panel">${msg('Cargando identificación por foto...')}</section>`, 'inicio');
+    try {
+      if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('biblioteca');
+      if (typeof window.identificarPorFoto !== 'function') {
+        await new Promise(function (resolve, reject) {
+          const existing = document.querySelector('script[data-module="photo-identify"]');
+          if (existing) {
+            if (typeof window.identificarPorFoto === 'function') return resolve();
+            existing.addEventListener('load', resolve, { once: true });
+            existing.addEventListener('error', reject, { once: true });
+            return;
+          }
+          const script = document.createElement('script');
+          const version = encodeURIComponent(window.ANX_ASSET_VERSION || window.ACUARIONEXO_BUILD || 'dev');
+          script.src = `src/library/photo-identify.js?v=${version}`;
+          script.dataset.module = 'photo-identify';
+          script.onload = resolve;
+          script.onerror = () => reject(new Error('No se pudo cargar el identificador por foto.'));
+          document.body.appendChild(script);
+        });
+      }
+      if (typeof window.identificarPorFoto !== 'function') throw new Error('El identificador por foto no quedó disponible.');
+      return window.identificarPorFoto();
+    } catch (error) {
+      render(`<section class="panel">${msg(error.message || error, 'error')}<button onclick="dashboard()">Volver</button></section>`, 'inicio');
+    }
+  };
+
   window.dashboard = async function () {
     if (!state.user) return login();
     const t = token();
@@ -27,6 +57,7 @@
       const alertsHtml = (stats.alerts || []).map(dashboardAlertCard).join('') || emptyLine('Sin avisos importantes.');
       const activityHtml = (stats.recentActivity || []).map(dashboardActivityCard).join('') || emptyLine('Sin actividad reciente.');
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Inicio</h2><p>Resumen general de la app</p></div></section>
+        <section class="panel"><div class="panel-head"><h2>Identificar por foto</h2></div><p>Haz una foto o elige una imagen. AcuarioNexo identificará el elemento, buscará su ficha y podrás añadirlo al Inventario indicando en qué acuario está.</p><button class="primary" onclick="abrirIdentificadorFoto()"><span>⌾</span> Identificar y añadir</button></section>
         <section class="panel"><div class="panel-head"><h2>Asistente AcuarioNexo</h2></div><p>Consulta la biblioteca o analiza uno de tus acuarios con sus datos reales.</p><button class="primary assistant-home-button" onclick="assistantPortal()">Hablar con AcuarioNexo IA</button></section>
         <section class="panel"><div class="panel-head"><h2>Estado general</h2></div><div class="quick-actions">
           ${dashboardStat('Acuarios activos', String(list.length))}
