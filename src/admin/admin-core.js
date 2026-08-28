@@ -57,13 +57,63 @@
     };
   }
 
+  async function syncOpenAiUsage() {
+    if (!window.ANX?.supabase || !adminAllowed()) return null;
+    try {
+      const { data, error } = await window.ANX.supabase.functions.invoke('admin-sync-openai-usage', { body: {} });
+      if (error) throw error;
+      return data || null;
+    } catch (error) {
+      console.warn('OPENAI_USAGE_SYNC_FAILED', error);
+      return null;
+    }
+  }
+
+  function installRuntimeGuards() {
+    let lastAiUsage = null;
+    let lastRetry = null;
+    setInterval(function () {
+      const aiUsage = window.adminAiUsage;
+      if (typeof aiUsage === 'function' && aiUsage !== lastAiUsage && !aiUsage.__anxUsageWrapped) {
+        const original = aiUsage;
+        const wrapped = async function () {
+          await syncOpenAiUsage();
+          return original.apply(window, arguments);
+        };
+        wrapped.__anxUsageWrapped = true;
+        lastAiUsage = wrapped;
+        window.adminAiUsage = wrapped;
+      }
+
+      const retry = window.adminGeneratorRetry;
+      if (typeof retry === 'function' && retry !== lastRetry && !retry.__anxResumeWrapped) {
+        const wrappedRetry = async function (id) {
+          if (window.ANX?.Admin?.requireAdmin && !await window.ANX.Admin.requireAdmin()) return;
+          const { data, error } = await window.ANX.supabase.rpc('admin_resume_library_generation_job', { p_job_id: id });
+          if (error) {
+            if (window.ANX?.AdminLibraryGenerator?.renderQueue) return window.ANX.AdminLibraryGenerator.renderQueue(error.message || 'No se pudo reanudar.');
+            throw error;
+          }
+          if (window.ANX?.AdminLibraryGenerator?.renderQueue) {
+            const row = Array.isArray(data) ? data[0] : data;
+            return window.ANX.AdminLibraryGenerator.renderQueue(row?.status === 'generating' ? 'Trabajo reanudado desde el checkpoint guardado.' : 'Trabajo devuelto a la cola.');
+          }
+        };
+        wrappedRetry.__anxResumeWrapped = true;
+        lastRetry = wrappedRetry;
+        window.adminGeneratorRetry = wrappedRetry;
+      }
+    }, 500);
+  }
+
   function adminBlocked() {
     const { msg, render } = window.ANX;
     render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Admin</h2><p>Acceso restringido</p></div></section>
       <section class="panel">${msg('No tienes permiso para abrir el panel Admin.', 'error')}<button onclick="dashboard()">Volver</button></section>`, 'inicio');
   }
 
+  installRuntimeGuards();
   window.ANX = window.ANX || {};
-  Object.assign(window.ANX, { ADMIN_ROLES, adminAllowed, roleLabel, loadAdminRole, countTable, adminStats, adminBlocked });
-  window.ANX.AdminCore = { ADMIN_ROLES, adminAllowed, roleLabel, loadAdminRole, countTable, adminStats, adminBlocked };
+  Object.assign(window.ANX, { ADMIN_ROLES, adminAllowed, roleLabel, loadAdminRole, countTable, adminStats, adminBlocked, syncOpenAiUsage });
+  window.ANX.AdminCore = { ADMIN_ROLES, adminAllowed, roleLabel, loadAdminRole, countTable, adminStats, adminBlocked, syncOpenAiUsage };
 })();
