@@ -41,16 +41,20 @@
   }
 
   async function adminStats() {
-    const [libraryReview, libraryValidated, aquariums, inventory, microfauna, reports, aiUsage] = await Promise.all([
-      countTable('library_entries', q => q.in('status', ['review', 'draft', 'identified'])),
-      countTable('library_entries', q => q.in('status', ['validated', 'published'])),
-      countTable('aquariums'),
-      countTable('inventory_items'),
-      countTable('microfauna_cultures'),
-      countTable('admin_reports', q => q.in('status', ['open', 'reviewing'])),
-      countTable('ai_usage_logs')
-    ]);
-    return { libraryReview, libraryValidated, aquariums, inventory, microfauna, reports, aiUsage };
+    const { data, error } = await window.ANX.supabase.rpc('admin_dashboard_stats');
+    if (error) throw error;
+    const d = data || {};
+    return {
+      libraryReview: Number(d.libraryReview) || 0,
+      libraryValidated: Number(d.libraryValidated) || 0,
+      aquariums: Number(d.aquariums) || 0,
+      inventory: Number(d.inventory) || 0,
+      microfauna: Number(d.microfauna) || 0,
+      reports: Number(d.reports) || 0,
+      aiUsage: Number(d.aiUsage) || 0,
+      generationPending: Number(d.generationPending) || 0,
+      generationErrors: Number(d.generationErrors) || 0
+    };
   }
 
   function adminBlocked() {
