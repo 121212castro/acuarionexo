@@ -55,7 +55,8 @@
     if (!test) return '';
     const d = test.data || {};
     const parts = [
-      method ? `Método: ${method}` : '',
+      method ? `Cómo se midió: ${method}` : '',
+      d.method ? `Método de la ficha: ${d.method}` : '',
       d.range ? `Rango: ${d.range}` : '',
       d.resolution ? `Resolución: ${d.resolution}` : '',
       d.accuracy ? `Precisión: ${d.accuracy}` : '',
@@ -73,8 +74,8 @@
       <label for="t_${esc(key)}">Test</label>
       <select id="t_${esc(key)}" onchange="applyTestToMeasurement('${esc(key)}')">${optionsFor ? optionsFor(key, tests) : '<option value="__manual__">Otro test o método</option>'}</select>
       <input id="tm_${esc(key)}" class="hidden" placeholder="Marca y modelo del test">
-      <div id="mw_${esc(key)}" class="hidden"><label for="md_${esc(key)}">Método</label><select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')"></select></div>
-      <input id="mm_${esc(key)}" class="hidden" placeholder="Método utilizado">
+      <div id="mw_${esc(key)}" class="hidden"><label for="md_${esc(key)}">Cómo se midió</label><select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')"></select></div>
+      <input id="mm_${esc(key)}" class="hidden" placeholder="Escribe el método o forma de lectura utilizada">
       <div id="r_${esc(key)}" class="measurement-row-inputs">${resultControl(key, null)}</div>
       <div id="h_${esc(key)}"></div>
     </div>`).join('');
@@ -95,13 +96,16 @@
     const result = byId(`r_${key}`);
     const help = byId(`h_${key}`);
     if (result) result.innerHTML = resultControl(key, test);
-    if (help) help.innerHTML = testHelp(test, methodSelect?.value || '');
+    if (help) help.innerHTML = testHelp(test, '');
   };
 
   window.applyMethodToMeasurement = function (key) {
     const test = selectedTest(key);
+    const method = val(`md_${key}`);
+    const manualMethod = byId(`mm_${key}`);
+    if (manualMethod) manualMethod.classList.toggle('hidden', method !== '__manual_method__');
     const help = byId(`h_${key}`);
-    if (help) help.innerHTML = testHelp(test, val(`md_${key}`));
+    if (help) help.innerHTML = testHelp(test, method === '__manual_method__' ? val(`mm_${key}`) : method);
   };
 
   window.formMedicionCompleta = async function (profileKey = 'weekly') {
@@ -113,7 +117,7 @@
       const tests = typeof window.ANX.loadParameterTests === 'function' ? await window.ANX.loadParameterTests() : [];
       window.ANX.activeParameterTests = tests;
       const now = new Date().toISOString().slice(0, 16);
-      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">Selecciona el test y después el método. Cada ficha carga su propia unidad, escala, rango, resolución y procedimiento.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
+      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">Selecciona el test, después cómo se realizó la medición y por último la lectura. Cada ficha carga su unidad, escala, rango, resolución y procedimiento.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
     } catch (e) {
       render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button>${msg(e.message || 'No se pudo cargar el catálogo de tests.', 'error')}</section>`, 'acuarios');
     }
@@ -135,18 +139,19 @@
         const selected = val(`t_${key}`);
         if (!selected) throw new Error(`Selecciona el test utilizado para ${labelFor(key)}.`);
         const manualTest = selected === '__manual__' ? val(`tm_${key}`) : '';
-        const manualMethod = selected === '__manual__' ? val(`mm_${key}`) : '';
-        const selectedMethod = test ? val(`md_${key}`) : manualMethod;
+        const methodChoice = test ? val(`md_${key}`) : '';
+        const manualMethod = selected === '__manual__' || methodChoice === '__manual_method__' ? val(`mm_${key}`) : '';
+        const selectedMethod = test ? (methodChoice === '__manual_method__' ? manualMethod : methodChoice) : manualMethod;
         if (selected === '__manual__' && !manualTest) throw new Error(`Escribe el test utilizado para ${labelFor(key)}.`);
-        if (!selectedMethod) throw new Error(`Selecciona o escribe el método utilizado para ${labelFor(key)}.`);
+        if (!selectedMethod) throw new Error(`Selecciona o escribe cómo se realizó la medición para ${labelFor(key)}.`);
         const d = test?.data || {};
         const unit = val(`u_${key}`) || units[key] || null;
         const numeric = numberFromText(display);
         const testName = test ? window.ANX.parameterTestLabel(test) : manualTest;
         const method = `${testName} · ${selectedMethod}`;
         const trace = test
-          ? `test_id: ${test.id}; método: ${selectedMethod}; referencia: ${d.product_code || 'sin referencia'}; rango: ${d.range || 'no indicado'}; resolución: ${d.resolution || 'no indicada'}; escala: ${d.scale_values || 'continua'}`
-          : `test manual: ${manualTest}; método: ${manualMethod}`;
+          ? `test_id: ${test.id}; cómo se midió: ${selectedMethod}; referencia: ${d.product_code || 'sin referencia'}; rango: ${d.range || 'no indicado'}; resolución: ${d.resolution || 'no indicada'}; escala: ${d.scale_values || 'continua'}`
+          : `test manual: ${manualTest}; cómo se midió: ${manualMethod}`;
         return { user_id: state.user.id, aquarium_id: aq.id, parameter_key: normalize({ parameter_key: key }), parameter_label: labelFor(key), parameter: normalize({ parameter_key: key }), display_value: `${display}${unit ? ` ${unit}` : ''}`, raw_text: display, raw_value: numeric, value: numeric, normalized_value: numeric, unit, method, source: profile.source, notes: [generalNotes, trace].filter(Boolean).join(' · '), batch_id: batch, measured_at: measuredAt, updated_at: new Date().toISOString() };
       }).filter(Boolean);
       if (!rows.length) throw new Error('Añade al menos una medición.');
