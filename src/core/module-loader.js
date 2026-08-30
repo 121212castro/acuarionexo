@@ -80,6 +80,7 @@
       'src/parameters/parameters-manual.js',
       'src/parameters/parameters.js',
       'src/parameters/measurements-advanced.js',
+      'src/parameters/parameters-compact-form.js',
       'src/parameters/parameters-ai-fallback.js',
       'src/ai/ai-access.js'
     ],
