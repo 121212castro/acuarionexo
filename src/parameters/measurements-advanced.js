@@ -20,6 +20,42 @@
     icp: { title: 'ICP / laboratorio', source: 'icp', marine: ['salinity_ppt','salinity_sg','kh_dkh','calcium_ca','magnesium_mg','potassium_k','iodine_i','strontium_sr','boron_b','iron_fe','manganese_mn','zinc_zn','copper_cu','aluminum_al','silicon_si','lithium_li','nickel_ni','chromium_cr','vanadium_v','molybdenum_mo','fluorine_f','bromine_br'], freshwater: ['calcium_ca','magnesium_mg','potassium_k','iron_fe','manganese_mn','zinc_zn','copper_cu','aluminum_al','silicon_si','nickel_ni','chromium_cr','tds'] }
   };
 
+  const baseMethods = {
+    temperature_c: ['Termómetro digital', 'Sonda / controlador', 'Termómetro de vidrio', 'Otro método'],
+    salinity_ppt: ['Refractómetro', 'Refractómetro digital', 'Conductímetro / sonda', 'Densímetro / hidrómetro', 'Laboratorio / ICP', 'Otro método'],
+    salinity_sg: ['Refractómetro', 'Refractómetro digital', 'Densímetro / hidrómetro', 'Conductímetro / sonda', 'Otro método'],
+    ph: ['Test colorimétrico visual', 'Medidor digital de pH', 'Electrodo / sonda', 'Fotómetro', 'Laboratorio', 'Otro método'],
+    kh_dkh: ['Titulación por gotas', 'Fotómetro / checker digital', 'Test colorimétrico', 'Laboratorio', 'Otro método'],
+    gh: ['Titulación por gotas', 'Test colorimétrico', 'Laboratorio', 'Otro método'],
+    ammonia_nh3: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
+    ammonium_nh4: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
+    nitrite_no2: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
+    nitrate_no3: ['Lectura superior', 'Lectura lateral', 'Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
+    phosphate_po4: ['Test colorimétrico visual', 'Fotómetro / checker digital', 'Laboratorio', 'Otro método'],
+    calcium_ca: ['Titulación por gotas', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    magnesium_mg: ['Titulación por gotas', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    potassium_k: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    iodine_i: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    strontium_sr: ['Test químico', 'ICP / laboratorio', 'Otro método'],
+    boron_b: ['Test químico', 'ICP / laboratorio', 'Otro método'],
+    iron_fe: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    manganese_mn: ['Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    zinc_zn: ['Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    copper_cu: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    aluminum_al: ['ICP / laboratorio', 'Otro método'],
+    silicon_si: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
+    lithium_li: ['ICP / laboratorio', 'Otro método'],
+    nickel_ni: ['ICP / laboratorio', 'Otro método'],
+    chromium_cr: ['ICP / laboratorio', 'Otro método'],
+    vanadium_v: ['ICP / laboratorio', 'Otro método'],
+    molybdenum_mo: ['ICP / laboratorio', 'Otro método'],
+    fluorine_f: ['Test químico', 'ICP / laboratorio', 'Otro método'],
+    bromine_br: ['Test químico', 'ICP / laboratorio', 'Otro método'],
+    tds: ['Medidor TDS', 'Conductímetro / sonda', 'Laboratorio', 'Otro método'],
+    chlorine_cl2: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
+    oxygen_o2: ['Sonda de oxígeno', 'Test químico', 'Fotómetro', 'Laboratorio', 'Otro método']
+  };
+
   function modeFor(aq) { return window.ANX.aiAquariumMode ? window.ANX.aiAquariumMode(aq) : 'marine'; }
   function labelFor(key) { return labels[key] || key.replace(/_/g, ' '); }
   function keysFor(aq, profileKey) { const profile = profiles[profileKey] || profiles.weekly; return profile[modeFor(aq)] || profile.marine; }
@@ -32,6 +68,32 @@
 
   function profileButtons(active) {
     return `<div class="param-actions param-profile-actions"><button type="button" class="${active === 'weekly' ? 'active' : ''}" onclick="formMedicionCompleta('weekly')">Semanal</button><button type="button" class="${active === 'monthly' ? 'active' : ''}" onclick="formMedicionCompleta('monthly')">Mensual</button><button type="button" class="${active === 'icp' ? 'active' : ''}" onclick="formMedicionCompleta('icp')">ICP</button></div>`;
+  }
+
+  function methodChoices(key, test) {
+    const choices = (baseMethods[key] || ['Test colorimétrico visual', 'Medidor digital', 'Fotómetro', 'Laboratorio', 'Otro método']).slice();
+    const d = test?.data || {};
+    const source = [d.method, d.test_type, d.reading_method, d.measurement_method, d.procedure].filter(Boolean).join(' ').toLowerCase();
+    const addFirst = text => { if (text && !choices.includes(text)) choices.unshift(text); };
+    if (/lectura superior|vista superior|desde arriba|top view/.test(source)) addFirst('Lectura superior');
+    if (/lectura lateral|vista lateral|desde un lateral|side view/.test(source)) addFirst('Lectura lateral');
+    if (/titul/.test(source)) addFirst('Titulación por gotas');
+    if (/fotometr|fotómetr|checker/.test(source)) addFirst('Fotómetro / checker digital');
+    if (/refract/.test(source)) addFirst('Refractómetro');
+    if (/electrodo|sonda|probe/.test(source)) addFirst('Electrodo / sonda');
+    if (/conduct/.test(source)) addFirst('Conductímetro / sonda');
+    if (/digital/.test(source) && key === 'ph') addFirst('Medidor digital de pH');
+    if (/colorimetr/.test(source)) addFirst('Test colorimétrico visual');
+    if (/icp|laboratorio/.test(source)) addFirst('ICP / laboratorio');
+    return choices.filter((value, index, list) => list.indexOf(value) === index);
+  }
+
+  function methodOptions(key, test, selected = '') {
+    const choices = methodChoices(key, test);
+    return `<option value="">Seleccionar cómo se midió...</option>${choices.map(choice => {
+      const value = choice === 'Otro método' ? '__manual_method__' : choice;
+      return `<option value="${esc(value)}" ${value === selected ? 'selected' : ''}>${esc(choice)}</option>`;
+    }).join('')}`;
   }
 
   function resultControl(key, test) {
@@ -56,7 +118,6 @@
     const d = test.data || {};
     const parts = [
       method ? `Cómo se midió: ${method}` : '',
-      d.method ? `Método de la ficha: ${d.method}` : '',
       d.range ? `Rango: ${d.range}` : '',
       d.resolution ? `Resolución: ${d.resolution}` : '',
       d.accuracy ? `Precisión: ${d.accuracy}` : '',
@@ -74,8 +135,9 @@
       <label for="t_${esc(key)}">Test</label>
       <select id="t_${esc(key)}" onchange="applyTestToMeasurement('${esc(key)}')">${optionsFor ? optionsFor(key, tests) : '<option value="__manual__">Otro test o método</option>'}</select>
       <input id="tm_${esc(key)}" class="hidden" placeholder="Marca y modelo del test">
-      <div id="mw_${esc(key)}"><label for="md_${esc(key)}">Cómo se midió</label><select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')" disabled><option value="">Selecciona primero un test...</option></select></div>
-      <input id="mm_${esc(key)}" class="hidden" placeholder="Escribe el método o forma de lectura utilizada">
+      <label for="md_${esc(key)}">Cómo se midió</label>
+      <select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')">${methodOptions(key, null)}</select>
+      <input id="mm_${esc(key)}" class="hidden" placeholder="Escribe exactamente cómo se midió">
       <div id="r_${esc(key)}" class="measurement-row-inputs">${resultControl(key, null)}</div>
       <div id="h_${esc(key)}"></div>
     </div>`).join('');
@@ -84,29 +146,21 @@
   window.applyTestToMeasurement = function (key) {
     const selected = val(`t_${key}`);
     const manualTest = byId(`tm_${key}`);
-    const manualMethod = byId(`mm_${key}`);
     const methodSelect = byId(`md_${key}`);
-    const isManual = selected === '__manual__';
-    if (manualTest) manualTest.classList.toggle('hidden', !isManual);
-    if (manualMethod) manualMethod.classList.toggle('hidden', !isManual);
+    const currentMethod = methodSelect?.value || '';
+    const isManualTest = selected === '__manual__';
+    if (manualTest) manualTest.classList.toggle('hidden', !isManualTest);
     const test = selectedTest(key);
     if (methodSelect) {
-      if (isManual) {
-        methodSelect.innerHTML = '<option value="">Método escrito manualmente abajo</option>';
-        methodSelect.disabled = true;
-      } else if (test) {
-        methodSelect.innerHTML = window.ANX.parameterMethodOptions(test);
-        methodSelect.disabled = false;
-        methodSelect.value = '';
-      } else {
-        methodSelect.innerHTML = '<option value="">Selecciona primero un test...</option>';
-        methodSelect.disabled = true;
-      }
+      methodSelect.innerHTML = methodOptions(key, test, currentMethod);
+      methodSelect.disabled = false;
+      if (currentMethod && Array.from(methodSelect.options).some(option => option.value === currentMethod)) methodSelect.value = currentMethod;
+      else methodSelect.value = '';
     }
     const result = byId(`r_${key}`);
     const help = byId(`h_${key}`);
     if (result) result.innerHTML = resultControl(key, test);
-    if (help) help.innerHTML = testHelp(test, '');
+    if (help) help.innerHTML = testHelp(test, val(`md_${key}`));
   };
 
   window.applyMethodToMeasurement = function (key) {
@@ -127,7 +181,7 @@
       const tests = typeof window.ANX.loadParameterTests === 'function' ? await window.ANX.loadParameterTests() : [];
       window.ANX.activeParameterTests = tests;
       const now = new Date().toISOString().slice(0, 16);
-      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">Para cada parámetro: selecciona el test, elige cómo se midió y después introduce o selecciona la lectura.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
+      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">En cada parámetro puedes escoger directamente cómo se midió. Al seleccionar un test, se añaden sus formas de lectura específicas.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
     } catch (e) {
       render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button>${msg(e.message || 'No se pudo cargar el catálogo de tests.', 'error')}</section>`, 'acuarios');
     }
@@ -145,15 +199,15 @@
       const rows = keysFor(aq, profileKey).map(key => {
         const display = val(`m_${key}`);
         if (!display) return null;
-        const test = selectedTest(key);
         const selected = val(`t_${key}`);
-        if (!selected) throw new Error(`Selecciona el test utilizado para ${labelFor(key)}.`);
+        const test = selectedTest(key);
         const manualTest = selected === '__manual__' ? val(`tm_${key}`) : '';
-        const methodChoice = test ? val(`md_${key}`) : '';
-        const manualMethod = selected === '__manual__' || methodChoice === '__manual_method__' ? val(`mm_${key}`) : '';
-        const selectedMethod = test ? (methodChoice === '__manual_method__' ? manualMethod : methodChoice) : manualMethod;
+        const methodChoice = val(`md_${key}`);
+        const manualMethod = methodChoice === '__manual_method__' ? val(`mm_${key}`) : '';
+        const selectedMethod = methodChoice === '__manual_method__' ? manualMethod : methodChoice;
+        if (!selected) throw new Error(`Selecciona el test utilizado para ${labelFor(key)}.`);
         if (selected === '__manual__' && !manualTest) throw new Error(`Escribe el test utilizado para ${labelFor(key)}.`);
-        if (!selectedMethod) throw new Error(`Selecciona o escribe cómo se realizó la medición para ${labelFor(key)}.`);
+        if (!selectedMethod) throw new Error(`Selecciona cómo se realizó la medición para ${labelFor(key)}.`);
         const d = test?.data || {};
         const unit = val(`u_${key}`) || units[key] || null;
         const numeric = numberFromText(display);
@@ -161,7 +215,7 @@
         const method = `${testName} · ${selectedMethod}`;
         const trace = test
           ? `test_id: ${test.id}; cómo se midió: ${selectedMethod}; referencia: ${d.product_code || 'sin referencia'}; rango: ${d.range || 'no indicado'}; resolución: ${d.resolution || 'no indicada'}; escala: ${d.scale_values || 'continua'}`
-          : `test manual: ${manualTest}; cómo se midió: ${manualMethod}`;
+          : `test manual: ${manualTest}; cómo se midió: ${selectedMethod}`;
         return { user_id: state.user.id, aquarium_id: aq.id, parameter_key: normalize({ parameter_key: key }), parameter_label: labelFor(key), parameter: normalize({ parameter_key: key }), display_value: `${display}${unit ? ` ${unit}` : ''}`, raw_text: display, raw_value: numeric, value: numeric, normalized_value: numeric, unit, method, source: profile.source, notes: [generalNotes, trace].filter(Boolean).join(' · '), batch_id: batch, measured_at: measuredAt, updated_at: new Date().toISOString() };
       }).filter(Boolean);
       if (!rows.length) throw new Error('Añade al menos una medición.');
