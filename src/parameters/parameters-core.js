@@ -24,11 +24,9 @@
   function parameterTestLabel(test) {
     const data = test?.data || {};
     const brand = data.brand || data.manufacturer || '';
-    const model = data.product_code || '';
+    const code = data.product_code || data.sku || '';
     const title = test?.title || 'Test sin nombre';
-    const method = data.method || data.test_type || '';
-    const range = data.range || '';
-    return [brand, model, title, method, range]
+    return [brand, code, title]
       .map(x => String(x || '').trim())
       .filter((value, index, list) => value && list.indexOf(value) === index)
       .join(' · ');
@@ -115,17 +113,58 @@
     return String(data.method || data.test_type || 'Método indicado por el fabricante').trim();
   }
 
+  function methodChoices(test) {
+    if (!test) return [];
+    const data = test.data || {};
+    const source = [
+      data.method,
+      data.test_type,
+      data.reading_method,
+      data.measurement_method,
+      data.procedure
+    ].filter(Boolean).join(' · ');
+    const methods = [];
+    const add = value => {
+      const clean = String(value || '').replace(/\s+/g, ' ').trim();
+      if (clean && !methods.includes(clean)) methods.push(clean);
+    };
+
+    const normalized = source.toLowerCase();
+
+    if (/lectura superior|vista superior|desde arriba|top view/.test(normalized)) {
+      const match = source.match(/lectura superior[^.;]*(?:\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:mg\/l|ppm|ppt|dkh|°c|µg\/l))/i);
+      add(match ? match[0] : 'Lectura superior');
+    }
+    if (/lectura lateral|vista lateral|desde un lateral|side view/.test(normalized)) {
+      const match = source.match(/lectura lateral[^.;]*(?:\d+(?:[.,]\d+)?\s*[-–]\s*\d+(?:[.,]\d+)?\s*(?:mg\/l|ppm|ppt|dkh|°c|µg\/l))/i);
+      add(match ? match[0] : 'Lectura lateral');
+    }
+    if (/colorimetr/.test(normalized)) add('Colorimetría visual');
+    if (/titul/.test(normalized)) add('Titulación');
+    if (/fotometr|fotómetr|photometr/.test(normalized)) add('Fotometría');
+    if (/electrodo|sonda|probe/.test(normalized)) add('Electrodo / sonda');
+    if (/refract/.test(normalized)) add('Refractómetro');
+    if (/conduct/.test(normalized)) add('Conductividad');
+    if (/digital/.test(normalized)) add('Lectura digital');
+    if (/icp|laboratorio/.test(normalized)) add('ICP / laboratorio');
+
+    [data.method, data.test_type, data.reading_method, data.measurement_method]
+      .flatMap(value => String(value || '').split(/[;|\n]+/))
+      .map(value => value.trim())
+      .filter(Boolean)
+      .forEach(value => {
+        if (value.length <= 90) add(value);
+      });
+
+    if (!methods.length) add('Método indicado por el fabricante');
+    return methods;
+  }
+
   function parameterMethodOptions(test, selected = '') {
     const { esc } = A();
     if (!test) return '<option value="">Selecciona primero un test...</option>';
-    const data = test.data || {};
-    const raw = [data.method, data.test_type]
-      .flatMap(value => String(value || '').split(/[;|\n]+/))
-      .map(value => value.trim())
-      .filter(Boolean);
-    const methods = raw.filter((value, index, list) => list.indexOf(value) === index);
-    if (!methods.length) methods.push('Método indicado por el fabricante');
-    return methods.map(method => `<option value="${esc(method)}" ${method === selected ? 'selected' : ''}>${esc(method)}</option>`).join('');
+    const methods = methodChoices(test);
+    return `<option value="">Seleccionar cómo se midió...</option>${methods.map(method => `<option value="${esc(method)}" ${method === selected ? 'selected' : ''}>${esc(method)}</option>`).join('')}<option value="__manual_method__">Otro método...</option>`;
   }
 
   function findParameterTest(tests, id) {
