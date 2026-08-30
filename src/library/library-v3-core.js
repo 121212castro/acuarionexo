@@ -95,9 +95,9 @@
   function publicFilters(f) { return `<div class="library-clean-filters">${filterTypes.map(([k,n]) => `<button class="${f === k ? 'active' : ''}" onclick="filtrarBiblioteca('${k}')">${esc(n)}</button>`).join('')}</div>`; }
 
   function groupRows(rows) {
-    const groups = new Map(types.filter(([k]) => k !== 'all').map(([k, n]) => [k, { key: k, label: n, rows: [] }]));
+    const groups = new Map(filterTypes.filter(([k]) => k !== 'all').map(([k, n]) => [k, { key: k, label: n, rows: [] }]));
     rows.forEach(item => {
-      const key = item.entry_type || 'producto';
+      const key = isSparePart(item) ? 'recambios' : (item.entry_type || 'producto');
       if (!groups.has(key)) groups.set(key, { key, label: typeName(key), rows: [] });
       groups.get(key).rows.push(item);
     });
@@ -115,7 +115,10 @@
     const f = state.libraryFilter || 'all';
     const statusFilter = Array.isArray(state.libraryStatusFilter) ? state.libraryStatusFilter : [];
     const rows = (state.libraryRows || []).filter(x => {
-      const typeMatch = f === 'all' || (f === 'recambios' ? isSparePart(x) : x.entry_type === f);
+      let typeMatch = f === 'all';
+      if (f === 'recambios') typeMatch = isSparePart(x);
+      else if (f === 'equipamiento') typeMatch = x.entry_type === 'equipamiento' && !isSparePart(x);
+      else if (f !== 'all') typeMatch = x.entry_type === f;
       const statusMatch = !statusFilter.length || statusFilter.includes(String(x.status || '').toLowerCase());
       const searchText = [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type), ...(Array.isArray(x.tags) ? x.tags : [])].join(' ').toLowerCase();
       return typeMatch && statusMatch && (!q || searchText.includes(q));
