@@ -4,7 +4,8 @@
   const S = window.ANX.LibrarySchema;
 
   const types = [['all','Todo'],['pez_marino','Pez marino'],['pez_dulce','Pez de agua dulce'],['coral','Coral'],['invertebrado','Invertebrado'],['planta','Planta'],['microfauna','Microfauna'],['fitoplancton','Fitoplancton y microalgas'],['producto','Producto'],['medicamento','Medicamento'],['sal','Sal'],['aditivo','Aditivo'],['alimento','Alimento'],['test','Test'],['equipamiento','Equipamiento']];
-  const labels = Object.fromEntries(types);
+  const filterTypes = [...types, ['recambios','Recambios']];
+  const labels = Object.fromEntries(filterTypes);
   const biologicalTypes = new Set(['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna','fitoplancton']);
 
   function typeName(t) { return labels[t] || t || 'Ficha'; }
@@ -17,6 +18,22 @@
     const status = String(x.status || '').toLowerCase();
     if (!isAdminReturnContext() && !hasRealPhoto(x)) return false;
     return isAdminLibrary() || isOwnLibraryEntry(x) || ['published', 'validated'].includes(status);
+  }
+
+  function normalizedText(value) {
+    return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  }
+
+  function isSparePart(x) {
+    const tags = Array.isArray(x?.tags) ? x.tags.map(normalizedText) : [];
+    if (tags.some(tag => /^(recambio|recambios|repuesto|repuestos|spare|spare-part|spare-parts|replacement-part|replacement-parts)$/.test(tag))) return true;
+    const text = normalizedText([
+      x?.data?.equipment_type,
+      x?.data?.category,
+      x?.data?.product_category,
+      x?.title
+    ].filter(Boolean).join(' '));
+    return /\b(recambio|repuesto|spare part|spare parts|replacement part|replacement parts|replacement kit|service kit)\b/.test(text);
   }
 
   function isAdminReturnContext() { return !!state.libraryAdminReturn && !!state.isAdmin; }
@@ -57,21 +74,25 @@
     if (!src) return '';
     const isDetail = String(className || '').includes('library-detail-');
     const isCard = String(className || '').includes('library-card-cover');
-    const cardStyle = isCard ? ' style="display:block!important;width:100%!important;min-width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:none!important;object-fit:contain!important;object-position:center!important;margin:0!important;padding:0!important;border-radius:0!important"' : '';
+    const cardStyle = isCard ? ' style="display:block!important;width:100%!important;max-width:100%!important;height:100%!important;min-height:0!important;object-fit:contain!important;object-position:center!important;margin:0!important;padding:0!important;border-radius:0!important"' : '';
     const image = `<img class="${esc(className)}" src="${esc(src)}" alt="${esc(alt)}" loading="${loading}"${cardStyle}>`;
     if (!isDetail) return image;
     return `<div class="library-media-frame library-media-frame--${kind}">${image}</div>`;
   }
 
   function card(x) {
-    const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', x.title || 'Ficha');
-    const title = esc(x.title || 'Ficha');
-    const noCover = `<div class="library-card-cover library-no-photo"><span class="library-no-photo-title">${title}</span><span class="library-no-photo-label">Sin portada</span></div>`;
-    return `<button class="library-card library-cover-card library-cover-only" style="display:block!important;width:100%!important;height:auto!important;padding:0!important;overflow:hidden!important" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}">${cover || noCover}</button>`;
+    const rawTitle = String(x.title || 'Ficha');
+    const title = esc(rawTitle);
+    const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', rawTitle);
+    const code = String(x?.data?.product_code || x?.data?.sku || x?.data?.model || '').trim();
+    const displayType = isSparePart(x) ? 'Recambio' : typeName(x.entry_type);
+    const noCover = `<span class="library-card-cover library-no-photo"><span class="library-no-photo-label">Sin portada</span></span>`;
+    const codeHtml = code && !normalizedText(rawTitle).includes(normalizedText(code)) ? `<span class="library-card-code">${esc(code)}</span>` : '';
+    return `<button class="library-card library-cover-card" onclick="verFicha('${esc(x.id)}')" aria-label="Abrir ficha: ${title}" title="${title}"><span class="library-card-media">${cover || noCover}</span><span class="library-card-caption"><strong>${title}</strong><span class="library-card-meta"><span>${esc(displayType)}</span>${codeHtml}</span></span></button>`;
   }
 
   function libraryInfoNotice() { return '<div id="libraryInfoNotice" class="notice"><b>Biblioteca de consulta.</b><br>Fichas verificadas para revisar compatibilidad, requisitos, riesgos y próximas compras.</div>'; }
-  function publicFilters(f) { return `<div class="library-clean-filters"><button class="${f === 'all' ? 'active' : ''}" onclick="filtrarBiblioteca('all')">Todo</button>${types.filter(([k]) => k !== 'all').map(([k,n]) => `<button class="${f === k ? 'active' : ''}" onclick="filtrarBiblioteca('${k}')">${esc(n)}</button>`).join('')}</div>`; }
+  function publicFilters(f) { return `<div class="library-clean-filters">${filterTypes.map(([k,n]) => `<button class="${f === k ? 'active' : ''}" onclick="filtrarBiblioteca('${k}')">${esc(n)}</button>`).join('')}</div>`; }
 
   function groupRows(rows) {
     const groups = new Map(types.filter(([k]) => k !== 'all').map(([k, n]) => [k, { key: k, label: n, rows: [] }]));
@@ -84,7 +105,7 @@
   }
 
   function groupedList(rows, q, f) {
-    if (!rows.length) return msg('No hay fichas para este filtro.', 'notice');
+    if (!rows.length) return msg(f === 'recambios' ? 'No hay recambios clasificados todavía.' : 'No hay fichas para este filtro.', 'notice');
     if (f !== 'all' || q) return `<div class="library-grid">${rows.map(card).join('')}</div>`;
     return `<div class="library-sections">${groupRows(rows).map((group, index) => `<details class="library-section" ${index === 0 ? 'open' : ''}><summary><span>${esc(group.label)}</span><b>${group.rows.length}</b></summary><div class="library-grid">${group.rows.map(card).join('')}</div></details>`).join('')}</div>`;
   }
@@ -93,12 +114,17 @@
     const q = val('librarySearch').toLowerCase();
     const f = state.libraryFilter || 'all';
     const statusFilter = Array.isArray(state.libraryStatusFilter) ? state.libraryStatusFilter : [];
-    const rows = (state.libraryRows || []).filter(x => (f === 'all' || x.entry_type === f) && (!statusFilter.length || statusFilter.includes(String(x.status || '').toLowerCase())) && (!q || [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type)].join(' ').toLowerCase().includes(q)));
+    const rows = (state.libraryRows || []).filter(x => {
+      const typeMatch = f === 'all' || (f === 'recambios' ? isSparePart(x) : x.entry_type === f);
+      const statusMatch = !statusFilter.length || statusFilter.includes(String(x.status || '').toLowerCase());
+      const searchText = [x.title, x.scientific_name, x.summary, x.status, typeName(x.entry_type), ...(Array.isArray(x.tags) ? x.tags : [])].join(' ').toLowerCase();
+      return typeMatch && statusMatch && (!q || searchText.includes(q));
+    });
     const visible = rows
       .filter(canSeeLibraryEntry)
       .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'es', { sensitivity: 'base', numeric: true }));
     const adminReviewHeader = isAdminReturnContext() ? `<div class="panel-head"><h2>Fichas pendientes de revisión</h2><button onclick="adminPanel()">← Admin</button></div><div class="notice"><b>${visible.length} fichas pendientes.</b><br>Abre una ficha para editarla, completar sus datos y publicarla cuando supere la validación.</div>` : `<div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}`;
-    render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section><section class="panel library-clean-panel">${adminReviewHeader}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
+    render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section><section class="panel library-clean-panel">${adminReviewHeader}<div class="library-search"><input id="librarySearch" placeholder="Buscar especie, producto, recambio o parámetro" oninput="renderBibliotecaActual()"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
   }
 
   window.biblioteca = async function (options) {
@@ -114,5 +140,5 @@
 
   window.renderBibliotecaActual = list;
   window.filtrarBiblioteca = t => { state.libraryFilter = t || 'all'; list(); };
-  window.ANX.LibraryV3Core = { S, types, labels, biologicalTypes, typeName, statusName, row, load, sources, responsiveImage, card, libraryInfoNotice, list, isAdminLibrary, isOwnLibraryEntry, canSeeLibraryEntry, isAdminReturnContext, returnToLibrarySource, libraryBackButton };
+  window.ANX.LibraryV3Core = { S, types, filterTypes, labels, biologicalTypes, typeName, statusName, row, load, sources, responsiveImage, card, libraryInfoNotice, list, isSparePart, isAdminLibrary, isOwnLibraryEntry, canSeeLibraryEntry, isAdminReturnContext, returnToLibrarySource, libraryBackButton };
 })();
