@@ -74,7 +74,7 @@
       <label for="t_${esc(key)}">Test</label>
       <select id="t_${esc(key)}" onchange="applyTestToMeasurement('${esc(key)}')">${optionsFor ? optionsFor(key, tests) : '<option value="__manual__">Otro test o método</option>'}</select>
       <input id="tm_${esc(key)}" class="hidden" placeholder="Marca y modelo del test">
-      <div id="mw_${esc(key)}" class="hidden"><label for="md_${esc(key)}">Cómo se midió</label><select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')"></select></div>
+      <div id="mw_${esc(key)}"><label for="md_${esc(key)}">Cómo se midió</label><select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')" disabled><option value="">Selecciona primero un test...</option></select></div>
       <input id="mm_${esc(key)}" class="hidden" placeholder="Escribe el método o forma de lectura utilizada">
       <div id="r_${esc(key)}" class="measurement-row-inputs">${resultControl(key, null)}</div>
       <div id="h_${esc(key)}"></div>
@@ -85,14 +85,24 @@
     const selected = val(`t_${key}`);
     const manualTest = byId(`tm_${key}`);
     const manualMethod = byId(`mm_${key}`);
-    const methodWrap = byId(`mw_${key}`);
     const methodSelect = byId(`md_${key}`);
     const isManual = selected === '__manual__';
     if (manualTest) manualTest.classList.toggle('hidden', !isManual);
     if (manualMethod) manualMethod.classList.toggle('hidden', !isManual);
-    if (methodWrap) methodWrap.classList.toggle('hidden', isManual || !selected);
     const test = selectedTest(key);
-    if (methodSelect) methodSelect.innerHTML = test ? window.ANX.parameterMethodOptions(test) : '';
+    if (methodSelect) {
+      if (isManual) {
+        methodSelect.innerHTML = '<option value="">Método escrito manualmente abajo</option>';
+        methodSelect.disabled = true;
+      } else if (test) {
+        methodSelect.innerHTML = window.ANX.parameterMethodOptions(test);
+        methodSelect.disabled = false;
+        methodSelect.value = '';
+      } else {
+        methodSelect.innerHTML = '<option value="">Selecciona primero un test...</option>';
+        methodSelect.disabled = true;
+      }
+    }
     const result = byId(`r_${key}`);
     const help = byId(`h_${key}`);
     if (result) result.innerHTML = resultControl(key, test);
@@ -117,7 +127,7 @@
       const tests = typeof window.ANX.loadParameterTests === 'function' ? await window.ANX.loadParameterTests() : [];
       window.ANX.activeParameterTests = tests;
       const now = new Date().toISOString().slice(0, 16);
-      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">Selecciona el test, después cómo se realizó la medición y por último la lectura. Cada ficha carga su unidad, escala, rango, resolución y procedimiento.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
+      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">Para cada parámetro: selecciona el test, elige cómo se midió y después introduce o selecciona la lectura.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
     } catch (e) {
       render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button>${msg(e.message || 'No se pudo cargar el catálogo de tests.', 'error')}</section>`, 'acuarios');
     }
