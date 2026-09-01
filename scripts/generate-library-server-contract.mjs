@@ -11,6 +11,33 @@ await import(path.join(root, 'src/library/core/library-schema-rules.js'));
 const schema = globalThis.ANX?.LibrarySchema;
 if (!schema) throw new Error('No se pudo cargar LibrarySchema.');
 
+const recambioContract = [
+  'title',
+  'manufacturer',
+  'brand',
+  'product_code',
+  'equipment_type',
+  'specifications',
+  'intended_use',
+  'compatibility',
+  'use_limitations',
+  'installation',
+  'maintenance',
+  'cleaning_frequency',
+  'purchase_recommendations',
+  'warranty',
+  'source_manual',
+  'source_label',
+  'risks',
+  'warnings',
+  'ai_notes',
+  'user_summary',
+  'sources'
+];
+
+if (!schema.CONTRACTS.recambio) schema.CONTRACTS.recambio = recambioContract;
+if (Array.isArray(schema.PRODUCT_TYPES) && !schema.PRODUCT_TYPES.includes('recambio')) schema.PRODUCT_TYPES.push('recambio');
+
 const integrity = schema.contractIntegrityReport?.();
 if (!integrity?.approved) {
   throw new Error(`Contrato cliente inválido:\n${(integrity?.errors || []).join('\n')}`);
