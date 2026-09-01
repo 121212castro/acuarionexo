@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-separate-spares-20260831-0040`.
+Build actual: `release-5c99e8e53347`.
 
 ## Navegación administrativa global
 

@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-separate-spares-20260831-0040`
+`release-5c99e8e53347`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
