@@ -145,11 +145,12 @@
   };
 
   window.copiarApartadosFicha = async function (type) {
-    const selected = String(type || (window.ANX.state.libraryFilter !== 'all' ? window.ANX.state.libraryFilter : val('templateCopyType')) || '').trim();
+    const selected = String(type || val('templateCopyType') || '').trim();
     const subject = val('templateCopySubject');
     const scientificName = val('templateCopyScientificName');
     const box = byId('templateCopyStatus');
     try {
+      if (!S?.CONTRACTS?.[selected]) throw new Error(`No existe contrato guardado para ${typeName(selected)}.`);
       const text = templateText(selected, subject, scientificName);
       await navigator.clipboard.writeText(text);
       if (box) box.innerHTML = msg(`Plantilla de ${typeName(selected)} para «${subject}» copiada.`, 'success');
