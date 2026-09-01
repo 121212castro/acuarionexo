@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 Fuente de verdad: GitHub `main`.
 
-Build actual: `library-image-drag-drop-20260810-2248`.
+Build actual: `library-separate-spares-20260831-0040`.
 
 ## Navegación administrativa global
 

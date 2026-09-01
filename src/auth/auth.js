@@ -23,6 +23,7 @@ function login() {
     <button onclick="recuperarPassword()">Olvidé mi contraseña</button>
     <div id="x"></div>
   </section>`, 'inicio', false);
+  window.ANXAnalytics?.trackEvent?.('access_landing_view', 'acceso');
 }
 window.login = login;
 
@@ -37,6 +38,7 @@ window.solicitarAcceso = function () {
     <button onclick="login()">Volver</button>
     <div id="x"></div>
   </section>`, 'inicio', false);
+  window.ANXAnalytics?.trackEvent?.('access_form_open', 'acceso');
 };
 
 window.enviarSolicitudAcceso = async function () {
@@ -49,6 +51,7 @@ window.enviarSolicitudAcceso = async function () {
     const { error } = await supabase.rpc('submit_access_request', { p_email: email, p_name: name || null, p_message: messageText || null, p_legal_version: LEGAL_VERSION, p_legal_accepted: true });
     if (error) throw error;
     byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
+    window.ANXAnalytics?.trackEvent?.('access_request_submitted', 'acceso');
   } catch (e) {
     if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }

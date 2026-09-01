@@ -4,7 +4,7 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`library-image-drag-drop-20260810-2248`
+`library-separate-spares-20260831-0040`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
@@ -16,6 +16,7 @@ El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 - `dashboard.css`
 - `aquarium-map.css`
 - `login-reef.css`
+- `legal-auth.css`
 - `aquarium-cards.css`
 - `aquariums-mobile-fix.css`
 - `aquarium-form-ux.css`

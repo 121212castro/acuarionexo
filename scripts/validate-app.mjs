@@ -157,6 +157,22 @@ function checkGeneratorDuplicateRule() {
   }
 }
 
+function checkAccessAnalytics() {
+  const analytics = read('site-analytics.js');
+  const auth = read('src/auth/access-request-email.js');
+  const admin = read('src/admin/admin-analytics.js');
+  const collector = read('supabase/functions/analytics-collect/index.ts');
+  const migration = read('supabase/migrations/20260901222000_access_interest_analytics.sql');
+  for (const event of ['access_landing_view', 'access_form_open', 'access_request_submitted']) {
+    if (!analytics.includes(event) && !auth.includes(event)) fail(`Falta el evento de acceso ${event}.`);
+    if (!collector.includes(event)) fail(`El colector no admite ${event}.`);
+  }
+  if (!analytics.includes('ADMIN_DEVICE_KEY')) fail('La analítica no excluye navegadores reconocidos como administrador.');
+  if (!admin.includes('Interés en acceder') || !admin.includes('accessRequests30d')) fail('El panel Admin no muestra el contador de interés.');
+  if (!migration.includes("set search_path = ''")) fail('La función del contador debe fijar un search_path seguro.');
+  if (!migration.includes('revoke all privileges on table public.site_analytics_events from anon, authenticated')) fail('La tabla de analítica conserva privilegios de escritura de clientes.');
+}
+
 function mockElement(id) {
   return { id, value:'', innerHTML:'', textContent:'', style:{}, dataset:{}, options:[], onclick:null,
     classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, remove(){}, insertAdjacentHTML(){}, scrollIntoView(){}, prepend(){}, appendChild(){}, click(){}, setAttribute(){}, removeAttribute(){},
@@ -219,6 +235,6 @@ async function checkLoad() {
   }
 }
 
-try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); checkGeneratorDuplicateRule(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
+try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); checkGeneratorDuplicateRule(); checkAccessAnalytics(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
 if (errors.length) { console.error('AcuarioNexo validation failed:'); errors.forEach(e => console.error(`- ${e}`)); process.exit(1); }
 console.log('AcuarioNexo validation OK');

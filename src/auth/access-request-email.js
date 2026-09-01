@@ -28,6 +28,7 @@
       if (request.error) throw request.error;
 
       if (byId('x')) byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
+      window.ANXAnalytics?.trackEvent?.('access_request_submitted', 'acceso');
     } catch (e) {
       if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
     }

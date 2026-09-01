@@ -6,8 +6,9 @@
   const COLLECT_URL = 'https://vqpxhozavfzgtkqscncs.supabase.co/functions/v1/analytics-collect';
   const CONSENT_KEY = 'anx_analytics_consent';
   const SESSION_KEY = 'anx_analytics_session';
-  let lastSignature = '';
-  let lastSentAt = 0;
+  const ADMIN_DEVICE_KEY = 'anx_analytics_admin_device';
+  const ALLOWED_EVENTS = new Set(['page_view', 'access_landing_view', 'access_form_open', 'access_request_submitted']);
+  const recentEvents = new Map();
 
   function consentGranted() {
     return localStorage.getItem(CONSENT_KEY) === 'granted';
@@ -38,14 +39,24 @@
     }
   }
 
-  async function trackPage(page) {
+  function actorType() {
+    if (ANX.state?.isAdmin) {
+      localStorage.setItem(ADMIN_DEVICE_KEY, '1');
+      return 'admin';
+    }
+    if (localStorage.getItem(ADMIN_DEVICE_KEY) === '1') return 'admin';
+    return ANX.state?.user ? 'user' : 'visitor';
+  }
+
+  async function trackEvent(eventName, page) {
     if (!consentGranted()) return;
+    const safeEvent = String(eventName || '').trim();
+    if (!ALLOWED_EVENTS.has(safeEvent)) return;
     const safePage = String(page || 'inicio').slice(0, 120);
-    const signature = safePage + '|' + location.pathname + location.search;
+    const signature = safeEvent + '|' + safePage + '|' + location.pathname + location.search;
     const now = Date.now();
-    if (signature === lastSignature && now - lastSentAt < 2500) return;
-    lastSignature = signature;
-    lastSentAt = now;
+    if (now - Number(recentEvents.get(signature) || 0) < 2500) return;
+    recentEvents.set(signature, now);
 
     try {
       await fetch(COLLECT_URL, {
@@ -56,16 +67,22 @@
         body: JSON.stringify({
           consent: 'granted',
           sessionId: sessionId(),
+          eventName: safeEvent,
           page: safePage,
           path: location.pathname + location.search,
           referrerHost: referrerHost(),
-          device: deviceType()
+          device: deviceType(),
+          actorType: actorType()
         }),
         keepalive: true
       });
     } catch (_) {
       // La analítica nunca debe bloquear el uso de la aplicación.
     }
+  }
+
+  function trackPage(page) {
+    return trackEvent('page_view', page);
   }
 
   const originalRender = ANX.render;
@@ -77,8 +94,11 @@
 
   const accept = document.getElementById('anxCookieAccept');
   if (accept) accept.addEventListener('click', function () {
-    setTimeout(function () { trackPage(ANX.state?.section || 'inicio'); }, 50);
+    setTimeout(function () {
+      trackPage(ANX.state?.section || 'inicio');
+      if (!ANX.state?.user) trackEvent('access_landing_view', 'acceso');
+    }, 50);
   });
 
-  window.ANXAnalytics = { trackPage, consentGranted };
+  window.ANXAnalytics = { trackPage, trackEvent, consentGranted };
 })();

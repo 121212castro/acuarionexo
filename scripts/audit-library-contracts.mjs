@@ -5,6 +5,7 @@ globalThis.ANX = {};
 
 await import('../src/library/core/library-schema.js');
 await import('../src/library/core/library-schema-rules.js');
+await import('../src/library/library-v3.js');
 
 const S = globalThis.ANX?.LibrarySchema;
 if (!S) throw new Error('LibrarySchema no quedó disponible.');
