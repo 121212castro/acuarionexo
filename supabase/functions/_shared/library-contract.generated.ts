@@ -23,7 +23,8 @@ export const LIBRARY_CONTRACT = {
     "aditivo",
     "alimento",
     "test",
-    "equipamiento"
+    "equipamiento",
+    "recambio"
   ],
   "contracts": {
     "pez_marino": [
@@ -559,6 +560,29 @@ export const LIBRARY_CONTRACT = {
       "warnings",
       "warranty",
       "source_manual",
+      "ai_notes",
+      "user_summary",
+      "sources"
+    ],
+    "recambio": [
+      "title",
+      "manufacturer",
+      "brand",
+      "product_code",
+      "equipment_type",
+      "specifications",
+      "intended_use",
+      "compatibility",
+      "use_limitations",
+      "installation",
+      "maintenance",
+      "cleaning_frequency",
+      "purchase_recommendations",
+      "warranty",
+      "source_manual",
+      "source_label",
+      "risks",
+      "warnings",
       "ai_notes",
       "user_summary",
       "sources"
@@ -5161,6 +5185,197 @@ export const LIBRARY_CONTRACT = {
       "setup": {
         "id": "setup",
         "label": "Setup",
+        "section": "specs",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "ai_notes": {
+        "id": "ai_notes",
+        "label": "Notas para IA",
+        "section": "ai",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "sources": {
+        "id": "sources",
+        "label": "Sources",
+        "section": "sources",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      }
+    },
+    "recambio": {
+      "title": {
+        "id": "title",
+        "label": "Nombre común / producto",
+        "section": "identity",
+        "type": "text",
+        "minLength": 1,
+        "allowed": null,
+        "validator": null
+      },
+      "manufacturer": {
+        "id": "manufacturer",
+        "label": "Fabricante",
+        "section": "identity",
+        "type": "text",
+        "minLength": 1,
+        "allowed": null,
+        "validator": null
+      },
+      "brand": {
+        "id": "brand",
+        "label": "Marca",
+        "section": "identity",
+        "type": "text",
+        "minLength": 1,
+        "allowed": null,
+        "validator": null
+      },
+      "product_code": {
+        "id": "product_code",
+        "label": "Modelo / código",
+        "section": "identity",
+        "type": "text",
+        "minLength": 1,
+        "allowed": null,
+        "validator": null
+      },
+      "equipment_type": {
+        "id": "equipment_type",
+        "label": "Equipment type",
+        "section": "identity",
+        "type": "text",
+        "minLength": 1,
+        "allowed": null,
+        "validator": null
+      },
+      "intended_use": {
+        "id": "intended_use",
+        "label": "Uso previsto",
+        "section": "identity",
+        "type": "text",
+        "minLength": 2,
+        "allowed": null,
+        "validator": null
+      },
+      "warranty": {
+        "id": "warranty",
+        "label": "Warranty",
+        "section": "identity",
+        "type": "text",
+        "minLength": 2,
+        "allowed": null,
+        "validator": null
+      },
+      "compatibility": {
+        "id": "compatibility",
+        "label": "Compatibilidad general",
+        "section": "compatibility",
+        "type": "text",
+        "minLength": 2,
+        "allowed": null,
+        "validator": null
+      },
+      "use_limitations": {
+        "id": "use_limitations",
+        "label": "Limitaciones de uso",
+        "section": "compatibility",
+        "type": "text",
+        "minLength": 2,
+        "allowed": null,
+        "validator": null
+      },
+      "maintenance": {
+        "id": "maintenance",
+        "label": "Mantenimiento",
+        "section": "maintenance",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "cleaning_frequency": {
+        "id": "cleaning_frequency",
+        "label": "Cleaning frequency",
+        "section": "maintenance",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "purchase_recommendations": {
+        "id": "purchase_recommendations",
+        "label": "Antes de comprar",
+        "section": "purchase",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "source_manual": {
+        "id": "source_manual",
+        "label": "Source manual",
+        "section": "purchase",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "source_label": {
+        "id": "source_label",
+        "label": "Etiqueta de fuente",
+        "section": "purchase",
+        "type": "text",
+        "minLength": 2,
+        "allowed": null,
+        "validator": null
+      },
+      "user_summary": {
+        "id": "user_summary",
+        "label": "Resumen para usuario",
+        "section": "use",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "risks": {
+        "id": "risks",
+        "label": "Riesgos",
+        "section": "risks",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "warnings": {
+        "id": "warnings",
+        "label": "Advertencias",
+        "section": "risks",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "specifications": {
+        "id": "specifications",
+        "label": "Specifications",
+        "section": "specs",
+        "type": "text",
+        "minLength": 20,
+        "allowed": null,
+        "validator": null
+      },
+      "installation": {
+        "id": "installation",
+        "label": "Installation",
         "section": "specs",
         "type": "text",
         "minLength": 20,
