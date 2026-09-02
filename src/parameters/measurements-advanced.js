@@ -4,8 +4,14 @@
   const labels = window.ANX.aiParameterLabels || {};
   const normalize = window.ANX.normalizeMeasurementKey || (v => String(v?.parameter_key || v || '').trim().toLowerCase().replace(/\s+/g, '_'));
 
+  const localLabels = {
+    temperature_c: 'Temperatura', salinity_sg: 'Salinidad / densidad', ph: 'pH', phosphorus_p: 'Fósforo',
+    nitrate_no3: 'Nitrato (NO3)', calcium_ca: 'Calcio', magnesium_mg: 'Magnesio', phosphate_po4: 'Fosfato (PO4)',
+    kh_dkh: 'KH', copper_cu: 'Cobre', ammonia_nh3: 'Amoniaco', silicon_si: 'Silicato', potassium_k: 'Potasio'
+  };
+
   const units = {
-    temperature_c: '°C', salinity_ppt: 'ppt', salinity_sg: 'sg', ph: 'pH', kh_dkh: 'dKH',
+    temperature_c: '°C', salinity_ppt: 'ppt', salinity_sg: 'sg', ph: 'pH', phosphorus_p: 'ppb P', kh_dkh: 'dKH',
     ammonia_nh3: 'mg/L', ammonium_nh4: 'mg/L', nitrite_no2: 'mg/L', nitrate_no3: 'mg/L', phosphate_po4: 'mg/L',
     calcium_ca: 'mg/L', magnesium_mg: 'mg/L', potassium_k: 'mg/L', iodine_i: 'µg/L', strontium_sr: 'mg/L',
     boron_b: 'mg/L', iron_fe: 'µg/L', manganese_mn: 'µg/L', zinc_zn: 'µg/L', copper_cu: 'µg/L',
@@ -15,50 +21,34 @@
   };
 
   const profiles = {
-    weekly: { title: 'Medición semanal', source: 'weekly', marine: ['temperature_c','salinity_ppt','salinity_sg','ph','kh_dkh','nitrate_no3','phosphate_po4'], freshwater: ['temperature_c','ph','kh_dkh','gh','ammonia_nh3','nitrite_no2','nitrate_no3','tds'] },
-    monthly: { title: 'Medición mensual', source: 'monthly', marine: ['temperature_c','salinity_ppt','salinity_sg','ph','kh_dkh','calcium_ca','magnesium_mg','potassium_k','nitrate_no3','phosphate_po4','iodine_i','strontium_sr'], freshwater: ['temperature_c','ph','kh_dkh','gh','ammonia_nh3','nitrite_no2','nitrate_no3','phosphate_po4','iron_fe','tds'] },
-    icp: { title: 'ICP / laboratorio', source: 'icp', marine: ['salinity_ppt','salinity_sg','kh_dkh','calcium_ca','magnesium_mg','potassium_k','iodine_i','strontium_sr','boron_b','iron_fe','manganese_mn','zinc_zn','copper_cu','aluminum_al','silicon_si','lithium_li','nickel_ni','chromium_cr','vanadium_v','molybdenum_mo','fluorine_f','bromine_br'], freshwater: ['calcium_ca','magnesium_mg','potassium_k','iron_fe','manganese_mn','zinc_zn','copper_cu','aluminum_al','silicon_si','nickel_ni','chromium_cr','tds'] }
+    routine: {
+      title: 'Medición completa', source: 'routine',
+      marine: ['temperature_c','salinity_sg','ph','phosphorus_p','nitrate_no3','calcium_ca','magnesium_mg','phosphate_po4','kh_dkh','copper_cu','ammonia_nh3','silicon_si','potassium_k'],
+      freshwater: ['temperature_c','ph','kh_dkh','gh','ammonia_nh3','nitrite_no2','nitrate_no3','phosphate_po4','iron_fe','tds']
+    },
+    icp: {
+      title: 'ICP / laboratorio', source: 'icp',
+      marine: ['salinity_ppt','salinity_sg','kh_dkh','calcium_ca','magnesium_mg','potassium_k','iodine_i','strontium_sr','boron_b','iron_fe','manganese_mn','zinc_zn','copper_cu','aluminum_al','silicon_si','lithium_li','nickel_ni','chromium_cr','vanadium_v','molybdenum_mo','fluorine_f','bromine_br'],
+      freshwater: ['calcium_ca','magnesium_mg','potassium_k','iron_fe','manganese_mn','zinc_zn','copper_cu','aluminum_al','silicon_si','nickel_ni','chromium_cr','tds']
+    }
   };
 
-  const baseMethods = {
-    temperature_c: ['Termómetro digital', 'Sonda / controlador', 'Termómetro de vidrio', 'Otro método'],
-    salinity_ppt: ['Refractómetro', 'Refractómetro digital', 'Conductímetro / sonda', 'Densímetro / hidrómetro', 'Laboratorio / ICP', 'Otro método'],
-    salinity_sg: ['Refractómetro', 'Refractómetro digital', 'Densímetro / hidrómetro', 'Conductímetro / sonda', 'Otro método'],
-    ph: ['Test colorimétrico visual', 'Medidor digital de pH', 'Electrodo / sonda', 'Fotómetro', 'Laboratorio', 'Otro método'],
-    kh_dkh: ['Titulación por gotas', 'Fotómetro / checker digital', 'Test colorimétrico', 'Laboratorio', 'Otro método'],
-    gh: ['Titulación por gotas', 'Test colorimétrico', 'Laboratorio', 'Otro método'],
-    ammonia_nh3: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
-    ammonium_nh4: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
-    nitrite_no2: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
-    nitrate_no3: ['Lectura superior', 'Lectura lateral', 'Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
-    phosphate_po4: ['Test colorimétrico visual', 'Fotómetro / checker digital', 'Laboratorio', 'Otro método'],
-    calcium_ca: ['Titulación por gotas', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    magnesium_mg: ['Titulación por gotas', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    potassium_k: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    iodine_i: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    strontium_sr: ['Test químico', 'ICP / laboratorio', 'Otro método'],
-    boron_b: ['Test químico', 'ICP / laboratorio', 'Otro método'],
-    iron_fe: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    manganese_mn: ['Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    zinc_zn: ['Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    copper_cu: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    aluminum_al: ['ICP / laboratorio', 'Otro método'],
-    silicon_si: ['Test colorimétrico visual', 'Fotómetro', 'ICP / laboratorio', 'Otro método'],
-    lithium_li: ['ICP / laboratorio', 'Otro método'],
-    nickel_ni: ['ICP / laboratorio', 'Otro método'],
-    chromium_cr: ['ICP / laboratorio', 'Otro método'],
-    vanadium_v: ['ICP / laboratorio', 'Otro método'],
-    molybdenum_mo: ['ICP / laboratorio', 'Otro método'],
-    fluorine_f: ['Test químico', 'ICP / laboratorio', 'Otro método'],
-    bromine_br: ['Test químico', 'ICP / laboratorio', 'Otro método'],
-    tds: ['Medidor TDS', 'Conductímetro / sonda', 'Laboratorio', 'Otro método'],
-    chlorine_cl2: ['Test colorimétrico visual', 'Fotómetro', 'Laboratorio', 'Otro método'],
-    oxygen_o2: ['Sonda de oxígeno', 'Test químico', 'Fotómetro', 'Laboratorio', 'Otro método']
+  const quickSources = {
+    hanna: { value: '__quick_hanna__', label: 'Hanna' },
+    salifert: { value: '__quick_salifert__', label: 'Salifert' },
+    refractometer: { value: '__quick_refractometer__', label: 'Refractómetro' },
+    thermometer: { value: '__quick_thermometer__', label: 'Termómetro' },
+    probe: { value: '__quick_probe__', label: 'Sonda / controlador' },
+    laboratory: { value: '__quick_laboratory__', label: 'ICP / laboratorio' }
   };
 
   function modeFor(aq) { return window.ANX.aiAquariumMode ? window.ANX.aiAquariumMode(aq) : 'marine'; }
-  function labelFor(key) { return labels[key] || key.replace(/_/g, ' '); }
-  function keysFor(aq, profileKey) { const profile = profiles[profileKey] || profiles.weekly; return profile[modeFor(aq)] || profile.marine; }
+  function labelFor(key) { return localLabels[key] || labels[key] || key.replace(/_/g, ' '); }
+  function normalizedProfileKey(profileKey) { return profileKey === 'icp' ? 'icp' : 'routine'; }
+  function keysFor(aq, profileKey) {
+    const profile = profiles[normalizedProfileKey(profileKey)] || profiles.routine;
+    return profile[modeFor(aq)] || profile.marine;
+  }
   function numberFromText(text) { const match = String(text || '').replace(',', '.').match(/-?\d+(?:\.\d+)?/); return match ? Number(match[0]) : null; }
   function uuid() { return window.crypto?.randomUUID ? window.crypto.randomUUID() : '10000000-1000-4000-8000-100000000000'.replace(/[018]/g, c => (Number(c) ^ Math.random() * 16 >> Number(c) / 4).toString(16)); }
   function selectedTest(key) { return window.ANX.findParameterTest?.(window.ANX.activeParameterTests || [], val(`t_${key}`)) || null; }
@@ -67,33 +57,31 @@
   function unitForTest(test, fallback) { const d = test?.data || {}; return String(d.internal_unit || d.reading_unit || fallback || '').replace(/^Unidad de\s+/i, '').trim(); }
 
   function profileButtons(active) {
-    return `<div class="param-actions param-profile-actions"><button type="button" class="${active === 'weekly' ? 'active' : ''}" onclick="formMedicionCompleta('weekly')">Semanal</button><button type="button" class="${active === 'monthly' ? 'active' : ''}" onclick="formMedicionCompleta('monthly')">Mensual</button><button type="button" class="${active === 'icp' ? 'active' : ''}" onclick="formMedicionCompleta('icp')">ICP</button></div>`;
+    return `<div class="param-actions param-profile-actions"><button type="button" class="${active === 'routine' ? 'active' : ''}" onclick="formMedicionCompleta('routine')">Medición completa</button><button type="button" class="${active === 'icp' ? 'active' : ''}" onclick="formMedicionCompleta('icp')">ICP / laboratorio</button></div>`;
   }
 
-  function methodChoices(key, test) {
-    const choices = (baseMethods[key] || ['Test colorimétrico visual', 'Medidor digital', 'Fotómetro', 'Laboratorio', 'Otro método']).slice();
-    const d = test?.data || {};
-    const source = [d.method, d.test_type, d.reading_method, d.measurement_method, d.procedure].filter(Boolean).join(' ').toLowerCase();
-    const addFirst = text => { if (text && !choices.includes(text)) choices.unshift(text); };
-    if (/lectura superior|vista superior|desde arriba|top view/.test(source)) addFirst('Lectura superior');
-    if (/lectura lateral|vista lateral|desde un lateral|side view/.test(source)) addFirst('Lectura lateral');
-    if (/titul/.test(source)) addFirst('Titulación por gotas');
-    if (/fotometr|fotómetr|checker/.test(source)) addFirst('Fotómetro / checker digital');
-    if (/refract/.test(source)) addFirst('Refractómetro');
-    if (/electrodo|sonda|probe/.test(source)) addFirst('Electrodo / sonda');
-    if (/conduct/.test(source)) addFirst('Conductímetro / sonda');
-    if (/digital/.test(source) && key === 'ph') addFirst('Medidor digital de pH');
-    if (/colorimetr/.test(source)) addFirst('Test colorimétrico visual');
-    if (/icp|laboratorio/.test(source)) addFirst('ICP / laboratorio');
-    return choices.filter((value, index, list) => list.indexOf(value) === index);
+  function quickSourcesFor(key, profileKey) {
+    if (profileKey === 'icp') return [quickSources.laboratory];
+    if (key === 'temperature_c') return [quickSources.thermometer, quickSources.probe];
+    if (key === 'salinity_sg' || key === 'salinity_ppt') return [quickSources.refractometer, quickSources.probe];
+    if (key === 'ph') return [quickSources.hanna, quickSources.salifert, quickSources.probe];
+    return [quickSources.hanna, quickSources.salifert];
   }
 
-  function methodOptions(key, test, selected = '') {
-    const choices = methodChoices(key, test);
-    return `<option value="">Seleccionar cómo se midió...</option>${choices.map(choice => {
-      const value = choice === 'Otro método' ? '__manual_method__' : choice;
-      return `<option value="${esc(value)}" ${value === selected ? 'selected' : ''}>${esc(choice)}</option>`;
-    }).join('')}`;
+  function sourceName(value) {
+    const item = Object.values(quickSources).find(x => x.value === value);
+    return item?.label || '';
+  }
+
+  function testOptions(key, tests, profileKey) {
+    const quick = quickSourcesFor(key, profileKey).map(item => `<option value="${esc(item.value)}">${esc(item.label)}</option>`).join('');
+    const matching = typeof window.ANX.testsForParameter === 'function' ? window.ANX.testsForParameter(tests, key) : [];
+    const exact = matching.map(test => {
+      const id = String(test.id || '');
+      const label = window.ANX.parameterTestLabel ? window.ANX.parameterTestLabel(test) : (test.title || 'Test');
+      return `<option value="${esc(id)}">${esc(label)}</option>`;
+    }).join('');
+    return `<option value="">Seleccionar test / equipo...</option>${quick}${exact ? `<optgroup label="Tests de Biblioteca">${exact}</optgroup>` : ''}<option value="__manual__">Otro test / equipo</option>`;
   }
 
   function resultControl(key, test) {
@@ -113,31 +101,22 @@
     return `<input id="m_${esc(key)}" type="number" inputmode="decimal"${min}${max}${step ? ` step="${step}"` : ' step="any"'} placeholder="Valor"><input id="u_${esc(key)}" value="${esc(unit)}" readonly>`;
   }
 
-  function testHelp(test, method) {
-    if (!test) return '';
+  function testHelp(test, source) {
+    if (!test && !source) return '';
+    if (!test) return `<div class="notice small"><b>${esc(source)}</b><br>La medición quedará guardada con este test/equipo para que la IA interprete el dato con su procedencia.</div>`;
     const d = test.data || {};
     const parts = [
-      method ? `Cómo se midió: ${method}` : '',
-      d.range ? `Rango: ${d.range}` : '',
-      d.resolution ? `Resolución: ${d.resolution}` : '',
-      d.accuracy ? `Precisión: ${d.accuracy}` : '',
-      d.scale_values ? `Escala: ${d.scale_values}` : '',
-      d.sample_volume ? `Muestra: ${d.sample_volume}` : '',
-      d.procedure ? d.procedure : ''
+      d.range ? `Rango: ${d.range}` : '', d.resolution ? `Resolución: ${d.resolution}` : '', d.accuracy ? `Precisión: ${d.accuracy}` : '',
+      d.scale_values ? `Escala: ${d.scale_values}` : '', d.sample_volume ? `Muestra: ${d.sample_volume}` : '', d.procedure ? d.procedure : ''
     ].filter(Boolean);
     return `<div class="notice small"><b>${esc(test.title || window.ANX.parameterTestLabel?.(test) || 'Test')}</b><br>${parts.map(esc).join('<br>')}</div>`;
   }
 
   function inputRows(aq, profileKey, tests) {
-    const optionsFor = window.ANX.parameterTestOptions;
     return keysFor(aq, profileKey).map(key => `<div class="measurement-row" data-parameter-key="${esc(key)}">
       <label>${esc(labelFor(key))}</label>
-      <label for="t_${esc(key)}">Test</label>
-      <select id="t_${esc(key)}" onchange="applyTestToMeasurement('${esc(key)}')">${optionsFor ? optionsFor(key, tests) : '<option value="__manual__">Otro test o método</option>'}</select>
-      <input id="tm_${esc(key)}" class="hidden" placeholder="Marca y modelo del test">
-      <label for="md_${esc(key)}">Cómo se midió</label>
-      <select id="md_${esc(key)}" onchange="applyMethodToMeasurement('${esc(key)}')">${methodOptions(key, null)}</select>
-      <input id="mm_${esc(key)}" class="hidden" placeholder="Escribe exactamente cómo se midió">
+      <select id="t_${esc(key)}" onchange="applyTestToMeasurement('${esc(key)}')">${testOptions(key, tests, profileKey)}</select>
+      <input id="tm_${esc(key)}" class="hidden" placeholder="Escribe marca y modelo del test/equipo">
       <div id="r_${esc(key)}" class="measurement-row-inputs">${resultControl(key, null)}</div>
       <div id="h_${esc(key)}"></div>
     </div>`).join('');
@@ -146,42 +125,28 @@
   window.applyTestToMeasurement = function (key) {
     const selected = val(`t_${key}`);
     const manualTest = byId(`tm_${key}`);
-    const methodSelect = byId(`md_${key}`);
-    const currentMethod = methodSelect?.value || '';
-    const isManualTest = selected === '__manual__';
-    if (manualTest) manualTest.classList.toggle('hidden', !isManualTest);
+    const isManual = selected === '__manual__';
+    if (manualTest) manualTest.classList.toggle('hidden', !isManual);
     const test = selectedTest(key);
-    if (methodSelect) {
-      methodSelect.innerHTML = methodOptions(key, test, currentMethod);
-      methodSelect.disabled = false;
-      if (currentMethod && Array.from(methodSelect.options).some(option => option.value === currentMethod)) methodSelect.value = currentMethod;
-      else methodSelect.value = '';
-    }
     const result = byId(`r_${key}`);
     const help = byId(`h_${key}`);
     if (result) result.innerHTML = resultControl(key, test);
-    if (help) help.innerHTML = testHelp(test, val(`md_${key}`));
+    if (help) help.innerHTML = testHelp(test, sourceName(selected));
   };
 
-  window.applyMethodToMeasurement = function (key) {
-    const test = selectedTest(key);
-    const method = val(`md_${key}`);
-    const manualMethod = byId(`mm_${key}`);
-    if (manualMethod) manualMethod.classList.toggle('hidden', method !== '__manual_method__');
-    const help = byId(`h_${key}`);
-    if (help) help.innerHTML = testHelp(test, method === '__manual_method__' ? val(`mm_${key}`) : method);
-  };
+  window.applyMethodToMeasurement = function () {};
 
-  window.formMedicionCompleta = async function (profileKey = 'weekly') {
+  window.formMedicionCompleta = async function (profileKey = 'routine') {
     const aq = currentAquarium();
     if (!aq) return;
-    const profile = profiles[profileKey] || profiles.weekly;
+    const realProfileKey = normalizedProfileKey(profileKey);
+    const profile = profiles[realProfileKey] || profiles.routine;
     render(aqHeader('parametros') + `<section class="panel guided-box">${msg('Cargando catálogo de tests...')}</section>`, 'acuarios');
     try {
       const tests = typeof window.ANX.loadParameterTests === 'function' ? await window.ANX.loadParameterTests() : [];
       window.ANX.activeParameterTests = tests;
       const now = new Date().toISOString().slice(0, 16);
-      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(profileKey)}<input id="measureProfile" class="hidden" value="${esc(profileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">En cada parámetro puedes escoger directamente cómo se midió. Al seleccionar un test, se añaden sus formas de lectura específicas.</p><div class="measurement-grid">${inputRows(aq, profileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
+      render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button><h2>${esc(profile.title)}</h2>${profileButtons(realProfileKey)}<input id="measureProfile" class="hidden" value="${esc(realProfileKey)}"><label>Fecha</label><input id="measureDate" type="datetime-local" value="${now}"><p class="small">Para cada valor solo indica el test o equipo utilizado: Hanna, Salifert, refractómetro, termómetro o el test exacto de Biblioteca. No necesitas escoger además un método de lectura.</p><div class="measurement-grid">${inputRows(aq, realProfileKey, tests)}</div><label>Notas</label><textarea id="measureNotes" placeholder="Cambios de agua, aditivos, observaciones, laboratorio ICP..."></textarea><button class="primary" onclick="saveMedicionCompleta()">Guardar mediciones</button><div id="x"></div></section>`, 'acuarios');
     } catch (e) {
       render(aqHeader('parametros') + `<section class="panel guided-box"><button onclick="parametros()">Volver</button>${msg(e.message || 'No se pudo cargar el catálogo de tests.', 'error')}</section>`, 'acuarios');
     }
@@ -190,8 +155,8 @@
   window.saveMedicionCompleta = async function () {
     const aq = currentAquarium();
     if (!aq) return;
-    const profileKey = val('measureProfile') || 'weekly';
-    const profile = profiles[profileKey] || profiles.weekly;
+    const profileKey = normalizedProfileKey(val('measureProfile') || 'routine');
+    const profile = profiles[profileKey] || profiles.routine;
     const measuredAt = val('measureDate') ? new Date(val('measureDate')).toISOString() : new Date().toISOString();
     const generalNotes = val('measureNotes') || '';
     const batch = uuid();
@@ -202,21 +167,21 @@
         const selected = val(`t_${key}`);
         const test = selectedTest(key);
         const manualTest = selected === '__manual__' ? val(`tm_${key}`) : '';
-        const methodChoice = val(`md_${key}`);
-        const manualMethod = methodChoice === '__manual_method__' ? val(`mm_${key}`) : '';
-        const selectedMethod = methodChoice === '__manual_method__' ? manualMethod : methodChoice;
-        if (!selected) throw new Error(`Selecciona el test utilizado para ${labelFor(key)}.`);
-        if (selected === '__manual__' && !manualTest) throw new Error(`Escribe el test utilizado para ${labelFor(key)}.`);
-        if (!selectedMethod) throw new Error(`Selecciona cómo se realizó la medición para ${labelFor(key)}.`);
+        const quickName = sourceName(selected);
+        if (!selected) throw new Error(`Selecciona el test o equipo utilizado para ${labelFor(key)}.`);
+        if (selected === '__manual__' && !manualTest) throw new Error(`Escribe el test o equipo utilizado para ${labelFor(key)}.`);
         const d = test?.data || {};
         const unit = val(`u_${key}`) || units[key] || null;
         const numeric = numberFromText(display);
-        const testName = test ? window.ANX.parameterTestLabel(test) : manualTest;
-        const method = `${testName} · ${selectedMethod}`;
+        const testName = test ? window.ANX.parameterTestLabel(test) : (quickName || manualTest);
         const trace = test
-          ? `test_id: ${test.id}; cómo se midió: ${selectedMethod}; referencia: ${d.product_code || 'sin referencia'}; rango: ${d.range || 'no indicado'}; resolución: ${d.resolution || 'no indicada'}; escala: ${d.scale_values || 'continua'}`
-          : `test manual: ${manualTest}; cómo se midió: ${selectedMethod}`;
-        return { user_id: state.user.id, aquarium_id: aq.id, parameter_key: normalize({ parameter_key: key }), parameter_label: labelFor(key), parameter: normalize({ parameter_key: key }), display_value: `${display}${unit ? ` ${unit}` : ''}`, raw_text: display, raw_value: numeric, value: numeric, normalized_value: numeric, unit, method, source: profile.source, notes: [generalNotes, trace].filter(Boolean).join(' · '), batch_id: batch, measured_at: measuredAt, updated_at: new Date().toISOString() };
+          ? `test_id: ${test.id}; test/equipo: ${testName}; referencia: ${d.product_code || 'sin referencia'}; rango: ${d.range || 'no indicado'}; resolución: ${d.resolution || 'no indicada'}; escala: ${d.scale_values || 'continua'}`
+          : `test/equipo: ${testName}`;
+        return {
+          user_id: state.user.id, aquarium_id: aq.id, parameter_key: normalize({ parameter_key: key }), parameter_label: labelFor(key), parameter: normalize({ parameter_key: key }),
+          display_value: `${display}${unit ? ` ${unit}` : ''}`, raw_text: display, raw_value: numeric, value: numeric, normalized_value: numeric, unit,
+          method: testName, source: profile.source, notes: [generalNotes, trace].filter(Boolean).join(' · '), batch_id: batch, measured_at: measuredAt, updated_at: new Date().toISOString()
+        };
       }).filter(Boolean);
       if (!rows.length) throw new Error('Añade al menos una medición.');
       const { error } = await supabase.from('aquarium_measurements').insert(rows);
