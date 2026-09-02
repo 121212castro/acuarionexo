@@ -2,23 +2,21 @@
 (function () {
   const { supabase, state, esc, msg, token, isCurrent, currentAquarium, render, aqHeader } = window.ANX;
   const { aiMeasurementPlans, aiParameterLabels, aiAquariumMode, aiLatestMeasurements } = window.ANX;
-  const { paramKeysForAquarium, paramActionPanel, paramDisplayValue, paramVisualState, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramCyclePanel, paramHistoryHtml, taskNotesPayload, notifyLocalParameterAlert } = window.ANX;
+  const { paramKeysForAquarium, paramDisplayValue, paramVisualState, paramLatestPanel, paramAgeDays, paramAiAdviceFor, paramHistoryHtml, taskNotesPayload, notifyLocalParameterAlert } = window.ANX;
 
 async function parametros() {
   const aq = currentAquarium();
   const t = token();
-  render(aqHeader('parametros') + `<section class="panel"><div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('weekly')">Semanal</button></div></div>${msg('Cargando parámetros...')}</section>`, 'acuarios');
+  render(aqHeader('parametros') + `<section class="panel"><div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('routine')">Medición completa</button></div></div>${msg('Cargando parámetros...')}</section>`, 'acuarios');
   try {
     const { data, error } = await supabase.from('aquarium_measurements').select('*').eq('aquarium_id', aq.id).order('measured_at', { ascending: false }).limit(180);
     if (error) throw error;
     if (!isCurrent(t)) return;
     const rows = data || [];
     render(aqHeader('parametros') + `<section class="panel param-screen">
-      <div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('weekly')">Semanal</button></div></div>
-      ${paramActionPanel()}
+      <div class="panel-head"><h2>Parámetros</h2><div class="panel-actions"><button onclick="parametrosAdmin()">Manual</button><button class="primary" onclick="formMedicionCompleta('routine')">Medición completa</button><button onclick="formMedicionCompleta('icp')">ICP / laboratorio</button></div></div>
       ${paramLatestPanel(aq, rows)}
       ${paramAiPanel(aq, rows)}
-      ${paramCyclePanel(rows)}
       <h3>Historial</h3>
       ${paramHistoryHtml(rows)}
     </section>`, 'acuarios');
@@ -119,8 +117,8 @@ function paramAiPanel(aq, rows) {
   const nextChecks = [];
   if (missing.length) nextChecks.push(`Medir pendientes: ${missing.slice(0, 8).join(', ')}${missing.length > 8 ? '...' : ''}.`);
   if (old.length) nextChecks.push(`Actualizar mediciones antiguas: ${old.slice(0, 8).join(', ')}${old.length > 8 ? '...' : ''}.`);
-  if (risk.length || alert.length) nextChecks.push('Antes de aditar o hacer cambios fuertes, repetir los parámetros marcados y anotar fecha, método/test y cambios recientes. Se creará aviso en la pantalla Avisos.');
-  if (!nextChecks.length) nextChecks.push('Mantener rutina semanal/mensual y registrar cualquier cambio de agua, aditivo o incidencia.');
+  if (risk.length || alert.length) nextChecks.push('Antes de aditar o hacer cambios fuertes, repetir los parámetros marcados y anotar fecha, test/equipo y cambios recientes. Se creará aviso en la pantalla Avisos.');
+  if (!nextChecks.length) nextChecks.push('Mantener tu rutina de medición completa y registrar cualquier cambio de agua, aditivo o incidencia.');
 
   return `<div class="param-aq-card param-ai-card">
     <h3>Análisis IA</h3>
