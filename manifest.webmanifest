@@ -2,7 +2,7 @@
   "name": "AcuarioNexo",
   "short_name": "AcuarioNexo",
   "description": "Gestión inteligente de acuarios marinos y dulce con IA.",
-  "start_url": "./?v=release-5c99e8e53347",
+  "start_url": "./?v=release-a177705a2e2c",
   "scope": "./",
   "display": "standalone",
   "background_color": "#081b2f",

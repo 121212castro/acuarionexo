@@ -5,9 +5,9 @@ FUENTE DE VERDAD
 - Supabase es la fuente de datos, autenticación y Storage.
 
 BUILD ACTUAL
-- index.html: release-5c99e8e53347.
-- app-version.json: release-5c99e8e53347.
-- manifest.webmanifest: release-5c99e8e53347.
+- index.html: release-a177705a2e2c.
+- app-version.json: release-a177705a2e2c.
+- manifest.webmanifest: release-a177705a2e2c.
 
 ARCHIVOS ACTIVOS
 - acuarionexo-ajustes.json
