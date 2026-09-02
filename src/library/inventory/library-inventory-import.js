@@ -46,6 +46,23 @@
     return state.libraryRows;
   }
 
+  async function ensureLibraryRow(id) {
+    const cached = (state.libraryRows || []).find(r => String(r.id) === String(id));
+    if (cached) return cached;
+
+    const { data, error } = await supabase
+      .from('library_entries')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    if (!data) throw new Error('No encuentro la ficha en Biblioteca.');
+
+    const rows = Array.isArray(state.libraryRows) ? state.libraryRows : [];
+    state.libraryRows = [data, ...rows.filter(r => String(r.id) !== String(id))];
+    return data;
+  }
+
   async function loadInventoryAquariums() {
     if (Array.isArray(state.aquariums) && state.aquariums.length) return state.aquariums;
     const officialLoader = window.ANX.loadAquariums || window.ANX.AquariumsCore?.loadAquariums;
@@ -136,8 +153,7 @@
 
   async function guardarImportacionFichaInventario(id, scope = 'general') {
     try {
-      const row = (state.libraryRows || []).find(r => String(r.id) === String(id));
-      if (!row) throw new Error('No encuentro la ficha cargada.');
+      const row = await ensureLibraryRow(id);
       if (!fichaCompleta(row)) throw new Error('La ficha ya no supera la auditoría vigente.');
       const realScope = scope === 'aquarium' ? 'aquarium' : inventoryScopeForType(row.entry_type);
       const aq = window.ANX.currentAquarium ? window.ANX.currentAquarium() : null;
@@ -163,9 +179,7 @@
   }
 
   async function pasarFichaAInventario(id) {
-    await loadRows();
-    const row = (state.libraryRows || []).find(r => String(r.id) === String(id));
-    if (!row) throw new Error('No encuentro la ficha en Biblioteca.');
+    const row = await ensureLibraryRow(id);
     if (!fichaCompleta(row)) throw new Error('La ficha ya no supera la auditoría vigente.');
     const scope = inventoryScopeForType(row.entry_type);
     if (scope === 'aquarium') await loadInventoryAquariums();
@@ -177,7 +191,7 @@
   window.guardarImportacionFichaInventario = guardarImportacionFichaInventario;
   window.pasarFichaAInventario = pasarFichaAInventario;
   window.ANX.LibraryInventoryImport = {
-    inventoryScopeForType, inventoryCategoryFor, fichaCompleta, importarFichaInventario,
+    inventoryScopeForType, inventoryCategoryFor, fichaCompleta, ensureLibraryRow, importarFichaInventario,
     formImportarFichaInventario, guardarImportacionFichaInventario, pasarFichaAInventario
   };
 })();
