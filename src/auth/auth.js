@@ -167,6 +167,18 @@ window.iniciar = async function () {
   }
 };
 
+let libraryWarmupUserId = '';
+function scheduleLibraryWarmup() {
+  const userId = String(state.user?.id || '');
+  if (!userId || libraryWarmupUserId === userId || typeof window.ANX?.preloadLibrary !== 'function') return;
+  libraryWarmupUserId = userId;
+  const run = () => window.ANX.preloadLibrary().catch(error => console.warn('Precarga de Biblioteca aplazada.', error));
+  setTimeout(() => {
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 4000 });
+    else run();
+  }, 1500);
+}
+
 async function boot() {
   try {
     const session = await withAuthTimeout(supabase.auth.getSession(), 8);
@@ -204,6 +216,7 @@ async function boot() {
       };
     }
     state.user ? dashboard() : login();
+    if (state.user) scheduleLibraryWarmup();
   } catch (e) {
     render(msg(authMessage(e), 'error'), 'inicio', false);
   }

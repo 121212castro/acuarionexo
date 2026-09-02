@@ -1,7 +1,7 @@
 /* AcuarioNexo · Biblioteca V3 fichas */
 (function () {
-  const { supabase, state, esc, byId, val, msg, render } = window.ANX;
-  const { S, biologicalTypes, row, load, typeName, libraryInfoNotice } = window.ANX.LibraryV3Core;
+  const { supabase, state, esc, byId, val, msg, render, token, isCurrent } = window.ANX;
+  const { S, biologicalTypes, row, load, ensureDetail, typeName, libraryInfoNotice } = window.ANX.LibraryV3Core;
   const { imageBox } = window.ANX.LibraryV3Images;
   const { call } = window.ANX.LibraryV3AI;
 
@@ -365,12 +365,18 @@
       : '<button onclick="ANX.LibraryV3Ficha.returnToLibrarySource()">← Biblioteca</button>';
   }
 
-  window.formFicha = function (id) {
-    const x = row(id);
-    if (!x) return returnToLibrarySource();
-    const audit = S.effectiveAudit(x);
-    render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}">${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
-    setTimeout(() => window.ANX.LibraryReviewWorkflow?.decorateReviewForm?.(id), 0);
+  window.formFicha = async function (id) {
+    const t = token();
+    render(`<section class="panel">${msg('Abriendo edición...')}</section>`, 'biblioteca');
+    try {
+      const x = await ensureDetail(id);
+      if (!isCurrent(t)) return;
+      const audit = S.effectiveAudit(x);
+      render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}">${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
+      setTimeout(() => window.ANX.LibraryReviewWorkflow?.decorateReviewForm?.(id), 0);
+    } catch (error) {
+      if (isCurrent(t)) render(`<section class="panel">${backButton()}${msg(error.message || 'No se pudo abrir la edición.', 'error')}</section>`, 'biblioteca');
+    }
   };
 
   window.guardarFicha = async function (id) {

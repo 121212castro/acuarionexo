@@ -2,8 +2,8 @@
 (function () {
   const ANX = window.ANX;
   const Core = ANX.LibraryV3Core;
-  const { esc, render, byId, msg } = ANX;
-  const { row, sources, typeName, statusName, libraryInfoNotice, responsiveImage, libraryBackButton, returnToLibrarySource } = Core;
+  const { esc, render, byId, msg, token, isCurrent } = ANX;
+  const { row, ensureDetail, sources, typeName, statusName, libraryInfoNotice, responsiveImage, libraryBackButton, returnToLibrarySource } = Core;
 
   const CLASSIFICATION_FIELDS = [
     ['ecosystem', 'Medio'],
@@ -279,11 +279,14 @@
 
   window.publicarFicha = validateAndPublish;
 
-  window.verFicha = function (id) {
-    const x = row(id);
-    if (!x) return returnToLibrarySource();
-    const audit = Core.S.effectiveAudit(x);
-    render(`<section class="library-detail">
+  window.verFicha = async function (id) {
+    const t = token();
+    render(`<section class="panel">${msg('Abriendo ficha...')}</section>`, 'biblioteca');
+    try {
+      const x = await ensureDetail(id);
+      if (!isCurrent(t)) return;
+      const audit = Core.S.effectiveAudit(x);
+      render(`<section class="library-detail">
       ${libraryInfoNotice()}
       ${libraryBackButton()}
       <small>${esc(typeName(x.entry_type))} · ${esc(statusName(x.status))}</small>
@@ -301,7 +304,10 @@
       <h3>Fuentes</h3>
       ${sources(x.sources)}
     </section>`, 'biblioteca');
-    bindLibraryActions();
+      bindLibraryActions();
+    } catch (error) {
+      if (isCurrent(t)) render(`<section class="panel">${libraryBackButton()}${msg(error.message || 'No se pudo abrir la ficha.', 'error')}</section>`, 'biblioteca');
+    }
   };
 
   ANX.LibraryFichaActions = { actionScope, actionLabel, fichaImages, fichaExternalLink, normalizedExternalLink, fichaClassification, fichaInformation, fichaCanBeAdded, actionButtons, bindLibraryActions, addToAquarium, validateAndPublish, validationDetails };

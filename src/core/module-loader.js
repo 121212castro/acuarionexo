@@ -115,7 +115,20 @@
 
   function scriptSrc(src, attempt) {
     if (/^https?:\/\//i.test(src)) return src;
-    return src + '?v=' + version + '&attempt=' + attempt + '&t=' + Date.now();
+    return src + '?v=' + version + '&attempt=' + attempt;
+  }
+
+  function preloadGroupAssets(list) {
+    list.filter(src => !/^https?:\/\//i.test(src)).forEach(function (src) {
+      const key = scriptKey(src);
+      if (loadedScripts.has(key) || document.querySelector('link[data-preload-key="' + key + '"]')) return;
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'script';
+      link.href = scriptSrc(src, 1);
+      link.dataset.preloadKey = key;
+      document.head.appendChild(link);
+    });
   }
 
   function wait(ms) {
@@ -177,6 +190,7 @@
     if (pendingGroups.has(name)) return pendingGroups.get(name);
     const list = GROUPS[name];
     if (!list) throw new Error('Grupo de módulo no registrado: ' + name);
+    preloadGroupAssets(list);
     const job = (async function () {
       for (let i = 0; i < list.length; i += 1) await loadScript(list[i]);
       loadedGroups.add(name);
@@ -233,4 +247,10 @@
   proxy('statusCenter', 'status', 'Centro de Estado', 'inicio');
 
   ANX.loadModuleGroup = loadModuleGroup;
+  ANX.preloadLibrary = async function () {
+    if (!ANX.state?.user) return false;
+    await loadModuleGroup('biblioteca');
+    if (typeof ANX.LibraryV3Core?.preload === 'function') await ANX.LibraryV3Core.preload();
+    return true;
+  };
 })();

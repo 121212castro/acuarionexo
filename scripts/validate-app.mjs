@@ -173,6 +173,36 @@ function checkAccessAnalytics() {
   if (!migration.includes('revoke all privileges on table public.site_analytics_events from anon, authenticated')) fail('La tabla de analítica conserva privilegios de escritura de clientes.');
 }
 
+function checkLibraryPerformance() {
+  const core = read('src/library/library-v3-core.js');
+  const actions = read('src/library/ficha/ficha-actions.js');
+  const ficha = read('src/library/library-v3-ficha.js');
+  const loader = read('src/core/module-loader.js');
+  const auth = read('src/auth/auth.js');
+  if (!core.includes('const CARD_SELECT') || !core.includes('.select(CARD_SELECT)')) fail('Biblioteca debe cargar un índice ligero de tarjetas.');
+  if (!core.includes('ensureDetail') || !actions.includes('await ensureDetail(id)') || !ficha.includes('await ensureDetail(id)')) fail('La ficha completa debe descargarse únicamente al abrirla o editarla.');
+  if (!core.includes('DISPLAY_BATCH = 48') || !core.includes('mostrarMasBiblioteca')) fail('Biblioteca debe limitar el primer lote de portadas.');
+  if (!core.includes('CACHE_KEY') || !core.includes('readCache()') || !core.includes('writeCache(rows)')) fail('Biblioteca debe reutilizar un índice público en caché.');
+  if (!loader.includes('preloadGroupAssets(list)') || loader.includes("'&t=' + Date.now()")) fail('El cargador debe precargar módulos y conservar caché por versión.');
+  if (!auth.includes('scheduleLibraryWarmup()') || !loader.includes('ANX.preloadLibrary')) fail('Biblioteca debe prepararse en segundo plano después de iniciar sesión.');
+
+  let rendered = '';
+  const state = { user:{id:'user-1'}, isAdmin:false, libraryRows:Array.from({ length:120 }, (_, i) => ({ id:`card-${i}`, user_id:'owner', title:`Pez ${i}`, entry_type:'pez_marino', status:'published', visibility:'public', summary:'Ficha', cover_url:`https://example.com/${i}.jpg`, photo_url:`https://example.com/${i}.jpg`, tags:[], _libraryCardOnly:true })), libraryFilter:'all' };
+  const context = {
+    document:{getElementById(){return null}}, localStorage:{getItem(){return null},setItem(){}},
+    ANX:{supabase:{},state,esc:value=>String(value ?? ''),val(){return ''},msg:text=>`<div>${text}</div>`,token(){return 1},isCurrent(){return true},render(htmlText){rendered=htmlText},LibrarySchema:{normalizeSources(){return []}}}
+  };
+  context.window = context; context.globalThis = context;
+  vm.createContext(context);
+  vm.runInContext(core, context, { filename:'src/library/library-v3-core.js' });
+  context.ANX.LibraryV3Core.list();
+  if (rendered.includes('<img')) fail('La vista Todo no debe crear cientos de portadas al entrar.');
+  context.filtrarBiblioteca('pez_marino');
+  if ((rendered.match(/<img\b/g) || []).length !== 48 || !rendered.includes('mostrarMasBiblioteca')) fail('El primer lote de una categoría debe contener 48 portadas y ofrecer cargar más.');
+  context.mostrarMasBiblioteca();
+  if ((rendered.match(/<img\b/g) || []).length !== 96) fail('Mostrar más debe añadir exactamente otro lote de 48 portadas.');
+}
+
 function mockElement(id) {
   return { id, value:'', innerHTML:'', textContent:'', style:{}, dataset:{}, options:[], onclick:null,
     classList:{add(){},remove(){},toggle(){}}, addEventListener(){}, remove(){}, insertAdjacentHTML(){}, scrollIntoView(){}, prepend(){}, appendChild(){}, click(){}, setAttribute(){}, removeAttribute(){},
@@ -235,6 +265,6 @@ async function checkLoad() {
   }
 }
 
-try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); checkGeneratorDuplicateRule(); checkAccessAnalytics(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
+try { checkRefs(); checkVersions(); checkSyntax(); checkDuplicateWindows(); checkFichaOwnership(); checkDocs(); checkGeneratorDuplicateRule(); checkAccessAnalytics(); checkLibraryPerformance(); await checkLoad(); } catch (error) { fail(error.stack || error.message); }
 if (errors.length) { console.error('AcuarioNexo validation failed:'); errors.forEach(e => console.error(`- ${e}`)); process.exit(1); }
 console.log('AcuarioNexo validation OK');
