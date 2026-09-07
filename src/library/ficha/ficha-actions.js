@@ -193,8 +193,14 @@
   async function validateAndPublish(id) {
     const box = byId('libraryActionStatus') || byId('x') || byId('aiBox');
     try {
-      const x = row(id);
+      const supabase = ANX.supabase;
+      if (!supabase) throw new Error('Conexión con la base de datos no disponible.');
+      const fresh = await supabase.from('library_entries').select('*').eq('id', id).single();
+      if (fresh.error) throw fresh.error;
+      const x = fresh.data;
       if (!x) throw new Error('Ficha no encontrada.');
+      const cached = row(id);
+      if (cached) Object.assign(cached, x);
       const isAdmin = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
       if (!isAdmin) throw new Error('No tienes permiso para publicar fichas.');
 
