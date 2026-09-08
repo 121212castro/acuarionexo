@@ -96,7 +96,10 @@
     if (pendingLoad) return pendingLoad;
     pendingLoad = fetchCards().then(rows => {
       const details = new Map((state.libraryRows || []).filter(x => !x._libraryCardOnly).map(x => [String(x.id), x]));
-      state.libraryRows = rows.map(x => details.get(String(x.id)) || x);
+      state.libraryRows = rows.map(x => {
+        const detail = details.get(String(x.id));
+        return detail ? { ...detail, ...x, _libraryCardOnly: false } : x;
+      });
       state.libraryCardsLoadedAt = Date.now();
       writeCache(rows);
       return state.libraryRows;
