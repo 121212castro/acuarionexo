@@ -83,7 +83,7 @@
       render(`<section class="panel">${msg('No se pudo abrir la revisión de fichas.', 'error')}</section>`, 'admin');
       return;
     }
-    return window.biblioteca({ statusFilter: ['review', 'draft', 'identified'], adminReturn: true });
+    return window.biblioteca({ statusFilter: ['review'], adminReturn: true });
   };
 
   window.adminBibliotecaCompleta = async function () {
