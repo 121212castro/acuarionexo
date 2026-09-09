@@ -31,16 +31,21 @@
       photos,
       photo_url: photos.front,
       markers: markers.map(function (m) {
-        return {
+        const normalized = {
           id: String(m.id || `mk-${Date.now()}`),
           label: String(m.label || 'Punto'),
           type: String(m.type || 'coral'),
           note: String(m.note || ''),
+          model_family: String(m.model_family || ''),
           x: Math.max(0, Math.min(100, Number(m.x) || 50)),
           y: Math.max(0, Math.min(100, Number(m.y) || 50)),
           z: Math.max(0, Math.min(100, Number(m.z) || 50)),
           size: Math.max(6, Math.min(32, Number(m.size) || 14))
         };
+        if (!normalized.model_family && window.ANX?.MapModelFamilies?.resolveFamily) {
+          normalized.model_family = window.ANX.MapModelFamilies.resolveFamily(normalized);
+        }
+        return normalized;
       })
     };
   }
