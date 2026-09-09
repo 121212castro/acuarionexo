@@ -2,6 +2,7 @@
 (function () {
   function A() { return window.ANX || {}; }
   function S() { return A().MapState || {}; }
+  function F() { return A().MapModelFamilies || {}; }
 
   function currentMap() {
     const { currentAquarium } = A();
@@ -12,6 +13,11 @@
 
   function render(map) {
     if (window.ANX.MapMain?.renderMapIA) window.ANX.MapMain.renderMapIA(map);
+  }
+
+  function selectedFamily(type, label, note) {
+    const { val } = A();
+    return val('mapMarkerFamily') || F().resolveFamily?.({ type, label, note }) || '';
   }
 
   function placeMapMarker(event) {
@@ -26,6 +32,7 @@
     const label = val('mapMarkerLabel') || `Punto ${map.markers.length + 1}`;
     const type = val('mapMarkerType') || 'coral';
     const note = val('mapMarkerNote') || '';
+    const modelFamily = selectedFamily(type, label, note);
     const selected = selectedMapMarker(map);
     if (selected && map.selected_id) {
       selected.x = x;
@@ -33,11 +40,12 @@
       selected.label = label;
       selected.type = type;
       selected.note = note;
+      selected.model_family = modelFamily;
       writeMapDraft(aq, map);
       render(map);
       return;
     }
-    const marker = { id: `mk-${Date.now()}`, label, type, note, x, y, z: Number(val('mapMarkerZ')) || 50, size: Number(val('mapMarkerSize')) || 14 };
+    const marker = { id: `mk-${Date.now()}`, label, type, note, model_family: modelFamily, x, y, z: Number(val('mapMarkerZ')) || 50, size: Number(val('mapMarkerSize')) || 14 };
     map.markers.push(marker);
     map.selected_id = marker.id;
     writeMapDraft(aq, map);
@@ -54,6 +62,7 @@
     marker.y = Number(val('mapMarkerY')) || marker.y;
     marker.z = Number(val('mapMarkerZ')) || marker.z;
     marker.size = Number(val('mapMarkerSize')) || marker.size || 14;
+    marker.model_family = val('mapMarkerFamily') || marker.model_family || F().resolveFamily?.(marker) || '';
     if (window.ANX.MapRender3D?.renderMap3D) window.ANX.MapRender3D.renderMap3D(map);
   }
 
@@ -71,14 +80,19 @@
     const { writeMapDraft, selectedMapMarker } = S();
     const { aq, map } = currentMap();
     let marker = selectedMapMarker(map);
+    const type = val('mapMarkerType') || 'coral';
+    const label = val('mapMarkerLabel') || 'Punto';
+    const note = val('mapMarkerNote') || '';
+    const modelFamily = selectedFamily(type, label, note);
     if (!marker) {
-      marker = { id: `mk-${Date.now()}`, x: Number(val('mapMarkerX')) || 50, y: Number(val('mapMarkerY')) || 50, z: Number(val('mapMarkerZ')) || 50, size: Number(val('mapMarkerSize')) || 14, label: val('mapMarkerLabel') || 'Punto', type: val('mapMarkerType') || 'coral', note: val('mapMarkerNote') || '' };
+      marker = { id: `mk-${Date.now()}`, x: Number(val('mapMarkerX')) || 50, y: Number(val('mapMarkerY')) || 50, z: Number(val('mapMarkerZ')) || 50, size: Number(val('mapMarkerSize')) || 14, label, type, note, model_family: modelFamily };
       map.markers.push(marker);
       map.selected_id = marker.id;
     } else {
-      marker.label = val('mapMarkerLabel') || marker.label;
-      marker.type = val('mapMarkerType') || marker.type;
-      marker.note = val('mapMarkerNote') || '';
+      marker.label = label || marker.label;
+      marker.type = type || marker.type;
+      marker.note = note;
+      marker.model_family = modelFamily || marker.model_family || F().resolveFamily?.(marker) || '';
       marker.x = Number(val('mapMarkerX')) || marker.x;
       marker.y = Number(val('mapMarkerY')) || marker.y;
       marker.z = Number(val('mapMarkerZ')) || marker.z;
