@@ -9,6 +9,7 @@
   function SV() { return A().MapSave || {}; }
   function B() { return A().MapBuilder || {}; }
   function ST() { return A().MapStandalone || {}; }
+  function IS() { return A().MapInventorySync || {}; }
 
   const dependencyPromises = {};
   function loadDependency(src, test) {
@@ -31,6 +32,11 @@
     return A().MapAiGenerator;
   }
 
+  async function ensureInventorySync() {
+    await loadDependency('src/map/map-inventory-sync.js', function () { return !!A().MapInventorySync; });
+    return A().MapInventorySync;
+  }
+
   async function renderMapIA(map) {
     const { currentAquarium, render, aqHeader } = A();
     const { normalizeMap, readMap, hydrateMapPhotos } = S();
@@ -38,7 +44,17 @@
     const aq = currentAquarium();
     if (!aq) return window.dashboard ? window.dashboard() : null;
     const standalone = !!aq.__standalone_3d;
-    const normalized = normalizeMap(map || window.__aqMap || readMap(aq), aq);
+    let normalized = normalizeMap(map || window.__aqMap || readMap(aq), aq);
+
+    if (!standalone) {
+      try {
+        const sync = await ensureInventorySync();
+        if (sync?.syncInventoryIntoMap) normalized = await sync.syncInventoryIntoMap(aq, normalized);
+      } catch (error) {
+        console.warn('No se pudo sincronizar Inventario con Gemelo 3D:', error);
+      }
+    }
+
     window.__aqMap = typeof hydrateMapPhotos === 'function' ? await hydrateMapPhotos(normalized) : normalized;
     const clean = window.__aqMap;
     const builderHtml = B().formHtml ? B().formHtml(aq) : '';
@@ -109,5 +125,5 @@
   window.saveMapIA = function () { return SV().saveMapIA(); };
 
   window.ANX = window.ANX || {};
-  window.ANX.MapMain = { mapaIA, renderMapIA, ensureAiGenerator };
+  window.ANX.MapMain = { mapaIA, renderMapIA, ensureAiGenerator, ensureInventorySync };
 })();
