@@ -34,16 +34,23 @@
         const normalized = {
           id: String(m.id || `mk-${Date.now()}`),
           label: String(m.label || 'Punto'),
+          scientific_name: String(m.scientific_name || ''),
           type: String(m.type || 'coral'),
           note: String(m.note || ''),
           model_family: String(m.model_family || ''),
+          model_url: m.model_url || null,
+          texture_url: m.texture_url || null,
+          ai_3d_profile: m.ai_3d_profile && typeof m.ai_3d_profile === 'object' ? m.ai_3d_profile : null,
+          source_library_id: m.source_library_id ? String(m.source_library_id) : '',
+          source_library_type: String(m.source_library_type || ''),
+          auto_from_library: !!m.auto_from_library,
+          source_inventory_id: m.source_inventory_id ? String(m.source_inventory_id) : '',
+          inventory_quantity: Math.max(1, Number(m.inventory_quantity) || 1),
+          auto_from_inventory: !!m.auto_from_inventory,
           x: Math.max(0, Math.min(100, Number(m.x) || 50)),
           y: Math.max(0, Math.min(100, Number(m.y) || 50)),
           z: Math.max(0, Math.min(100, Number(m.z) || 50)),
-          size: Math.max(6, Math.min(32, Number(m.size) || 14)),
-          source_inventory_id: m.source_inventory_id ? String(m.source_inventory_id) : '',
-          inventory_quantity: Math.max(1, Number(m.inventory_quantity) || 1),
-          auto_from_inventory: !!m.auto_from_inventory
+          size: Math.max(6, Math.min(32, Number(m.size) || 14))
         };
         if (!normalized.model_family && window.ANX?.MapModelFamilies?.resolveFamily) {
           normalized.model_family = window.ANX.MapModelFamilies.resolveFamily(normalized);
@@ -68,35 +75,18 @@
   }
 
   function markerTypeLabel(type) {
-    return {
-      coral: 'Coral',
-      plant: 'Planta',
-      rock: 'Roca',
-      fish: 'Pez',
-      equipment: 'Equipo',
-      other: 'Otro'
-    }[type] || 'Punto';
+    return { coral: 'Coral', plant: 'Planta', rock: 'Roca', fish: 'Pez', equipment: 'Equipo', other: 'Otro' }[type] || 'Punto';
   }
 
   function mapPhotos(map) {
     const signed = map?.__signed_photos && typeof map.__signed_photos === 'object' ? map.__signed_photos : {};
     const stored = storedMapPhotos(map);
-    return {
-      front: signed.front || stored.front,
-      left: signed.left || stored.left,
-      right: signed.right || stored.right,
-      top: signed.top || stored.top
-    };
+    return { front: signed.front || stored.front, left: signed.left || stored.left, right: signed.right || stored.right, top: signed.top || stored.top };
   }
 
   function storedMapPhotos(map) {
     const photos = map?.photos && typeof map.photos === 'object' ? map.photos : {};
-    return {
-      front: photos.front || map?.photo_url || '',
-      left: photos.left || '',
-      right: photos.right || '',
-      top: photos.top || ''
-    };
+    return { front: photos.front || map?.photo_url || '', left: photos.left || '', right: photos.right || '', top: photos.top || '' };
   }
 
   async function hydrateMapPhotos(map) {
@@ -111,26 +101,9 @@
     return clean;
   }
 
-  function photoCount(map) {
-    return Object.values(storedMapPhotos(map)).filter(Boolean).length;
-  }
-
-  function selectedMapMarker(map) {
-    return map?.markers?.find(m => m.id === map.selected_id) || map?.markers?.[0] || null;
-  }
+  function photoCount(map) { return Object.values(storedMapPhotos(map)).filter(Boolean).length; }
+  function selectedMapMarker(map) { return map?.markers?.find(m => m.id === map.selected_id) || map?.markers?.[0] || null; }
 
   window.ANX = window.ANX || {};
-  window.ANX.MapState = {
-    MAP_PREFIX,
-    emptyMap,
-    normalizeMap,
-    readMap,
-    writeMapDraft,
-    markerTypeLabel,
-    mapPhotos,
-    storedMapPhotos,
-    hydrateMapPhotos,
-    photoCount,
-    selectedMapMarker
-  };
+  window.ANX.MapState = { MAP_PREFIX, emptyMap, normalizeMap, readMap, writeMapDraft, markerTypeLabel, mapPhotos, storedMapPhotos, hydrateMapPhotos, photoCount, selectedMapMarker };
 })();
