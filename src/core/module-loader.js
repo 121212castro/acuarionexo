@@ -17,6 +17,7 @@
       'src/library/library-v3-images.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
+      'src/library/ficha/library-3d-profile.js',
       'src/library/ficha/ficha-actions.js',
       'src/library/library-v3.js',
       'src/library/ficha/ficha-type-tools.js',
@@ -113,82 +114,48 @@
     ]
   };
 
-  function scriptKey(src) {
-    return src.replace(/[?#].*$/, '');
-  }
-
+  function scriptKey(src) { return src.replace(/[?#].*$/, ''); }
   function scriptSrc(src, attempt) {
     if (/^https?:\/\//i.test(src)) return src;
     return src + '?v=' + version + '&attempt=' + attempt;
   }
-
   function preloadGroupAssets(list) {
     list.filter(src => !/^https?:\/\//i.test(src)).forEach(function (src) {
       const key = scriptKey(src);
       if (loadedScripts.has(key) || document.querySelector('link[data-preload-key="' + key + '"]')) return;
       const link = document.createElement('link');
-      link.rel = 'preload';
-      link.as = 'script';
-      link.href = scriptSrc(src, 1);
-      link.dataset.preloadKey = key;
+      link.rel = 'preload'; link.as = 'script'; link.href = scriptSrc(src, 1); link.dataset.preloadKey = key;
       document.head.appendChild(link);
     });
   }
-
-  function wait(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  }
-
+  function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
   function removeFailedScripts(key) {
     document.querySelectorAll('script[data-src-key="' + key + '"]').forEach(function (script) {
       if (script.dataset.loaded !== 'true') script.remove();
     });
   }
-
   function loadScriptAttempt(src, attempt) {
     const key = scriptKey(src);
     return new Promise(function (resolve, reject) {
       const script = document.createElement('script');
-      script.src = scriptSrc(src, attempt);
-      script.async = false;
-      script.dataset.srcKey = key;
-      script.dataset.loaded = 'false';
-      script.onload = function () {
-        script.dataset.loaded = 'true';
-        loadedScripts.add(key);
-        resolve();
-      };
-      script.onerror = function () {
-        script.remove();
-        reject(new Error('No se pudo cargar ' + src));
-      };
+      script.src = scriptSrc(src, attempt); script.async = false; script.dataset.srcKey = key; script.dataset.loaded = 'false';
+      script.onload = function () { script.dataset.loaded = 'true'; loadedScripts.add(key); resolve(); };
+      script.onerror = function () { script.remove(); reject(new Error('No se pudo cargar ' + src)); };
       document.body.appendChild(script);
     });
   }
-
   async function loadScript(src) {
     const key = scriptKey(src);
     const loadedTag = document.querySelector('script[data-src-key="' + key + '"][data-loaded="true"]');
-    if (loadedScripts.has(key) || loadedTag) {
-      loadedScripts.add(key);
-      return true;
-    }
-
+    if (loadedScripts.has(key) || loadedTag) { loadedScripts.add(key); return true; }
     removeFailedScripts(key);
     let lastError = null;
     for (let attempt = 1; attempt <= 3; attempt += 1) {
-      try {
-        await loadScriptAttempt(src, attempt);
-        return true;
-      } catch (error) {
-        lastError = error;
-        removeFailedScripts(key);
-        if (attempt < 3) await wait(attempt * 700);
-      }
+      try { await loadScriptAttempt(src, attempt); return true; }
+      catch (error) { lastError = error; removeFailedScripts(key); if (attempt < 3) await wait(attempt * 700); }
     }
     throw lastError || new Error('No se pudo cargar ' + src);
   }
-
   async function loadModuleGroup(name) {
     if (loadedGroups.has(name)) return true;
     if (pendingGroups.has(name)) return pendingGroups.get(name);
@@ -197,27 +164,18 @@
     preloadGroupAssets(list);
     const job = (async function () {
       for (let i = 0; i < list.length; i += 1) await loadScript(list[i]);
-      loadedGroups.add(name);
-      pendingGroups.delete(name);
-      return true;
-    })().catch(function (error) {
-      pendingGroups.delete(name);
-      throw error;
-    });
-    pendingGroups.set(name, job);
-    return job;
+      loadedGroups.add(name); pendingGroups.delete(name); return true;
+    })().catch(function (error) { pendingGroups.delete(name); throw error; });
+    pendingGroups.set(name, job); return job;
   }
-
   function loadingPanel(label, active) {
     if (!ANX.render || !ANX.msg) return;
     ANX.render('<section class="panel">' + ANX.msg('Cargando ' + label + '...') + '</section>', active || 'inicio');
   }
-
   function moduleError(error, active) {
     if (!ANX.render || !ANX.msg) return;
     ANX.render('<section class="panel">' + ANX.msg(error.message || error, 'error') + '</section>', active || 'inicio');
   }
-
   function proxy(globalName, groupName, label, active) {
     const proxyFn = async function () {
       const args = Array.from(arguments);
@@ -227,13 +185,10 @@
         const real = window[globalName];
         if (real === proxyFn || typeof real !== 'function') throw new Error(globalName + ' no quedó disponible.');
         return real.apply(window, args);
-      } catch (error) {
-        moduleError(error, active || groupName);
-      }
+      } catch (error) { moduleError(error, active || groupName); }
     };
     window[globalName] = window[globalName] || proxyFn;
   }
-
   proxy('biblioteca', 'biblioteca', 'Biblioteca', 'biblioteca');
   proxy('animales', 'animales', 'Animales', 'acuarios');
   proxy('mapaIA', 'mapa', 'Mapa IA', 'acuarios');
@@ -249,7 +204,6 @@
   proxy('settings', 'settings', 'Ajustes', 'inicio');
   proxy('support', 'support', 'Soporte', 'inicio');
   proxy('statusCenter', 'status', 'Centro de Estado', 'inicio');
-
   ANX.loadModuleGroup = loadModuleGroup;
   ANX.preloadLibrary = async function () {
     if (!ANX.state?.user) return false;
