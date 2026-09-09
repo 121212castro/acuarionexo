@@ -103,9 +103,10 @@
 
   function familyOptionsHtml(type, selected, marker) {
     const esc = window.ANX?.esc || (v => String(v || ''));
-    const selectedValue = selected || resolveFamily({ ...(marker || {}), type });
+    const selectedValue = String(selected || '').trim();
+    const autoFamily = resolveFamily({ ...(marker || {}), type, model_family: '' });
     const groups = Object.entries(FAMILY_GROUPS);
-    return groups.map(function ([group, rows]) {
+    return `<option value="" ${selectedValue ? '' : 'selected'}>Automático según nombre (${esc(autoFamily)})</option>` + groups.map(function ([group, rows]) {
       return `<optgroup label="${esc(group === 'fish' ? 'Peces' : group === 'coral' ? 'Corales' : group === 'plant' ? 'Plantas' : group === 'equipment' ? 'Equipos' : group === 'rock' ? 'Rocas' : 'Otros')}">${rows.map(function ([value, label]) {
         return `<option value="${esc(value)}" ${selectedValue === value ? 'selected' : ''}>${esc(label)}</option>`;
       }).join('')}</optgroup>`;
