@@ -7,6 +7,7 @@
   function PH() { return A().MapPhotos || {}; }
   function MK() { return A().MapMarkers || {}; }
   function SV() { return A().MapSave || {}; }
+  function B() { return A().MapBuilder || {}; }
 
   const dependencyPromises = {};
   function loadDependency(src, test) {
@@ -37,21 +38,25 @@
     const normalized = normalizeMap(map || window.__aqMap || readMap(aq), aq);
     window.__aqMap = typeof hydrateMapPhotos === 'function' ? await hydrateMapPhotos(normalized) : normalized;
     const clean = window.__aqMap;
-    const generatorHtml = A().MapAiGenerator?.formHtml ? A().MapAiGenerator.formHtml() : '<div id="mapAiGeneratorMount"></div>';
+    const builderHtml = B().formHtml ? B().formHtml(aq) : '';
     render(aqHeader('mapa') + `<section class="panel map-panel">
-      <div class="panel-head"><div><h2>Gemelo 3D</h2><p class="small">Pecera navegable con volumen real, sustrato, rocas y objetos 3D colocables.</p></div><div><button onclick="openMapAiGenerator()">Crear con IA</button><button onclick="saveMapIA()">Guardar</button></div></div>
+      <div class="panel-head"><div><h2>Constructor de acuario 3D</h2><p class="small">Diseña la urna con sus medidas reales y coloca dentro rocas, corales, plantas, peces y equipos.</p></div><div><button class="primary" onclick="saveMapIA()">Guardar diseño</button></div></div>
+      ${builderHtml}
       ${mapStageHtml(clean)}
-      <label>Ángulo de foto</label><select id="mapPhotoAngle">
-        <option value="front">Frontal</option>
-        <option value="left">Lateral izquierda</option>
-        <option value="right">Lateral derecha</option>
-        <option value="top">Superior</option>
-      </select>
-      <label>Foto del acuario</label><input id="mapPhotoFile" type="file" accept="image/*" onchange="previewMapPhoto()">
-      <div id="mapPhotoPreview"></div>
-      <button class="primary" onclick="saveMapPhoto()">Guardar foto de este ángulo</button>
+      <details class="map-reference-box"><summary>Fotos de referencia (opcional)</summary>
+        <p class="small">Las fotos no forman el acuario 3D. Solo sirven como guía para reproducir un montaje existente.</p>
+        <label>Ángulo de foto</label><select id="mapPhotoAngle">
+          <option value="front">Frontal</option>
+          <option value="left">Lateral izquierda</option>
+          <option value="right">Lateral derecha</option>
+          <option value="top">Superior</option>
+        </select>
+        <label>Foto del acuario</label><input id="mapPhotoFile" type="file" accept="image/*" onchange="previewMapPhoto()">
+        <div id="mapPhotoPreview"></div>
+        <button onclick="saveMapPhoto()">Guardar foto de referencia</button>
+      </details>
       <div id="x"></div>
-    </section>${generatorHtml}${mapEditorHtml(clean)}`, 'acuarios');
+    </section>${mapEditorHtml(clean)}`, 'acuarios');
     requestAnimationFrame(function () { R3D().renderMap3D(clean); });
   }
 
@@ -76,6 +81,9 @@
   };
 
   window.mapaIA = mapaIA;
+  window.previewAquarium3DSize = function () { return B().preview?.(); };
+  window.saveAquarium3DSize = function () { return B().save?.(); };
+  window.resetAquarium3DView = function () { return B().resetView?.(); };
   window.previewMapPhoto = function () { return PH().previewMapPhoto(); };
   window.saveMapPhoto = function () { return PH().saveMapPhoto(); };
   window.placeMapMarker = function (event) { return MK().placeMapMarker(event); };
