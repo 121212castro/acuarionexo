@@ -28,7 +28,7 @@
   function mapListHtml(map) {
     const { esc } = A();
     const { markerTypeLabel } = S();
-    if (!map.markers.length) return '<p class="small">Sin puntos todavía. Escribe un nombre y toca la foto para colocar el primer coral, planta o roca.</p>';
+    if (!map.markers.length) return '<p class="small">Sin elementos todavía. Crea el primero y colócalo dentro de la urna 3D.</p>';
     return map.markers.map(function (marker) {
       const active = map.selected_id === marker.id ? ' active' : '';
       const family = marker.model_family || F().resolveFamily?.(marker) || '';
@@ -45,8 +45,8 @@
     const markerForFamily = selected || { type: 'coral', label: '' };
     const familyOptions = F().familyOptionsHtml ? F().familyOptionsHtml(markerForFamily.type || 'coral', markerForFamily.model_family || '', markerForFamily) : '';
     return `<section class="panel map-side">
-      <h3>Punto seleccionado</h3>
-      <label>Nombre</label><input id="mapMarkerLabel" value="${esc(selected?.label || '')}" placeholder="Ej. Euphyllia, Zoanthus, roca alta...">
+      <h3>Elemento seleccionado</h3>
+      <label>Nombre</label><input id="mapMarkerLabel" value="${esc(selected?.label || '')}" placeholder="Ej. Euphyllia, cirujano, roca alta, bomba...">
       <label>Tipo</label><select id="mapMarkerType">
         <option value="coral" ${selected?.type === 'coral' ? 'selected' : ''}>Coral</option>
         <option value="plant" ${selected?.type === 'plant' ? 'selected' : ''}>Planta</option>
@@ -56,18 +56,18 @@
         <option value="other" ${selected?.type === 'other' ? 'selected' : ''}>Otro</option>
       </select>
       <label>Familia de modelo 3D</label><select id="mapMarkerFamily" onchange="previewMapMarkerPosition()">${familyOptions}</select>
-      <p class="small">Una familia 3D se reutiliza entre especies con morfología parecida. No genera ni cobra modelos por IA.</p>
-      <label>Nota IA</label><textarea id="mapMarkerNote" placeholder="Luz media, flujo suave, dejar separación...">${esc(selected?.note || '')}</textarea>
+      <p class="small">La familia define la geometría reutilizable. No genera un modelo nuevo ni consume IA.</p>
+      <label>Notas</label><textarea id="mapMarkerNote" placeholder="Posición, orientación, separación, observaciones...">${esc(selected?.note || '')}</textarea>
       <label>Izquierda / derecha</label><input id="mapMarkerX" type="range" min="0" max="100" value="${esc(selected?.x ?? 50)}" oninput="previewMapMarkerPosition()">
       <label>Altura</label><input id="mapMarkerY" type="range" min="0" max="100" value="${esc(selected?.y ?? 50)}" oninput="previewMapMarkerPosition()">
       <label>Profundidad</label><input id="mapMarkerZ" type="range" min="0" max="100" value="${esc(selected?.z ?? 50)}" oninput="previewMapMarkerPosition()">
       <label>Tamaño 3D</label><input id="mapMarkerSize" type="range" min="6" max="32" value="${esc(selected?.size ?? 14)}" oninput="previewMapMarkerPosition()">
       <div class="map-actions">
-        <button class="primary" onclick="updateMapMarker()">Actualizar punto</button>
-        <button onclick="newMapMarker()">Nuevo punto</button>
-        <button onclick="deleteMapMarker()">Borrar punto</button>
+        <button class="primary" onclick="updateMapMarker()">Actualizar elemento</button>
+        <button onclick="newMapMarker()">Nuevo elemento</button>
+        <button onclick="deleteMapMarker()">Borrar elemento</button>
       </div>
-      <h3>Colocados</h3>
+      <h3>Elementos colocados</h3>
       <div class="map-list">${mapListHtml(map)}</div>
     </section>`;
   }
@@ -86,16 +86,13 @@
         <button onclick="rotateMap3D(18)">Girar +</button>
       </div>
       <div id="map3dStage" class="map-3d-stage"></div>
-      ${photoChecklistHtml(map)}
-      ${photoCount(map) ? `<details class="map-reference-box"><summary>Referencia de foto para colocar puntos</summary>
+      ${photoCount(map) ? `<details class="map-reference-box"><summary>Usar foto como referencia de colocación</summary>
+        ${photoChecklistHtml(map)}
         <div id="mapStage" class="map-photo-stage map-photo-reference" onclick="placeMapMarker(event)">
           <img src="${esc(photos.front || photos.left || photos.right || photos.top)}" alt="Foto de referencia del acuario">
           ${map.markers.map(mapMarkerHtml).join('')}
         </div>
-      </details>` : `<div class="map-empty-photo compact">
-        <b>Gemelo 3D preparado</b>
-        <p class="small">Sube fotos frontal, laterales y superior para usarlas como referencia del acuario real.</p>
-      </div>`}
+      </details>` : `<div class="map-empty-photo compact"><b>Urna 3D lista</b><p class="small">No necesitas fotografías. Ajusta las dimensiones y construye el acuario directamente en 3D.</p></div>`}
     </div>`;
   }
 
