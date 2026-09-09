@@ -44,6 +44,19 @@
     }
   };
 
+  window.abrirDisenador3DDesdeInicio = async function () {
+    if (!state.user) return login();
+    render(`<section class="panel">${msg('Cargando diseñador de acuario 3D...')}</section>`, 'inicio');
+    try {
+      if (window.ANX.loadModuleGroup) await window.ANX.loadModuleGroup('mapa');
+      const standalone = window.ANX.MapStandalone;
+      if (!standalone || typeof standalone.open !== 'function') throw new Error('No se pudo cargar el diseñador 3D.');
+      return standalone.open();
+    } catch (error) {
+      render(`<section class="panel">${msg(error.message || error, 'error')}<button onclick="dashboard()">Volver</button></section>`, 'inicio');
+    }
+  };
+
   window.dashboard = async function () {
     if (!state.user) return login();
     const t = token();
@@ -57,6 +70,7 @@
       const alertsHtml = (stats.alerts || []).map(dashboardAlertCard).join('') || emptyLine('Sin avisos importantes.');
       const activityHtml = (stats.recentActivity || []).map(dashboardActivityCard).join('') || emptyLine('Sin actividad reciente.');
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Inicio</h2><p>Resumen general de la app</p></div></section>
+        <section class="panel"><div class="panel-head"><div><h2>Diseña tu acuario en 3D</h2><p class="small">Crea una urna a escala real, coloca rocas, corales, plantas, peces y equipos y guárdala después como un nuevo acuario.</p></div></div><button class="primary" onclick="abrirDisenador3DDesdeInicio()"><span>▣</span> Diseñar acuario 3D</button></section>
         <section class="panel"><div class="panel-head"><h2>Identificar por foto</h2></div><p>Haz una foto o elige una imagen. AcuarioNexo identificará el elemento, buscará su ficha y podrás añadirlo al Inventario indicando en qué acuario está.</p><button class="primary" onclick="abrirIdentificadorFoto()"><span>⌾</span> Identificar y añadir</button></section>
         <section class="panel"><div class="panel-head"><h2>Asistente AcuarioNexo</h2></div><p>Consulta la biblioteca o analiza uno de tus acuarios con sus datos reales.</p><button class="primary assistant-home-button" onclick="assistantPortal()">Hablar con AcuarioNexo IA</button></section>
         <section class="panel"><div class="panel-head"><h2>Estado general</h2></div><div class="quick-actions">
