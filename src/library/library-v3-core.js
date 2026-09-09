@@ -109,7 +109,8 @@
 
   async function ensureDetail(id) {
     const current = row(id);
-    if (current && !current._libraryCardOnly) return current;
+    const forceFresh = isAdminReturnContext() || String(current?.status || '').toLowerCase() === 'review';
+    if (current && !current._libraryCardOnly && !forceFresh) return current;
     const { data, error } = await supabase.from('library_entries').select('*').eq('id', id).single();
     if (error) throw error;
     const index = (state.libraryRows || []).findIndex(x => String(x.id) === String(id));
