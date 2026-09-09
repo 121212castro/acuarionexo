@@ -33,8 +33,8 @@
     const esc = A().esc || (v => String(v ?? ''));
     return `<section class="panel aq-3d-standalone">
       <div class="panel-head"><div><h2>Diseñar acuario 3D</h2><p class="small">Crea una urna virtual antes de darla de alta como acuario real.</p></div><button onclick="closeStandalone3DDesigner()">Salir</button></div>
-      <label>Nombre del diseño</label><input id="aq3dDraftName" value="${esc(aq?.name || 'Nuevo diseño 3D')}" placeholder="Ej. Proyecto arrecife 300 L">
-      <label>Tipo</label><select id="aq3dDraftType">
+      <label>Nombre del diseño</label><input id="aq3dDraftName" value="${esc(aq?.name || 'Nuevo diseño 3D')}" placeholder="Ej. Proyecto arrecife 300 L" oninput="syncStandalone3DMeta()">
+      <label>Tipo</label><select id="aq3dDraftType" onchange="syncStandalone3DMeta()">
         <option value="reef" ${(aq?.aquarium_type || aq?.type) === 'reef' ? 'selected' : ''}>Marino arrecife</option>
         <option value="marine" ${(aq?.aquarium_type || aq?.type) === 'marine' ? 'selected' : ''}>Marino</option>
         <option value="freshwater" ${(aq?.aquarium_type || aq?.type) === 'freshwater' ? 'selected' : ''}>Agua dulce</option>
@@ -43,6 +43,17 @@
       <div class="map-actions"><button class="primary" onclick="saveStandalone3DAsAquarium()">Guardar como nuevo acuario</button></div>
       <div id="aq3dStandaloneStatus"></div>
     </section>`;
+  }
+
+  function syncMeta() {
+    const aq = A().currentAquarium?.();
+    if (!aq?.__standalone_3d) return aq;
+    const name = String(A().byId?.('aq3dDraftName')?.value || aq.name || '').trim();
+    const type = String(A().byId?.('aq3dDraftType')?.value || aq.aquarium_type || aq.type || 'reef').trim();
+    if (name) aq.name = name;
+    aq.aquarium_type = type;
+    aq.type = type;
+    return aq;
   }
 
   async function accountEntitlements() {
@@ -61,12 +72,13 @@
     const box = byId('aq3dStandaloneStatus');
     if (!state?.user || !aq?.__standalone_3d) return;
     try {
+      syncMeta();
       const entitlements = await accountEntitlements();
       const limit = entitlements.aquarium_limit == null ? null : Number(entitlements.aquarium_limit);
       if (limit !== null && (state.aquariums || []).length >= limit) throw new Error('Has alcanzado el límite de acuarios de tu plan.');
 
-      const name = String(byId('aq3dDraftName')?.value || '').trim();
-      const type = String(byId('aq3dDraftType')?.value || 'reef').trim();
+      const name = String(aq.name || '').trim();
+      const type = String(aq.aquarium_type || aq.type || 'reef').trim();
       if (!name) throw new Error('El nombre del acuario es obligatorio.');
 
       const map = S().writeMapDraft ? S().writeMapDraft(aq, window.__aqMap || S().emptyMap(aq)) : (window.__aqMap || {});
@@ -101,6 +113,7 @@
       state.aquariums = [saved, ...(state.aquariums || []).filter(x => String(x.id) !== String(saved.id))];
       state.aquarium = saved;
       window.q = saved;
+      previousAquarium = null;
       if (box) box.innerHTML = msg('Acuario creado. Abriendo su Gemelo 3D...', 'success');
       await M().renderMapIA?.(S().readMap(saved));
     } catch (error) {
@@ -128,7 +141,8 @@
     if (window.dashboard) window.dashboard();
   }
 
-  ANX.MapStandalone = { open, close, formHtml, saveAsAquarium, draftAquarium };
+  ANX.MapStandalone = { open, close, formHtml, syncMeta, saveAsAquarium, draftAquarium };
+  window.syncStandalone3DMeta = syncMeta;
   window.saveStandalone3DAsAquarium = saveAsAquarium;
   window.closeStandalone3DDesigner = close;
 })();
