@@ -27,20 +27,64 @@
     return null;
   }
 
+  function localFamily(entry) {
+    const type = typeForEntry(entry?.entry_type);
+    const text = `${entry?.title || ''} ${entry?.scientific_name || ''} ${entry?.data?.family || ''} ${entry?.data?.growth_form || ''} ${entry?.data?.coral_type || ''} ${entry?.data?.plant_type || ''} ${entry?.data?.equipment_type || ''}`.toLowerCase();
+    if (type === 'fish') {
+      if (/amphiprion|premnas|payaso|clown/.test(text)) return 'fish-clown';
+      if (/acanthurus|zebrasoma|ctenochaetus|naso|cirujano|tang/.test(text)) return 'fish-tang';
+      if (/centropyge|pomacanthus|holacanthus|apolemichthys|genicanthus|chaetodontoplus|angel/.test(text)) return 'fish-angelfish';
+      if (/chaetodon|forcipiger|chelmon|prognathodes|mariposa|butterfly/.test(text)) return 'fish-butterfly';
+      if (/cirrhilabrus|halichoeres|paracheilinus|labr|wrasse/.test(text)) return 'fish-wrasse';
+      if (/gobio|goby|amblyeleotris|valenciennea|stonogobiops|trimma|eviota/.test(text)) return 'fish-goby';
+      if (/hippocampus|caballito|seahorse/.test(text)) return 'fish-seahorse';
+      return 'fish-generic';
+    }
+    if (type === 'coral') {
+      if (/acropora|seriatopora|stylophora|pocillopora|montipora digitata/.test(text)) return 'coral-branching-sps';
+      if (/montipora|pavona|leptoseris|psammocora|plating|plate|incrust/.test(text)) return 'coral-plating-sps';
+      if (/favia|favites|goniastrea|platygyra|scolymia|homophyllia|lobophyllia|micromussa|acantha|brain/.test(text)) return 'coral-brain-lps';
+      if (/euphyllia|fimbriaphyllia|catalaphyllia|hammer|torch|frogspawn|anchor/.test(text)) return 'coral-tentacled-lps';
+      if (/goniopora|alveopora|duncan|flower/.test(text)) return 'coral-flower-lps';
+      if (/discosoma|ricordea|rhodactis|mushroom/.test(text)) return 'coral-mushroom';
+      if (/zoanthus|palythoa|protopalythoa|polyp/.test(text)) return 'coral-zoanthid';
+      if (/sarcophyton|sinularia|sclerophytum|lobophytum|cladiella|capnella|leather|kenya/.test(text)) return 'coral-leather';
+      if (/xenia|anthelia|clavularia|briareum|star polyp/.test(text)) return 'coral-xenia';
+      if (/gorgonia|gorgonian|muricea|fan|whip/.test(text)) return 'coral-gorgonian';
+      return 'coral-massive-lps';
+    }
+    if (type === 'plant') {
+      if (/echinodorus|cryptocoryne|aponogeton|nymphaea|rosette/.test(text)) return 'plant-rosette';
+      if (/rotala|ludwigia|bacopa|hygrophila|limnophila|tallo|stem/.test(text)) return 'plant-stem';
+      if (/eleocharis|vallisneria|sagittaria|césped|cesped|grass/.test(text)) return 'plant-grass';
+      if (/moss|musgo|taxiphyllum|fissidens|vesicularia/.test(text)) return 'plant-moss';
+      if (/anubias|microsorum|bolbitis|bucephalandra|rizoma|rhizome/.test(text)) return 'plant-rhizome';
+      return 'plant-generic';
+    }
+    if (type === 'equipment') {
+      if (/pump|bomba|wavemaker|circul/.test(text)) return 'equipment-pump';
+      if (/skimmer|espumador/.test(text)) return 'equipment-skimmer';
+      if (/heater|calentador/.test(text)) return 'equipment-heater';
+      if (/light|luz|led|t5|pantalla/.test(text)) return 'equipment-light';
+      if (/filter|filtro|uv/.test(text)) return 'equipment-filter';
+      return 'equipment-generic';
+    }
+    return 'other-generic';
+  }
+
   function familyFromEntry(entry) {
     const stored = String(entry?.data?.ai_3d_profile?.model_family || '').trim();
     if (stored) return stored;
-    const type = typeForEntry(entry?.entry_type);
     const resolver = ANX.MapModelFamilies?.resolveFamily;
     if (typeof resolver === 'function') {
       return resolver({
-        type,
+        type: typeForEntry(entry?.entry_type),
         label: entry?.title || '',
         scientific_name: entry?.scientific_name || '',
         note: [entry?.data?.family, entry?.data?.growth_form, entry?.data?.coral_type, entry?.data?.plant_type, entry?.data?.equipment_type].filter(Boolean).join(' ')
       });
     }
-    return type === 'fish' ? 'fish-generic' : type === 'coral' ? 'coral-generic' : type === 'plant' ? 'plant-generic' : type === 'equipment' ? 'equipment-generic' : 'other-generic';
+    return localFamily(entry);
   }
 
   function profileFor(entry) {
@@ -49,7 +93,7 @@
     const size = explicitSizeCm(entry);
     const type = typeForEntry(entry.entry_type);
     const stored = d.ai_3d_profile && typeof d.ai_3d_profile === 'object' ? d.ai_3d_profile : {};
-    const profile = {
+    return {
       version: 1,
       representation_type: stored.representation_type || 'reusable_family',
       model_family: stored.model_family || familyFromEntry(entry),
@@ -65,7 +109,6 @@
       exactness: stored.model_url ? 'exact_asset' : 'family_representation',
       source: stored.source || 'library_entry'
     };
-    return profile;
   }
 
   function markerSize(profile) {
@@ -165,11 +208,7 @@
     window.q = aq;
     window.__aqMap = clean;
     await ANX.MapMain?.renderMapIA?.(clean);
-    return markerFromMap(clean, entry.id);
-  }
-
-  function markerFromMap(map, libraryId) {
-    return (map?.markers || []).find(m => String(m.source_library_id || '') === String(libraryId)) || null;
+    return (clean.markers || []).find(m => String(m.source_library_id || '') === String(entry.id)) || null;
   }
 
   async function chooseAquarium(entryId) {
@@ -180,9 +219,7 @@
     await persistProfile(entry);
     const aquariums = await ensureAquariums();
     const current = ANX.currentAquarium?.();
-    if (current && !current.__standalone_3d && aquariums.some(a => String(a.id) === String(current.id))) {
-      return placeInAquarium(entryId, current.id);
-    }
+    if (current && !current.__standalone_3d && aquariums.some(a => String(a.id) === String(current.id))) return placeInAquarium(entryId, current.id);
     if (aquariums.length === 1) return placeInAquarium(entryId, aquariums[0].id);
 
     ANX.render(`<section class="panel">
@@ -213,6 +250,34 @@
       if (box) box.innerHTML = ANX.msg(error.message || error, 'error');
     }
   }
+
+  function injectIntoFicha() {
+    const detail = document.querySelector('.library-detail');
+    if (!detail || detail.dataset.profile3dInjected === 'true') return;
+    const addButton = detail.querySelector('[data-library-add-id]');
+    const id = addButton?.dataset?.libraryAddId;
+    if (!id) return;
+    const entry = ANX.LibraryV3Core?.row?.(id) || (ANX.state?.libraryRows || []).find(x => String(x.id) === String(id));
+    if (!entry || !SUPPORTED.has(entry.entry_type)) return;
+    detail.dataset.profile3dInjected = 'true';
+    const actions = detail.querySelector('.image-actions');
+    if (actions) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'primary library-add-3d-button';
+      button.textContent = 'Añadir al 3D';
+      button.addEventListener('click', function (event) {
+        event.preventDefault(); event.stopPropagation(); void safeChoose(id);
+      });
+      actions.appendChild(button);
+    }
+    const info = detail.querySelector('.library-detail-information');
+    if (info) info.insertAdjacentHTML('afterbegin', profileHtml(entry));
+  }
+
+  const observer = new MutationObserver(function () { injectIntoFicha(); });
+  if (document.documentElement) observer.observe(document.documentElement, { childList: true, subtree: true });
+  setTimeout(injectIntoFicha, 0);
 
   ANX.Library3DProfile = { SUPPORTED, typeForEntry, profileFor, profileHtml, persistProfile, chooseAquarium, placeInAquarium };
   window.anadirFichaAl3D = safeChoose;
