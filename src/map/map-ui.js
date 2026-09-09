@@ -2,6 +2,7 @@
 (function () {
   function A() { return window.ANX || {}; }
   function S() { return A().MapState || {}; }
+  function F() { return A().MapModelFamilies || {}; }
 
   function photoChecklistHtml(map) {
     const { esc } = A();
@@ -30,8 +31,9 @@
     if (!map.markers.length) return '<p class="small">Sin puntos todavía. Escribe un nombre y toca la foto para colocar el primer coral, planta o roca.</p>';
     return map.markers.map(function (marker) {
       const active = map.selected_id === marker.id ? ' active' : '';
+      const family = marker.model_family || F().resolveFamily?.(marker) || '';
       return `<button class="map-list-item${active}" onclick="selectMapMarker(event,'${esc(marker.id)}')">
-        <b>${esc(marker.label)}</b><span>${esc(markerTypeLabel(marker.type))}</span>
+        <b>${esc(marker.label)}</b><span>${esc(markerTypeLabel(marker.type))}${family ? ` · ${esc(family)}` : ''}</span>
       </button>`;
     }).join('');
   }
@@ -40,6 +42,8 @@
     const { esc } = A();
     const { selectedMapMarker } = S();
     const selected = selectedMapMarker(map);
+    const markerForFamily = selected || { type: 'coral', label: '' };
+    const familyOptions = F().familyOptionsHtml ? F().familyOptionsHtml(markerForFamily.type || 'coral', markerForFamily.model_family || '', markerForFamily) : '';
     return `<section class="panel map-side">
       <h3>Punto seleccionado</h3>
       <label>Nombre</label><input id="mapMarkerLabel" value="${esc(selected?.label || '')}" placeholder="Ej. Euphyllia, Zoanthus, roca alta...">
@@ -51,6 +55,8 @@
         <option value="equipment" ${selected?.type === 'equipment' ? 'selected' : ''}>Equipo</option>
         <option value="other" ${selected?.type === 'other' ? 'selected' : ''}>Otro</option>
       </select>
+      <label>Familia de modelo 3D</label><select id="mapMarkerFamily" onchange="previewMapMarkerPosition()">${familyOptions}</select>
+      <p class="small">Una familia 3D se reutiliza entre especies con morfología parecida. No genera ni cobra modelos por IA.</p>
       <label>Nota IA</label><textarea id="mapMarkerNote" placeholder="Luz media, flujo suave, dejar separación...">${esc(selected?.note || '')}</textarea>
       <label>Izquierda / derecha</label><input id="mapMarkerX" type="range" min="0" max="100" value="${esc(selected?.x ?? 50)}" oninput="previewMapMarkerPosition()">
       <label>Altura</label><input id="mapMarkerY" type="range" min="0" max="100" value="${esc(selected?.y ?? 50)}" oninput="previewMapMarkerPosition()">
