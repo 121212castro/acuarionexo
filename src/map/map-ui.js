@@ -28,7 +28,7 @@
   function mapListHtml(map) {
     const { esc } = A();
     const { markerTypeLabel } = S();
-    if (!map.markers.length) return '<p class="small">Sin elementos todavía. Crea el primero y colócalo dentro de la urna 3D.</p>';
+    if (!map.markers.length) return '<p class="small">Sin elementos todavía. Elige tipo, nombre y familia 3D y pulsa Añadir al acuario.</p>';
     return map.markers.map(function (marker) {
       const active = map.selected_id === marker.id ? ' active' : '';
       const family = marker.model_family || F().resolveFamily?.(marker) || '';
@@ -45,8 +45,8 @@
     const markerForFamily = selected || { type: 'coral', label: '' };
     const familyOptions = F().familyOptionsHtml ? F().familyOptionsHtml(markerForFamily.type || 'coral', markerForFamily.model_family || '', markerForFamily) : '';
     return `<section class="panel map-side">
-      <h3>Elemento seleccionado</h3>
-      <label>Nombre</label><input id="mapMarkerLabel" value="${esc(selected?.label || '')}" placeholder="Ej. Euphyllia, cirujano, roca alta, bomba...">
+      <h3>${selected ? 'Elemento seleccionado' : 'Añadir elemento al acuario'}</h3>
+      <label>Nombre</label><input id="mapMarkerLabel" value="${esc(selected?.label || '')}" placeholder="Ej. Pez payaso, Euphyllia, roca alta, bomba...">
       <label>Tipo</label><select id="mapMarkerType">
         <option value="coral" ${selected?.type === 'coral' ? 'selected' : ''}>Coral</option>
         <option value="plant" ${selected?.type === 'plant' ? 'selected' : ''}>Planta</option>
@@ -63,9 +63,9 @@
       <label>Profundidad</label><input id="mapMarkerZ" type="range" min="0" max="100" value="${esc(selected?.z ?? 50)}" oninput="previewMapMarkerPosition()">
       <label>Tamaño 3D</label><input id="mapMarkerSize" type="range" min="6" max="32" value="${esc(selected?.size ?? 14)}" oninput="previewMapMarkerPosition()">
       <div class="map-actions">
-        <button class="primary" onclick="updateMapMarker()">Actualizar elemento</button>
-        <button onclick="newMapMarker()">Nuevo elemento</button>
-        <button onclick="deleteMapMarker()">Borrar elemento</button>
+        ${selected ? '<button class="primary" onclick="updateMapMarker()">Guardar cambios</button>' : ''}
+        <button class="primary" onclick="newMapMarker()">Añadir al acuario</button>
+        ${selected ? '<button onclick="deleteMapMarker()">Borrar elemento</button>' : ''}
       </div>
       <h3>Elementos colocados</h3>
       <div class="map-list">${mapListHtml(map)}</div>
