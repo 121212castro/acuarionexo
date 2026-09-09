@@ -33,6 +33,7 @@
       'src/map/map-v3-model.js',
       'src/map/map-state.js',
       'src/map/map-model-families.js',
+      'src/map/map-builder.js',
       'src/map/map-ui.js',
       'src/map/map-photos.js',
       'src/map/map-markers.js',
