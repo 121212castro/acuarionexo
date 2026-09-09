@@ -1,6 +1,6 @@
 # Estado del Constructor 3D de AcuarioNexo — 09/09/2026
 
-Este documento deja constancia del estado real del módulo antes de mover o duplicar su acceso a la portada.
+Este documento deja constancia del estado real del módulo y de la decisión de mantener **dos accesos al mismo constructor 3D**: uno desde la portada y otro dentro de cada acuario.
 
 ## Objetivo funcional
 
@@ -18,8 +18,9 @@ Funciones implementadas:
 - Cálculo del volumen de agua según la altura indicada.
 - Redibujado inmediato de la escena 3D al modificar medidas.
 - Limitación de altura de agua para que no supere el alto de la urna.
-- Guardado de las dimensiones reales en la tabla `aquariums` de Supabase.
-- Actualización del objeto de acuario en memoria tras guardar.
+- Guardado de las dimensiones reales en la tabla `aquariums` de Supabase cuando se trabaja dentro de un acuario existente.
+- Aplicación de las medidas solo al borrador cuando se trabaja desde portada.
+- Actualización del objeto de acuario en memoria.
 - Recentrado de la vista 3D.
 
 Campos de `aquariums` utilizados:
@@ -30,6 +31,11 @@ Campos de `aquariums` utilizados:
 - `display_water_height_cm`
 - `gross_liters`
 - `display_water_liters`
+- `display_net_liters`
+- `system_net_liters`
+- `real_liters`
+- `liters`
+- `volume_liters`
 
 ## Motor 3D
 
@@ -144,36 +150,65 @@ No son necesarias para crear la urna 3D. Si existen, pueden usarse como guía fr
 
 El texto actual de interfaz deja explícito que las fotos no forman el acuario 3D.
 
-## Interfaz actual
+## Interfaz dentro de cada acuario
 
 Archivo coordinador: `src/map/map.js`.
 
-Título actual del módulo:
+Dentro de cada acuario se mantiene el acceso al **Constructor de acuario 3D** desde su apartado Mapa/Gemelo 3D.
 
-**Constructor de acuario 3D**
+Ese contexto trabaja directamente con el acuario real y permite:
 
-Texto actual:
+1. modificar y guardar sus medidas;
+2. editar la escena 3D;
+3. colocar elementos;
+4. guardar el diseño asociado a ese acuario;
+5. utilizar fotos solo como referencia opcional.
 
-**Diseña la urna con sus medidas reales y coloca dentro rocas, corales, plantas, peces y equipos.**
+## Acceso desde portada
 
-La pantalla integra:
+Se añadió un segundo acceso desde Inicio, sin duplicar el motor ni el editor.
 
-1. constructor de dimensiones;
-2. escena 3D;
-3. controles de cámara;
-4. editor de elementos;
-5. guardado del diseño;
-6. fotografías de referencia opcionales.
+Archivo de entrada: `src/aquariums/aquariums.js`.
 
-## Carga del módulo
+La portada muestra ahora:
 
-El grupo `mapa` del cargador incluye actualmente:
+**Diseña tu acuario en 3D**
+
+El botón **Diseñar acuario 3D** carga el mismo grupo `mapa` y abre un borrador independiente.
+
+Archivo específico de contexto: `src/map/map-standalone.js`.
+
+Características del modo portada:
+
+- crea un borrador temporal, inicialmente 80 × 30 × 35 cm;
+- utiliza exactamente el mismo constructor de medidas;
+- utiliza el mismo motor Three.js;
+- utiliza las mismas familias 3D;
+- utiliza el mismo editor de elementos;
+- no necesita que exista previamente un acuario en la cuenta;
+- no guarda cambios de medidas en Supabase mientras siga siendo borrador;
+- permite poner nombre y tipo al diseño;
+- ofrece **Guardar como nuevo acuario**;
+- al guardar, crea una fila real en `aquariums` y conserva la escena 3D en `ai_summary`;
+- respeta el límite de acuarios del plan mediante `app_entitlements`;
+- tras guardarlo, el usuario continúa en el Gemelo 3D del acuario recién creado.
+
+## Arquitectura compartida
+
+Los dos accesos usan el mismo motor. No existen dos constructores independientes.
+
+**Portada** → diseño nuevo / simulador → guardar como nuevo acuario.
+
+**Dentro de un acuario** → Gemelo 3D persistente del acuario real.
+
+El grupo `mapa` del cargador incluye:
 
 - Three.js;
 - contrato de mapa V3;
 - estado del mapa;
 - familias 3D;
 - constructor de urna;
+- contexto independiente de portada;
 - interfaz;
 - fotos;
 - marcadores;
@@ -183,13 +218,11 @@ El grupo `mapa` del cargador incluye actualmente:
 - coordinador;
 - interacciones.
 
-## Decisión pendiente
+## Regla de mantenimiento
 
-**Todavía no se debe eliminar ni trasladar la implementación actual del apartado Mapa/Gemelo 3D.**
+No se debe crear una segunda implementación paralela para portada. Cualquier mejora futura del constructor, las familias, el render o el editor debe beneficiar a ambos contextos.
 
-El siguiente cambio previsto es añadir un acceso visible desde la portada para que el usuario pueda comenzar directamente un diseño 3D. Antes de hacerlo debe conservarse el módulo actual como base funcional y evitar duplicar o romper su lógica.
-
-La portada debe actuar como **punto de entrada al constructor existente**, no como una segunda implementación independiente.
+El acceso dentro de cada acuario no se elimina ni se sustituye.
 
 ## Principio de producto
 
@@ -197,4 +230,4 @@ Mensaje de producto que define el módulo:
 
 **Diseña tu acuario antes de montarlo.**
 
-El usuario debe poder introducir dimensiones reales y construir visualmente la urna, decoración, equipos y habitantes en 3D sin depender de fotografías ni de generación de IA de pago.
+El usuario puede introducir dimensiones reales y construir visualmente la urna, decoración, equipos y habitantes en 3D sin depender de fotografías ni de generación de IA de pago.
