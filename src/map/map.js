@@ -8,6 +8,7 @@
   function MK() { return A().MapMarkers || {}; }
   function SV() { return A().MapSave || {}; }
   function B() { return A().MapBuilder || {}; }
+  function ST() { return A().MapStandalone || {}; }
 
   const dependencyPromises = {};
   function loadDependency(src, test) {
@@ -35,12 +36,22 @@
     const { normalizeMap, readMap, hydrateMapPhotos } = S();
     const { mapStageHtml, mapEditorHtml } = UI();
     const aq = currentAquarium();
+    if (!aq) return window.dashboard ? window.dashboard() : null;
+    const standalone = !!aq.__standalone_3d;
     const normalized = normalizeMap(map || window.__aqMap || readMap(aq), aq);
     window.__aqMap = typeof hydrateMapPhotos === 'function' ? await hydrateMapPhotos(normalized) : normalized;
     const clean = window.__aqMap;
     const builderHtml = B().formHtml ? B().formHtml(aq) : '';
-    render(aqHeader('mapa') + `<section class="panel map-panel">
-      <div class="panel-head"><div><h2>Constructor de acuario 3D</h2><p class="small">Diseña la urna con sus medidas reales y coloca dentro rocas, corales, plantas, peces y equipos.</p></div><div><button class="primary" onclick="saveMapIA()">Guardar diseño</button></div></div>
+    const contextHeader = standalone ? '' : aqHeader('mapa');
+    const standaloneHtml = standalone && ST().formHtml ? ST().formHtml(aq) : '';
+    const topActions = standalone ? '' : '<button class="primary" onclick="saveMapIA()">Guardar diseño</button>';
+    const title = standalone ? 'Diseñador de acuario 3D' : 'Constructor de acuario 3D';
+    const subtitle = standalone
+      ? 'Diseña una urna desde cero. Cuando termines puedes guardarla como un nuevo acuario.'
+      : 'Diseña la urna con sus medidas reales y coloca dentro rocas, corales, plantas, peces y equipos.';
+
+    render(contextHeader + standaloneHtml + `<section class="panel map-panel">
+      <div class="panel-head"><div><h2>${title}</h2><p class="small">${subtitle}</p></div><div>${topActions}</div></div>
       ${builderHtml}
       ${mapStageHtml(clean)}
       <details class="map-reference-box"><summary>Fotos de referencia (opcional)</summary>
@@ -56,7 +67,7 @@
         <button onclick="saveMapPhoto()">Guardar foto de referencia</button>
       </details>
       <div id="x"></div>
-    </section>${mapEditorHtml(clean)}`, 'acuarios');
+    </section>${mapEditorHtml(clean)}`, standalone ? 'inicio' : 'acuarios');
     requestAnimationFrame(function () { R3D().renderMap3D(clean); });
   }
 
