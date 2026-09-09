@@ -37,6 +37,19 @@
     return A().MapInventorySync;
   }
 
+  async function ensureClownfishVisual() {
+    if (document.querySelector('script[data-map-clownfish-visual="true"]')) return true;
+    return new Promise(function (resolve, reject) {
+      const script = document.createElement('script');
+      script.src = 'src/map/map-clownfish-visual.js?v=' + encodeURIComponent(window.ANX_ASSET_VERSION || 'dev');
+      script.async = false;
+      script.dataset.mapClownfishVisual = 'true';
+      script.onload = function () { resolve(true); };
+      script.onerror = function () { reject(new Error('No se pudo cargar el render específico del pez payaso.')); };
+      document.body.appendChild(script);
+    });
+  }
+
   async function renderMapIA(map) {
     const { currentAquarium, render, aqHeader } = A();
     const { normalizeMap, readMap, hydrateMapPhotos } = S();
@@ -84,6 +97,8 @@
       </details>
       <div id="x"></div>
     </section>${mapEditorHtml(clean)}`, standalone ? 'inicio' : 'acuarios');
+
+    try { await ensureClownfishVisual(); } catch (error) { console.warn(error); }
     requestAnimationFrame(function () { R3D().renderMap3D(clean); });
   }
 
@@ -125,5 +140,5 @@
   window.saveMapIA = function () { return SV().saveMapIA(); };
 
   window.ANX = window.ANX || {};
-  window.ANX.MapMain = { mapaIA, renderMapIA, ensureAiGenerator, ensureInventorySync };
+  window.ANX.MapMain = { mapaIA, renderMapIA, ensureAiGenerator, ensureInventorySync, ensureClownfishVisual };
 })();
