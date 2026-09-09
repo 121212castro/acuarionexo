@@ -40,7 +40,10 @@
           x: Math.max(0, Math.min(100, Number(m.x) || 50)),
           y: Math.max(0, Math.min(100, Number(m.y) || 50)),
           z: Math.max(0, Math.min(100, Number(m.z) || 50)),
-          size: Math.max(6, Math.min(32, Number(m.size) || 14))
+          size: Math.max(6, Math.min(32, Number(m.size) || 14)),
+          source_inventory_id: m.source_inventory_id ? String(m.source_inventory_id) : '',
+          inventory_quantity: Math.max(1, Number(m.inventory_quantity) || 1),
+          auto_from_inventory: !!m.auto_from_inventory
         };
         if (!normalized.model_family && window.ANX?.MapModelFamilies?.resolveFamily) {
           normalized.model_family = window.ANX.MapModelFamilies.resolveFamily(normalized);
