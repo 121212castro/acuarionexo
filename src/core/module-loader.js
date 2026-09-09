@@ -32,10 +32,12 @@
       'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js',
       'src/map/map-v3-model.js',
       'src/map/map-state.js',
+      'src/map/map-model-families.js',
       'src/map/map-ui.js',
       'src/map/map-photos.js',
       'src/map/map-markers.js',
       'src/map/map-render-3d.js',
+      'src/map/map-render-families.js',
       'src/map/map-save.js',
       'src/map/map.js',
       'src/map/map-interactions.js'
