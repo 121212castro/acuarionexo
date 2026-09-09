@@ -20,6 +20,25 @@
     return val('mapMarkerFamily') || F().resolveFamily?.({ type, label, note }) || '';
   }
 
+  function markerFromForm(overrides = {}) {
+    const { val } = A();
+    const type = val('mapMarkerType') || 'coral';
+    const label = val('mapMarkerLabel') || (type === 'fish' ? 'Pez' : 'Elemento');
+    const note = val('mapMarkerNote') || '';
+    return {
+      id: `mk-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      label,
+      type,
+      note,
+      model_family: selectedFamily(type, label, note),
+      x: Number(val('mapMarkerX')) || 50,
+      y: Number(val('mapMarkerY')) || 50,
+      z: Number(val('mapMarkerZ')) || 50,
+      size: Number(val('mapMarkerSize')) || 14,
+      ...overrides
+    };
+  }
+
   function placeMapMarker(event) {
     const { byId, val } = A();
     const { writeMapDraft, selectedMapMarker } = S();
@@ -41,15 +60,15 @@
       selected.type = type;
       selected.note = note;
       selected.model_family = modelFamily;
-      writeMapDraft(aq, map);
-      render(map);
+      const clean = writeMapDraft(aq, map);
+      render(clean);
       return;
     }
     const marker = { id: `mk-${Date.now()}`, label, type, note, model_family: modelFamily, x, y, z: Number(val('mapMarkerZ')) || 50, size: Number(val('mapMarkerSize')) || 14 };
     map.markers.push(marker);
     map.selected_id = marker.id;
-    writeMapDraft(aq, map);
-    render(map);
+    const clean = writeMapDraft(aq, map);
+    render(clean);
   }
 
   function previewMapMarkerPosition() {
@@ -71,8 +90,8 @@
     const { writeMapDraft } = S();
     const { aq, map } = currentMap();
     map.selected_id = id;
-    writeMapDraft(aq, map);
-    render(map);
+    const clean = writeMapDraft(aq, map);
+    render(clean);
   }
 
   function updateMapMarker() {
@@ -81,11 +100,11 @@
     const { aq, map } = currentMap();
     let marker = selectedMapMarker(map);
     const type = val('mapMarkerType') || 'coral';
-    const label = val('mapMarkerLabel') || 'Punto';
+    const label = val('mapMarkerLabel') || 'Elemento';
     const note = val('mapMarkerNote') || '';
     const modelFamily = selectedFamily(type, label, note);
     if (!marker) {
-      marker = { id: `mk-${Date.now()}`, x: Number(val('mapMarkerX')) || 50, y: Number(val('mapMarkerY')) || 50, z: Number(val('mapMarkerZ')) || 50, size: Number(val('mapMarkerSize')) || 14, label, type, note, model_family: modelFamily };
+      marker = markerFromForm();
       map.markers.push(marker);
       map.selected_id = marker.id;
     } else {
@@ -98,16 +117,19 @@
       marker.z = Number(val('mapMarkerZ')) || marker.z;
       marker.size = Number(val('mapMarkerSize')) || marker.size || 14;
     }
-    writeMapDraft(aq, map);
-    render(map);
+    const clean = writeMapDraft(aq, map);
+    render(clean);
   }
 
   function newMapMarker() {
     const { writeMapDraft } = S();
     const { aq, map } = currentMap();
-    map.selected_id = '';
-    writeMapDraft(aq, map);
-    render(map);
+    if (!aq) return;
+    const marker = markerFromForm();
+    map.markers.push(marker);
+    map.selected_id = marker.id;
+    const clean = writeMapDraft(aq, map);
+    render(clean);
   }
 
   function deleteMapMarker() {
@@ -115,8 +137,8 @@
     const { aq, map } = currentMap();
     map.markers = map.markers.filter(m => m.id !== map.selected_id);
     map.selected_id = map.markers[0]?.id || '';
-    writeMapDraft(aq, map);
-    render(map);
+    const clean = writeMapDraft(aq, map);
+    render(clean);
   }
 
   window.ANX = window.ANX || {};
