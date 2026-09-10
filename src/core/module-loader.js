@@ -10,6 +10,7 @@
     biblioteca: [
       'src/library/core/library-schema.js',
       'src/library/core/library-schema-rules.js',
+      'src/library/core/library-invertebrate-commercial-rules.js',
       'src/library/ui/library.js',
       'src/library/inventory/library-inventory-import.js',
       'src/library/library-v3-core.js',
