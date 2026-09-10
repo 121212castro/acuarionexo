@@ -41,20 +41,11 @@
     const ext = filenameExt(file);
     const path = `library/${state.user.id}/${coverFolder(entryType)}/${kind}-${timestamp}/original.${ext}`;
     const original = await uploadLibraryImage(path, file, file.type || 'application/octet-stream');
-    return {
-      original,
-      generated_at: new Date().toISOString(),
-      source_name: file.name || null
-    };
+    return { original, generated_at: new Date().toISOString(), source_name: file.name || null };
   }
 
   async function updateEntry(id, payload) {
-    const result = await supabase
-      .from('library_entries')
-      .update(payload)
-      .eq('id', id)
-      .select('*')
-      .single();
+    const result = await supabase.from('library_entries').update(payload).eq('id', id).select('*').single();
     if (result.error) throw result.error;
     return result.data;
   }
@@ -63,7 +54,6 @@
     assertAdmin();
     const x = row(id);
     if (!x) throw new Error('Ficha no encontrada.');
-
     const kind = assetKind(field);
     const legacyField = kind === 'cover' ? 'cover_url' : 'photo_url';
     const previousStatus = String(x.status || '').toLowerCase();
@@ -80,28 +70,17 @@
         const validated = await updateEntry(id, { status: 'validated', updated_at: now });
         Object.assign(x, validated);
       }
-
       const updated = await updateEntry(id, payload);
       Object.assign(x, updated);
-
       if (wasPublished) {
-        const republished = await updateEntry(id, {
-          status: 'published',
-          published_at: x.published_at || now,
-          updated_at: new Date().toISOString()
-        });
+        const republished = await updateEntry(id, { status: 'published', published_at: x.published_at || now, updated_at: new Date().toISOString() });
         Object.assign(x, republished);
       }
-
       return asset;
     } catch (error) {
       if (wasPublished && String(x.status || '').toLowerCase() !== 'published') {
         try {
-          const restored = await updateEntry(id, {
-            status: 'published',
-            published_at: x.published_at || now,
-            updated_at: new Date().toISOString()
-          });
+          const restored = await updateEntry(id, { status: 'published', published_at: x.published_at || now, updated_at: new Date().toISOString() });
           Object.assign(x, restored);
         } catch (_) {}
       }
@@ -116,15 +95,22 @@
     if (!x || !file) throw new Error('Selecciona una imagen.');
     const kind = assetKind(field);
     const asset = await uploadResponsiveAsset(file, kind, x.entry_type);
-    return saveResponsiveAsset(id, field, asset);
+    await saveResponsiveAsset(id, field, asset);
+
+    if (kind === 'photo' && ANX.LibraryCoverAuto?.SUPPORTED?.has(x.entry_type)) {
+      await ANX.LibraryCoverAuto.generateAndSave(id, asset.original);
+    }
+    return asset;
   }
 
   window.guardarImagenFicha = async function (id, field, inputId) {
     const box = byId('imageStatus') || byId('x');
     try {
-      if (box) box.innerHTML = msg('Guardando la imagen original sin recortes ni filtros...');
+      const x = row(id);
+      const autoCover = assetKind(field) === 'photo' && ANX.LibraryCoverAuto?.SUPPORTED?.has(x?.entry_type);
+      if (box) box.innerHTML = msg(autoCover ? 'Guardando foto interior y creando portada oficial...' : 'Guardando imagen...');
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg('Imagen cambiada correctamente. La ficha conserva su estado de validación y publicación.', 'success');
+      if (box) box.innerHTML = msg(autoCover ? 'Foto interior guardada y portada oficial generada automáticamente.' : 'Imagen cambiada correctamente.', 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -140,15 +126,13 @@
   };
 
   window.dragLibraryImage = function (event, previewId, active) {
-    event.preventDefault();
-    event.stopPropagation();
+    event.preventDefault(); event.stopPropagation();
     const target = byId(previewId);
     if (target) target.classList.toggle('library-image-drop-active', !!active);
   };
 
   window.dropLibraryImage = function (event, inputId, previewId) {
-    event.preventDefault();
-    event.stopPropagation();
+    event.preventDefault(); event.stopPropagation();
     const target = byId(previewId);
     if (target) target.classList.remove('library-image-drop-active');
     const files = Array.from(event.dataTransfer?.files || []);
@@ -160,8 +144,7 @@
       return;
     }
     const transfer = new DataTransfer();
-    transfer.items.add(image);
-    input.files = transfer.files;
+    transfer.items.add(image); input.files = transfer.files;
     window.previewLibraryImage(inputId, previewId);
   };
 
@@ -175,23 +158,20 @@
   }
 
   function imageBox(x) {
+    const auto = ANX.LibraryCoverAuto?.SUPPORTED?.has(x.entry_type);
+    const coverControl = auto
+      ? `<div><label>Portada oficial automática</label>${dropPreview('coverPreview', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<p class="small">Se crea al guardar la foto interior. Nombre común arriba en dorado, ejemplar/coral centrado y nombre científico abajo en blanco cursiva.</p></div>`
+      : `<div><label>Portada</label><div id="coverDrop" ondrop="dropLibraryImage(event,'coverFile','coverPreview')">${dropPreview('coverPreview', currentPreview(x, 'cover', x.cover_url, 'Portada'))}</div><input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>`;
+
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">Puedes arrastrar una imagen directamente desde el escritorio o seleccionarla con el botón. El cambio no obliga a validar de nuevo.</p>
+      <p class="small">${auto ? 'Para peces marinos y corales la portada usa la plantilla oficial fija y se genera automáticamente desde la foto interior.' : 'Puedes arrastrar una imagen directamente desde el escritorio o seleccionarla con el botón.'}</p>
       <div class="library-image-grid">
-        <div><label>Portada</label><div id="coverDrop" ondrop="dropLibraryImage(event,'coverFile','coverPreview')">${dropPreview('coverPreview', currentPreview(x, 'cover', x.cover_url, 'Portada'))}</div><input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>
+        ${coverControl}
         <div><label>Foto interior</label><div id="photoDrop" ondrop="dropLibraryImage(event,'photoFile','photoPreview')">${dropPreview('photoPreview', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}</div><input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
       </div><div id="imageStatus"></div>
     </section>`;
   }
 
-  ANX.LibraryV3Images = {
-    assetKind,
-    filenameExt,
-    coverFolder,
-    uploadResponsiveAsset,
-    saveResponsiveAsset,
-    setImage,
-    imageBox
-  };
+  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, setImage, imageBox };
 })();
