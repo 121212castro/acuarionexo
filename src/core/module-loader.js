@@ -14,6 +14,7 @@
       'src/library/inventory/library-inventory-import.js',
       'src/library/library-v3-core.js',
       'src/library/library-v3-template.js',
+      'src/library/ficha/library-cover-auto.js',
       'src/library/library-v3-images.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
@@ -94,24 +95,10 @@
       'src/tasks/tasks-form.js',
       'src/tasks/tasks.js'
     ],
-    admin: [
-      'src/admin/admin.js'
-    ],
-    settings: [
-      'src/settings/settings.js',
-      'src/support/settings-support-link.js',
-      'src/status/settings-status-link.js',
-      'src/ai/ai-access.js'
-    ],
-    support: [
-      'src/support/support.js'
-    ],
-    status: [
-      'src/status/status-core.js',
-      'src/status/status-ui.js',
-      'src/status/status.js',
-      'src/ai/ai-access.js'
-    ]
+    admin: ['src/admin/admin.js'],
+    settings: ['src/settings/settings.js','src/support/settings-support-link.js','src/status/settings-status-link.js','src/ai/ai-access.js'],
+    support: ['src/support/support.js'],
+    status: ['src/status/status-core.js','src/status/status-ui.js','src/status/status.js','src/ai/ai-access.js']
   };
 
   function scriptKey(src) { return src.replace(/[?#].*$/, ''); }
