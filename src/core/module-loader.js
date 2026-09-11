@@ -16,6 +16,7 @@
       'src/library/library-v3-core.js',
       'src/library/library-v3-template.js',
       'src/library/ficha/library-cover-auto.js',
+      'src/library/ficha/library-cover-master.js',
       'src/library/ficha/library-cover-backfill.js',
       'src/library/library-v3-images.js',
       'src/library/ficha/library-image-desktop-paste.js',
