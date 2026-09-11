@@ -1,6 +1,7 @@
-/* AcuarioNexo · backfill automático de portadas marinas pendientes */
+/* AcuarioNexo · regeneración automática de portadas de coral con plantilla maestra */
 (function () {
   const ANX = window.ANX = window.ANX || {};
+  const REQUIRED_TEMPLATE = 'marine-fish-coral-v2-fixed';
   let running = false;
   let lastResult = null;
 
@@ -19,12 +20,17 @@
     const raw = String(url || '').trim();
     if (!raw) throw new Error('Falta foto interior.');
     if (/^data:image\//i.test(raw)) return raw;
+    if (/\/storage\/v1\/object\/public\//i.test(raw)) return raw;
 
     const invoked = await ANX.supabase.functions.invoke('cover-image-proxy', { body: { url: raw } });
     if (invoked.error) throw invoked.error;
     const dataUrl = String(invoked.data?.data_url || '').trim();
     if (!/^data:image\//i.test(dataUrl)) throw new Error(invoked.data?.error || 'No se pudo preparar la foto interior.');
     return dataUrl;
+  }
+
+  function hasMasterTemplate(row) {
+    return String(row?.image_assets?.cover?.template || '').trim() === REQUIRED_TEMPLATE && String(row?.cover_url || '').trim();
   }
 
   async function pendingCorals() {
@@ -34,13 +40,15 @@
       .eq('entry_type', 'coral')
       .order('title', { ascending: true });
     if (result.error) throw result.error;
-    return (result.data || []).filter(row => !String(row.cover_url || '').trim() && String(row.photo_url || '').trim());
+    return (result.data || []).filter(row => String(row.photo_url || '').trim() && !hasMasterTemplate(row));
   }
 
   async function backfillCoralCovers(options = {}) {
     if (running) return lastResult || { running: true };
     if (!ANX.supabase || !ANX.state?.user || !isAdmin()) return { skipped: true, reason: 'admin_only' };
-    if (!ANX.LibraryCoverAuto?.generateAndSave) throw new Error('El generador oficial de portadas no está cargado.');
+    if (!ANX.LibraryCoverAuto?.generateAndSave || ANX.LibraryCoverAuto?.templateId !== REQUIRED_TEMPLATE) {
+      throw new Error('La plantilla maestra v2 de portadas no está cargada.');
+    }
 
     running = true;
     const rows = await pendingCorals();
@@ -57,7 +65,7 @@
         } catch (error) {
           result.failed += 1;
           result.failures.push({ id: entry.id, title: entry.title, error: String(error?.message || error) });
-          console.warn('AcuarioNexo: no se pudo generar portada', entry.title, error);
+          console.warn('AcuarioNexo: no se pudo regenerar portada maestra', entry.title, error);
         }
       }
       if (options.reload !== false && result.generated && ANX.LibraryV3Core?.load) {
@@ -75,15 +83,20 @@
     try {
       const rows = await pendingCorals();
       if (!rows.length) return;
+      console.info(`AcuarioNexo: regenerando ${rows.length} portadas de coral con plantilla maestra v2.`);
       const result = await backfillCoralCovers({ reload: false });
-      console.info(`AcuarioNexo: backfill de portadas coral ${result.generated}/${result.total}`, result.failures || []);
+      console.info(`AcuarioNexo: portadas maestras coral ${result.generated}/${result.total}`, result.failures || []);
+      if (result.generated && ANX.LibraryV3Core?.load) {
+        try { await ANX.LibraryV3Core.load(); } catch (_) {}
+      }
     } catch (error) {
-      console.warn('AcuarioNexo: backfill de portadas pendiente', error);
+      console.warn('AcuarioNexo: regeneración de portadas coral pendiente', error);
     }
   }
 
-  ANX.LibraryCoverBackfill = { pendingCorals, backfillCoralCovers };
+  ANX.LibraryCoverBackfill = { pendingCorals, backfillCoralCovers, requiredTemplate: REQUIRED_TEMPLATE };
+  window.regenerarTodasPortadasCoral = backfillCoralCovers;
   window.regenerarPortadasCoralPendientes = backfillCoralCovers;
 
-  setTimeout(autoRun, 900);
+  setTimeout(autoRun, 700);
 })();
