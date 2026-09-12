@@ -4,6 +4,7 @@
   const { supabase, state, esc, byId, msg } = ANX;
   const { row } = ANX.LibraryV3Core;
   const AUTO_TYPES = new Set(['pez_marino','coral']);
+  const MANUAL_COVER_TEMPLATES = new Set(['manual-approved','manual-restored-approved']);
 
   function assetKind(field) {
     return field === 'cover_url' || field === 'cover' ? 'cover' : 'photo';
@@ -22,6 +23,10 @@
   function assertAdmin() {
     const allowed = !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!state.isAdmin;
     if (!allowed) throw new Error('No tienes permiso para modificar imágenes de Biblioteca.');
+  }
+
+  function hasManualCover(x) {
+    return MANUAL_COVER_TEMPLATES.has(String(x?.image_assets?.cover?.template || '')) && !!String(x?.cover_url || '').trim();
   }
 
   async function uploadLibraryImage(path, file, contentType) {
@@ -102,8 +107,16 @@
     if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Arrastra un archivo de imagen válido.');
     const kind = assetKind(field);
     const asset = await uploadResponsiveAsset(file, kind, x.entry_type);
+
+    if (kind === 'cover') {
+      asset.template = 'manual-approved';
+      asset.manual = true;
+      asset.source_name = file.name || 'Portada manual';
+    }
+
     await saveResponsiveAsset(id, field, asset);
-    if (kind === 'photo' && AUTO_TYPES.has(x.entry_type)) {
+
+    if (kind === 'photo' && AUTO_TYPES.has(x.entry_type) && !hasManualCover(x)) {
       await generateOfficialCover(id, x.entry_type, asset.original);
     }
     return asset;
@@ -137,10 +150,12 @@
     if (!String(file.type || '').startsWith('image/')) throw new Error('Arrastra un archivo de imagen válido.');
     previewFile(file, previewId);
     const x = row(id);
-    const autoCover = assetKind(field) === 'photo' && AUTO_TYPES.has(x?.entry_type);
-    if (box) box.innerHTML = msg(autoCover ? 'Subiendo foto y creando portada oficial...' : 'Subiendo imagen...');
+    const isPhoto = assetKind(field) === 'photo';
+    const autoCover = isPhoto && AUTO_TYPES.has(x?.entry_type) && !hasManualCover(x);
+    const manualProtected = isPhoto && AUTO_TYPES.has(x?.entry_type) && hasManualCover(x);
+    if (box) box.innerHTML = msg(autoCover ? 'Subiendo foto y creando portada oficial...' : (manualProtected ? 'Subiendo foto interior y conservando tu portada manual...' : 'Subiendo imagen...'));
     await saveFileDirect(id, field, file);
-    if (box) box.innerHTML = msg(autoCover ? 'Foto subida desde el escritorio y portada actualizada.' : 'Imagen subida desde el escritorio.', 'success');
+    if (box) box.innerHTML = msg(autoCover ? 'Foto subida desde el escritorio y portada actualizada.' : (manualProtected ? 'Foto interior actualizada. La portada manual se conserva.' : 'Imagen subida desde el escritorio.'), 'success');
     formFicha(id);
   }
 
@@ -148,10 +163,12 @@
     const box = byId('imageStatus') || byId('x');
     try {
       const x = row(id);
-      const autoCover = assetKind(field) === 'photo' && AUTO_TYPES.has(x?.entry_type);
-      if (box) box.innerHTML = msg(autoCover ? 'Guardando foto interior y creando portada oficial...' : 'Guardando imagen...');
+      const isPhoto = assetKind(field) === 'photo';
+      const autoCover = isPhoto && AUTO_TYPES.has(x?.entry_type) && !hasManualCover(x);
+      const manualProtected = isPhoto && AUTO_TYPES.has(x?.entry_type) && hasManualCover(x);
+      if (box) box.innerHTML = msg(autoCover ? 'Guardando foto interior y creando portada oficial...' : (manualProtected ? 'Guardando foto interior y conservando tu portada manual...' : 'Guardando imagen...'));
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg(autoCover ? 'Foto interior guardada y portada oficial actualizada.' : 'Imagen cambiada correctamente.', 'success');
+      if (box) box.innerHTML = msg(autoCover ? 'Foto interior guardada y portada oficial actualizada.' : (manualProtected ? 'Foto interior guardada. La portada manual se conserva.' : 'Imagen cambiada correctamente.'), 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -216,18 +233,20 @@
       ondragleave="dragLibraryImage(event,'${id}',false)"
       ondrop="dropLibraryImageAndSave(event,'${esc(entryId)}','${field}','${id}')"
       onpaste="pasteLibraryImageAndSave(event,'${esc(entryId)}','${field}','${id}')"
-      onclick="document.getElementById('${inputId}')?.click()">${content}<span class="library-image-drop-hint">Arrastra aquí una foto desde el escritorio · se guarda al soltarla · también puedes pegar con ⌘V</span></div>`;
+      onclick="document.getElementById('${inputId}')?.click()">${content}<span class="library-image-drop-hint">Arrastra aquí una imagen desde el escritorio · se guarda al soltarla · también puedes pegar con ⌘V</span></div>`;
   }
 
   function imageBox(x) {
     const auto = AUTO_TYPES.has(x.entry_type);
-    const coverControl = auto
-      ? `<div><label>Portada oficial automática</label><div id="coverPreview" class="library-image-preview">${currentPreview(x, 'cover', x.cover_url, 'Portada')}</div><p class="small">Se genera desde la foto interior real con el fondo maestro de AcuarioNexo.</p></div>`
-      : `<div><label>Portada</label>${dropPreview('coverPreview', 'coverFile', x.id, 'cover_url', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>`;
+    const coverLabel = auto ? 'Portada · puedes cargarla manualmente' : 'Portada';
+    const manualNote = auto
+      ? `<p class="small">Si cargas una portada manual, queda protegida y no se sustituye al cambiar la foto interior.</p>`
+      : '';
+    const coverControl = `<div><label>${coverLabel}</label>${dropPreview('coverPreview', 'coverFile', x.id, 'cover_url', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada manual</button>${manualNote}</div>`;
 
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">Arrastra la foto interior desde el escritorio sobre su recuadro: se sube y se guarda directamente al soltarla.</p>
+      <p class="small">Puedes arrastrar una portada o una foto interior desde el escritorio. Se guarda directamente al soltarla.</p>
       <div class="library-image-grid">
         ${coverControl}
         <div><label>Foto interior</label>${dropPreview('photoPreview', 'photoFile', x.id, 'photo_url', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}<input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
@@ -271,5 +290,5 @@
     }, true);
   }
 
-  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, saveFileDirect, setImage, imageBox, generateOfficialCover };
+  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, saveFileDirect, setImage, imageBox, generateOfficialCover, hasManualCover };
 })();
