@@ -15,6 +15,7 @@
       'src/library/inventory/library-inventory-import.js',
       'src/library/library-v3-core.js',
       'src/library/library-v3-template.js',
+      'src/library/ficha/library-cover-contract.js',
       'src/library/ficha/library-cover-auto.js',
       'src/library/ficha/library-cover-master.js',
       'src/library/ficha/library-cover-backfill.js',
