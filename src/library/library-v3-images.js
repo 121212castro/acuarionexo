@@ -89,31 +89,42 @@
     }
   }
 
-  async function generateOfficialCover(id, entryType) {
+  async function generateOfficialCover(id, entryType, photoUrl) {
     if (!AUTO_TYPES.has(entryType)) return null;
-    const invoked = await supabase.functions.invoke('backfill-coral-covers', { body: { id } });
-    if (invoked.error) throw invoked.error;
-    if (invoked.data?.error) throw new Error(invoked.data.error);
-    const fresh = await supabase.from('library_entries').select('*').eq('id', id).single();
-    if (fresh.error) throw fresh.error;
-    const x = row(id);
-    if (x) Object.assign(x, fresh.data);
-    return fresh.data?.cover_url || null;
+    if (!ANX.LibraryCoverAuto?.generateAndSave) throw new Error('El generador oficial de portada no está cargado.');
+    return ANX.LibraryCoverAuto.generateAndSave(id, photoUrl);
   }
 
-  async function setImage(id, field, inputId) {
+  async function saveFileDirect(id, field, file) {
     assertAdmin();
     const x = row(id);
-    const file = byId(inputId)?.files?.[0];
-    if (!x || !file) throw new Error('Selecciona una imagen.');
+    if (!x) throw new Error('Ficha no encontrada.');
+    if (!file || !String(file.type || '').startsWith('image/')) throw new Error('Arrastra un archivo de imagen válido.');
     const kind = assetKind(field);
     const asset = await uploadResponsiveAsset(file, kind, x.entry_type);
     await saveResponsiveAsset(id, field, asset);
-
     if (kind === 'photo' && AUTO_TYPES.has(x.entry_type)) {
-      await generateOfficialCover(id, x.entry_type);
+      await generateOfficialCover(id, x.entry_type, asset.original);
     }
     return asset;
+  }
+
+  async function setImage(id, field, inputId) {
+    const file = byId(inputId)?.files?.[0];
+    if (!file) throw new Error('Selecciona una imagen.');
+    return saveFileDirect(id, field, file);
+  }
+
+  function previewFile(file, previewId) {
+    const target = byId(previewId);
+    if (!file || !target) return;
+    const url = URL.createObjectURL(file);
+    target.querySelectorAll('img').forEach(img => img.remove());
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'Previsualización';
+    img.onload = () => URL.revokeObjectURL(url);
+    target.prepend(img);
   }
 
   window.guardarImagenFicha = async function (id, field, inputId) {
@@ -131,54 +142,57 @@
   };
 
   window.previewLibraryImage = function (inputId, previewId) {
-    const file = byId(inputId)?.files?.[0];
-    const target = byId(previewId);
-    if (!file || !target) return;
-    const url = URL.createObjectURL(file);
-    target.querySelectorAll('img').forEach(img => img.remove());
-    const img = document.createElement('img');
-    img.src = url;
-    img.alt = 'Previsualización';
-    img.onload = () => URL.revokeObjectURL(url);
-    target.prepend(img);
+    previewFile(byId(inputId)?.files?.[0], previewId);
   };
 
   window.dragLibraryImage = function (event, previewId, active) {
     event.preventDefault();
+    event.stopPropagation();
     const target = byId(previewId);
     if (target) target.classList.toggle('library-image-drop-active', !!active);
     if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
   };
 
-  function assignFileToInput(file, inputId, previewId) {
-    const input = byId(inputId);
-    if (!file || !input || !String(file.type || '').startsWith('image/')) return false;
-    const transfer = new DataTransfer();
-    transfer.items.add(file);
-    input.files = transfer.files;
-    window.previewLibraryImage(inputId, previewId);
-    return true;
-  }
-
-  window.dropLibraryImage = function (event, inputId, previewId) {
+  window.dropLibraryImageAndSave = async function (event, id, field, previewId) {
     event.preventDefault();
     event.stopPropagation();
     const target = byId(previewId);
     if (target) target.classList.remove('library-image-drop-active');
-    const files = Array.from(event.dataTransfer?.files || []);
-    const image = files.find(file => String(file.type || '').startsWith('image/'));
-    if (!assignFileToInput(image, inputId, previewId)) {
-      const box = byId('imageStatus');
+    const box = byId('imageStatus') || byId('x');
+    const image = Array.from(event.dataTransfer?.files || []).find(file => String(file.type || '').startsWith('image/'));
+    if (!image) {
       if (box) box.innerHTML = msg('Arrastra un archivo de imagen válido.', 'error');
+      return;
+    }
+    try {
+      previewFile(image, previewId);
+      const x = row(id);
+      const autoCover = assetKind(field) === 'photo' && AUTO_TYPES.has(x?.entry_type);
+      if (box) box.innerHTML = msg(autoCover ? 'Subiendo foto y creando portada oficial...' : 'Subiendo imagen...');
+      await saveFileDirect(id, field, image);
+      if (box) box.innerHTML = msg(autoCover ? 'Foto subida desde el escritorio y portada actualizada.' : 'Imagen subida desde el escritorio.', 'success');
+      formFicha(id);
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo subir la imagen arrastrada.', 'error');
     }
   };
 
-  window.pasteLibraryImage = function (event, inputId, previewId) {
-    const files = Array.from(event.clipboardData?.files || []);
-    const image = files.find(file => String(file.type || '').startsWith('image/'));
+  window.pasteLibraryImageAndSave = async function (event, id, field, previewId) {
+    const items = Array.from(event.clipboardData?.items || []);
+    const item = items.find(x => String(x.type || '').startsWith('image/'));
+    const image = item?.getAsFile?.() || null;
     if (!image) return;
     event.preventDefault();
-    assignFileToInput(image, inputId, previewId);
+    const box = byId('imageStatus') || byId('x');
+    try {
+      previewFile(image, previewId);
+      if (box) box.innerHTML = msg('Subiendo imagen pegada...');
+      await saveFileDirect(id, field, image);
+      if (box) box.innerHTML = msg('Imagen pegada y guardada correctamente.', 'success');
+      formFicha(id);
+    } catch (error) {
+      if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen pegada.', 'error');
+    }
   };
 
   function currentPreview(x, kind, fallback, alt) {
@@ -186,31 +200,31 @@
     return url ? `<img src="${esc(url)}" alt="${esc(alt)}">` : msg('Sin imagen', 'notice');
   }
 
-  function dropPreview(id, inputId, content) {
+  function dropPreview(id, inputId, entryId, field, content) {
     return `<div id="${id}" class="library-image-preview library-image-dropzone" tabindex="0"
       ondragenter="dragLibraryImage(event,'${id}',true)"
       ondragover="dragLibraryImage(event,'${id}',true)"
       ondragleave="dragLibraryImage(event,'${id}',false)"
-      ondrop="dropLibraryImage(event,'${inputId}','${id}')"
-      onpaste="pasteLibraryImage(event,'${inputId}','${id}')"
-      onclick="document.getElementById('${inputId}')?.click()">${content}<span class="library-image-drop-hint">Arrastra aquí una foto desde el escritorio · también puedes pegar con ⌘V</span></div>`;
+      ondrop="dropLibraryImageAndSave(event,'${esc(entryId)}','${field}','${id}')"
+      onpaste="pasteLibraryImageAndSave(event,'${esc(entryId)}','${field}','${id}')"
+      onclick="document.getElementById('${inputId}')?.click()">${content}<span class="library-image-drop-hint">Arrastra aquí una foto desde el escritorio · se guarda al soltarla · también puedes pegar con ⌘V</span></div>`;
   }
 
   function imageBox(x) {
     const auto = AUTO_TYPES.has(x.entry_type);
     const coverControl = auto
-      ? `<div><label>Portada oficial automática</label><div id="coverPreview" class="library-image-preview">${currentPreview(x, 'cover', x.cover_url, 'Portada')}</div><p class="small">Plantilla fija aprobada: nombre común arriba en dorado, científico debajo en cursiva dorada y ejemplar/coral centrado.</p></div>`
-      : `<div><label>Portada</label>${dropPreview('coverPreview', 'coverFile', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>`;
+      ? `<div><label>Portada oficial automática</label><div id="coverPreview" class="library-image-preview">${currentPreview(x, 'cover', x.cover_url, 'Portada')}</div><p class="small">Se genera desde la foto interior real con el fondo maestro de AcuarioNexo.</p></div>`
+      : `<div><label>Portada</label>${dropPreview('coverPreview', 'coverFile', x.id, 'cover_url', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>`;
 
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">${auto ? 'Guarda o arrastra la foto interior. La portada oficial se genera automáticamente.' : 'Puedes arrastrar una imagen directamente desde el escritorio, pegarla con ⌘V o seleccionarla.'}</p>
+      <p class="small">Arrastra la foto interior desde el escritorio sobre su recuadro: se sube y se guarda directamente al soltarla.</p>
       <div class="library-image-grid">
         ${coverControl}
-        <div><label>Foto interior</label>${dropPreview('photoPreview', 'photoFile', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}<input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
+        <div><label>Foto interior</label>${dropPreview('photoPreview', 'photoFile', x.id, 'photo_url', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}<input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
       </div><div id="imageStatus"></div>
     </section>`;
   }
 
-  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, setImage, imageBox, generateOfficialCover };
+  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, saveFileDirect, setImage, imageBox, generateOfficialCover };
 })();
