@@ -2,7 +2,7 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
   const REQUIRED_TEMPLATE = 'marine-fish-coral-v5-cutout';
-  const MANUAL_TEMPLATE = 'manual-restored-approved';
+  const MANUAL_TEMPLATES = new Set(['manual-approved','manual-restored-approved']);
   let running = false;
 
   function isAdmin() {
@@ -10,7 +10,7 @@
   }
 
   function protectedManual(row) {
-    return String(row?.image_assets?.cover?.template || '') === MANUAL_TEMPLATE && !!String(row?.cover_url || '').trim();
+    return MANUAL_TEMPLATES.has(String(row?.image_assets?.cover?.template || '')) && !!String(row?.cover_url || '').trim();
   }
 
   function hasMasterTemplate(row) {
@@ -79,7 +79,7 @@
     }
   }
 
-  ANX.LibraryCoverBackfill = { pendingCorals, backfillCoralCovers, requiredTemplate: REQUIRED_TEMPLATE, manualTemplate: MANUAL_TEMPLATE };
+  ANX.LibraryCoverBackfill = { pendingCorals, backfillCoralCovers, requiredTemplate: REQUIRED_TEMPLATE, manualTemplates: [...MANUAL_TEMPLATES] };
   window.regenerarTodasPortadasCoral = backfillCoralCovers;
   window.regenerarPortadasCoralPendientes = backfillCoralCovers;
   setTimeout(autoRun, 1000);
