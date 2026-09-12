@@ -1,8 +1,9 @@
 /* AcuarioNexo · portada maestra aprobada con recorte real del ejemplar */
 (function () {
   const ANX = window.ANX = window.ANX || {};
-  const SUPPORTED = new Set(['pez_marino', 'coral']);
-  const TEMPLATE = 'marine-fish-coral-v5-cutout';
+  const CONTRACT = ANX.LibraryCoverContract;
+  if (!CONTRACT) throw new Error('LibraryCoverContract debe cargarse antes del generador de portadas.');
+
   const ORT_SRC = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/ort.min.js';
   const ORT_WASM = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.22.0/dist/';
   const U2NET_MODEL = 'https://raw.githubusercontent.com/heyi1994/ai_background_removal/master/assets/models/u2netp.onnx';
@@ -79,7 +80,7 @@
     backgroundPromise = (async () => {
       const version = encodeURIComponent(window.ANX_ASSET_VERSION || window.ACUARIONEXO_BUILD || 'dev');
       const response = await fetch(`src/library/ficha/library-cover-auto.js?v=${version}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('No se pudo cargar la plantilla oficial de portada.');
+      if (!response.ok) throw new Error('No se pudo cargar el fondo oficial de portada.');
       const text = await response.text();
       const match = text.match(/const BG = '([^']+)'/);
       if (!match) throw new Error('No se encontró el fondo oficial de portada.');
@@ -128,7 +129,8 @@
     const src = sourceCanvas(img);
     const size = 320;
     const prep = document.createElement('canvas');
-    prep.width = size; prep.height = size;
+    prep.width = size;
+    prep.height = size;
     const pctx = prep.getContext('2d', { willReadFrequently: true });
     pctx.drawImage(src, 0, 0, size, size);
     const pixels = pctx.getImageData(0, 0, size, size).data;
@@ -140,9 +142,8 @@
       tensorData[size * size + i] = (pixels[i * 4 + 1] / 255 - mean[1]) / std[1];
       tensorData[size * size * 2 + i] = (pixels[i * 4 + 2] / 255 - mean[2]) / std[2];
     }
-    const inputName = session.inputNames[0];
     const feeds = {};
-    feeds[inputName] = new ort.Tensor('float32', tensorData, [1, 3, size, size]);
+    feeds[session.inputNames[0]] = new ort.Tensor('float32', tensorData, [1, 3, size, size]);
     const outputs = await session.run(feeds);
     const out = outputs[session.outputNames[0]];
     if (!out?.data?.length) throw new Error('El recorte del ejemplar no devolvió máscara.');
@@ -155,7 +156,8 @@
     }
     const range = Math.max(1e-6, max - min);
     const mask = document.createElement('canvas');
-    mask.width = size; mask.height = size;
+    mask.width = size;
+    mask.height = size;
     const mctx = mask.getContext('2d');
     const maskData = mctx.createImageData(size, size);
     for (let i = 0; i < size * size; i += 1) {
@@ -171,7 +173,8 @@
     mctx.putImageData(maskData, 0, 0);
 
     const cut = document.createElement('canvas');
-    cut.width = src.width; cut.height = src.height;
+    cut.width = src.width;
+    cut.height = src.height;
     const cctx = cut.getContext('2d');
     cctx.drawImage(src, 0, 0);
     cctx.globalCompositeOperation = 'destination-in';
@@ -198,8 +201,10 @@
     }
     if (maxX < minX || maxY < minY) throw new Error('No se pudo aislar el ejemplar de la foto real.');
     const margin = Math.round(Math.max(width, height) * 0.025);
-    minX = Math.max(0, minX - margin); minY = Math.max(0, minY - margin);
-    maxX = Math.min(width - 1, maxX + margin); maxY = Math.min(height - 1, maxY + margin);
+    minX = Math.max(0, minX - margin);
+    minY = Math.max(0, minY - margin);
+    maxX = Math.min(width - 1, maxX + margin);
+    maxY = Math.min(height - 1, maxY + margin);
     const out = document.createElement('canvas');
     out.width = Math.max(1, maxX - minX + 1);
     out.height = Math.max(1, maxY - minY + 1);
@@ -207,56 +212,75 @@
     return out;
   }
 
-  function drawHeader(ctx, common, scientific) {
-    const fade = ctx.createLinearGradient(0, 0, 0, 330);
-    fade.addColorStop(0, 'rgba(1,12,35,.55)');
-    fade.addColorStop(1, 'rgba(1,12,35,0)');
-    ctx.fillStyle = fade;
-    ctx.fillRect(0, 0, 1200, 340);
+  function drawNames(ctx, entry, contract) {
+    const common = clean(entry.title);
+    const scientific = clean(entry.scientific_name);
+
+    const topFade = ctx.createLinearGradient(0, 0, 0, 260);
+    topFade.addColorStop(0, 'rgba(1,12,35,.58)');
+    topFade.addColorStop(1, 'rgba(1,12,35,0)');
+    ctx.fillStyle = topFade;
+    ctx.fillRect(0, 0, contract.canvas.width, 280);
+
+    const bottomFade = ctx.createLinearGradient(0, contract.canvas.height - 250, 0, contract.canvas.height);
+    bottomFade.addColorStop(0, 'rgba(1,12,35,0)');
+    bottomFade.addColorStop(1, 'rgba(1,12,35,.62)');
+    ctx.fillStyle = bottomFade;
+    ctx.fillRect(0, contract.canvas.height - 250, contract.canvas.width, 250);
+
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.shadowColor = 'rgba(0,0,0,.82)';
     ctx.shadowBlur = 12;
-    const commonFamily = s => `700 ${s}px Georgia, 'Times New Roman', serif`;
-    const commonSize = fitFont(ctx, common, 1040, 106, 48, commonFamily);
+
+    const commonFamily = size => `700 ${size}px Georgia, 'Times New Roman', serif`;
+    const commonSize = fitFont(ctx, common, contract.common_name.max_width, contract.common_name.start_size, contract.common_name.min_size, commonFamily);
     ctx.font = commonFamily(commonSize);
-    ctx.fillStyle = '#e7bc58';
-    ctx.fillText(common, 600, 112);
-    const sciFamily = s => `italic 500 ${s}px Georgia, 'Times New Roman', serif`;
-    const sciSize = fitFont(ctx, scientific, 980, 64, 34, sciFamily);
+    ctx.fillStyle = contract.common_name.color;
+    ctx.fillText(common, contract.common_name.x, contract.common_name.y);
+
+    const sciFamily = size => `italic 500 ${size}px Georgia, 'Times New Roman', serif`;
+    const sciSize = fitFont(ctx, scientific, contract.scientific_name.max_width, contract.scientific_name.start_size, contract.scientific_name.min_size, sciFamily);
     ctx.font = sciFamily(sciSize);
-    ctx.fillStyle = '#e7bc58';
+    ctx.fillStyle = contract.scientific_name.color;
     ctx.shadowBlur = 8;
-    ctx.fillText(scientific, 600, 220);
+    ctx.fillText(scientific, contract.scientific_name.x, contract.scientific_name.y);
     ctx.shadowBlur = 0;
   }
 
   async function renderCover(entry, photoUrl) {
-    if (!entry || !SUPPORTED.has(entry.entry_type)) throw new Error('Categoría no compatible con la portada maestra.');
-    if (!clean(photoUrl)) throw new Error('La ficha necesita una foto interior real para generar la portada.');
-    const [bgUrl, resolvedPhoto] = await Promise.all([backgroundDataUrl(), photoDataUrl(photoUrl)]);
+    const sourcePhoto = clean(photoUrl || entry?.photo_url);
+    const contract = CONTRACT.validateEntry(entry, sourcePhoto);
+    const [bgUrl, resolvedPhoto] = await Promise.all([backgroundDataUrl(), photoDataUrl(sourcePhoto)]);
     const [bg, photo] = await Promise.all([loadImage(bgUrl), loadImage(resolvedPhoto)]);
     const cutout = await subjectCutout(photo);
     const canvas = document.createElement('canvas');
-    canvas.width = 1200; canvas.height = 1200;
+    canvas.width = contract.canvas.width;
+    canvas.height = contract.canvas.height;
     const ctx = canvas.getContext('2d');
-    drawCoverImage(ctx, bg, 0, 0, 1200, 1200);
-    const fit = fitContain(cutout.width, cutout.height, 1050, 820);
-    const x = 600 - fit.w / 2;
-    const y = 345 + (820 - fit.h) / 2;
+    drawCoverImage(ctx, bg, 0, 0, canvas.width, canvas.height);
+
+    const area = contract.subject;
+    const fit = fitContain(cutout.width, cutout.height, area.width, area.height);
+    const x = area.x + (area.width - fit.w) / 2;
+    const y = area.y + (area.height - fit.h) / 2;
     ctx.save();
     ctx.shadowColor = 'rgba(0,0,0,.42)';
     ctx.shadowBlur = 18;
     ctx.drawImage(cutout, x, y, fit.w, fit.h);
     ctx.restore();
-    drawHeader(ctx, clean(entry.title || entry.scientific_name || 'AcuarioNexo'), clean(entry.scientific_name || ''));
+
+    drawNames(ctx, entry, contract);
     return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('No se pudo generar la portada.')), 'image/jpeg', 0.95));
   }
 
   async function uploadCover(entry, blob) {
-    const path = `library/${ANX.state.user.id}/organismos/cover-v5-${entry.id}-${Date.now()}.jpg`;
+    const folder = ['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna'].includes(entry.entry_type) ? 'organismos' : 'general';
+    const path = `library/${ANX.state.user.id}/${folder}/cover-${entry.id}-${Date.now()}.jpg`;
     const upload = await ANX.supabase.storage.from('library-images').upload(path, blob, {
-      upsert: true, contentType: 'image/jpeg', cacheControl: '31536000'
+      upsert: true,
+      contentType: 'image/jpeg',
+      cacheControl: '31536000'
     });
     if (upload.error) throw upload.error;
     return ANX.supabase.storage.from('library-images').getPublicUrl(path).data.publicUrl;
@@ -264,28 +288,20 @@
 
   async function generateAndSave(id, photoUrl) {
     const entry = ANX.LibraryV3Core?.row?.(id) || (ANX.state.libraryRows || []).find(x => String(x.id) === String(id));
-    if (!entry || !SUPPORTED.has(entry.entry_type)) return null;
+    if (!entry || !CONTRACT.supports(entry)) return null;
     if (String(entry.image_assets?.cover?.template || '') === 'manual-restored-approved' && !photoUrl) return entry.image_assets.cover;
+
     const sourcePhoto = clean(photoUrl || entry.photo_url);
-    if (!sourcePhoto) throw new Error('La ficha necesita foto interior para generar la portada.');
+    const contract = CONTRACT.validateEntry(entry, sourcePhoto);
     const blob = await renderCover(entry, sourcePhoto);
     const url = await uploadCover(entry, blob);
     const now = new Date().toISOString();
     const coverAsset = {
       original: url,
       generated_at: now,
-      source_name: 'AcuarioNexo portada maestra · recorte real',
-      template: TEMPLATE,
       generated_from_photo_url: sourcePhoto,
-      common_name_position: 'top',
-      common_name_color: '#e7bc58',
-      scientific_name_position: 'under_common_name',
-      scientific_name_color: '#e7bc58',
-      scientific_name_style: 'italic',
-      specimen_position: 'center',
-      real_subject_cutout: true,
-      fixed_background: true,
-      aspect_ratio: '1:1'
+      source_name: 'AcuarioNexo portada oficial · foto real',
+      ...CONTRACT.metadata(contract)
     };
     const payload = {
       cover_url: url,
@@ -298,5 +314,11 @@
     return coverAsset;
   }
 
-  ANX.LibraryCoverAuto = { SUPPORTED, renderCover, generateAndSave, templateId: TEMPLATE };
+  ANX.LibraryCoverAuto = {
+    SUPPORTED: CONTRACT.supportedTypes,
+    renderCover,
+    generateAndSave,
+    templateId: CONTRACT.masterTemplate,
+    contractVersion: CONTRACT.version
+  };
 })();
