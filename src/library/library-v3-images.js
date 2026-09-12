@@ -3,6 +3,7 @@
   const ANX = window.ANX;
   const { supabase, state, esc, byId, msg } = ANX;
   const { row } = ANX.LibraryV3Core;
+  const AUTO_TYPES = new Set(['pez_marino','coral']);
 
   function assetKind(field) {
     return field === 'cover_url' || field === 'cover' ? 'cover' : 'photo';
@@ -88,6 +89,18 @@
     }
   }
 
+  async function generateOfficialCover(id, entryType) {
+    if (!AUTO_TYPES.has(entryType)) return null;
+    const invoked = await supabase.functions.invoke('backfill-coral-covers', { body: { id } });
+    if (invoked.error) throw invoked.error;
+    if (invoked.data?.error) throw new Error(invoked.data.error);
+    const fresh = await supabase.from('library_entries').select('*').eq('id', id).single();
+    if (fresh.error) throw fresh.error;
+    const x = row(id);
+    if (x) Object.assign(x, fresh.data);
+    return fresh.data?.cover_url || null;
+  }
+
   async function setImage(id, field, inputId) {
     assertAdmin();
     const x = row(id);
@@ -97,8 +110,8 @@
     const asset = await uploadResponsiveAsset(file, kind, x.entry_type);
     await saveResponsiveAsset(id, field, asset);
 
-    if (kind === 'photo' && ANX.LibraryCoverAuto?.SUPPORTED?.has(x.entry_type)) {
-      await ANX.LibraryCoverAuto.generateAndSave(id, asset.original);
+    if (kind === 'photo' && AUTO_TYPES.has(x.entry_type)) {
+      await generateOfficialCover(id, x.entry_type);
     }
     return asset;
   }
@@ -107,10 +120,10 @@
     const box = byId('imageStatus') || byId('x');
     try {
       const x = row(id);
-      const autoCover = assetKind(field) === 'photo' && ANX.LibraryCoverAuto?.SUPPORTED?.has(x?.entry_type);
+      const autoCover = assetKind(field) === 'photo' && AUTO_TYPES.has(x?.entry_type);
       if (box) box.innerHTML = msg(autoCover ? 'Guardando foto interior y creando portada oficial...' : 'Guardando imagen...');
       await setImage(id, field, inputId);
-      if (box) box.innerHTML = msg(autoCover ? 'Foto interior guardada y portada oficial generada automáticamente.' : 'Imagen cambiada correctamente.', 'success');
+      if (box) box.innerHTML = msg(autoCover ? 'Foto interior guardada y portada oficial actualizada.' : 'Imagen cambiada correctamente.', 'success');
       formFicha(id);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen.', 'error');
@@ -122,30 +135,50 @@
     const target = byId(previewId);
     if (!file || !target) return;
     const url = URL.createObjectURL(file);
-    target.innerHTML = `<img src="${url}" alt="Previsualización" onload="URL.revokeObjectURL(this.src)">`;
+    target.querySelectorAll('img').forEach(img => img.remove());
+    const img = document.createElement('img');
+    img.src = url;
+    img.alt = 'Previsualización';
+    img.onload = () => URL.revokeObjectURL(url);
+    target.prepend(img);
   };
 
   window.dragLibraryImage = function (event, previewId, active) {
-    event.preventDefault(); event.stopPropagation();
+    event.preventDefault();
     const target = byId(previewId);
     if (target) target.classList.toggle('library-image-drop-active', !!active);
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
   };
 
+  function assignFileToInput(file, inputId, previewId) {
+    const input = byId(inputId);
+    if (!file || !input || !String(file.type || '').startsWith('image/')) return false;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    input.files = transfer.files;
+    window.previewLibraryImage(inputId, previewId);
+    return true;
+  }
+
   window.dropLibraryImage = function (event, inputId, previewId) {
-    event.preventDefault(); event.stopPropagation();
+    event.preventDefault();
+    event.stopPropagation();
     const target = byId(previewId);
     if (target) target.classList.remove('library-image-drop-active');
     const files = Array.from(event.dataTransfer?.files || []);
     const image = files.find(file => String(file.type || '').startsWith('image/'));
-    const input = byId(inputId);
-    if (!image || !input) {
+    if (!assignFileToInput(image, inputId, previewId)) {
       const box = byId('imageStatus');
       if (box) box.innerHTML = msg('Arrastra un archivo de imagen válido.', 'error');
-      return;
     }
-    const transfer = new DataTransfer();
-    transfer.items.add(image); input.files = transfer.files;
-    window.previewLibraryImage(inputId, previewId);
+  };
+
+  window.pasteLibraryImage = function (event, inputId, previewId) {
+    const files = Array.from(event.clipboardData?.files || []);
+    const image = files.find(file => String(file.type || '').startsWith('image/'));
+    if (!image) return;
+    event.preventDefault();
+    assignFileToInput(image, inputId, previewId);
   };
 
   function currentPreview(x, kind, fallback, alt) {
@@ -153,25 +186,31 @@
     return url ? `<img src="${esc(url)}" alt="${esc(alt)}">` : msg('Sin imagen', 'notice');
   }
 
-  function dropPreview(id, content) {
-    return `<div id="${id}" class="library-image-preview library-image-dropzone" ondragenter="dragLibraryImage(event,'${id}',true)" ondragover="dragLibraryImage(event,'${id}',true)" ondragleave="dragLibraryImage(event,'${id}',false)">${content}<span class="library-image-drop-hint">Arrastra aquí una foto desde el escritorio</span></div>`;
+  function dropPreview(id, inputId, content) {
+    return `<div id="${id}" class="library-image-preview library-image-dropzone" tabindex="0"
+      ondragenter="dragLibraryImage(event,'${id}',true)"
+      ondragover="dragLibraryImage(event,'${id}',true)"
+      ondragleave="dragLibraryImage(event,'${id}',false)"
+      ondrop="dropLibraryImage(event,'${inputId}','${id}')"
+      onpaste="pasteLibraryImage(event,'${inputId}','${id}')"
+      onclick="document.getElementById('${inputId}')?.click()">${content}<span class="library-image-drop-hint">Arrastra aquí una foto desde el escritorio · también puedes pegar con ⌘V</span></div>`;
   }
 
   function imageBox(x) {
-    const auto = ANX.LibraryCoverAuto?.SUPPORTED?.has(x.entry_type);
+    const auto = AUTO_TYPES.has(x.entry_type);
     const coverControl = auto
-      ? `<div><label>Portada oficial automática</label>${dropPreview('coverPreview', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<p class="small">Se crea al guardar la foto interior. Nombre común arriba en dorado, ejemplar/coral centrado y nombre científico abajo en blanco cursiva.</p></div>`
-      : `<div><label>Portada</label><div id="coverDrop" ondrop="dropLibraryImage(event,'coverFile','coverPreview')">${dropPreview('coverPreview', currentPreview(x, 'cover', x.cover_url, 'Portada'))}</div><input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>`;
+      ? `<div><label>Portada oficial automática</label><div id="coverPreview" class="library-image-preview">${currentPreview(x, 'cover', x.cover_url, 'Portada')}</div><p class="small">Plantilla fija aprobada: nombre común arriba en dorado, científico debajo en cursiva dorada y ejemplar/coral centrado.</p></div>`
+      : `<div><label>Portada</label>${dropPreview('coverPreview', 'coverFile', currentPreview(x, 'cover', x.cover_url, 'Portada'))}<input id="coverFile" type="file" accept="image/*" onchange="previewLibraryImage('coverFile','coverPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','cover_url','coverFile')">Guardar portada</button></div>`;
 
     return `<section class="panel library-image-panel">
       <h3>Imágenes de la ficha</h3>
-      <p class="small">${auto ? 'Para peces marinos y corales la portada usa la plantilla oficial fija y se genera automáticamente desde la foto interior.' : 'Puedes arrastrar una imagen directamente desde el escritorio o seleccionarla con el botón.'}</p>
+      <p class="small">${auto ? 'Guarda o arrastra la foto interior. La portada oficial se genera automáticamente.' : 'Puedes arrastrar una imagen directamente desde el escritorio, pegarla con ⌘V o seleccionarla.'}</p>
       <div class="library-image-grid">
         ${coverControl}
-        <div><label>Foto interior</label><div id="photoDrop" ondrop="dropLibraryImage(event,'photoFile','photoPreview')">${dropPreview('photoPreview', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}</div><input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
+        <div><label>Foto interior</label>${dropPreview('photoPreview', 'photoFile', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}<input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
       </div><div id="imageStatus"></div>
     </section>`;
   }
 
-  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, setImage, imageBox };
+  ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, setImage, imageBox, generateOfficialCover };
 })();
