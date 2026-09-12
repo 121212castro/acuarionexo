@@ -1,7 +1,7 @@
-/* AcuarioNexo · portada maestra v3 para coral y pez marino */
+/* AcuarioNexo · portada maestra aprobada para coral y pez marino */
 (function () {
   const ANX = window.ANX = window.ANX || {};
-  const REQUIRED_TEMPLATE = 'marine-fish-coral-v3-square-master';
+  const REQUIRED_TEMPLATE = 'marine-fish-coral-v4-approved';
   let running = false;
 
   function isAdmin() {
