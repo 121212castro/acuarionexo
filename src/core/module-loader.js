@@ -19,7 +19,6 @@
       'src/library/ficha/library-cover-master.js',
       'src/library/ficha/library-cover-backfill.js',
       'src/library/library-v3-images.js',
-      'src/library/ficha/library-image-desktop-paste.js',
       'src/library/library-v3-ai.js',
       'src/library/library-v3-ficha.js',
       'src/library/ficha/library-3d-profile.js',
