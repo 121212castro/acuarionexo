@@ -127,6 +127,23 @@
     target.prepend(img);
   }
 
+  async function handleDroppedFile(zone, file) {
+    if (!zone || !file) return;
+    const id = zone.dataset.entryId;
+    const field = zone.dataset.field;
+    const previewId = zone.dataset.previewId || zone.id;
+    const box = byId('imageStatus') || byId('x');
+    if (!id || !field) throw new Error('La zona de imagen no tiene ficha o campo asociado.');
+    if (!String(file.type || '').startsWith('image/')) throw new Error('Arrastra un archivo de imagen válido.');
+    previewFile(file, previewId);
+    const x = row(id);
+    const autoCover = assetKind(field) === 'photo' && AUTO_TYPES.has(x?.entry_type);
+    if (box) box.innerHTML = msg(autoCover ? 'Subiendo foto y creando portada oficial...' : 'Subiendo imagen...');
+    await saveFileDirect(id, field, file);
+    if (box) box.innerHTML = msg(autoCover ? 'Foto subida desde el escritorio y portada actualizada.' : 'Imagen subida desde el escritorio.', 'success');
+    formFicha(id);
+  }
+
   window.guardarImagenFicha = async function (id, field, inputId) {
     const box = byId('imageStatus') || byId('x');
     try {
@@ -165,13 +182,7 @@
       return;
     }
     try {
-      previewFile(image, previewId);
-      const x = row(id);
-      const autoCover = assetKind(field) === 'photo' && AUTO_TYPES.has(x?.entry_type);
-      if (box) box.innerHTML = msg(autoCover ? 'Subiendo foto y creando portada oficial...' : 'Subiendo imagen...');
-      await saveFileDirect(id, field, image);
-      if (box) box.innerHTML = msg(autoCover ? 'Foto subida desde el escritorio y portada actualizada.' : 'Imagen subida desde el escritorio.', 'success');
-      formFicha(id);
+      await handleDroppedFile(target, image);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo subir la imagen arrastrada.', 'error');
     }
@@ -185,11 +196,8 @@
     event.preventDefault();
     const box = byId('imageStatus') || byId('x');
     try {
-      previewFile(image, previewId);
-      if (box) box.innerHTML = msg('Subiendo imagen pegada...');
-      await saveFileDirect(id, field, image);
-      if (box) box.innerHTML = msg('Imagen pegada y guardada correctamente.', 'success');
-      formFicha(id);
+      const zone = byId(previewId);
+      await handleDroppedFile(zone, image);
     } catch (error) {
       if (box) box.innerHTML = msg(error.message || 'No se pudo guardar la imagen pegada.', 'error');
     }
@@ -202,6 +210,7 @@
 
   function dropPreview(id, inputId, entryId, field, content) {
     return `<div id="${id}" class="library-image-preview library-image-dropzone" tabindex="0"
+      data-entry-id="${esc(entryId)}" data-field="${esc(field)}" data-preview-id="${id}"
       ondragenter="dragLibraryImage(event,'${id}',true)"
       ondragover="dragLibraryImage(event,'${id}',true)"
       ondragleave="dragLibraryImage(event,'${id}',false)"
@@ -224,6 +233,42 @@
         <div><label>Foto interior</label>${dropPreview('photoPreview', 'photoFile', x.id, 'photo_url', currentPreview(x, 'photo', x.photo_url, 'Foto interior'))}<input id="photoFile" type="file" accept="image/*" onchange="previewLibraryImage('photoFile','photoPreview')"><button type="button" onclick="guardarImagenFicha('${esc(x.id)}','photo_url','photoFile')">Guardar foto interior</button></div>
       </div><div id="imageStatus"></div>
     </section>`;
+  }
+
+  if (!window.__anxLibraryDropCaptureInstalled) {
+    window.__anxLibraryDropCaptureInstalled = true;
+    document.addEventListener('dragover', function (event) {
+      const zone = event.target?.closest?.('.library-image-dropzone');
+      if (!zone) return;
+      event.preventDefault();
+      event.stopPropagation();
+      zone.classList.add('library-image-drop-active');
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'copy';
+    }, true);
+    document.addEventListener('dragleave', function (event) {
+      const zone = event.target?.closest?.('.library-image-dropzone');
+      if (!zone) return;
+      const next = event.relatedTarget;
+      if (!next || !zone.contains(next)) zone.classList.remove('library-image-drop-active');
+    }, true);
+    document.addEventListener('drop', async function (event) {
+      const zone = event.target?.closest?.('.library-image-dropzone');
+      if (!zone) return;
+      event.preventDefault();
+      event.stopPropagation();
+      zone.classList.remove('library-image-drop-active');
+      const box = byId('imageStatus') || byId('x');
+      const image = Array.from(event.dataTransfer?.files || []).find(file => String(file.type || '').startsWith('image/'));
+      if (!image) {
+        if (box) box.innerHTML = msg('Arrastra un archivo de imagen válido.', 'error');
+        return;
+      }
+      try {
+        await handleDroppedFile(zone, image);
+      } catch (error) {
+        if (box) box.innerHTML = msg(error.message || 'No se pudo subir la imagen arrastrada.', 'error');
+      }
+    }, true);
   }
 
   ANX.LibraryV3Images = { assetKind, filenameExt, coverFolder, uploadResponsiveAsset, saveResponsiveAsset, saveFileDirect, setImage, imageBox, generateOfficialCover };
