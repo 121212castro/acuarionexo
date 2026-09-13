@@ -2,7 +2,7 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
 
-  const TEMPLATE_VERSION = 'cover-contract-v8';
+  const TEMPLATE_VERSION = 'cover-contract-v9';
   const MARINE_TEMPLATE = 'marine-fish-coral-v6-approved-layout';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
   const MICROFAUNA_TEMPLATE = 'microfauna-v1-approved-fixed-layout';
@@ -101,7 +101,7 @@
       requires_real_photo: false, requires_title: false, requires_scientific_name: false,
       allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '661:595',
       canvas: Object.freeze({ width: 1322, height: 1190 }),
-      reference: Object.freeze({ filename: 'portada material(8).PNG', sha256: 'cf1fc33c7eb675c75838a427edaea70fcc9b5dddb217dbd6ab52ba3cae884c7a', locked: true, rule: 'Mantener exactamente esta portada para Materiales y Recambios. No cambiar icono, título EQUIPAMIENTO, subtítulo FICHA TÉCNICA, marco azul, fondo marrón, planta lateral izquierda, estantería derecha ni base de madera.' }),
+      reference: Object.freeze({ filename: 'portada material(8).PNG', sha256: 'cf1fc33c7eb675c75838a427edaea70fcc9b5dddb217dbd6ab52ba3cae884c7a', locked: true, rule: 'Mantener exactamente esta portada para Equipamiento, Materiales y Recambios. No cambiar icono, título EQUIPAMIENTO, subtítulo FICHA TÉCNICA, marco azul, fondo marrón, planta lateral izquierda, estantería derecha ni base de madera.' }),
       common_name: Object.freeze({ position: 'fixed-category-title', text: 'EQUIPAMIENTO', dynamic: false }),
       scientific_name: Object.freeze({ position: 'none', dynamic: false }),
       subject: Object.freeze({ position: 'fixed-scene', real_cutout: false, dynamic: false }),
@@ -123,7 +123,16 @@
   });
 
   const TYPE_ALIASES = Object.freeze({
-    sales: 'sal', material: 'material_recambio', materiales: 'material_recambio', recambio: 'material_recambio', recambios: 'material_recambio', materiales_y_recambios: 'material_recambio', alimentos: 'alimento'
+    sales: 'sal',
+    material: 'material_recambio',
+    materiales: 'material_recambio',
+    recambio: 'material_recambio',
+    recambios: 'material_recambio',
+    materiales_y_recambios: 'material_recambio',
+    equipamiento: 'material_recambio',
+    equipo: 'material_recambio',
+    equipos: 'material_recambio',
+    alimentos: 'alimento'
   });
   function clean(value) { return String(value ?? '').trim(); }
   function contractFor(entryOrType) {
