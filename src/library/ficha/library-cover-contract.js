@@ -2,9 +2,10 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
 
-  const TEMPLATE_VERSION = 'cover-contract-v2';
+  const TEMPLATE_VERSION = 'cover-contract-v3';
   const MARINE_TEMPLATE = 'marine-fish-coral-v6-approved-layout';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
+  const MICROFAUNA_TEMPLATE = 'microfauna-v1-approved-fixed-layout';
   const GOLD = '#e7bc58';
   const PLANT_DARK_GREEN = '#163c31';
   const PLANT_GOLD = '#b58a2a';
@@ -15,6 +16,8 @@
       template: MARINE_TEMPLATE,
       automatic: true,
       requires_real_photo: true,
+      requires_title: true,
+      requires_scientific_name: true,
       allow_generated_subject: false,
       preserve_manual_cover: true,
       aspect_ratio: '1:1',
@@ -29,6 +32,8 @@
       template: MARINE_TEMPLATE,
       automatic: true,
       requires_real_photo: true,
+      requires_title: true,
+      requires_scientific_name: true,
       allow_generated_subject: false,
       preserve_manual_cover: true,
       aspect_ratio: '1:1',
@@ -43,6 +48,8 @@
       template: PLANT_TEMPLATE,
       automatic: false,
       requires_real_photo: true,
+      requires_title: true,
+      requires_scientific_name: true,
       allow_generated_subject: false,
       preserve_manual_cover: true,
       aspect_ratio: '2:3',
@@ -97,6 +104,57 @@
         preserve_side_plants: true,
         preserve_light_sand_label_area: true
       })
+    }),
+    microfauna: Object.freeze({
+      entry_type: 'microfauna',
+      template: MICROFAUNA_TEMPLATE,
+      automatic: false,
+      cover_mode: 'fixed-category-master',
+      requires_real_photo: false,
+      requires_title: false,
+      requires_scientific_name: false,
+      allow_generated_subject: false,
+      preserve_manual_cover: true,
+      aspect_ratio: '1199:1312',
+      canvas: Object.freeze({ width: 1199, height: 1312 }),
+      reference: Object.freeze({
+        filename: 'portada microfauna(2).JPG',
+        sha256: 'cde6d2fe781adc4bba28c407877adc4152854f41dfc9de1c360aca43005f771b',
+        locked: true,
+        rule: 'Mantener exactamente esta portada de Microfauna. No cambiar fondo, título, subtítulo, microorganismos, rocas, vegetación ni placa AcuarioNexo.'
+      }),
+      common_name: Object.freeze({
+        position: 'fixed-category-title',
+        text: 'MICROFAUNA',
+        dynamic: false
+      }),
+      scientific_name: Object.freeze({
+        position: 'none',
+        dynamic: false
+      }),
+      subject: Object.freeze({
+        position: 'fixed-scene',
+        real_cutout: false,
+        dynamic: false,
+        preserve_all_visible_organisms: true
+      }),
+      decoration: Object.freeze({
+        category_icon: true,
+        technical_sheet_subtitle: true,
+        technical_sheet_text: 'FICHA TÉCNICA',
+        acuarionexo_plate: true,
+        fixed: true
+      }),
+      background: Object.freeze({
+        fixed: true,
+        source: 'approved-microfauna-master',
+        preserve_dark_blue_aquarium: true,
+        preserve_center_light_rays: true,
+        preserve_left_wood: true,
+        preserve_right_rock: true,
+        preserve_bottom_substrate: true,
+        preserve_side_vegetation: true
+      })
     })
   });
 
@@ -121,8 +179,8 @@
     const contract = contractFor(entry);
     if (!contract) throw new Error('Esta categoría todavía no tiene una plantilla oficial aprobada.');
     if (!clean(entry?.id)) throw new Error('La portada debe estar vinculada a una ficha real.');
-    if (!clean(entry?.title)) throw new Error('La ficha necesita nombre para generar la portada.');
-    if (!clean(entry?.scientific_name)) throw new Error('La ficha necesita nombre científico para generar la portada.');
+    if (contract.requires_title !== false && !clean(entry?.title)) throw new Error('La ficha necesita nombre para generar la portada.');
+    if (contract.requires_scientific_name !== false && !clean(entry?.scientific_name)) throw new Error('La ficha necesita nombre científico para generar la portada.');
     if (contract.requires_real_photo && !clean(photoUrl || entry?.photo_url)) {
       throw new Error('La ficha necesita una foto interior real para generar la portada.');
     }
@@ -134,17 +192,20 @@
       contract_version: TEMPLATE_VERSION,
       template: contract.template,
       automatic: contract.automatic,
+      cover_mode: contract.cover_mode || 'dynamic-entry-cover',
       requires_real_photo: contract.requires_real_photo,
+      requires_title: contract.requires_title !== false,
+      requires_scientific_name: contract.requires_scientific_name !== false,
       allow_generated_subject: contract.allow_generated_subject,
       aspect_ratio: contract.aspect_ratio,
-      common_name_position: contract.common_name.position,
-      common_name_color: contract.common_name.color,
-      scientific_name_position: contract.scientific_name.position,
-      scientific_name_color: contract.scientific_name.color,
-      scientific_name_style: contract.scientific_name.style,
-      specimen_position: contract.subject.position,
-      real_subject_cutout: contract.subject.real_cutout,
-      fixed_background: contract.background.fixed,
+      common_name_position: contract.common_name?.position || null,
+      common_name_color: contract.common_name?.color || null,
+      scientific_name_position: contract.scientific_name?.position || null,
+      scientific_name_color: contract.scientific_name?.color || null,
+      scientific_name_style: contract.scientific_name?.style || null,
+      specimen_position: contract.subject?.position || null,
+      real_subject_cutout: contract.subject?.real_cutout === true,
+      fixed_background: contract.background?.fixed === true,
       reference_filename: contract.reference?.filename || null,
       reference_sha256: contract.reference?.sha256 || null,
       reference_locked: contract.reference?.locked === true
@@ -154,7 +215,7 @@
   ANX.LibraryCoverContract = {
     version: TEMPLATE_VERSION,
     masterTemplate: MARINE_TEMPLATE,
-    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE }),
+    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE }),
     contracts: CONTRACTS,
     supportedTypes: new Set(Object.keys(CONTRACTS)),
     contractFor,
