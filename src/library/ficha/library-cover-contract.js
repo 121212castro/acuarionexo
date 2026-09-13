@@ -2,27 +2,22 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
 
-  const TEMPLATE_VERSION = 'cover-contract-v5';
+  const TEMPLATE_VERSION = 'cover-contract-v6';
   const MARINE_TEMPLATE = 'marine-fish-coral-v6-approved-layout';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
   const MICROFAUNA_TEMPLATE = 'microfauna-v1-approved-fixed-layout';
   const TEST_TEMPLATE = 'test-v1-approved-fixed-layout';
   const MEDICATION_TEMPLATE = 'medication-v1-approved-fixed-layout';
+  const SALT_TEMPLATE = 'salt-v1-approved-fixed-layout';
   const GOLD = '#e7bc58';
   const PLANT_DARK_GREEN = '#163c31';
   const PLANT_GOLD = '#b58a2a';
 
   const CONTRACTS = Object.freeze({
     pez_marino: Object.freeze({
-      entry_type: 'pez_marino',
-      template: MARINE_TEMPLATE,
-      automatic: true,
-      requires_real_photo: true,
-      requires_title: true,
-      requires_scientific_name: true,
-      allow_generated_subject: false,
-      preserve_manual_cover: true,
-      aspect_ratio: '1:1',
+      entry_type: 'pez_marino', template: MARINE_TEMPLATE, automatic: true,
+      requires_real_photo: true, requires_title: true, requires_scientific_name: true,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '1:1',
       canvas: Object.freeze({ width: 1200, height: 1200 }),
       common_name: Object.freeze({ position: 'top', x: 600, y: 112, max_width: 1040, start_size: 106, min_size: 48, color: GOLD, style: 'bold' }),
       scientific_name: Object.freeze({ position: 'bottom', x: 600, y: 1110, max_width: 980, start_size: 64, min_size: 34, color: GOLD, style: 'italic' }),
@@ -30,15 +25,9 @@
       background: Object.freeze({ fixed: true, source: 'approved-marine-master' })
     }),
     coral: Object.freeze({
-      entry_type: 'coral',
-      template: MARINE_TEMPLATE,
-      automatic: true,
-      requires_real_photo: true,
-      requires_title: true,
-      requires_scientific_name: true,
-      allow_generated_subject: false,
-      preserve_manual_cover: true,
-      aspect_ratio: '1:1',
+      entry_type: 'coral', template: MARINE_TEMPLATE, automatic: true,
+      requires_real_photo: true, requires_title: true, requires_scientific_name: true,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '1:1',
       canvas: Object.freeze({ width: 1200, height: 1200 }),
       common_name: Object.freeze({ position: 'top', x: 600, y: 112, max_width: 1040, start_size: 106, min_size: 48, color: GOLD, style: 'bold' }),
       scientific_name: Object.freeze({ position: 'bottom', x: 600, y: 1110, max_width: 980, start_size: 64, min_size: 34, color: GOLD, style: 'italic' }),
@@ -46,22 +35,11 @@
       background: Object.freeze({ fixed: true, source: 'approved-marine-master' })
     }),
     planta: Object.freeze({
-      entry_type: 'planta',
-      template: PLANT_TEMPLATE,
-      automatic: false,
-      requires_real_photo: true,
-      requires_title: true,
-      requires_scientific_name: true,
-      allow_generated_subject: false,
-      preserve_manual_cover: true,
-      aspect_ratio: '2:3',
+      entry_type: 'planta', template: PLANT_TEMPLATE, automatic: false,
+      requires_real_photo: true, requires_title: true, requires_scientific_name: true,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '2:3',
       canvas: Object.freeze({ width: 1024, height: 1536 }),
-      reference: Object.freeze({
-        filename: 'portada plantas(20260913-105115).png',
-        sha256: '57302047d28feddd4205ac40c63a17205b1949fb82be2157143cc83543959ae7',
-        locked: true,
-        rule: 'Mantener exactamente este diseño y composición; solo sustituir la planta y los nombres de la ficha.'
-      }),
+      reference: Object.freeze({ filename: 'portada plantas(20260913-105115).png', sha256: '57302047d28feddd4205ac40c63a17205b1949fb82be2157143cc83543959ae7', locked: true, rule: 'Mantener exactamente este diseño y composición; solo sustituir la planta y los nombres de la ficha.' }),
       common_name: Object.freeze({ position: 'bottom-label-primary', x: 512, y: 1355, max_width: 920, start_size: 58, min_size: 30, color: PLANT_DARK_GREEN, style: 'serif-uppercase' }),
       scientific_name: Object.freeze({ position: 'bottom-label-secondary', x: 512, y: 1475, max_width: 820, start_size: 32, min_size: 22, color: PLANT_GOLD, style: 'uppercase-letterspaced' }),
       subject: Object.freeze({ position: 'center-lower-aquascape', x: 120, y: 470, width: 784, height: 760, real_cutout: true, one_species_only: true, containers_forbidden: true }),
@@ -69,16 +47,9 @@
       background: Object.freeze({ fixed: true, source: 'approved-plants-master', preserve_water_surface: true, preserve_light_rays: true, preserve_blue_aquarium: true, preserve_side_plants: true, preserve_light_sand_label_area: true })
     }),
     microfauna: Object.freeze({
-      entry_type: 'microfauna',
-      template: MICROFAUNA_TEMPLATE,
-      automatic: false,
-      cover_mode: 'fixed-category-master',
-      requires_real_photo: false,
-      requires_title: false,
-      requires_scientific_name: false,
-      allow_generated_subject: false,
-      preserve_manual_cover: true,
-      aspect_ratio: '1199:1312',
+      entry_type: 'microfauna', template: MICROFAUNA_TEMPLATE, automatic: false, cover_mode: 'fixed-category-master',
+      requires_real_photo: false, requires_title: false, requires_scientific_name: false,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '1199:1312',
       canvas: Object.freeze({ width: 1199, height: 1312 }),
       reference: Object.freeze({ filename: 'portada microfauna(2).JPG', sha256: 'cde6d2fe781adc4bba28c407877adc4152854f41dfc9de1c360aca43005f771b', locked: true, rule: 'Mantener exactamente esta portada de Microfauna. No cambiar fondo, título, subtítulo, microorganismos, rocas, vegetación ni placa AcuarioNexo.' }),
       common_name: Object.freeze({ position: 'fixed-category-title', text: 'MICROFAUNA', dynamic: false }),
@@ -88,16 +59,9 @@
       background: Object.freeze({ fixed: true, source: 'approved-microfauna-master', preserve_dark_blue_aquarium: true, preserve_center_light_rays: true, preserve_left_wood: true, preserve_right_rock: true, preserve_bottom_substrate: true, preserve_side_vegetation: true })
     }),
     test: Object.freeze({
-      entry_type: 'test',
-      template: TEST_TEMPLATE,
-      automatic: false,
-      cover_mode: 'fixed-category-master',
-      requires_real_photo: false,
-      requires_title: false,
-      requires_scientific_name: false,
-      allow_generated_subject: false,
-      preserve_manual_cover: true,
-      aspect_ratio: '2:3',
+      entry_type: 'test', template: TEST_TEMPLATE, automatic: false, cover_mode: 'fixed-category-master',
+      requires_real_photo: false, requires_title: false, requires_scientific_name: false,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '2:3',
       canvas: Object.freeze({ width: 1024, height: 1536 }),
       reference: Object.freeze({ filename: 'portada test(20260913-110707).png', sha256: 'ca0dee5e00da8991c274b32dca3515913f13141a6c11f580e741f090eaa6e9a9', locked: true, rule: 'Mantener exactamente esta portada de Test. No cambiar título, fondo, marco azul, planta lateral, roca derecha, base de madera ni placa AcuarioNexo.' }),
       common_name: Object.freeze({ position: 'fixed-category-title', text: 'TEST', dynamic: false }),
@@ -107,33 +71,43 @@
       background: Object.freeze({ fixed: true, source: 'approved-test-master', preserve_black_upper_background: true, preserve_dark_aquarium_panel: true, preserve_blue_frame: true, preserve_left_plant: true, preserve_right_rock: true, preserve_wooden_platform: true, preserve_acuarionexo_plate: true })
     }),
     medicamento: Object.freeze({
-      entry_type: 'medicamento',
-      template: MEDICATION_TEMPLATE,
-      automatic: false,
-      cover_mode: 'fixed-category-master',
-      requires_real_photo: false,
-      requires_title: false,
-      requires_scientific_name: false,
-      allow_generated_subject: false,
-      preserve_manual_cover: true,
-      aspect_ratio: '1:1',
+      entry_type: 'medicamento', template: MEDICATION_TEMPLATE, automatic: false, cover_mode: 'fixed-category-master',
+      requires_real_photo: false, requires_title: false, requires_scientific_name: false,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '1:1',
       canvas: Object.freeze({ width: 1254, height: 1254 }),
-      reference: Object.freeze({
-        filename: 'portada medicamentos .png',
-        sha256: '50e3bd2e8535acea9baabadb9df52ce651cb63098766b762cf39295378edb71a',
-        locked: true,
-        rule: 'Mantener exactamente esta portada de Medicamento. No cambiar icono, título, subtítulo, marco azul, fondo marrón, planta lateral izquierda, estantería derecha ni base de madera.'
-      }),
+      reference: Object.freeze({ filename: 'portada medicamentos .png', sha256: '50e3bd2e8535acea9baabadb9df52ce651cb63098766b762cf39295378edb71a', locked: true, rule: 'Mantener exactamente esta portada de Medicamento. No cambiar icono, título, subtítulo, marco azul, fondo marrón, planta lateral izquierda, estantería derecha ni base de madera.' }),
       common_name: Object.freeze({ position: 'fixed-category-title', text: 'MEDICAMENTO', dynamic: false }),
       scientific_name: Object.freeze({ position: 'none', dynamic: false }),
       subject: Object.freeze({ position: 'fixed-scene', real_cutout: false, dynamic: false }),
       decoration: Object.freeze({ medicine_icon: true, technical_sheet_subtitle: true, technical_sheet_text: 'FICHA TÉCNICA', blue_frame: true, left_plant: true, right_shelf: true, wooden_platform: true, fixed: true }),
       background: Object.freeze({ fixed: true, source: 'approved-medication-master', preserve_brown_background: true, preserve_blue_frame: true, preserve_left_plant: true, preserve_right_shelf: true, preserve_wooden_platform: true })
+    }),
+    sal: Object.freeze({
+      entry_type: 'sal', template: SALT_TEMPLATE, automatic: false, cover_mode: 'fixed-category-master',
+      requires_real_photo: false, requires_title: false, requires_scientific_name: false,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '561:701',
+      canvas: Object.freeze({ width: 1122, height: 1402 }),
+      reference: Object.freeze({
+        filename: 'portada sal(1).png',
+        sha256: 'c245bce57c426e0ab1d2d691eafaa2b45cf59b1bad317d8f7fca8f97960a1a9a',
+        locked: true,
+        rule: 'Mantener exactamente esta portada de Sal y Sales. No cambiar icono, título SAL, subtítulo FICHA TÉCNICA, marco azul, fondo marrón, planta lateral izquierda, estantería derecha ni base de madera.'
+      }),
+      common_name: Object.freeze({ position: 'fixed-category-title', text: 'SAL', dynamic: false }),
+      scientific_name: Object.freeze({ position: 'none', dynamic: false }),
+      subject: Object.freeze({ position: 'fixed-scene', real_cutout: false, dynamic: false }),
+      decoration: Object.freeze({ salt_icon: true, technical_sheet_subtitle: true, technical_sheet_text: 'FICHA TÉCNICA', blue_frame: true, left_plant: true, right_shelf: true, wooden_platform: true, fixed: true }),
+      background: Object.freeze({ fixed: true, source: 'approved-salt-master', preserve_brown_background: true, preserve_blue_frame: true, preserve_left_plant: true, preserve_right_shelf: true, preserve_wooden_platform: true })
     })
   });
 
+  const TYPE_ALIASES = Object.freeze({ sales: 'sal' });
   function clean(value) { return String(value ?? '').trim(); }
-  function contractFor(entryOrType) { const type = typeof entryOrType === 'string' ? entryOrType : entryOrType?.entry_type; return CONTRACTS[clean(type)] || null; }
+  function contractFor(entryOrType) {
+    const rawType = typeof entryOrType === 'string' ? entryOrType : entryOrType?.entry_type;
+    const type = TYPE_ALIASES[clean(rawType)] || clean(rawType);
+    return CONTRACTS[type] || null;
+  }
   function supports(entryOrType) { return !!contractFor(entryOrType); }
   function isAutomatic(entryOrType) { return contractFor(entryOrType)?.automatic === true; }
 
@@ -175,9 +149,10 @@
   ANX.LibraryCoverContract = {
     version: TEMPLATE_VERSION,
     masterTemplate: MARINE_TEMPLATE,
-    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE, test: TEST_TEMPLATE, medication: MEDICATION_TEMPLATE }),
+    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE, test: TEST_TEMPLATE, medication: MEDICATION_TEMPLATE, salt: SALT_TEMPLATE }),
     contracts: CONTRACTS,
-    supportedTypes: new Set(Object.keys(CONTRACTS)),
+    typeAliases: TYPE_ALIASES,
+    supportedTypes: new Set([...Object.keys(CONTRACTS), ...Object.keys(TYPE_ALIASES)]),
     contractFor,
     supports,
     isAutomatic,
