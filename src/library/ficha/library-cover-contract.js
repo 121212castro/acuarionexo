@@ -2,10 +2,11 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
 
-  const TEMPLATE_VERSION = 'cover-contract-v3';
+  const TEMPLATE_VERSION = 'cover-contract-v4';
   const MARINE_TEMPLATE = 'marine-fish-coral-v6-approved-layout';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
   const MICROFAUNA_TEMPLATE = 'microfauna-v1-approved-fixed-layout';
+  const TEST_TEMPLATE = 'test-v1-approved-fixed-layout';
   const GOLD = '#e7bc58';
   const PLANT_DARK_GREEN = '#163c31';
   const PLANT_GOLD = '#b58a2a';
@@ -155,6 +156,58 @@
         preserve_bottom_substrate: true,
         preserve_side_vegetation: true
       })
+    }),
+    test: Object.freeze({
+      entry_type: 'test',
+      template: TEST_TEMPLATE,
+      automatic: false,
+      cover_mode: 'fixed-category-master',
+      requires_real_photo: false,
+      requires_title: false,
+      requires_scientific_name: false,
+      allow_generated_subject: false,
+      preserve_manual_cover: true,
+      aspect_ratio: '2:3',
+      canvas: Object.freeze({ width: 1024, height: 1536 }),
+      reference: Object.freeze({
+        filename: 'portada test(20260913-110707).png',
+        sha256: 'ca0dee5e00da8991c274b32dca3515913f13141a6c11f580e741f090eaa6e9a9',
+        locked: true,
+        rule: 'Mantener exactamente esta portada de Test. No cambiar título, fondo, marco azul, planta lateral, roca derecha, base de madera ni placa AcuarioNexo.'
+      }),
+      common_name: Object.freeze({
+        position: 'fixed-category-title',
+        text: 'TEST',
+        dynamic: false
+      }),
+      scientific_name: Object.freeze({
+        position: 'none',
+        dynamic: false
+      }),
+      subject: Object.freeze({
+        position: 'fixed-scene',
+        real_cutout: false,
+        dynamic: false
+      }),
+      decoration: Object.freeze({
+        blue_frame: true,
+        left_plant: true,
+        right_rock: true,
+        wooden_platform: true,
+        acuarionexo_plate: true,
+        fixed: true
+      }),
+      background: Object.freeze({
+        fixed: true,
+        source: 'approved-test-master',
+        preserve_black_upper_background: true,
+        preserve_dark_aquarium_panel: true,
+        preserve_blue_frame: true,
+        preserve_left_plant: true,
+        preserve_right_rock: true,
+        preserve_wooden_platform: true,
+        preserve_acuarionexo_plate: true
+      })
     })
   });
 
@@ -215,7 +268,7 @@
   ANX.LibraryCoverContract = {
     version: TEMPLATE_VERSION,
     masterTemplate: MARINE_TEMPLATE,
-    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE }),
+    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE, test: TEST_TEMPLATE }),
     contracts: CONTRACTS,
     supportedTypes: new Set(Object.keys(CONTRACTS)),
     contractFor,
