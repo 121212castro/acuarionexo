@@ -2,13 +2,14 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
 
-  const TEMPLATE_VERSION = 'cover-contract-v6';
+  const TEMPLATE_VERSION = 'cover-contract-v7';
   const MARINE_TEMPLATE = 'marine-fish-coral-v6-approved-layout';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
   const MICROFAUNA_TEMPLATE = 'microfauna-v1-approved-fixed-layout';
   const TEST_TEMPLATE = 'test-v1-approved-fixed-layout';
   const MEDICATION_TEMPLATE = 'medication-v1-approved-fixed-layout';
   const SALT_TEMPLATE = 'salt-v1-approved-fixed-layout';
+  const MATERIAL_REPLACEMENT_TEMPLATE = 'materials-replacements-v1-approved-fixed-layout';
   const GOLD = '#e7bc58';
   const PLANT_DARK_GREEN = '#163c31';
   const PLANT_GOLD = '#b58a2a';
@@ -98,10 +99,34 @@
       subject: Object.freeze({ position: 'fixed-scene', real_cutout: false, dynamic: false }),
       decoration: Object.freeze({ salt_icon: true, technical_sheet_subtitle: true, technical_sheet_text: 'FICHA TÉCNICA', blue_frame: true, left_plant: true, right_shelf: true, wooden_platform: true, fixed: true }),
       background: Object.freeze({ fixed: true, source: 'approved-salt-master', preserve_brown_background: true, preserve_blue_frame: true, preserve_left_plant: true, preserve_right_shelf: true, preserve_wooden_platform: true })
+    }),
+    material_recambio: Object.freeze({
+      entry_type: 'material_recambio', template: MATERIAL_REPLACEMENT_TEMPLATE, automatic: false, cover_mode: 'fixed-category-master',
+      requires_real_photo: false, requires_title: false, requires_scientific_name: false,
+      allow_generated_subject: false, preserve_manual_cover: true, aspect_ratio: '661:595',
+      canvas: Object.freeze({ width: 1322, height: 1190 }),
+      reference: Object.freeze({
+        filename: 'portada material(8).PNG',
+        sha256: 'cf1fc33c7eb675c75838a427edaea70fcc9b5dddb217dbd6ab52ba3cae884c7a',
+        locked: true,
+        rule: 'Mantener exactamente esta portada para Materiales y Recambios. No cambiar icono, título EQUIPAMIENTO, subtítulo FICHA TÉCNICA, marco azul, fondo marrón, planta lateral izquierda, estantería derecha ni base de madera.'
+      }),
+      common_name: Object.freeze({ position: 'fixed-category-title', text: 'EQUIPAMIENTO', dynamic: false }),
+      scientific_name: Object.freeze({ position: 'none', dynamic: false }),
+      subject: Object.freeze({ position: 'fixed-scene', real_cutout: false, dynamic: false }),
+      decoration: Object.freeze({ equipment_icon: true, technical_sheet_subtitle: true, technical_sheet_text: 'FICHA TÉCNICA', blue_frame: true, left_plant: true, right_shelf: true, wooden_platform: true, fixed: true }),
+      background: Object.freeze({ fixed: true, source: 'approved-materials-replacements-master', preserve_brown_background: true, preserve_blue_frame: true, preserve_left_plant: true, preserve_right_shelf: true, preserve_wooden_platform: true })
     })
   });
 
-  const TYPE_ALIASES = Object.freeze({ sales: 'sal' });
+  const TYPE_ALIASES = Object.freeze({
+    sales: 'sal',
+    material: 'material_recambio',
+    materiales: 'material_recambio',
+    recambio: 'material_recambio',
+    recambios: 'material_recambio',
+    materiales_y_recambios: 'material_recambio'
+  });
   function clean(value) { return String(value ?? '').trim(); }
   function contractFor(entryOrType) {
     const rawType = typeof entryOrType === 'string' ? entryOrType : entryOrType?.entry_type;
@@ -149,7 +174,7 @@
   ANX.LibraryCoverContract = {
     version: TEMPLATE_VERSION,
     masterTemplate: MARINE_TEMPLATE,
-    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE, test: TEST_TEMPLATE, medication: MEDICATION_TEMPLATE, salt: SALT_TEMPLATE }),
+    templates: Object.freeze({ marine: MARINE_TEMPLATE, plants: PLANT_TEMPLATE, microfauna: MICROFAUNA_TEMPLATE, test: TEST_TEMPLATE, medication: MEDICATION_TEMPLATE, salt: SALT_TEMPLATE, materialsReplacements: MATERIAL_REPLACEMENT_TEMPLATE }),
     contracts: CONTRACTS,
     typeAliases: TYPE_ALIASES,
     supportedTypes: new Set([...Object.keys(CONTRACTS), ...Object.keys(TYPE_ALIASES)]),
