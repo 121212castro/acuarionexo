@@ -1,0 +1,86 @@
+name: Repair marine fiche contract
+
+on:
+  push:
+    paths:
+      - '.github/workflows/repair-marine-fiche-contract.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Repair permanent marine fiche contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new):
+              p=Path(path)
+              t=p.read_text()
+              if old not in t:
+                  if new in t:
+                      return
+                  raise SystemExit(f'Pattern not found in {path}: {old}')
+              p.write_text(t.replace(old,new))
+
+          schema='src/library/core/library-schema.js'
+          replace(schema,
+            "pez_marino: ['fishbase.se', 'catalogoffishes.org', 'marinespecies.org', 'iucnredlist.org', 'gbif.org'],",
+            "pez_marino: ['fishbase.se', 'fishbase.org', 'catalogoffishes.org', 'marinespecies.org', 'iucnredlist.org', 'gbif.org'],")
+          replace(schema,
+            "pez_dulce: ['fishbase.se', 'catalogoffishes.org', 'iucnredlist.org', 'gbif.org'],",
+            "pez_dulce: ['fishbase.se', 'fishbase.org', 'catalogoffishes.org', 'iucnredlist.org', 'gbif.org'],")
+          replace(schema,
+            "const FORCED_TEXT_FIELDS = new Set(['sample_volume'",
+            "const FORCED_TEXT_FIELDS = new Set(['life_expectancy_years','sample_volume'")
+          replace(schema,
+            "const SHORT_TEXT_FIELDS = new Set(['manufacturer'",
+            "const SHORT_TEXT_FIELDS = new Set(['depth_range','care_level','feeding_frequency','aggressiveness','manufacturer'")
+          replace(schema,
+            "const SHORT_TEXT_MIN_LENGTH = { manufacturer: 2,",
+            "const SHORT_TEXT_MIN_LENGTH = { depth_range: 3, care_level: 3, feeding_frequency: 3, aggressiveness: 3, manufacturer: 2,")
+
+          rules='src/library/core/library-schema-rules.js'
+          replace(rules,
+            "['marine-fish-coral-v7-approved-layout','manual-restored-approved'].includes(coverTemplate)",
+            "['marine-fish-master-v1-locked','manual-approved','manual-restored-approved'].includes(coverTemplate)")
+
+          cover='src/library/ficha/library-cover-contract.js'
+          replace(cover,
+            "const MARINE_TEMPLATE = 'marine-fish-coral-v7-approved-layout';",
+            "const MARINE_TEMPLATE = 'marine-fish-master-v1-locked';")
+
+          index='index.html'
+          p=Path(index); t=p.read_text()
+          import re
+          t=re.sub(r"window\.ACUARIONEXO_BUILD = '[^']+';", "window.ACUARIONEXO_BUILD = 'release-20260916-marine-fiche-contract';", t, count=1)
+          p.write_text(t)
+
+          version=Path('app-version.json')
+          if version.exists():
+              import json
+              data=json.loads(version.read_text())
+              data['build']='release-20260916-marine-fiche-contract'
+              version.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Commit permanent repair
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required'
+            exit 0
+          fi
+          git config user.name 'AcuarioNexo Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/library/core/library-schema.js src/library/core/library-schema-rules.js src/library/ficha/library-cover-contract.js index.html app-version.json
+          git commit -m 'Corregir contrato de fichas marinas sin inventar datos'
+          git push
