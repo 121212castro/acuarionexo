@@ -1,0 +1,80 @@
+name: Hotfix marine cover integrity
+
+on:
+  push:
+    paths:
+      - '.github/workflows/hotfix-marine-cover-integrity.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Patch marine cover contract and validation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, count=None):
+              p=Path(path); t=p.read_text()
+              if old not in t:
+                  if new in t: return
+                  raise SystemExit(f'Pattern not found in {path}: {old[:120]}')
+              p.write_text(t.replace(old,new) if count is None else t.replace(old,new,count))
+
+          contract='src/library/ficha/library-cover-contract.js'
+          replace(contract, "const TEMPLATE_VERSION = 'cover-contract-v12';", "const TEMPLATE_VERSION = 'cover-contract-v13';")
+          replace(contract, "const MARINE_TEMPLATE = 'marine-fish-coral-v6-approved-layout';", "const MARINE_TEMPLATE = 'marine-fish-coral-v7-approved-layout';")
+          replace(contract,
+            "common_name: Object.freeze({ position: 'top', x: 600, y: 112, max_width: 1040, start_size: 106, min_size: 48, color: GOLD, style: 'bold' }), scientific_name: Object.freeze({ position: 'bottom', x: 600, y: 1110, max_width: 980, start_size: 64, min_size: 34, color: GOLD, style: 'italic' }), subject: Object.freeze({ position: 'center', x: 75, y: 245, width: 1050, height: 760, real_cutout: true })",
+            "common_name: Object.freeze({ position: 'top', x: 600, y: 155, max_width: 1080, start_size: 106, min_size: 48, color: GOLD, style: 'bold' }), scientific_name: Object.freeze({ position: 'under_common_name', x: 600, y: 250, max_width: 980, start_size: 62, min_size: 34, color: GOLD, style: 'italic' }), subject: Object.freeze({ position: 'center', x: 70, y: 345, width: 1060, height: 620, real_cutout: true })")
+
+          old_validate="function validateEntry(entry, photoUrl) { const contract = contractFor(entry); if (!contract) throw new Error('Esta categoría todavía no tiene una plantilla oficial aprobada.'); if (!clean(entry?.id)) throw new Error('La portada debe estar vinculada a una ficha real.'); if (contract.requires_title !== false && !clean(entry?.title)) throw new Error('La ficha necesita nombre para generar la portada.'); if (contract.requires_scientific_name !== false && !clean(entry?.scientific_name)) throw new Error('La ficha necesita nombre científico para generar la portada.'); if (contract.requires_real_photo && !clean(photoUrl || entry?.photo_url)) throw new Error('La ficha necesita una foto interior real para generar la portada.'); return contract; }"
+          new_validate="function tmcSkus(entry) { return clean(entry?.data?.tmc_sku).split(/[;,/\\s]+/).map(clean).filter(value => /^\\d{4,6}$/.test(value)); }\n  function exactTmcPhoto(entry, photoUrl) { if (clean(entry?.entry_type) !== 'pez_marino') return true; const skus = tmcSkus(entry); if (!skus.length) return true; const photo = entry?.image_assets?.photo || {}; const evidence = [photo.source_name, photo.source_url, photo.source_page, photoUrl, entry?.photo_url].map(clean).join(' '); return skus.some(sku => evidence.includes(sku)); }\n  function validateEntry(entry, photoUrl) { const contract = contractFor(entry); if (!contract) throw new Error('Esta categoría todavía no tiene una plantilla oficial aprobada.'); if (!clean(entry?.id)) throw new Error('La portada debe estar vinculada a una ficha real.'); if (contract.requires_title !== false && !clean(entry?.title)) throw new Error('La ficha necesita nombre para generar la portada.'); if (contract.requires_scientific_name !== false && !clean(entry?.scientific_name)) throw new Error('La ficha necesita nombre científico para generar la portada.'); if (contract.requires_real_photo && !clean(photoUrl || entry?.photo_url)) throw new Error('La ficha necesita una foto interior real para generar la portada.'); if (!exactTmcPhoto(entry, photoUrl)) throw new Error('La foto TMC no está vinculada al SKU exacto de esta ficha.'); return contract; }"
+          replace(contract, old_validate, new_validate)
+
+          master='src/library/ficha/library-cover-master.js'
+          replace(master, "const common = clean(entry.title);", "const common = clean(entry.title).replace(/\\s+[—-]\\s+TMC\\s+SKU.*$/i, '').trim();")
+          replace(master,
+            "    const bottomFade = ctx.createLinearGradient(0, contract.canvas.height - 250, 0, contract.canvas.height);\n    bottomFade.addColorStop(0, 'rgba(1,12,35,0)');\n    bottomFade.addColorStop(1, 'rgba(1,12,35,.62)');\n    ctx.fillStyle = bottomFade;\n    ctx.fillRect(0, contract.canvas.height - 250, contract.canvas.width, 250);\n\n",
+            "")
+          replace(master, "ctx.fillRect(0, 0, contract.canvas.width, 280);", "ctx.fillRect(0, 0, contract.canvas.width, 330);")
+
+          rules='src/library/core/library-schema-rules.js'
+          needle="    const imprecise = JSON.stringify({ summary, data: entry?.data || {} }).match(IMPRECISE);\n    if (imprecise) warnings.push(`Revisar expresión contextual: ${imprecise[0]}.`);"
+          insertion="    const imprecise = JSON.stringify({ summary, data: entry?.data || {} }).match(IMPRECISE);\n    if (imprecise) warnings.push(`Revisar expresión contextual: ${imprecise[0]}.`);\n    if (type === 'pez_marino') {\n      const skus = clean(entry?.data?.tmc_sku).split(/[;,/\\s]+/).map(clean).filter(value => /^\\d{4,6}$/.test(value));\n      const photo = entry?.image_assets?.photo || {};\n      const evidence = [photo.source_name, photo.source_url, photo.source_page].map(clean).join(' ');\n      if (!clean(entry?.photo_url)) errors.push('Imagen · Falta la foto interior real del pez.');\n      if (!clean(entry?.cover_url)) errors.push('Imagen · Falta la portada oficial del pez.');\n      if (skus.length && !skus.some(sku => evidence.includes(sku))) errors.push('Imagen · La foto no está demostrada como original TMC del SKU exacto de la ficha.');\n      const coverTemplate = clean(entry?.image_assets?.cover?.template);\n      if (clean(entry?.cover_url) && !['marine-fish-coral-v7-approved-layout','manual-restored-approved'].includes(coverTemplate)) errors.push('Imagen · La portada no usa el contrato marino aprobado.');\n    }"
+          replace(rules, needle, insertion)
+
+          # Force a fresh web build/cache key.
+          index='index.html'
+          p=Path(index); t=p.read_text();
+          import re
+          t=re.sub(r"window\.ACUARIONEXO_BUILD = '[^']+';", "window.ACUARIONEXO_BUILD = 'release-20260915-marine-cover-v7';", t, count=1)
+          p.write_text(t)
+          v=Path('app-version.json')
+          if v.exists():
+              import json
+              data=json.loads(v.read_text())
+              data['build']='release-20260915-marine-cover-v7'
+              v.write_text(json.dumps(data,ensure_ascii=False,indent=2)+'\n')
+          PY
+      - name: Commit hotfix
+        run: |
+          if git diff --quiet; then
+            echo 'No changes required'
+            exit 0
+          fi
+          git config user.name 'AcuarioNexo Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add src/library/ficha/library-cover-contract.js src/library/ficha/library-cover-master.js src/library/core/library-schema-rules.js index.html app-version.json
+          git commit -m 'Bloquear peces TMC a foto SKU exacta y portada marina aprobada'
+          git push
