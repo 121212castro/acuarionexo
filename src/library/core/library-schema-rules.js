@@ -241,7 +241,7 @@
       if (!clean(entry?.cover_url)) errors.push('Imagen · Falta la portada oficial del pez.');
       if (skus.length && !skus.some(sku => evidence.includes(sku))) errors.push('Imagen · La foto no está demostrada como original TMC del SKU exacto de la ficha.');
       const coverTemplate = clean(entry?.image_assets?.cover?.template);
-      if (clean(entry?.cover_url) && !['marine-fish-coral-v7-approved-layout','manual-restored-approved'].includes(coverTemplate)) errors.push('Imagen · La portada no usa el contrato marino aprobado.');
+      if (clean(entry?.cover_url) && !['marine-fish-master-v1-locked','manual-approved','manual-restored-approved'].includes(coverTemplate)) errors.push('Imagen · La portada no usa el contrato marino aprobado.');
     }
     return {
       approved: unique(errors).length === 0,

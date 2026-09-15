@@ -2,7 +2,7 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
   const TEMPLATE_VERSION = 'cover-contract-v13';
-  const MARINE_TEMPLATE = 'marine-fish-coral-v7-approved-layout';
+  const MARINE_TEMPLATE = 'marine-fish-master-v1-locked';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
   const FRESHWATER_FISH_TEMPLATE = 'freshwater-fish-v1-approved-vertical-layout';
   const INVERTEBRATE_TEMPLATE = 'invertebrates-v1-approved-reef-layout';
