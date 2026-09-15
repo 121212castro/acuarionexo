@@ -213,20 +213,14 @@
   }
 
   function drawNames(ctx, entry, contract) {
-    const common = clean(entry.title);
+    const common = clean(entry.title).replace(/\s+[—-]\s+TMC\s+SKU.*$/i, '').trim();
     const scientific = clean(entry.scientific_name);
 
     const topFade = ctx.createLinearGradient(0, 0, 0, 260);
     topFade.addColorStop(0, 'rgba(1,12,35,.58)');
     topFade.addColorStop(1, 'rgba(1,12,35,0)');
     ctx.fillStyle = topFade;
-    ctx.fillRect(0, 0, contract.canvas.width, 280);
-
-    const bottomFade = ctx.createLinearGradient(0, contract.canvas.height - 250, 0, contract.canvas.height);
-    bottomFade.addColorStop(0, 'rgba(1,12,35,0)');
-    bottomFade.addColorStop(1, 'rgba(1,12,35,.62)');
-    ctx.fillStyle = bottomFade;
-    ctx.fillRect(0, contract.canvas.height - 250, contract.canvas.width, 250);
+    ctx.fillRect(0, 0, contract.canvas.width, 330);
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';

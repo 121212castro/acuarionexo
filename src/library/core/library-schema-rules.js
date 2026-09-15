@@ -233,6 +233,16 @@
     if (URL_PATTERN.test(summary)) errors.push('Resumen · Resumen: Las URLs solo pueden aparecer en Fuentes.');
     const imprecise = JSON.stringify({ summary, data: entry?.data || {} }).match(IMPRECISE);
     if (imprecise) warnings.push(`Revisar expresión contextual: ${imprecise[0]}.`);
+    if (type === 'pez_marino') {
+      const skus = clean(entry?.data?.tmc_sku).split(/[;,/\s]+/).map(clean).filter(value => /^\d{4,6}$/.test(value));
+      const photo = entry?.image_assets?.photo || {};
+      const evidence = [photo.source_name, photo.source_url, photo.source_page].map(clean).join(' ');
+      if (!clean(entry?.photo_url)) errors.push('Imagen · Falta la foto interior real del pez.');
+      if (!clean(entry?.cover_url)) errors.push('Imagen · Falta la portada oficial del pez.');
+      if (skus.length && !skus.some(sku => evidence.includes(sku))) errors.push('Imagen · La foto no está demostrada como original TMC del SKU exacto de la ficha.');
+      const coverTemplate = clean(entry?.image_assets?.cover?.template);
+      if (clean(entry?.cover_url) && !['marine-fish-coral-v7-approved-layout','manual-restored-approved'].includes(coverTemplate)) errors.push('Imagen · La portada no usa el contrato marino aprobado.');
+    }
     return {
       approved: unique(errors).length === 0,
       errors: unique(errors),
