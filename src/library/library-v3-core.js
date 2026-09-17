@@ -147,6 +147,11 @@
     return `<div class="library-media-frame library-media-frame--${kind}">${image}</div>`;
   }
 
+  function legacyManualCover(x, coverUrl) {
+    const template = String(x?.image_assets?.cover?.template || '').trim();
+    return !template && !!coverUrl && coverUrl.includes('/storage/v1/object/public/library-images/');
+  }
+
   function cardCoverUrl(x) {
     const coverUrl = String(x?.image_assets?.cover?.original || x?.cover_url || '').trim();
     if (!coverUrl) return '';
@@ -154,7 +159,7 @@
 
     const cover = x?.image_assets?.cover || {};
     const template = String(cover.template || '').trim();
-    if (MANUAL_COVER_TEMPLATES.has(template)) return coverUrl;
+    if (MANUAL_COVER_TEMPLATES.has(template) || legacyManualCover(x, coverUrl)) return coverUrl;
 
     const contract = window.ANX.LibraryCoverContract;
     const requiredTemplate = String(contract?.masterTemplate || '').trim();
