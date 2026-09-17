@@ -47,38 +47,76 @@ function normalizedLibraryTitle(value: unknown) {
     .replace(/\s+/g, " ");
 }
 
-function buildEntry(userId: string, identity: any, parsed: any, normalizedSources: any[], model: string) {
-  const isMultispeciesMix = identity.entry_type === "microfauna" &&
-    identity.is_multispecies_mix === true;
+function normalizedUrl(value: unknown) {
+  return clean(value, 5000).replace(/\\\//g, "/");
+}
+
+function tmcSkusFrom(...values: unknown[]) {
+  const text = values.map(value => clean(value, 1000)).join(" ");
+  if (!/\bTMC\b/i.test(text) && !/\bSKU\b/i.test(text)) return [];
+  return [...new Set((text.match(/\b\d{4,6}\b/g) || []).filter(Boolean))];
+}
+
+function verifiedMarinePhoto(identity: any, parsed: any, subject: string) {
+  if (identity.entry_type !== "pez_marino") return null;
+  const parsedData = parsed?.data && typeof parsed.data === "object" ? parsed.data : {};
+  const raw = parsed?.image_assets?.photo && typeof parsed.image_assets.photo === "object"
+    ? parsed.image_assets.photo
+    : {};
+  const url = normalizedUrl(raw.original || parsed?.photo_url || parsedData.tmc_photo_source_url);
+  if (!url) return null;
+
+  let hostname = "";
+  try { hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, ""); } catch (_) { return null; }
+  if (!(hostname === "tropicalmarinecentre.com" || hostname.endsWith(".tropicalmarinecentre.com"))) return null;
+
+  const skus = tmcSkusFrom(subject, identity.title, identity.product_code, parsed.title, parsedData.tmc_sku);
+  if (!skus.length) return null;
+  const sourceUrl = normalizedUrl(raw.source_url || url);
+  const sourcePage = normalizedUrl(raw.source_page);
+  const sourceName = clean(raw.source_name || `TMC SKU ${skus.join(" / ")}`, 300);
+  const evidence = `${url} ${sourceUrl} ${sourcePage} ${sourceName}`;
+  if (!skus.some(sku => evidence.includes(sku))) return null;
+
+  return {
+    url,
+    asset: {
+      original: url,
+      source_url: sourceUrl || url,
+      source_page: sourcePage || null,
+      source_name: sourceName,
+      exact_sku: true,
+      official_tmc: true,
+      generated_at: new Date().toISOString()
+    }
+  };
+}
+
+function buildEntry(userId: string, identity: any, parsed: any, normalizedSources: any[], model: string, subject: string) {
+  const isMultispeciesMix = identity.entry_type === "microfauna" && identity.is_multispecies_mix === true;
   const parsedData = parsed.data && typeof parsed.data === "object" ? parsed.data : {};
   const data = {
     ...parsedData,
     ...(isMultispeciesMix ? {
-      culture_type: clean(parsedData.culture_type, 1000) ||
-        "Mezcla viva multiespecífica comercial.",
-      identification: clean(parsedData.identification, 3000) ||
-        clean(identity.sections?.identity, 3000) ||
-        `Mezcla multiespecífica identificada como ${clean(identity.scientific_name, 500)}.`
+      culture_type: clean(parsedData.culture_type, 1000) || "Mezcla viva multiespecífica comercial.",
+      identification: clean(parsedData.identification, 3000) || clean(identity.sections?.identity, 3000) || `Mezcla multiespecífica identificada como ${clean(identity.scientific_name, 500)}.`
     } : {}),
     ai_notes: typeof parsedData.ai_notes === "object" && parsedData.ai_notes !== null
       ? JSON.stringify(parsedData.ai_notes)
       : parsedData.ai_notes
   };
+  const marinePhoto = verifiedMarinePhoto(identity, parsed, subject);
   return {
     user_id: userId,
     title: clean(parsed.title || identity.title, 180),
-    scientific_name: clean(
-      isMultispeciesMix
-        ? identity.scientific_name
-        : (parsed.scientific_name || identity.scientific_name),
-      500
-    ) || null,
+    scientific_name: clean(isMultispeciesMix ? identity.scientific_name : (parsed.scientific_name || identity.scientific_name), 500) || null,
     entry_type: identity.entry_type,
     status: "review",
     visibility: "private",
     summary: clean(parsed.summary, 1200) || null,
     cover_url: null,
-    photo_url: null,
+    photo_url: marinePhoto?.url || null,
+    image_assets: marinePhoto ? { photo: marinePhoto.asset } : {},
     sections: parsed.sections && typeof parsed.sections === "object" ? parsed.sections : {},
     data,
     tags: Array.isArray(parsed.tags) ? parsed.tags.slice(0, 20) : [],
@@ -123,11 +161,8 @@ async function identifyJob(serviceClient: any, job: any) {
   const sources = normalizeSources(parsed.sources);
   const manufacturer = clean(parsed.manufacturer, 180);
   const resolvedBrand = clean(parsed.brand || requestedBrand, 180);
-  const biologicalOk = !biologicalTypes.has(resolvedType) ||
-    concreteScientificName(parsed.scientific_name) ||
-    multiTaxonMicrofauna(identifiedEntry);
-  const productOk = !productTypes.has(resolvedType) ||
-    Boolean(clean(parsed.title) && (manufacturer || resolvedBrand));
+  const biologicalOk = !biologicalTypes.has(resolvedType) || concreteScientificName(parsed.scientific_name) || multiTaxonMicrofauna(identifiedEntry);
+  const productOk = !productTypes.has(resolvedType) || Boolean(clean(parsed.title) && (manufacturer || resolvedBrand));
   const confirmed = parsed.identity_confirmed === true &&
     allowedTypes.includes(resolvedType) &&
     sources.length >= 2 &&
@@ -151,12 +186,7 @@ async function identifyJob(serviceClient: any, job: any) {
     candidates: Array.isArray(parsed.candidates) ? parsed.candidates.slice(0, 8) : [],
     sources,
     sections: {
-      identity: clean(
-        typeof parsed.sections?.identity === "string"
-          ? parsed.sections.identity
-          : JSON.stringify(parsed.sections?.identity || parsed.identity || {}),
-        3000
-      )
+      identity: clean(typeof parsed.sections?.identity === "string" ? parsed.sections.identity : JSON.stringify(parsed.sections?.identity || parsed.identity || {}), 3000)
     },
     ai_model: model
   };
@@ -178,9 +208,7 @@ async function identifyJob(serviceClient: any, job: any) {
     .eq("entry_type", resolvedType);
   if (duplicateError) throw duplicateError;
   const requestedTitle = normalizedLibraryTitle(identity.title || commonName);
-  const duplicate = (possibleDuplicates || []).find(
-    (entry: any) => normalizedLibraryTitle(entry.title) === requestedTitle
-  );
+  const duplicate = (possibleDuplicates || []).find((entry: any) => normalizedLibraryTitle(entry.title) === requestedTitle);
   if (duplicate) {
     await serviceClient.from("library_generation_jobs").update({
       status: "blocked",
@@ -205,7 +233,25 @@ async function identifyJob(serviceClient: any, job: any) {
   return { id: job.id, subject: job.subject, phase: "identified" };
 }
 
-async function generateJob(serviceClient: any, job: any) {
+async function generateOfficialMarineCover(entryId: string, workerSecret: string) {
+  const url = `${Deno.env.get("SUPABASE_URL")!}/functions/v1/generate-marine-fish-cover`;
+  const request = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ entry_id: entryId, worker_secret: workerSecret })
+  });
+  const payload = await request.json().catch(() => ({}));
+  if (!request.ok || payload?.ok !== true || !clean(payload?.entry?.cover_url, 5000)) {
+    throw new Error(clean(payload?.error || `La portada oficial devolvió HTTP ${request.status}.`, 1000));
+  }
+  return payload.entry;
+}
+
+async function discardInsertedEntry(serviceClient: any, entryId: string) {
+  await serviceClient.from("library_entries").delete().eq("id", entryId);
+}
+
+async function generateJob(serviceClient: any, job: any, workerSecret: string) {
   const identity = job.identify_result || {};
   const state = generationState(identity);
   const fields = contracts[identity.entry_type || job.entry_type];
@@ -214,22 +260,40 @@ async function generateJob(serviceClient: any, job: any) {
     throw new Error("La identidad no está confirmada con dos fuentes.");
   }
 
+  const marineImageRule = identity.entry_type === "pez_marino"
+    ? [
+        "Para una ficha TMC de pez marino debes buscar también la fotografía oficial del SKU exacto en tropicalmarinecentre.com.",
+        "Devuelve photo_url y image_assets.photo con original, source_url, source_page y source_name. Solo marca exact_sku=true y official_tmc=true cuando la URL y la evidencia corresponden exactamente al SKU recibido.",
+        "No uses fotos genéricas, bancos de imágenes, otra especie, otro SKU ni una imagen sin trazabilidad exacta."
+      ].join("\n")
+    : "";
+  const hardCompletenessRule = [
+    "REGLA PRIORITARIA DE COMPLETITUD: ningún campo obligatorio del contrato puede faltar, ser null, cadena vacía o array vacío.",
+    "Un campo numérico obligatorio debe contener un valor o rango numérico verificable; frases como 'no disponible', 'no publicado' o 'sin datos' NO rellenan un campo numérico.",
+    "Si todavía falta un dato obligatorio, continúa investigando. No inventes. Si no existe evidencia suficiente, la ficha debe ser rechazada por la auditoría y no puede guardarse como completada."
+  ].join("\n");
+
   if (!state?.response_id) {
     const started = await startOpenAiJsonBackground(
       "Eres el motor GENERATE de AcuarioNexo. Recibes una identidad validada, investigas y creas únicamente un borrador completo, útil para usuario final y útil para IA. Nunca publicas. No inventes datos. Devuelve JSON estricto.",
       [
         `Identidad validada: ${JSON.stringify(withoutGenerationState(identity))}`,
+        `Solicitud original: ${clean(job.subject, 500)}.`,
         contractPrompt(identity.entry_type, fields),
+        hardCompletenessRule,
+        marineImageRule,
         "Contrasta fuentes reales y cumple la política obligatoria de tres fuentes: oficial o primaria, especializada por categoría y una tercera fiable.",
         "Cada dato debe ser rastreable con sources[].used_for.",
-        "No devuelvas una ficha mínima: todos los campos deben contener datos útiles o una explicación verificable de que el fabricante no los publica.",
+        "No devuelvas una ficha mínima: todos los campos deben contener datos útiles y verificables.",
         "ai_notes debe ser texto útil de al menos 20 caracteres; no devuelvas un objeto ni una lista en ese campo.",
         identity.is_multispecies_mix === true
           ? "Es una mezcla multiespecífica: conserva exactamente scientific_name de la identidad validada y declara expresamente la mezcla en data.culture_type y data.identification."
           : "",
         "Prohibido usar: bajo, medio, alto, moderado, suele, normalmente, aproximadamente, mantener parámetros estables, compatible con peces pacíficos.",
-        "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
-      ].join("\n\n")
+        identity.entry_type === "pez_marino"
+          ? "Devuelve exactamente: title, scientific_name, summary, data, sections, tags, sources, photo_url e image_assets."
+          : "Devuelve exactamente: title, scientific_name, summary, data, sections, tags y sources."
+      ].filter(Boolean).join("\n\n")
     );
     await serviceClient.from("library_generation_jobs").update({
       progress: 55,
@@ -250,16 +314,16 @@ async function generateJob(serviceClient: any, job: any) {
   const parsed = polled.parsed;
   const sources = normalizeSources([...(parsed.sources || []), ...(identity.sources || [])]);
   const model = clean(Deno.env.get("OPENAI_MODEL") || "gpt-4.1-mini", 80);
-  const row = buildEntry(job.requested_by, identity, parsed, sources, model);
+  const row = buildEntry(job.requested_by, identity, parsed, sources, model, clean(job.subject, 500));
   const audit = auditEntry(row);
-  if (!audit.approved) {
+  if (!audit.approved || (audit.missing_fields || []).length || (audit.invalid_fields || []).length) {
     const attempt = Math.max(0, Number(state.attempt) || 0);
     if (attempt >= 3) {
       await serviceClient.from("library_generation_jobs").update({
         status: "blocked",
         progress: 95,
         error_code: "draft_quality_failed",
-        error_message: `La auditoría rechazó la ficha: ${audit.errors.join(" ")}`
+        error_message: `La ficha no se guarda porque el contrato sigue incompleto o inválido: ${audit.errors.join(" ")}`
       }).eq("id", job.id);
       return { id: job.id, subject: job.subject, phase: "quality_blocked" };
     }
@@ -267,49 +331,94 @@ async function generateJob(serviceClient: any, job: any) {
       "Eres el motor REPAIR de AcuarioNexo. Completa y corrige el JSON anterior sin inventar datos. Devuelve la ficha completa en JSON estricto.",
       [
         contractPrompt(identity.entry_type, fields),
+        hardCompletenessRule,
+        marineImageRule,
         `Errores de auditoría: ${JSON.stringify(audit.errors)}`,
         `Campos incompletos: ${JSON.stringify(audit.missing_fields || [])}`,
+        `Campos inválidos: ${JSON.stringify(audit.invalid_fields || [])}`,
         `Campos pobres o genéricos: ${JSON.stringify(audit.poor_fields || [])}`,
         "Corrige los campos rechazados y conserva el resto.",
         "Mantén o mejora sources con URLs reales y used_for."
-      ].join("\n\n"),
+      ].filter(Boolean).join("\n\n"),
       "",
       state.response_id
     );
     await serviceClient.from("library_generation_jobs").update({
       progress: Math.min(90, 75 + (attempt * 5)),
-      identify_result: {
-        ...identity,
-        generation_state: { ...repair, phase: "repairing", attempt: attempt + 1 }
-      }
+      identify_result: { ...identity, generation_state: { ...repair, phase: "repairing", attempt: attempt + 1 } }
     }).eq("id", job.id);
     return { id: job.id, subject: job.subject, phase: "repair_started", attempt: attempt + 1 };
+  }
+
+  if (identity.entry_type === "pez_marino" && !row.photo_url) {
+    await serviceClient.from("library_generation_jobs").update({
+      status: "blocked",
+      progress: 95,
+      error_code: "exact_photo_required",
+      error_message: "La ficha cumple el contrato, pero no se encontró una foto oficial TMC trazable al SKU exacto. No se guardó una ficha sin portada."
+    }).eq("id", job.id);
+    return { id: job.id, subject: job.subject, phase: "photo_blocked" };
   }
 
   row.validation_result = {
     ...audit,
     generated_audit: true,
     audited_at: new Date().toISOString(),
-    engine: "library-generation-worker-v1"
+    engine: "library-generation-worker-v2-hard-gate"
   };
   row.validated_by = job.requested_by;
   row.validated_at = new Date().toISOString();
+
   const { data: entry, error: insertError } = await serviceClient.from("library_entries")
     .insert(row)
-    .select("id,title")
+    .select("*")
     .single();
   if (insertError) throw insertError;
+
+  const persistedAudit = auditEntry(entry);
+  if (!persistedAudit.approved || (persistedAudit.missing_fields || []).length || (persistedAudit.invalid_fields || []).length) {
+    await discardInsertedEntry(serviceClient, entry.id);
+    await serviceClient.from("library_generation_jobs").update({
+      status: "blocked",
+      progress: 95,
+      library_entry_id: null,
+      error_code: "persisted_contract_failed",
+      error_message: `La ficha se descartó tras la comprobación final: ${persistedAudit.errors.join(" ")}`
+    }).eq("id", job.id);
+    return { id: job.id, subject: job.subject, phase: "persisted_quality_blocked" };
+  }
+
+  let finalEntry = entry;
+  if (identity.entry_type === "pez_marino") {
+    try {
+      finalEntry = await generateOfficialMarineCover(entry.id, workerSecret);
+    } catch (coverError) {
+      await discardInsertedEntry(serviceClient, entry.id);
+      await serviceClient.from("library_generation_jobs").update({
+        status: "blocked",
+        progress: 95,
+        library_entry_id: null,
+        error_code: "cover_generation_failed",
+        error_message: `La ficha no se conserva sin portada oficial: ${clean((coverError as any)?.message || coverError, 800)}`
+      }).eq("id", job.id);
+      return { id: job.id, subject: job.subject, phase: "cover_blocked" };
+    }
+    if (!clean(finalEntry?.cover_url, 5000)) {
+      await discardInsertedEntry(serviceClient, entry.id);
+      throw new Error("La portada oficial no quedó persistida.");
+    }
+  }
 
   await serviceClient.from("library_generation_jobs").update({
     status: "completed",
     progress: 100,
-    library_entry_id: entry.id,
+    library_entry_id: finalEntry.id,
     identify_result: withoutGenerationState(identity),
     completed_at: new Date().toISOString(),
     error_code: null,
     error_message: null
   }).eq("id", job.id);
-  return { id: job.id, subject: job.subject, phase: "completed", library_entry_id: entry.id };
+  return { id: job.id, subject: job.subject, phase: "completed", library_entry_id: finalEntry.id };
 }
 
 Deno.serve(async (req: Request) => {
@@ -321,10 +430,7 @@ Deno.serve(async (req: Request) => {
   try {
     const payload = await req.json().catch(() => ({}));
     const candidate = clean(payload.worker_secret, 300);
-    const { data: authorized, error: authError } = await serviceClient.rpc(
-      "verify_library_generation_worker_secret",
-      { candidate }
-    );
+    const { data: authorized, error: authError } = await serviceClient.rpc("verify_library_generation_worker_secret", { candidate });
     if (authError || authorized !== true) return response({ error: "worker_auth_required" }, 401);
 
     const { data: jobs, error: jobsError } = await serviceClient.from("library_generation_jobs")
@@ -348,9 +454,9 @@ Deno.serve(async (req: Request) => {
       return response({ ok: true, result: await identifyJob(serviceClient, job) });
     }
 
-    return response({ ok: true, result: await generateJob(serviceClient, job) });
+    return response({ ok: true, result: await generateJob(serviceClient, job, candidate) });
   } catch (error) {
-    const message = clean(error?.message || error, 1000);
+    const message = clean((error as any)?.message || error, 1000);
     const { data: active } = await serviceClient.from("library_generation_jobs")
       .select("id")
       .in("status", ["identifying", "generating"])
