@@ -164,7 +164,13 @@ function coverSvg(background: string, cutout: string, entry: any) {
 </svg>`;
 }
 
-async function authorize(req: Request, entry: any) {
+async function authorize(req: Request, entry: any, db: any, body: any) {
+  const workerSecret = clean(body?.worker_secret);
+  if (workerSecret) {
+    const check = await db.rpc("verify_library_generation_worker_secret", { candidate: workerSecret });
+    if (!check.error && check.data === true) return "worker";
+  }
+
   const authorization = req.headers.get("authorization") || "";
   if (!authorization.startsWith("Bearer ")) throw new Error("Falta autenticación.");
   const client = createClient(
@@ -175,6 +181,7 @@ async function authorize(req: Request, entry: any) {
   const user = await client.auth.getUser();
   if (user.error || !user.data.user) throw new Error("Autenticación no válida.");
   if (String(entry.user_id) !== String(user.data.user.id)) throw new Error("No tienes permiso para generar esta portada.");
+  return "user";
 }
 
 Deno.serve(async (req: Request) => {
@@ -197,12 +204,12 @@ Deno.serve(async (req: Request) => {
     if (query.error) throw query.error;
     const entry: any = query.data;
 
-    await authorize(req, entry);
+    const authMode = await authorize(req, entry, db, body);
     if (entry.entry_type !== "pez_marino") throw new Error("Esta función solo genera portadas de peces marinos.");
 
     const existingTemplate = clean(entry?.image_assets?.cover?.template);
     if (["manual-approved", "manual-restored-approved"].includes(existingTemplate) && clean(entry.cover_url)) {
-      return json({ ok: true, preserved_manual_cover: true, entry });
+      return json({ ok: true, auth_mode: authMode, preserved_manual_cover: true, entry });
     }
 
     if (!clean(entry.photo_url)) throw new Error("La ficha no tiene foto interior.");
@@ -212,7 +219,8 @@ Deno.serve(async (req: Request) => {
     if (skus.length && !photo.exact_sku) throw new Error("La foto no está validada para el SKU exacto.");
     if (skus.length && !skus.some((sku: string) => evidence.includes(sku))) throw new Error("La trazabilidad de la foto no contiene el SKU exacto.");
 
-    const photoResponse = await fetch(entry.photo_url, { cache: "no-store" });
+    const normalizedPhotoUrl = clean(entry.photo_url).replace(/\\\//g, "/");
+    const photoResponse = await fetch(normalizedPhotoUrl, { cache: "no-store" });
     if (!photoResponse.ok) throw new Error(`No se pudo cargar la foto interior (${photoResponse.status}).`);
     const bytes = new Uint8Array(await photoResponse.arrayBuffer());
     if (bytes.length < 4000 || bytes.length > 20 * 1024 * 1024) throw new Error("Tamaño de foto no válido.");
@@ -242,7 +250,7 @@ Deno.serve(async (req: Request) => {
     const cover = {
       original: coverUrl,
       generated_at: now,
-      generated_from_photo_url: entry.photo_url,
+      generated_from_photo_url: normalizedPhotoUrl,
       source_name: "AcuarioNexo portada marina oficial · foto TMC exacta",
       template: TEMPLATE,
       contract_version: CONTRACT_VERSION,
@@ -259,12 +267,12 @@ Deno.serve(async (req: Request) => {
     };
 
     const updated = await db.from("library_entries")
-      .update({ cover_url: coverUrl, image_assets: { ...(entry.image_assets || {}), cover }, updated_at: now })
+      .update({ cover_url: coverUrl, photo_url: normalizedPhotoUrl, image_assets: { ...(entry.image_assets || {}), cover }, updated_at: now })
       .eq("id", entry.id)
       .select("*")
       .single();
     if (updated.error) throw updated.error;
-    return json({ ok: true, entry: updated.data });
+    return json({ ok: true, auth_mode: authMode, entry: updated.data });
   } catch (error) {
     return json({ ok: false, error: String((error as any)?.message || error) }, 400);
   }
