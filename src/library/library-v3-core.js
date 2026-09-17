@@ -7,11 +7,12 @@
   const filterTypes = [...types, ['recambios','Recambios']];
   const labels = Object.fromEntries(filterTypes);
   const biologicalTypes = new Set(['pez_marino','pez_dulce','coral','invertebrado','planta','microfauna','fitoplancton']);
-  const CARD_SELECT = 'id,user_id,title,scientific_name,entry_type,status,visibility,summary,tags,cover_url,photo_url,updated_at';
+  const CARD_SELECT = 'id,user_id,title,scientific_name,entry_type,status,visibility,summary,tags,cover_url,photo_url,image_assets,updated_at';
   const CARD_PAGE_SIZE = 1000;
   const DISPLAY_BATCH = 48;
   const CACHE_KEY = 'anx_library_public_cards_v3';
   const CACHE_MAX_AGE = 30 * 60 * 1000;
+  const MANUAL_COVER_TEMPLATES = new Set(['manual-approved','manual-restored-approved']);
   let pendingLoad = null;
 
   function typeName(t) { return labels[t] || t || 'Ficha'; }
@@ -146,10 +147,34 @@
     return `<div class="library-media-frame library-media-frame--${kind}">${image}</div>`;
   }
 
+  function cardCoverUrl(x) {
+    const coverUrl = String(x?.image_assets?.cover?.original || x?.cover_url || '').trim();
+    if (!coverUrl) return '';
+    if (!['pez_marino','coral'].includes(String(x?.entry_type || ''))) return coverUrl;
+
+    const cover = x?.image_assets?.cover || {};
+    const template = String(cover.template || '').trim();
+    if (MANUAL_COVER_TEMPLATES.has(template)) return coverUrl;
+
+    const contract = window.ANX.LibraryCoverContract;
+    const requiredTemplate = String(contract?.masterTemplate || '').trim();
+    const requiredVersion = String(contract?.version || '').trim();
+    if (!requiredTemplate || template !== requiredTemplate) return '';
+    if (requiredVersion && String(cover.contract_version || '').trim() !== requiredVersion) return '';
+
+    const generatedFrom = String(cover.generated_from_photo_url || '').trim();
+    const currentPhoto = String(x?.photo_url || '').trim();
+    if (generatedFrom && currentPhoto && generatedFrom !== currentPhoto) return '';
+    return coverUrl;
+  }
+
   function card(x) {
     const rawTitle = String(x.title || 'Ficha');
     const title = esc(rawTitle);
-    const cover = responsiveImage(x, 'cover', x.cover_url || x.photo_url || '', 'library-card-cover', rawTitle);
+    const coverUrl = cardCoverUrl(x);
+    const cover = coverUrl
+      ? responsiveImage({ ...x, image_assets: { ...(x.image_assets || {}), cover: { original: coverUrl } } }, 'cover', '', 'library-card-cover', rawTitle)
+      : '';
     const code = String(x?.product_code || x?.sku || x?.model || x?.data?.product_code || x?.data?.sku || x?.data?.model || '').trim();
     const displayType = isSparePart(x) ? 'Recambio' : typeName(x.entry_type);
     const noCover = `<span class="library-card-cover library-no-photo"><span class="library-no-photo-label">Sin portada</span></span>`;
@@ -231,5 +256,5 @@
   window.buscarBiblioteca = value => { state.librarySearchQuery = String(value || ''); state.libraryVisibleLimit = DISPLAY_BATCH; list(); };
   window.filtrarBiblioteca = t => { state.libraryFilter = t || 'all'; state.libraryVisibleLimit = DISPLAY_BATCH; list(); };
   window.mostrarMasBiblioteca = () => { state.libraryVisibleLimit = Number(state.libraryVisibleLimit || DISPLAY_BATCH) + DISPLAY_BATCH; list(); };
-  window.ANX.LibraryV3Core = { S, types, filterTypes, labels, biologicalTypes, typeName, statusName, row, load, preload, ensureDetail, sources, responsiveImage, card, libraryInfoNotice, list, isSparePart, isAdminLibrary, isOwnLibraryEntry, canSeeLibraryEntry, isAdminReturnContext, returnToLibrarySource, libraryBackButton };
+  window.ANX.LibraryV3Core = { S, types, filterTypes, labels, biologicalTypes, typeName, statusName, row, load, preload, ensureDetail, sources, responsiveImage, cardCoverUrl, card, libraryInfoNotice, list, isSparePart, isAdminLibrary, isOwnLibraryEntry, canSeeLibraryEntry, isAdminReturnContext, returnToLibrarySource, libraryBackButton };
 })();
