@@ -4,152 +4,76 @@ Documento autogenerado por `scripts/refresh-project-docs.mjs`.
 
 ## Build actual
 
-`release-a177705a2e2c`
+`release-20260917-marine-covers-cleanup`
 
 El build coincide en `index.html`, `app-version.json` y `manifest.webmanifest`.
 
-## Entrada web activa
+## Fuente de carga
 
-- `icon-512.png`
-- `app-version.json`
-- `styles.css`
-- `dashboard.css`
-- `aquarium-map.css`
-- `login-reef.css`
-- `legal-auth.css`
-- `aquarium-cards.css`
-- `aquariums-mobile-fix.css`
-- `aquarium-form-ux.css`
-- `mobile-form-fix.css`
-- `library-mobile-overflow-fix.css`
-- `library-clean.css`
-- `library-images.css`
-- `inventory-accordion.css`
-- `microfauna-mobile.css`
-- `notifications.css`
-- `settings.css`
-- `support.css`
-- `status.css`
-- `src/library/review-field-highlights.css`
-- `config.js`
-- `app.js`
-- `site-analytics.js`
-- `src/aquariums/aquariums-core.js`
-- `src/aquariums/aquariums-form.js`
-- `src/aquariums/aquariums-save.js`
-- `src/aquariums/aquariums.js`
-- `src/admin/admin-core.js`
-- `src/admin/admin-analytics.js`
-- `src/admin/admin-access.js`
-- `src/core/module-loader.js`
-- `src/library/core/library-invertebrate-contract.js`
-- `src/auth/auth-core.js`
-- `src/auth/auth.js`
-- `src/auth/access-request-email.js`
-- `update-manager.js`
-- `notifications.js`
-- `src/library/review-field-highlights.js`
-- `src/library/review-workflow.js`
-- `manifest.webmanifest`
-
-## Módulos bajo demanda
-
-La lista oficial se obtiene exclusivamente de `src/core/module-loader.js`.
+- `index.html`: entrada web.
+- `src/core/module-loader.js`: fuente oficial de módulos bajo demanda.
+- `src/library/ficha/ficha-json.js`: apoyo de serialización de fichas.
 
 ## Administración / acceso global
 
 - `index.html`: contiene el único botón persistente `adminBtn` de la cabecera.
-- `src/auth/auth-core.js`: muestra el botón únicamente cuando existe sesión y `state.isAdmin === true`.
-- `src/admin/admin-core.js`: determina el rol administrativo oficial mediante `admin_roles`.
-- `src/core/module-loader.js`: `adminPanel` carga el módulo oficial `src/admin/admin.js`.
-- El botón está disponible desde cualquier pantalla y abre siempre el Panel de Administración.
-- Los usuarios sin rol administrativo no ven el botón.
-- No se permiten botones Admin duplicados dentro de pantallas concretas.
+- `src/auth/auth-core.js`: muestra el botón únicamente con sesión y `state.isAdmin === true`.
+- `src/admin/admin-core.js`: determina el rol administrativo mediante `admin_roles`.
+- `src/core/module-loader.js`: carga el panel oficial de administración.
 
 ## Biblioteca / cadena única de contrato
 
-- `src/library/core/library-schema.js`: define los 14 contratos, campos, etiquetas, apartados y política de fuentes.
-- `src/library/core/library-schema-rules.js`: convierte esos metadatos en una sola regla efectiva por campo y ejecuta la única auditoría.
-- `src/library/library-v3-template.js`: genera para el Chat exactamente la misma regla efectiva y la ruta JSON de cada campo.
-- `src/library/ficha/ficha-chat-import.js`: rechaza antes de insertar cualquier ficha que no apruebe `LibrarySchema.audit`.
-- `src/library/library-v3-images.js`: gestiona la carga y persistencia de la portada y la foto interior.
-- `src/library/library-v3-ficha.js`: usa la misma auditoría al editar y guardar; además gestiona el bloque opcional `data.external_link`.
-- `src/library/ficha/ficha-actions.js`: vuelve a usar la misma auditoría al publicar o añadir y muestra el botón externo cuando está activado.
-- `src/library/inventory/library-inventory-import.js`: vuelve a auditar antes de persistir la copia.
-- `scripts/generate-library-server-contract.mjs`: genera el contrato del servidor directamente desde la regla efectiva del cliente.
-- `supabase/functions/_shared/library-contract.generated.ts`: copia generada y desplegable; no se edita manualmente.
-- `scripts/audit-library-contracts.mjs`: recorre los 14 tipos y verifica contrato, plantilla, servidor, valores cerrados, números, longitudes, resumen y fuentes.
-- Las URLs de fuentes se deduplican por dirección canónica; parámetros UTM y otros identificadores de seguimiento no crean fuentes nuevas.
-- No existe una segunda regla por pantalla ni una validación de IA que sustituya el contrato.
+- `src/library/core/library-schema.js`: contratos, campos, etiquetas y política de fuentes.
+- `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
+- `src/library/library-v3-template.js`: instrucciones y rutas JSON para Chat.
+- `src/library/ficha/ficha-chat-import.js`: auditoría antes de insertar.
+- `src/library/library-v3-ficha.js`: edición, guardado y auditoría.
+- `src/library/ficha/ficha-actions.js`: vista, publicación y acciones.
+- `src/library/inventory/library-inventory-import.js`: persistencia en inventario.
+- `scripts/generate-library-server-contract.mjs`: genera la copia de contrato servidor.
+- `supabase/functions/_shared/library-contract.generated.ts`: contrato generado del servidor.
+
+## Biblioteca / portadas e imágenes
+
+- `src/library/library-v3-images.js`: propietario de la carga y persistencia de foto interior y portada manual.
+- `src/library/ficha/library-cover-contract.js`: contrato visual único de portada; fija plantilla, versión, proporción y posiciones.
+- `src/library/ficha/library-cover-master.js`: generador oficial cliente para peces marinos; recorta el ejemplar real y compone la portada.
+- `src/library/ficha/library-cover-backfill.js`: detecta portadas ausentes u obsoletas y protege las manuales aprobadas e históricas.
+- `supabase/functions/generate-marine-fish-cover/index.ts`: generador oficial servidor; rechaza recortes inseguros en vez de guardar fondos residuales.
+- `src/library/library-v3-core.js`: valida la portada antes de mostrarla en Biblioteca y nunca utiliza `photo_url` como sustituto.
+
+### Contrato vigente de pez marino
+
+- Plantilla: `marine-fish-master-v1-locked`.
+- Versión: `cover-contract-v13`.
+- `manual-approved` y `manual-restored-approved`: protegidas.
+- Portadas manuales históricas del bucket `library-images`: protegidas.
+- Portadas generadas con contrato anterior, con una foto origen distinta o sin metadatos válidos: no se presentan como oficiales.
+- Sin portada válida: la tarjeta muestra `Sin portada`; nunca muestra la foto interior como portada.
 
 ## Biblioteca / generador automático administrativo
 
-- `src/admin/admin-library-generator.js`: propietario único de la entrada por lotes, consulta de la cola, orden y reintentos.
-- `src/admin/admin-library-generator.css`: presentación adaptable de la cola; tarjetas en móvil.
-- `supabase/functions/library-identify/index.ts`: identifica categoría, entidad y versión con el fabricante o marca exigido por el lote.
-- `supabase/functions/library-generate-draft/index.ts`: inicia y consulta respuestas asíncronas de OpenAI; audita cada resultado y separa cada reparación en otra respuesta.
-- `supabase/functions/library-generation-worker/index.ts`: consume una etapa persistente de la cola en cada ejecución, sin depender del navegador.
-- `supabase/functions/_shared/library-v3.ts`: consume el contrato generado del cliente y aplica la misma auditoría en identificación, generación, revisión y publicación.
-- Toda modificación de `_shared/library-v3.ts` o `library-contract.generated.ts` exige desplegar juntas `library-identify`, `library-generate-draft`, `library-generation-worker`, `library-audit-card` y `library-publish`.
-- El trabajador conserva el `scientific_name` multiespecífico confirmado y garantiza que `data.culture_type` y `data.identification` declaren expresamente la mezcla.
-- `data.ai_notes` debe terminar como texto técnico útil; si la IA devuelve un objeto, el trabajador lo serializa antes de auditarlo.
-- `supabase/migrations/20260729233000_library_generation_worker.sql`: programa el trabajador con pg_cron y pg_net y autentica la llamada con Supabase Vault.
-- `library_generation_jobs.identify_result.requested_brand`: conserva la marca común sin crear un contrato de datos paralelo.
-- `library_generation_jobs.identify_result.generation_state`: conserva response_id, fase e intento para reanudar una búsqueda sin repetirla.
-- `library_generation_jobs.queue_order`: fija el orden de entrada aunque varias filas se inserten en el mismo instante.
-- Los nombres se limpian de numeración antes de insertarse y procesarse.
-- Una ficha solo se bloquea como duplicada cuando su nombre completo normalizado coincide con otro título de la misma categoría ya guardado en la biblioteca; compartir especie, género, fabricante o palabras parciales no bloquea.
-- El orden de la cola es el orden de entrada.
-- Supabase despierta el trabajador cada minuto; la pantalla solo consulta el estado y puede cerrarse sin detener el proceso.
-- Ninguna función espera encadenada la generación y tres reparaciones: cada llamada queda por debajo del límite de ejecución de Supabase.
-- Un trabajo bloqueado o fallido muestra el motivo real y puede reintentarse de forma individual.
-- Nunca publica fichas automáticamente: las deja en revisión privada para añadir fotos y validar.
+- `src/admin/admin-library-generator.js`: entrada por lotes, consulta de cola, orden y reintentos.
+- `supabase/functions/library-identify/index.ts`: identificación.
+- `supabase/functions/library-generate-draft/index.ts`: generación y reparación por etapas.
+- `supabase/functions/library-generation-worker/index.ts`: consumidor persistente de cola.
+- Nunca publica automáticamente; deja las fichas en revisión para completar imágenes y validar.
 
-## Biblioteca / reglas por clase de campo
+## Propietarios únicos relacionados con portadas
 
-- Valores cerrados: solo aceptan una opción exacta; no se les aplica longitud de texto descriptivo.
-- Campos numéricos: exigen número o rango concreto.
-- Nombre científico: exige binomio concreto válido.
-- Identificadores, marcas, modelos, unidades y códigos: usan su longitud mínima específica.
-- Campos descriptivos: usan la longitud mínima indicada por el contrato.
-- `reef_safe`: solo `Sí`, `Sí con precaución` o `No`; la explicación pertenece a `reef_safe_notes`.
-- `summary`: mínimo 20 caracteres.
-- `sources`: mínimo tres fuentes reales con URL completa y `used_for`: una oficial o primaria, una base especializada adecuada a la categoría y una tercera fuente fiable.
-- Para productos comerciales manda el fabricante, manual, prospecto o ficha técnica. Para peces, plantas, corales, invertebrados y microfauna se exige una base especializada de su categoría.
-- Wikipedia puede complementar peces y plantas, pero nunca sustituye la fuente oficial, primaria o especializada.
-- La generación, reparación y auditoría comparten esta política y bloquean la ficha cuando la combinación de fuentes no se cumple.
+- Persistencia de imágenes: `src/library/library-v3-images.js`.
+- Contrato visual: `src/library/ficha/library-cover-contract.js`.
+- Composición cliente: `src/library/ficha/library-cover-master.js`.
+- Selección de pendientes: `src/library/ficha/library-cover-backfill.js`.
+- Composición servidor: `supabase/functions/generate-marine-fish-cover/index.ts`.
+- Representación en tarjetas: `src/library/library-v3-core.js`.
 
-## Biblioteca / enlace externo opcional
-
-- Todas las fichas pueden almacenar un único bloque común en `data.external_link`.
-- El bloque permanece oculto cuando `enabled !== true` o la URL no es válida.
-- `src/library/library-v3-ficha.js` es el propietario de edición, normalización, importación JSON y validación de la URL.
-- `src/library/ficha/ficha-actions.js` es el propietario de la representación pública del botón.
-- Campos disponibles: `enabled`, `provider`, `url`, `button_label`, `link_type`, `disclaimer`, `sponsored` y `affiliate`.
-- No se almacena precio en este bloque y su existencia no implica patrocinio, afiliación ni colaboración.
-- `commercial_link` solo se acepta como alias de lectura para migrar datos antiguos; al guardar se normaliza a `external_link`.
-- No se permiten botones externos paralelos, lógica duplicada por tipo de ficha ni archivos hotfix.
-
-## Propietarios únicos
-
-- `index.html`: estructura de la cabecera y botón global Admin.
-- `src/auth/auth-core.js`: visibilidad de controles de sesión y del acceso Admin.
-- `src/admin/admin-core.js`: autorización y rol administrativo.
-- `src/library/core/library-schema.js`: contratos y metadatos base.
-- `src/library/core/library-schema-rules.js`: regla efectiva y auditoría única.
-- `src/library/library-v3-template.js`: instrucciones y esqueleto JSON para el Chat.
-- `src/library/ficha/ficha-chat-import.js`: entrada de fichas desde Chat.
-- `src/library/library-v3-images.js`: carga y persistencia de imágenes de las fichas.
-- `src/library/library-v3-ficha.js`: edición, guardado y validación del enlace externo opcional.
-- `src/library/ficha/ficha-actions.js`: vista, publicación, entrada para añadir y representación del botón externo.
-- `src/library/inventory/library-inventory-import.js`: destino y persistencia en inventario.
-- `src/parameters/parameters-core.js`: catálogo de fichas Test y compatibilidad por parámetro.
-- No se permiten hotfix, patch, wrappers, validadores paralelos ni contratos duplicados.
+No se permiten hotfix, patch, wrappers, validadores paralelos ni una segunda cadena de portadas.
 
 ## Regla de actualización
 
 - Ejecutar `npm run docs:refresh` después de modificar cargas, contratos, responsabilidades o build.
 - Ejecutar `npm run check` antes de publicar.
 - Ejecutar `npm run mobile:prepare` cuando cambien archivos activos usados por la app móvil.
-- Comprobar después `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt`.
+- Comprobar `ARBOL_MAESTRO.md`, `MAPA_ARCHIVOS.md` y `ARCHIVOS_ACTIVOS.txt`.
 - `www/`, `android/`, `ios/` y `node_modules/` no se editan manualmente.
