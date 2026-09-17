@@ -32,6 +32,9 @@ jobs:
       - name: Generate server contract from client schema
         run: node scripts/generate-library-server-contract.mjs
 
+      - name: Verify client/server contract parity
+        run: node scripts/audit-library-contracts.mjs
+
       - name: Commit generated contract when changed
         shell: bash
         run: |
