@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { Jimp } from "npm:jimp@1.6.0";
 
 const TEMPLATE = "marine-fish-master-v1-locked";
-const CONTRACT_VERSION = "marine-cover-contract-v1";
+const CONTRACT_VERSION = "cover-contract-v13";
 const OFFICIAL_BACKGROUND_SOURCE = "https://raw.githubusercontent.com/121212castro/acuarionexo/main/src/library/ficha/library-cover-auto.js";
 const GOLD = "#e7bc58";
 const LIGHT_GOLD = "#f3d77c";
@@ -19,7 +19,7 @@ function escapeXml(value: unknown) {
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/\"/g, "&quot;")
     .replace(/'/g, "&apos;");
 }
 
@@ -76,7 +76,11 @@ function connectedBorderCutout(image: any) {
     const maximum = Math.max(r, g, b);
     const minimum = Math.min(r, g, b);
     const spread = maximum - minimum;
-    return maximum <= 58 || (minimum >= 224 && spread <= 34);
+    const neutralBackground = spread <= 20;
+    const greenBackground = g >= r + 24 && g >= b + 18 && g >= 72;
+    const brightBackground = minimum >= 210 && spread <= 52;
+    const darkBackground = maximum <= 72;
+    return darkBackground || brightBackground || neutralBackground || greenBackground;
   };
 
   const push = (index: number) => {
@@ -126,7 +130,9 @@ function connectedBorderCutout(image: any) {
   }
 
   if (maxX < minX || maxY < minY) throw new Error("El recorte del pez quedó vacío.");
-  if (opaque / total > 0.88) throw new Error("La foto no tiene un fondo separable de forma segura; no se genera una portada incorrecta.");
+  const opaqueRatio = opaque / total;
+  if (opaqueRatio > 0.78) throw new Error("La foto no tiene un fondo separable de forma segura; se conserva sin generar una portada incorrecta.");
+  if (opaqueRatio < 0.015) throw new Error("El recorte del pez eliminó demasiado contenido; se conserva sin generar una portada incorrecta.");
 
   const pad = Math.max(4, Math.round(Math.max(width, height) * 0.018));
   const x0 = Math.max(0, minX - pad);
