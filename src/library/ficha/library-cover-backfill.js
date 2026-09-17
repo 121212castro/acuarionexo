@@ -2,7 +2,8 @@
 (function () {
   const ANX = window.ANX = window.ANX || {};
   const CONTRACT = ANX.LibraryCoverContract;
-  const REQUIRED_TEMPLATE = CONTRACT?.masterTemplate || 'marine-fish-coral-v6-approved-layout';
+  const REQUIRED_TEMPLATE = CONTRACT?.masterTemplate || 'marine-fish-master-v1-locked';
+  const REQUIRED_CONTRACT_VERSION = CONTRACT?.version || 'cover-contract-v13';
   const MANUAL_TEMPLATES = new Set(['manual-approved','manual-restored-approved']);
   let running = false;
 
@@ -15,7 +16,15 @@
   }
 
   function hasMasterTemplate(row) {
-    return protectedManual(row) || (String(row?.image_assets?.cover?.template || '') === REQUIRED_TEMPLATE && !!String(row?.cover_url || '').trim());
+    if (protectedManual(row)) return true;
+    const cover = row?.image_assets?.cover || {};
+    const templateOk = String(cover.template || '') === REQUIRED_TEMPLATE;
+    const contractOk = String(cover.contract_version || '') === REQUIRED_CONTRACT_VERSION;
+    const urlOk = !!String(row?.cover_url || cover.original || '').trim();
+    const currentPhoto = String(row?.photo_url || '').trim();
+    const generatedFrom = String(cover.generated_from_photo_url || '').trim();
+    const sourceOk = !generatedFrom || !currentPhoto || generatedFrom === currentPhoto;
+    return templateOk && contractOk && urlOk && sourceOk;
   }
 
   async function pendingOfficialCovers(entryType) {
@@ -79,7 +88,9 @@
     backfillOfficialCovers,
     backfillCoralCovers,
     backfillMarineFishCovers,
+    hasMasterTemplate,
     requiredTemplate: REQUIRED_TEMPLATE,
+    requiredContractVersion: REQUIRED_CONTRACT_VERSION,
     manualTemplates: [...MANUAL_TEMPLATES]
   };
   window.regenerarTodasPortadasCoral = backfillCoralCovers;
