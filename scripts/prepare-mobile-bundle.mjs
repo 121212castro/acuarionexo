@@ -13,7 +13,8 @@ const entryAssets = [
   'manifest.webmanifest',
   'firebase-messaging-sw.js',
   'icon-512.png',
-  'src/core/module-loader.js'
+  'src/core/module-loader.js',
+  'src/library/assets/marine-fish-cover-master-v1.jpg'
 ];
 
 function normalizeAsset(file) {
@@ -21,7 +22,7 @@ function normalizeAsset(file) {
 }
 
 function isLocalAsset(file) {
-  return file && !/^https?:\/\//i.test(file) && /\.(?:html|js|css|png|webmanifest|json)$/i.test(file);
+  return file && !/^https?:\/\//i.test(file) && /\.(?:html|js|css|png|jpe?g|webp|svg|webmanifest|json)$/i.test(file);
 }
 
 function exists(relativePath) {
@@ -34,7 +35,7 @@ function read(relativePath) {
 
 function quotedFiles(text) {
   const files = new Set();
-  const re = /['"]([^'"]+\.(?:html|js|css|png|webmanifest|json)(?:\?[^'"]*)?)['"]/g;
+  const re = /['"]([^'"]+\.(?:html|js|css|png|jpe?g|webp|svg|webmanifest|json)(?:\?[^'"]*)?)['"]/g;
   let match;
   while ((match = re.exec(text))) {
     const file = normalizeAsset(match[1]);
