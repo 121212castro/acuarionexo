@@ -11,8 +11,15 @@
     return !!ANX.LibraryAdminPolicy?.isAdmin?.() || !!ANX.state?.isAdmin;
   }
 
+  function legacyManualCover(row) {
+    const template = String(row?.image_assets?.cover?.template || '').trim();
+    const url = String(row?.image_assets?.cover?.original || row?.cover_url || '').trim();
+    return !template && !!url && url.includes('/storage/v1/object/public/library-images/');
+  }
+
   function protectedManual(row) {
-    return MANUAL_TEMPLATES.has(String(row?.image_assets?.cover?.template || '')) && !!String(row?.cover_url || '').trim();
+    const template = String(row?.image_assets?.cover?.template || '').trim();
+    return ((MANUAL_TEMPLATES.has(template) && !!String(row?.cover_url || '').trim()) || legacyManualCover(row));
   }
 
   function hasMasterTemplate(row) {
@@ -39,7 +46,7 @@
   }
 
   async function generateAndSave(entry) {
-    if (protectedManual(entry)) return entry.image_assets.cover;
+    if (protectedManual(entry)) return entry.image_assets?.cover || { original: entry.cover_url, template: 'legacy-manual' };
     if (!ANX.LibraryCoverAuto?.generateAndSave || ANX.LibraryCoverAuto?.templateId !== REQUIRED_TEMPLATE) {
       throw new Error('La plantilla oficial de portada no está cargada.');
     }
@@ -89,6 +96,8 @@
     backfillCoralCovers,
     backfillMarineFishCovers,
     hasMasterTemplate,
+    protectedManual,
+    legacyManualCover,
     requiredTemplate: REQUIRED_TEMPLATE,
     requiredContractVersion: REQUIRED_CONTRACT_VERSION,
     manualTemplates: [...MANUAL_TEMPLATES]
