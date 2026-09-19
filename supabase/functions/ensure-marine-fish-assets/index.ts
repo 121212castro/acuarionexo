@@ -90,13 +90,6 @@ Deno.serve(async(req)=>{
       if(up.error) throw up.error; entry=up.data;
     }
 
-    const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const coverResp=await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-marine-fish-cover`,{
-      method:"POST",headers:{"content-type":"application/json","authorization":`Bearer ${service}`},
-      body:JSON.stringify({entry_id:entry.id})
-    });
-    const cover=await coverResp.json().catch(()=>({}));
-    if(!coverResp.ok||cover?.ok!==true||!cover?.entry?.cover_url) throw new Error(cover?.error||"No se pudo generar la portada oficial.");
-    return json({ok:true,entry:cover.entry});
+    return json({ok:true,entry,photo_ready:validPhoto(entry)});
   }catch(e){return json({ok:false,error:String((e as any)?.message||e)},400)}
 });
