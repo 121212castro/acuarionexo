@@ -3,7 +3,10 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const clean=(v:unknown,max=5000)=>String(v??"").trim().slice(0,max);
 const json=(v:unknown,status=200)=>new Response(JSON.stringify(v),{status,headers:{"content-type":"application/json"}});
-const skuList=(entry:any)=>clean(entry?.data?.tmc_sku,500).split(/[;,/\s]+/).map(x=>x.trim()).filter(x=>/^\d{4,6}$/.test(x));
+const skuList=(entry:any)=>{
+  const raw=[entry?.data?.tmc_sku,entry?.data?.sku,entry?.data?.product_code,entry?.product_code,entry?.sku,entry?.title].map(v=>clean(v,500)).join(" ");
+  return [...new Set(raw.match(/\b\d{4,6}\b/g)||[])];
+};
 const isTmcHost=(u:string)=>{
   try{const h=new URL(u).hostname.toLowerCase().replace(/^www\./,"");return h==="tropicalmarinecentre.com"||h.endsWith(".tropicalmarinecentre.com");}
   catch{return false;}
@@ -11,9 +14,10 @@ const isTmcHost=(u:string)=>{
 const validPhoto=(entry:any)=>{
   const photo=entry?.image_assets?.photo||{};
   const url=clean(photo.original||entry?.photo_url);
-  const evidence=[photo.source_url,photo.source_page,photo.source_name,url].map(clean).join(" ");
+  const evidence=[photo.source_url,photo.source_page,photo.source_name,photo.original,url].map(clean).join(" ");
   const skus=skuList(entry);
-  return !!url && isTmcHost(url) && photo.exact_sku===true && photo.official_tmc===true && skus.length>0 && skus.some((sku:string)=>evidence.includes(sku));
+  const sourceLooksTmc=[photo.source_url,photo.source_page].map(clean).some(isTmcHost) || /\bTMC\b|tropicalmarinecentre/i.test(evidence);
+  return !!url && photo.exact_sku===true && photo.official_tmc===true && sourceLooksTmc && skus.length>0 && skus.some((sku:string)=>evidence.includes(sku));
 };
 async function authorize(req:Request,entry:any,db:any){
   const auth=req.headers.get("authorization")||"";
