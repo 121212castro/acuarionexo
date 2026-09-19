@@ -285,6 +285,21 @@
     if (!entry || !CONTRACT.supports(entry)) return null;
     if (String(entry.image_assets?.cover?.template || '') === 'manual-restored-approved' && !photoUrl) return entry.image_assets.cover;
 
+    // PEZ MARINO: una sola fuente de verdad. La app NO recorta ni compone localmente.
+    // Toda portada marina se genera en Supabase mediante generate-marine-fish-cover.
+    if (String(entry.entry_type || '') === 'pez_marino') {
+      const invocation = await ANX.supabase.functions.invoke('generate-marine-fish-cover', {
+        body: { entry_id: entry.id }
+      });
+      if (invocation.error) throw invocation.error;
+      if (!invocation.data?.ok || !invocation.data?.entry?.cover_url) {
+        throw new Error(invocation.data?.error || 'No se pudo generar la portada marina oficial.');
+      }
+      Object.assign(entry, invocation.data.entry);
+      return invocation.data.entry.image_assets?.cover || { original: invocation.data.entry.cover_url };
+    }
+
+    // Resto de tipos: mantiene su flujo actual hasta migrarlos a su generador específico.
     const sourcePhoto = clean(photoUrl || entry.photo_url);
     const contract = CONTRACT.validateEntry(entry, sourcePhoto);
     const blob = await renderCover(entry, sourcePhoto);
