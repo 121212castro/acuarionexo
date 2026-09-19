@@ -44,10 +44,16 @@ async function composeFishScene(sourceBytes: Uint8Array, mimeType: string, entry
   const apiKey = Deno.env.get("OPENAI_API_KEY");
   if (!apiKey) throw new Error("OPENAI_API_KEY_MISSING");
 
+  // Normaliza ambas referencias a PNG válido antes de enviarlas al editor.
+  const bgImage = await Jimp.read(background.bytes.buffer);
+  const fishImage = await Jimp.read(sourceBytes.buffer);
+  const bgPng = new Uint8Array(await bgImage.getBuffer("image/png"));
+  const fishPng = new Uint8Array(await fishImage.getBuffer("image/png"));
+
   const form = new FormData();
   form.append("model", "gpt-image-2.5-sunburst");
-  form.append("image[]", new Blob([background.bytes], { type: background.mime }), "official-background");
-  form.append("image[]", new Blob([sourceBytes], { type: mimeType || "image/jpeg" }), "tmc-fish-reference");
+  form.append("image[]", new Blob([bgPng], { type: "image/png" }), "official-background.png");
+  form.append("image[]", new Blob([fishPng], { type: "image/png" }), "tmc-fish-reference.png");
   form.append("output_format", "png");
   form.append("size", "1024x1024");
   form.append("quality", "high");
