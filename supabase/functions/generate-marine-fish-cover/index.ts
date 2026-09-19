@@ -3,7 +3,7 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { Jimp } from "npm:jimp@1.6.0";
 
 const TEMPLATE = "marine-fish-master-v1-locked";
-const CONTRACT_VERSION = "cover-contract-v13";
+const CONTRACT_VERSION = "cover-contract-v14";
 const OFFICIAL_BACKGROUND_SOURCE = "https://raw.githubusercontent.com/121212castro/acuarionexo/aff161d7b329dcb8fc08432b4f8d3a9004c4ea79/src/library/assets/marine-fish-cover-master-v1.jpg";
 const GOLD = "#e7bc58";
 const LIGHT_GOLD = "#f3d77c";
