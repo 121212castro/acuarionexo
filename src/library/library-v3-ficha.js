@@ -128,6 +128,47 @@
     return audit;
   }
 
+  async function ensureMarineAssets(entry) {
+    if (!entry || String(entry.entry_type || '') !== 'pez_marino') return entry;
+    const audit = S.audit(entry);
+    if (!audit.approved) return entry;
+
+    const cover = entry.image_assets?.cover || {};
+    const contract = window.ANX.LibraryCoverContract;
+    const manual = ['manual-approved','manual-restored-approved'].includes(String(cover.template || '')) && !!String(entry.cover_url || '').trim();
+    if (manual) return entry;
+
+    const currentVersion = String(contract?.version || 'cover-contract-v15');
+    const currentTemplate = String(contract?.masterTemplate || 'marine-fish-master-v1-locked');
+    const coverOk =
+      String(cover.template || '') === currentTemplate &&
+      String(cover.contract_version || '') === currentVersion &&
+      !!String(entry.cover_url || '').trim() &&
+      (!String(cover.generated_from_photo_url || '').trim() ||
+       String(cover.generated_from_photo_url || '').trim() === String(entry.photo_url || '').trim());
+
+    const photo = entry.image_assets?.photo || {};
+    const photoOk =
+      !!String(entry.photo_url || '').trim() &&
+      photo.exact_sku === true &&
+      photo.official_tmc === true;
+
+    if (coverOk && photoOk) return entry;
+
+    const result = await supabase.functions.invoke('ensure-marine-fish-assets', {
+      body: { entry_id: entry.id }
+    });
+    if (result.error) throw result.error;
+    if (!result.data?.ok || !result.data?.entry) {
+      throw new Error(result.data?.error || 'No se pudo completar automáticamente la foto y portada del pez marino.');
+    }
+
+    const fresh = result.data.entry;
+    const index = (state.libraryRows || []).findIndex(item => String(item.id) === String(entry.id));
+    if (index >= 0) state.libraryRows[index] = fresh;
+    return fresh;
+  }
+
   function norm(s) {
     return String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[*#`_\[\](){}]/g, '').replace(/[:：]+$/, '').replace(/\s+/g, ' ').trim();
   }
@@ -369,10 +410,18 @@
     const t = token();
     render(`<section class="panel">${msg('Abriendo edición...')}</section>`, 'biblioteca');
     try {
-      const x = await ensureDetail(id);
+      let x = await ensureDetail(id);
+      if (!isCurrent(t)) return;
+      if (String(x?.entry_type || '') === 'pez_marino') {
+        try {
+          x = await ensureMarineAssets(x);
+        } catch (assetError) {
+          x._marineAssetError = String(assetError?.message || assetError);
+        }
+      }
       if (!isCurrent(t)) return;
       const audit = S.effectiveAudit(x);
-      render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}">${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
+      render(`<section class="panel">${libraryInfoNotice()}${backButton()}<h2>Editar ficha</h2>${audit.approved ? '' : auditHtml(audit, 6)}<button class="primary" onclick="mostrarPegadoFichaChat('${esc(id)}')">Pegar ficha del Chat</button> <button onclick="copiarApartadosFicha('${esc(x.entry_type)}')">Copiar apartados</button><div id="chatPasteBox"></div>${x._marineAssetError ? msg('Foto/portada automática pendiente: ' + x._marineAssetError, 'error') : ''}${imageBox(x)}<label>Nombre</label><input id="libTitle" value="${esc(x.title || '')}">${scientificField(x)}<label>Resumen</label><textarea id="libSummary" placeholder="Pendiente de completar">${esc(x.summary || '')}</textarea>${!x.summary ? emptyHint() : ''}<label>Etiquetas</label><input id="libTags" value="${esc((x.tags || []).join(', '))}">${externalLinkFields(x)}${formFields(x)}<button class="primary" onclick="guardarFicha('${esc(id)}')">Guardar ficha completa</button><button onclick="auditarFicha('${esc(id)}')">Auditar ficha</button><div id="x"></div></section>`, 'biblioteca');
       setTimeout(() => window.ANX.LibraryReviewWorkflow?.decorateReviewForm?.(id), 0);
     } catch (error) {
       if (isCurrent(t)) render(`<section class="panel">${backButton()}${msg(error.message || 'No se pudo abrir la edición.', 'error')}</section>`, 'biblioteca');
@@ -398,6 +447,17 @@
       const { error } = await supabase.from('library_entries').update(payload).eq('id', id).eq('user_id', state.user.id);
       if (error) throw error;
       Object.assign(x, payload);
+      if (String(x.entry_type || '') === 'pez_marino') {
+        try {
+          const fresh = await ensureMarineAssets(x);
+          Object.assign(x, fresh);
+          box.innerHTML = msg('Ficha guardada completa y portada marina sincronizada.', 'success');
+          return;
+        } catch (assetError) {
+          box.innerHTML = msg('Ficha guardada, pero la foto/portada automática queda bloqueada: ' + (assetError?.message || assetError), 'error');
+          return;
+        }
+      }
       box.innerHTML = msg('Ficha guardada completa. La aprobación anterior se ha retirado; audita y publica esta versión.', 'success');
     } catch (e) {
       box.innerHTML = e.audit ? auditHtml(e.audit) : msg(e.message, 'error');
@@ -444,6 +504,7 @@
     sourceText,
     externalLinkFromEntry,
     validateExternalLink,
+    ensureMarineAssets,
     returnToLibrarySource
   };
 })();
