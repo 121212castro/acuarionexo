@@ -1,7 +1,7 @@
 /* AcuarioNexo · contrato único de portadas oficiales */
 (function () {
   const ANX = window.ANX = window.ANX || {};
-  const TEMPLATE_VERSION = 'cover-contract-v15';
+  const TEMPLATE_VERSION = 'cover-contract-v16';
   const MARINE_TEMPLATE = 'marine-fish-master-v1-locked';
   const PLANT_TEMPLATE = 'plants-v1-approved-vertical-layout';
   const FRESHWATER_FISH_TEMPLATE = 'freshwater-fish-v1-approved-vertical-layout';
