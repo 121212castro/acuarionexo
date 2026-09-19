@@ -138,35 +138,47 @@
     const manual = ['manual-approved','manual-restored-approved'].includes(String(cover.template || '')) && !!String(entry.cover_url || '').trim();
     if (manual) return entry;
 
-    const currentVersion = String(contract?.version || 'cover-contract-v15');
+    const currentVersion = String(contract?.version || 'cover-contract-v16');
     const currentTemplate = String(contract?.masterTemplate || 'marine-fish-master-v1-locked');
+    const currentPhoto = String(entry.photo_url || '').trim();
     const coverOk =
       String(cover.template || '') === currentTemplate &&
       String(cover.contract_version || '') === currentVersion &&
       !!String(entry.cover_url || '').trim() &&
+      String(cover.renderer || '') === 'local-u2net-master-v1' &&
       (!String(cover.generated_from_photo_url || '').trim() ||
-       String(cover.generated_from_photo_url || '').trim() === String(entry.photo_url || '').trim());
+       String(cover.generated_from_photo_url || '').trim() === currentPhoto);
 
     const photo = entry.image_assets?.photo || {};
-    const photoOk =
-      !!String(entry.photo_url || '').trim() &&
+    let photoOk =
+      !!currentPhoto &&
       photo.exact_sku === true &&
       photo.official_tmc === true;
 
-    if (coverOk && photoOk) return entry;
-
-    const result = await supabase.functions.invoke('ensure-marine-fish-assets', {
-      body: { entry_id: entry.id }
-    });
-    if (result.error) throw result.error;
-    if (!result.data?.ok || !result.data?.entry) {
-      throw new Error(result.data?.error || 'No se pudo completar automáticamente la foto y portada del pez marino.');
+    if (!photoOk) {
+      const photoResult = await supabase.functions.invoke('ensure-marine-fish-assets', {
+        body: { entry_id: entry.id }
+      });
+      if (photoResult.error) throw photoResult.error;
+      if (!photoResult.data?.ok || !photoResult.data?.entry) {
+        throw new Error(photoResult.data?.error || 'No se pudo localizar la foto TMC exacta.');
+      }
+      entry = photoResult.data.entry;
+      const index = (state.libraryRows || []).findIndex(item => String(item.id) === String(entry.id));
+      if (index >= 0) state.libraryRows[index] = entry;
+      photoOk = !!String(entry.photo_url || '').trim() &&
+        entry.image_assets?.photo?.exact_sku === true &&
+        entry.image_assets?.photo?.official_tmc === true;
     }
 
-    const fresh = result.data.entry;
-    const index = (state.libraryRows || []).findIndex(item => String(item.id) === String(entry.id));
-    if (index >= 0) state.libraryRows[index] = fresh;
-    return fresh;
+    if (!photoOk) throw new Error('No hay una foto TMC exacta validada para generar la portada.');
+    if (coverOk) return entry;
+
+    if (!window.ANX.LibraryCoverAuto?.generateAndSave) {
+      throw new Error('El generador local de portada no está disponible.');
+    }
+    await window.ANX.LibraryCoverAuto.generateAndSave(entry.id, entry.photo_url);
+    return ANX.LibraryV3Core?.row?.(entry.id) || entry;
   }
 
   function norm(s) {
