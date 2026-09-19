@@ -124,11 +124,21 @@
     if (error) throw error;
 
     Object.assign(entry, data || payload);
+
+    if (audit.approved && String(entry.entry_type || '') === 'pez_marino' && ANX.LibraryV3Ficha?.ensureMarineAssets) {
+      try {
+        const completed = await ANX.LibraryV3Ficha.ensureMarineAssets(entry);
+        Object.assign(entry, completed || {});
+      } catch (assetError) {
+        if (box) box.innerHTML = ANX.msg('Ficha completa, pero la foto/portada automática queda pendiente: ' + (assetError?.message || assetError), 'error');
+      }
+    }
+
     await Core.load();
     const refreshed = Core.row(id) || entry;
-    if (box) {
+    if (box && !box.innerHTML.includes('foto/portada automática queda pendiente')) {
       box.innerHTML = audit.approved
-        ? ANX.msg('Cambios guardados. La ficha ya cumple el esquema y está lista para validar.', 'success')
+        ? ANX.msg('Cambios guardados. La ficha ya cumple el esquema y la foto/portada marina quedan sincronizadas.', 'success')
         : ANX.msg(`Cambios guardados en revisión. Quedan ${array(audit.errors).length} apartado(s) pendientes.`, 'error');
     }
     setTimeout(() => {
