@@ -10,7 +10,7 @@
   const CARD_SELECT = 'id,user_id,title,scientific_name,entry_type,status,visibility,summary,tags,cover_url,photo_url,image_assets,updated_at';
   const CARD_PAGE_SIZE = 1000;
   const DISPLAY_BATCH = 48;
-  const CACHE_KEY = 'anx_library_public_cards_v3';
+  const CACHE_KEY = 'anx_library_public_cards_v4_cover15';
   const CACHE_MAX_AGE = 30 * 60 * 1000;
   const MANUAL_COVER_TEMPLATES = new Set(['manual-approved','manual-restored-approved']);
   let pendingLoad = null;
