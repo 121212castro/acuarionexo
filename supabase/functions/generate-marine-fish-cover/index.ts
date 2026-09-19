@@ -32,53 +32,87 @@ async function officialBackgroundDataUrl() {
   return `data:${type.startsWith("image/") ? type : "image/jpeg"};base64,${bytesToBase64(bytes)}`;
 }
 
-function connectedBorderCutout(image: any) {
-  const { data, width, height } = image.bitmap;
-  const total = width * height;
-  const seen = new Uint8Array(total);
-  const queue = new Int32Array(total);
-  let head = 0, tail = 0;
-  const isBackground = (index: number) => {
-    const offset = index * 4, r = data[offset], g = data[offset + 1], b = data[offset + 2], a = data[offset + 3];
-    if (a < 8) return true;
-    const maximum = Math.max(r, g, b), minimum = Math.min(r, g, b), spread = maximum - minimum;
-    const neutralBackground = spread <= 20;
-    const greenBackground = g >= r + 24 && g >= b + 18 && g >= 72;
-    const brightBackground = minimum >= 210 && spread <= 52;
-    const darkBackground = maximum <= 72;
-    return darkBackground || brightBackground || neutralBackground || greenBackground;
-  };
-  const push = (index: number) => { if (index < 0 || index >= total || seen[index] || !isBackground(index)) return; seen[index] = 1; queue[tail++] = index; };
-  for (let x = 0; x < width; x++) { push(x); push((height - 1) * width + x); }
-  for (let y = 0; y < height; y++) { push(y * width); push(y * width + width - 1); }
-  while (head < tail) {
-    const index = queue[head++], x = index % width, y = Math.floor(index / width);
-    if (x > 0) push(index - 1); if (x + 1 < width) push(index + 1); if (y > 0) push(index - width); if (y + 1 < height) push(index + width);
+function base64ToBytes(value: string) {
+  const binary = atob(value);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function isolateFishCutout(sourceBytes: Uint8Array, mimeType: string, entry: any) {
+  const apiKey = Deno.env.get("OPENAI_API_KEY");
+  if (!apiKey) throw new Error("OPENAI_API_KEY_MISSING");
+
+  const form = new FormData();
+  form.append("model", "gpt-image-2.5-sunburst");
+  form.append("image[]", new Blob([sourceBytes], { type: mimeType || "image/jpeg" }), "tmc-source");
+  form.append("background", "transparent");
+  form.append("output_format", "png");
+  form.append("size", "1024x1024");
+  form.append("quality", "medium");
+  form.append("prompt", [
+    "IMAGE EDIT / SUBJECT ISOLATION ONLY.",
+    "Use the supplied TMC photo as the sole identity reference.",
+    `Species: ${clean(entry.scientific_name)}. Common name: ${cleanTitle(entry)}.`,
+    "Return the same fish specimen isolated on a fully transparent background.",
+    "Preserve the exact body shape, fins, tail, markings, colors, proportions, orientation and visible anatomy from the input photo.",
+    "Remove only the original photographic background.",
+    "Do not invent or redesign the fish. Do not add reef, water, sand, plants, shadows, frames, text, labels or other animals.",
+    "Keep translucent fins and fine fin rays instead of cutting them away.",
+    "Output one complete fish, centered, with generous transparent margin."
+  ].join("\n"));
+
+  const response = await fetch("https://api.openai.com/v1/images/edits", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}` },
+    body: form
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(`OPENAI_IMAGE_EDIT_${response.status}:${clean(payload?.error?.message || JSON.stringify(payload), 900)}`);
   }
-  for (let i = 0; i < total; i++) if (seen[i]) data[i * 4 + 3] = 0;
-  let minX = width, minY = height, maxX = -1, maxY = -1, opaque = 0;
-  for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) if (data[(y * width + x) * 4 + 3] > 12) { opaque++; minX = Math.min(minX, x); maxX = Math.max(maxX, x); minY = Math.min(minY, y); maxY = Math.max(maxY, y); }
-  if (maxX < minX || maxY < minY) throw new Error("El recorte del pez quedó vacío.");
-  const opaqueRatio = opaque / total;
-  if (opaqueRatio > 0.78) throw new Error("La foto no tiene un fondo separable de forma segura; se conserva sin generar una portada incorrecta.");
-  if (opaqueRatio < 0.015) throw new Error("El recorte del pez eliminó demasiado contenido; se conserva sin generar una portada incorrecta.");
-  const pad = Math.max(4, Math.round(Math.max(width, height) * 0.018));
-  const x0 = Math.max(0, minX - pad), y0 = Math.max(0, minY - pad), x1 = Math.min(width - 1, maxX + pad), y1 = Math.min(height - 1, maxY + pad);
-  image.crop({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 });
-  return image;
+  const b64 = clean(payload?.data?.[0]?.b64_json, 20_000_000);
+  if (!b64) throw new Error("OPENAI_IMAGE_EDIT_EMPTY");
+
+  const isolatedBytes = base64ToBytes(b64);
+  const isolated = await Jimp.read(isolatedBytes.buffer);
+  const { data, width, height } = isolated.bitmap;
+
+  let minX = width, minY = height, maxX = -1, maxY = -1, visible = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha > 10) {
+        visible++;
+        minX = Math.min(minX, x); maxX = Math.max(maxX, x);
+        minY = Math.min(minY, y); maxY = Math.max(maxY, y);
+      }
+    }
+  }
+  if (maxX < minX || maxY < minY) throw new Error("El aislamiento visual devolvió un recorte vacío.");
+  const ratio = visible / (width * height);
+  if (ratio < 0.02 || ratio > 0.72) throw new Error(`Recorte visual inválido (ocupación ${ratio.toFixed(3)}).`);
+
+  const pad = Math.max(8, Math.round(Math.max(width, height) * 0.025));
+  const x0 = Math.max(0, minX - pad), y0 = Math.max(0, minY - pad);
+  const x1 = Math.min(width - 1, maxX + pad), y1 = Math.min(height - 1, maxY + pad);
+  isolated.crop({ x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 });
+
+  const png = new Uint8Array(await isolated.getBuffer("image/png"));
+  return `data:image/png;base64,${bytesToBase64(png)}`;
 }
 
 function coverSvg(background: string, cutout: string, entry: any) {
   const common = cleanTitle(entry), scientific = clean(entry.scientific_name);
-  const commonSize = fitFont(common, 96, 46, 1040), scientificSize = fitFont(scientific, 58, 32, 900);
+  const commonSize = fitFont(common, 92, 44, 1050), scientificSize = fitFont(scientific, 60, 34, 900);
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 1200">
 <defs><filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#000" flood-opacity=".82"/></filter><filter id="fishShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="6" stdDeviation="7" flood-color="#000" flood-opacity=".34"/></filter><linearGradient id="topShade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#03132d" stop-opacity=".30"/><stop offset="1" stop-color="#03132d" stop-opacity="0"/></linearGradient></defs>
 <image href="${background}" x="0" y="0" width="1200" height="1200" preserveAspectRatio="xMidYMid slice"/>
-<rect x="0" y="0" width="1200" height="330" fill="url(#topShade)"/>
-<text x="600" y="155" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, Times New Roman, serif" font-size="${commonSize}" font-weight="700" fill="${GOLD}" filter="url(#textShadow)">${escapeXml(common)}</text>
-<text x="600" y="250" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, Times New Roman, serif" font-size="${scientificSize}" font-style="italic" font-weight="500" fill="${LIGHT_GOLD}" filter="url(#textShadow)">${escapeXml(scientific)}</text>
-<image href="${cutout}" x="70" y="345" width="1060" height="650" preserveAspectRatio="xMidYMid meet" filter="url(#fishShadow)"/>
+<rect x="0" y="0" width="1200" height="260" fill="url(#topShade)"/>
+<text x="600" y="142" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, Times New Roman, serif" font-size="${commonSize}" font-weight="700" fill="${GOLD}" filter="url(#textShadow)">${escapeXml(common)}</text>
+<image href="${cutout}" x="70" y="250" width="1060" height="660" preserveAspectRatio="xMidYMid meet" filter="url(#fishShadow)"/>
+<text x="600" y="1040" text-anchor="middle" dominant-baseline="middle" font-family="Georgia, Times New Roman, serif" font-size="${scientificSize}" font-style="italic" font-weight="500" fill="${LIGHT_GOLD}" filter="url(#textShadow)">${escapeXml(scientific)}</text>
 </svg>`;
 }
 
@@ -123,12 +157,8 @@ Deno.serve(async (req: Request) => {
     if (!photoResponse.ok) throw new Error(`No se pudo cargar la foto interior (${photoResponse.status}).`);
     const bytes = new Uint8Array(await photoResponse.arrayBuffer());
     if (bytes.length < 4000 || bytes.length > 20 * 1024 * 1024) throw new Error("Tamaño de foto no válido.");
-    const image = await Jimp.read(bytes.buffer);
-    const maxSide = Math.max(image.bitmap.width, image.bitmap.height);
-    if (maxSide > 1600) { const scale = 1600 / maxSide; image.resize({ w: Math.max(1, Math.round(image.bitmap.width * scale)), h: Math.max(1, Math.round(image.bitmap.height * scale)) }); }
-    connectedBorderCutout(image);
-    const png = new Uint8Array(await image.getBuffer("image/png"));
-    const cutout = `data:image/png;base64,${bytesToBase64(png)}`;
+    const photoMime = (photoResponse.headers.get("content-type") || "image/jpeg").split(";")[0];
+    const cutout = await isolateFishCutout(bytes, photoMime.startsWith("image/") ? photoMime : "image/jpeg", entry);
     const background = await officialBackgroundDataUrl();
     const svg = coverSvg(background, cutout, entry);
     const stamp = Date.now();
@@ -137,7 +167,7 @@ Deno.serve(async (req: Request) => {
     if (upload.error) throw upload.error;
     const coverUrl = db.storage.from("library-generated-covers").getPublicUrl(path).data.publicUrl;
     const now = new Date().toISOString();
-    const cover = { original: coverUrl, generated_at: now, generated_from_photo_url: normalizedPhotoUrl, source_name: "AcuarioNexo portada marina oficial · foto TMC exacta", template: TEMPLATE, contract_version: CONTRACT_VERSION, common_name_position: "top", common_name_color: GOLD, scientific_name_position: "under_common_name", scientific_name_color: LIGHT_GOLD, scientific_name_style: "italic", specimen_position: "center", real_subject_cutout: true, fixed_background: true, background_master: "approved-marine-master", aspect_ratio: "1:1" };
+    const cover = { original: coverUrl, generated_at: now, generated_from_photo_url: normalizedPhotoUrl, source_name: "AcuarioNexo portada marina oficial · foto TMC exacta", template: TEMPLATE, contract_version: CONTRACT_VERSION, common_name_position: "top", common_name_color: GOLD, scientific_name_position: "bottom", scientific_name_color: LIGHT_GOLD, scientific_name_style: "italic", specimen_position: "center", real_subject_cutout: true, cutout_engine: "gpt-image-2.5-sunburst-transparent-edit", fixed_background: true, background_master: "approved-marine-master", aspect_ratio: "1:1" };
     const updated = await db.from("library_entries").update({ cover_url: coverUrl, photo_url: normalizedPhotoUrl, image_assets: { ...(entry.image_assets || {}), cover }, updated_at: now }).eq("id", entry.id).select("*").single();
     if (updated.error) throw updated.error;
     return json({ ok: true, auth_mode: authMode, entry: updated.data });
