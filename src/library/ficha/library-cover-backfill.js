@@ -3,7 +3,7 @@
   const ANX = window.ANX = window.ANX || {};
   const CONTRACT = ANX.LibraryCoverContract;
   const REQUIRED_TEMPLATE = CONTRACT?.masterTemplate || 'marine-fish-master-v1-locked';
-  const REQUIRED_CONTRACT_VERSION = CONTRACT?.version || 'cover-contract-v15';
+  const REQUIRED_CONTRACT_VERSION = CONTRACT?.version || 'cover-contract-v16';
   const MANUAL_TEMPLATES = new Set(['manual-approved','manual-restored-approved']);
   let running = false;
 
