@@ -54,7 +54,7 @@ async function isolateFishCutout(sourceBytes: Uint8Array, mimeType: string, entr
     "IMAGE EDIT / SUBJECT ISOLATION ONLY.",
     "Use the supplied TMC photo as the sole identity reference.",
     `Species: ${clean(entry.scientific_name)}. Common name: ${cleanTitle(entry)}.`,
-    "Return the same fish specimen isolated on a fully transparent background.",
+    "Return the same fish specimen isolated on a fully transparent background. The pixels outside the fish must have alpha 0; do not simulate transparency with white, gray, checkerboard or any colored rectangle.",
     "Preserve the exact body shape, fins, tail, markings, colors, proportions, orientation and visible anatomy from the input photo.",
     "Remove only the original photographic background.",
     "Do not invent or redesign the fish. Do not add reef, water, sand, plants, shadows, frames, text, labels or other animals.",
@@ -77,6 +77,52 @@ async function isolateFishCutout(sourceBytes: Uint8Array, mimeType: string, entr
   const isolatedBytes = base64ToBytes(b64);
   const isolated = await Jimp.read(isolatedBytes.buffer);
   const { data, width, height } = isolated.bitmap;
+
+  // GPT puede devolver un fondo gris/blanco visualmente "transparente".
+  // Lo limpiamos SOLO en la salida de IA (nunca sobre la foto TMC original),
+  // eliminando desde los bordes cualquier zona neutra/claramente de fondo.
+  const total = width * height;
+  const seen = new Uint8Array(total);
+  const queue = new Int32Array(total);
+  let head = 0, tail = 0;
+
+  const looksLikeGeneratedBackground = (index: number) => {
+    const o = index * 4;
+    const r = data[o], g = data[o + 1], b = data[o + 2], a = data[o + 3];
+    if (a <= 18) return true;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b), spread = max - min;
+    const nearNeutral = spread <= 28;
+    const paleNeutral = nearNeutral && min >= 150;
+    const darkNeutral = nearNeutral && max <= 58;
+    const checkerGray = nearNeutral && min >= 105 && max <= 235;
+    return paleNeutral || darkNeutral || checkerGray;
+  };
+
+  const push = (index: number) => {
+    if (index < 0 || index >= total || seen[index] || !looksLikeGeneratedBackground(index)) return;
+    seen[index] = 1;
+    queue[tail++] = index;
+  };
+
+  for (let x = 0; x < width; x++) {
+    push(x);
+    push((height - 1) * width + x);
+  }
+  for (let y = 0; y < height; y++) {
+    push(y * width);
+    push(y * width + width - 1);
+  }
+  while (head < tail) {
+    const index = queue[head++];
+    const x = index % width, y = Math.floor(index / width);
+    if (x > 0) push(index - 1);
+    if (x + 1 < width) push(index + 1);
+    if (y > 0) push(index - width);
+    if (y + 1 < height) push(index + width);
+  }
+  for (let i = 0; i < total; i++) {
+    if (seen[i]) data[i * 4 + 3] = 0;
+  }
 
   let minX = width, minY = height, maxX = -1, maxY = -1, visible = 0;
   for (let y = 0; y < height; y++) {
