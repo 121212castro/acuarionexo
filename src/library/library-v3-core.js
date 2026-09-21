@@ -165,7 +165,9 @@
     const requiredTemplate = String(contract?.masterTemplate || '').trim();
     const requiredVersion = String(contract?.version || '').trim();
     if (!requiredTemplate || template !== requiredTemplate) return '';
-    if (requiredVersion && String(cover.contract_version || '').trim() !== requiredVersion) return '';
+    const coverVersion = String(cover.contract_version || '').trim();
+    const compatibleVersions = new Set([requiredVersion, 'cover-contract-v15'].filter(Boolean));
+    if (coverVersion && !compatibleVersions.has(coverVersion)) return '';
 
     const generatedFrom = String(cover.generated_from_photo_url || '').trim();
     const currentPhoto = String(x?.photo_url || '').trim();
