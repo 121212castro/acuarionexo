@@ -421,6 +421,62 @@ async function generateJob(serviceClient: any, job: any, workerSecret: string) {
   return { id: job.id, subject: job.subject, phase: "completed", library_entry_id: finalEntry.id };
 }
 
+
+async function cleanupUnreferencedStorage(serviceClient: any) {
+  const buckets = ["library-images", "library-generated-covers"];
+  const { data: entries, error: entryError } = await serviceClient
+    .from("library_entries")
+    .select("cover_url,photo_url,image_assets");
+  if (entryError) throw entryError;
+
+  const referenced = new Set<string>();
+  const addUrl = (value: unknown) => {
+    const raw = clean(value, 5000);
+    if (!raw) return;
+    for (const bucket of buckets) {
+      const needle = "/storage/v1/object/public/" + bucket + "/";
+      const at = raw.indexOf(needle);
+      if (at >= 0) referenced.add(bucket + ":" + decodeURIComponent(raw.slice(at + needle.length)));
+    }
+  };
+  for (const row of entries || []) {
+    addUrl(row.cover_url);
+    addUrl(row.photo_url);
+    addUrl(row?.image_assets?.cover?.original);
+    addUrl(row?.image_assets?.photo?.original);
+  }
+
+  const result: any[] = [];
+  for (const bucket of buckets) {
+    const { data: objects, error: listError } = await serviceClient
+      .schema("storage")
+      .from("objects")
+      .select("name,metadata")
+      .eq("bucket_id", bucket)
+      .limit(10000);
+    if (listError) throw listError;
+
+    const orphanPaths = (objects || [])
+      .map((o: any) => String(o.name || ""))
+      .filter((name: string) => name && !referenced.has(bucket + ":" + name));
+
+    let deleted = 0;
+    let bytes = 0;
+    for (let i = 0; i < orphanPaths.length; i += 100) {
+      const batch = orphanPaths.slice(i, i + 100);
+      const batchSet = new Set(batch);
+      for (const o of objects || []) {
+        if (batchSet.has(String(o.name || ""))) bytes += Number(o?.metadata?.size || 0);
+      }
+      const { error } = await serviceClient.storage.from(bucket).remove(batch);
+      if (error) throw error;
+      deleted += batch.length;
+    }
+    result.push({ bucket, deleted, bytes });
+  }
+  return result;
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return response({ error: "method_not_allowed" }, 405);
   const url = Deno.env.get("SUPABASE_URL")!;
@@ -432,6 +488,11 @@ Deno.serve(async (req: Request) => {
     const candidate = clean(payload.worker_secret, 300);
     const { data: authorized, error: authError } = await serviceClient.rpc("verify_library_generation_worker_secret", { candidate });
     if (authError || authorized !== true) return response({ error: "worker_auth_required" }, 401);
+
+    if (payload.action === "storage_cleanup_unreferenced") {
+      const result = await cleanupUnreferencedStorage(serviceClient);
+      return response({ ok: true, action: payload.action, result });
+    }
 
     const { data: jobs, error: jobsError } = await serviceClient.from("library_generation_jobs")
       .select("*")
