@@ -252,5 +252,29 @@
     };
   }
 
-  window.ANXLocalBackend = { createClient, getTable, readTable, writeTable, loadLibrary };
+
+  function importBackup(payload) {
+    const tables = payload?.tables || payload || {};
+    const allowed = [
+      'aquariums','animals','aquarium_photos','aquarium_measurements','inventory_items','tasks',
+      'maintenance_events','water_changes','water_change_history','aquarium_water_changes','microfauna_cultures'
+    ];
+    let imported = 0;
+    for (const name of allowed) {
+      if (!Array.isArray(tables[name])) continue;
+      writeTable(name, tables[name]);
+      imported += tables[name].length;
+    }
+    return imported;
+  }
+
+  function exportBackup() {
+    const tables = {};
+    for (const name of ['aquariums','animals','aquarium_photos','aquarium_measurements','inventory_items','tasks','maintenance_events','water_changes','water_change_history','aquarium_water_changes','microfauna_cultures']) {
+      tables[name] = readTable(name);
+    }
+    return { format:'acuarionexo-local-backup-v1', exported_at:new Date().toISOString(), tables };
+  }
+
+  window.ANXLocalBackend = { createClient, getTable, readTable, writeTable, loadLibrary, importBackup, exportBackup };
 })();
