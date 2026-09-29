@@ -4,7 +4,7 @@ import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s
 
 const required = ["R2_ENDPOINT","R2_ACCESS_KEY_ID","R2_SECRET_ACCESS_KEY","R2_PUBLIC_BASE_URL"];
 for (const key of required) if (!process.env[key]) throw new Error("Falta " + key);
-const R2_BUCKET = R2_BUCKET || "acuarionexo-media";
+const R2_BUCKET = process.env.R2_BUCKET || "acuarionexo-media";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://vqpxhozavfzgtkqscncs.supabase.co";
 const manifestPath = process.argv[2] || "data/storage-migration-manifest.json";
