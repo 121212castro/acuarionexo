@@ -240,7 +240,11 @@
     const visible = rows
       .filter(canSeeLibraryEntry)
       .sort((a, b) => String(a.title || '').localeCompare(String(b.title || ''), 'es', { sensitivity: 'base', numeric: true }));
-    const adminReviewHeader = isAdminReturnContext() ? `<div class="panel-head"><h2>Fichas pendientes de revisión</h2><button onclick="adminPanel()">← Admin</button></div><div class="notice"><b>${visible.length} fichas pendientes.</b><br>Abre una ficha para editarla, completar sus datos y publicarla cuando supere la validación.</div>` : `<div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}`;
+    const adminReviewHeader = isAdminReturnContext()
+      ? `<div class="panel-head"><h2>Fichas pendientes de revisión</h2><button onclick="adminPanel()">← Admin</button></div><div class="notice"><b>${visible.length} fichas pendientes.</b><br>Abre una ficha para editarla, completar sus datos y publicarla cuando supere la validación.</div>`
+      : state.demoMode
+        ? `<div class="panel-head"><button onclick="demoDashboard()" aria-label="Volver atrás">← Volver</button><h2>Consulta</h2></div>${libraryInfoNotice()}`
+        : `<div class="panel-head"><h2>Consulta</h2></div>${libraryInfoNotice()}`;
     render(`<section class="summary-card"><div><small>Base de conocimiento verificable</small><h2>Biblioteca</h2><p>${visible.length} fichas</p></div></section><section class="panel library-clean-panel">${adminReviewHeader}<div class="library-search"><input id="librarySearch" value="${esc(searchValue)}" placeholder="Buscar especie, producto, recambio o parámetro" oninput="buscarBiblioteca(this.value)"></div>${publicFilters(f)}${groupedList(visible, q, f)}</section>`, 'biblioteca');
     const input = document.getElementById('librarySearch');
     if (input && q) { input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
