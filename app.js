@@ -269,10 +269,46 @@
     return row?.__signed_photo_url || row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
   }
 
+  async function uploadExternalMedia(file, path) {
+    const endpoint = String(config.MEDIA_API_URL || '').replace(/\/$/, '');
+    if (!endpoint) throw new Error('El servicio externo de imágenes no está configurado.');
+    const session = await supabase.auth.getSession();
+    const token = session.data.session?.access_token || '';
+    if (!token) throw new Error('Necesitas una sesión válida para subir imágenes.');
+    const form = new FormData();
+    form.append('file', file);
+    form.append('path', path);
+    const response = await fetch(endpoint + '/upload', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: form
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.url) throw new Error(payload.error || 'No se pudo subir la imagen al almacenamiento externo.');
+    return payload.url;
+  }
+
+  async function uploadMediaObject(file, path, options = {}) {
+    if (String(config.MEDIA_PROVIDER || '').toLowerCase() === 'r2' && config.MEDIA_API_URL) {
+      return uploadExternalMedia(file, path);
+    }
+    const bucket = options.bucket || 'library-images';
+    const upload = await supabase.storage.from(bucket).upload(path, file, {
+      upsert: options.upsert !== false,
+      contentType: options.contentType || file.type || 'application/octet-stream',
+      cacheControl: options.cacheControl || '31536000'
+    });
+    if (upload.error) throw upload.error;
+    return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  }
+
   async function uploadAquariumImage(file, folder) {
     const aq = currentAquarium();
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `${folder}/${state.user.id}/${aq.id}/${Date.now()}.${ext}`;
+    if (String(config.MEDIA_PROVIDER || '').toLowerCase() === 'r2' && config.MEDIA_API_URL) {
+      return uploadExternalMedia(file, 'aquarium-photos/' + path);
+    }
     for (const bucket of ['aquarium-photos', 'photos', 'animal-photos']) {
       const upload = await supabase.storage.from(bucket).upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
       if (!upload.error) return storageReference(bucket, path);
@@ -280,5 +316,5 @@
     throw new Error('No se pudo subir la foto. Revisa Storage.');
   }
 
-  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, demoDashboard, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadAquariumImage };
+  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, demoDashboard, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadExternalMedia, uploadMediaObject, uploadAquariumImage };
 })();
