@@ -25,7 +25,8 @@
     "desktop:build:mac:arm64": "npm run desktop:prepare && electron-builder --mac zip --arm64 --publish never",
     "r2:migrate": "node scripts/migrate-storage-to-r2.mjs",
     "r2:worker:dev": "npx wrangler dev cloudflare/r2-worker/src/index.js --config cloudflare/r2-worker/wrangler.toml",
-    "r2:worker:deploy": "npx wrangler deploy --config cloudflare/r2-worker/wrangler.toml"
+    "r2:worker:deploy": "npx wrangler deploy --config cloudflare/r2-worker/wrangler.toml",
+    "r2:relink:sql": "node scripts/generate-r2-relink-sql.mjs"
   },
   "dependencies": {
     "@capacitor/android": "8.4.1",
