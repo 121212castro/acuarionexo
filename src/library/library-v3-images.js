@@ -30,6 +30,14 @@
   }
 
   async function uploadLibraryImage(path, file, contentType) {
+    if (typeof ANX.uploadMediaObject === 'function') {
+      return ANX.uploadMediaObject(file, path, {
+        bucket: 'library-images',
+        upsert: true,
+        contentType: contentType || file.type || 'application/octet-stream',
+        cacheControl: '31536000'
+      });
+    }
     const bucket = 'library-images';
     const upload = await supabase.storage.from(bucket).upload(path, file, {
       upsert: true,
