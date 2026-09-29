@@ -105,7 +105,10 @@
     if (state.demoMode) {
       return `<nav class="bottom-nav" aria-label="Navegación de demostración">
         ${item('inicio', 'Inicio', '⌂', 'demoDashboard()')}
+        ${item('acuarios', 'Acuarios', '▣', 'demoAquariums()')}
         ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
+        ${item('parametros', 'Parámetros', '◫', 'demoParameters()')}
+        ${item('avisos', 'Avisos', '♢', 'demoTasks()')}
       </nav>`;
     }
     return `<nav class="bottom-nav" aria-label="Navegación principal">
@@ -132,17 +135,98 @@
     render(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`, active);
   }
 
+  function demoNotice() {
+    return '<div class="notice"><b>Modo demostración.</b><br>Contenido de muestra en solo lectura. No se guardan cambios ni se muestran datos privados.</div>';
+  }
+
   function demoDashboard() {
     state.demoMode = true;
-    render(`<section class="summary-card"><div><small>Modo demostración</small><h2>AcuarioNexo</h2><p>La plataforma principal está temporalmente limitada por el proveedor. La Biblioteca pública sigue disponible en modo de consulta.</p></div></section>
+    render(`<section class="summary-card"><div><small>Modo demostración</small><h2>AcuarioNexo</h2><p>Recorrido funcional de la plataforma mientras el backend principal está temporalmente limitado.</p></div></section>
       <section class="panel">
-        <h2>Demostración disponible</h2>
-        <p>Este modo utiliza una copia pública de contingencia y no permite guardar cambios, crear cuentas ni acceder a datos privados.</p>
-        <button class="primary" onclick="biblioteca()">Abrir Biblioteca</button>
+        ${demoNotice()}
+        <div class="library-grid">
+          <button class="library-card" onclick="demoAquariums()"><strong>Acuarios</strong><span>Gestión y seguimiento</span></button>
+          <button class="library-card" onclick="biblioteca()"><strong>Biblioteca</strong><span>1.049 fichas públicas</span></button>
+          <button class="library-card" onclick="demoParameters()"><strong>Parámetros</strong><span>Lecturas y tendencias</span></button>
+          <button class="library-card" onclick="demoTasks()"><strong>Avisos</strong><span>Tareas y recordatorios</span></button>
+          <button class="library-card" onclick="demoInventory()"><strong>Inventario</strong><span>Equipos y consumibles</span></button>
+          <button class="library-card" onclick="demoMap()"><strong>Mapa IA</strong><span>Distribución del acuario</span></button>
+        </div>
         <button onclick="salirModoDemo()">Volver al acceso normal</button>
       </section>`, 'inicio', true);
   }
+
+  function demoAquariums() {
+    render(`<section class="summary-card"><div><small>Demostración</small><h2>Mis acuarios</h2><p>2 acuarios de muestra</p></div></section>
+      <section class="panel">${demoNotice()}
+        <div class="library-grid">
+          <button class="library-card" onclick="demoAquariumDetail('Marino principal','320 L','Marino')"><strong>Marino principal</strong><span>320 L · Marino</span></button>
+          <button class="library-card" onclick="demoAquariumDetail('Comunitario','180 L','Agua dulce')"><strong>Comunitario</strong><span>180 L · Agua dulce</span></button>
+        </div>
+      </section>`, 'acuarios', true);
+  }
+
+  function demoAquariumDetail(name, liters, type) {
+    render(`<section class="tank-head"><button onclick="demoAquariums()">←</button><div><h2>${esc(name)}</h2><p>${esc(liters)} · ${esc(type)}</p></div></section>
+      <section class="panel">${demoNotice()}
+        <div class="library-grid">
+          <button class="library-card" onclick="demoParameters()"><strong>Parámetros</strong><span>Ver últimas lecturas</span></button>
+          <button class="library-card" onclick="demoInventory()"><strong>Inventario</strong><span>Equipos y consumibles</span></button>
+          <button class="library-card" onclick="demoMap()"><strong>Mapa IA</strong><span>Distribución visual</span></button>
+          <button class="library-card" onclick="demoTasks()"><strong>Tareas</strong><span>Mantenimiento pendiente</span></button>
+        </div>
+      </section>`, 'acuarios', true);
+  }
+
+  function demoParameters() {
+    render(`<section class="summary-card"><div><small>Demostración</small><h2>Parámetros</h2><p>Últimas lecturas del acuario de muestra</p></div></section>
+      <section class="panel">${demoNotice()}
+        <div class="library-grid">
+          <div class="library-card"><strong>Temperatura</strong><span>25,2 °C</span></div>
+          <div class="library-card"><strong>pH</strong><span>8,10</span></div>
+          <div class="library-card"><strong>Salinidad</strong><span>35 ppt</span></div>
+          <div class="library-card"><strong>Nitrato</strong><span>8 mg/L</span></div>
+          <div class="library-card"><strong>Fosfato</strong><span>0,06 mg/L</span></div>
+          <div class="library-card"><strong>KH</strong><span>8,2 dKH</span></div>
+        </div>
+      </section>`, 'parametros', true);
+  }
+
+  function demoTasks() {
+    render(`<section class="summary-card"><div><small>Demostración</small><h2>Avisos y tareas</h2><p>Plan de mantenimiento de muestra</p></div></section>
+      <section class="panel">${demoNotice()}
+        <div class="item"><b>Cambio de agua</b><br><small>Programado para esta semana</small></div>
+        <div class="item"><b>Limpiar skimmer</b><br><small>Mantenimiento periódico</small></div>
+        <div class="item"><b>Revisar KH y calcio</b><br><small>Control de estabilidad</small></div>
+      </section>`, 'avisos', true);
+  }
+
+  function demoInventory() {
+    render(`<section class="summary-card"><div><small>Demostración</small><h2>Inventario</h2><p>Equipos y consumibles de muestra</p></div></section>
+      <section class="panel">${demoNotice()}
+        <div class="item"><b>Skimmer</b><br><small>Activo</small></div>
+        <div class="item"><b>UV</b><br><small>Activo</small></div>
+        <div class="item"><b>Sal de arrecife</b><br><small>Stock disponible</small></div>
+        <div class="item"><b>Tests</b><br><small>KH · Ca · Mg · NO3 · PO4</small></div>
+      </section>`, 'acuarios', true);
+  }
+
+  function demoMap() {
+    render(`<section class="summary-card"><div><small>Demostración</small><h2>Mapa IA</h2><p>Vista de distribución del acuario</p></div></section>
+      <section class="panel">${demoNotice()}
+        <div style="min-height:280px;border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:20px;display:grid;place-items:center;text-align:center">
+          <div><div style="font-size:64px">🪸 🐠 🪨</div><p class="small">Representación de muestra. El editor real permanece deshabilitado mientras Supabase está restringido.</p></div>
+        </div>
+      </section>`, 'acuarios', true);
+  }
+
   window.demoDashboard = demoDashboard;
+  window.demoAquariums = demoAquariums;
+  window.demoAquariumDetail = demoAquariumDetail;
+  window.demoParameters = demoParameters;
+  window.demoTasks = demoTasks;
+  window.demoInventory = demoInventory;
+  window.demoMap = demoMap;
   window.salirModoDemo = function () {
     state.demoMode = false;
     state.user = null;
