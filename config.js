@@ -2,6 +2,9 @@ window.ACUARIONEXO_CONFIG = {
   SUPABASE_URL: "https://vqpxhozavfzgtkqscncs.supabase.co",
   SUPABASE_KEY: "sb_publishable_qF95kBn3CSwIS40eBC_03g_ZWaaHjEy",
   APP_VERSION: "AcuarioNexo",
+  MEDIA_PROVIDER: "supabase",
+  MEDIA_API_URL: "",
+  MEDIA_PUBLIC_BASE_URL: "",
   FIREBASE_CONFIG: {
     apiKey: "AIzaSyCOSMcEEHG97qgtSeetB03fDYk8r-0420c",
     authDomain: "acuarionexo.firebaseapp.com",
