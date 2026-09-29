@@ -23,6 +23,7 @@
   function hasRealPhoto(x) { return !!String(x?.photo_url || '').trim(); }
   function canSeeLibraryEntry(x) {
     const status = String(x.status || '').toLowerCase();
+    if (state.demoMode) return status === 'published' && String(x.visibility || '').toLowerCase() === 'public';
     if (!isAdminReturnContext() && !hasRealPhoto(x)) return false;
     return isAdminLibrary() || isOwnLibraryEntry(x) || ['published', 'validated'].includes(status);
   }
@@ -76,7 +77,15 @@
     }
   }
 
+  async function fallbackCards() {
+    const response = await fetch('data/library-fallback.json?v=' + encodeURIComponent(window.ANX_ACTIVE_BUILD || Date.now()), { cache: 'no-store' });
+    if (!response.ok) throw new Error('No se pudo cargar la copia pública de contingencia.');
+    const payload = await response.json();
+    return markCards(Array.isArray(payload?.rows) ? payload.rows : []);
+  }
+
   async function fetchCards() {
+    if (state.demoMode) return fallbackCards();
     const allRows = [];
     for (let from = 0; ; from += CARD_PAGE_SIZE) {
       const { data, error } = await supabase
@@ -110,6 +119,7 @@
 
   async function ensureDetail(id) {
     const current = row(id);
+    if (state.demoMode) return current || null;
     const forceFresh = isAdminReturnContext() || String(current?.status || '').toLowerCase() === 'review';
     if (current && !current._libraryCardOnly && !forceFresh) return current;
     const { data, error } = await supabase.from('library_entries').select('*').eq('id', id).single();
@@ -256,7 +266,19 @@
       if (!hasRows || needsPrivateRows || Date.now() - Number(state.libraryCardsLoadedAt || 0) > CACHE_MAX_AGE) await load();
       if (isCurrent(t)) list();
     }
-    catch (e) { if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'biblioteca'); }
+    catch (e) {
+      if (!state.demoMode) {
+        try {
+          state.demoMode = true;
+          state.user = state.user || { id: 'demo-public', email: 'demo@acuarionexo.local', user_metadata: { demo: true } };
+          state.libraryRows = await fallbackCards();
+          state.libraryCardsLoadedAt = Date.now();
+          if (isCurrent(t)) list();
+          return;
+        } catch (_) {}
+      }
+      if (isCurrent(t)) render(`<section class="panel">${msg(e.message, 'error')}</section>`, 'biblioteca');
+    }
   };
 
   window.renderBibliotecaActual = list;
