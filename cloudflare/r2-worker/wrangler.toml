@@ -1,0 +1,12 @@
+name = "acuarionexo-media"
+main = "src/index.js"
+compatibility_date = "2026-09-29"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "acuarionexo-media"
+
+[vars]
+ALLOWED_ORIGIN = "https://acuarionexo.com"
+SUPABASE_URL = "https://vqpxhozavfzgtkqscncs.supabase.co"
+# Set SUPABASE_ANON_KEY and PUBLIC_BASE_URL with wrangler secrets/vars before deploy.
