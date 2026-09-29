@@ -2,15 +2,16 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 
-const required = ["R2_ACCOUNT_ID","R2_ACCESS_KEY_ID","R2_SECRET_ACCESS_KEY","R2_BUCKET","R2_PUBLIC_BASE_URL"];
+const required = ["R2_ENDPOINT","R2_ACCESS_KEY_ID","R2_SECRET_ACCESS_KEY","R2_PUBLIC_BASE_URL"];
 for (const key of required) if (!process.env[key]) throw new Error("Falta " + key);
+const R2_BUCKET = R2_BUCKET || "acuarionexo-media";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://vqpxhozavfzgtkqscncs.supabase.co";
 const manifestPath = process.argv[2] || "data/storage-migration-manifest.json";
 const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
 const client = new S3Client({
   region: "auto",
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: process.env.R2_ENDPOINT,
   credentials: {
     accessKeyId: process.env.R2_ACCESS_KEY_ID,
     secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
@@ -25,7 +26,7 @@ for (const [index, item] of manifest.objects.entries()) {
   process.stdout.write(`[${index+1}/${manifest.objects.length}] ${key}\n`);
   try {
     try {
-      await client.send(new HeadObjectCommand({ Bucket: process.env.R2_BUCKET, Key: key }));
+      await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
       result.skipped.push({ ...item, key, reason: "already_exists" });
       continue;
     } catch {}
@@ -38,7 +39,7 @@ for (const [index, item] of manifest.objects.entries()) {
     }
     const body = Buffer.from(await response.arrayBuffer());
     await client.send(new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
+      Bucket: R2_BUCKET,
       Key: key,
       Body: body,
       ContentType: item.mimetype || response.headers.get("content-type") || "application/octet-stream",
