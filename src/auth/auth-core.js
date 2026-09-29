@@ -58,11 +58,12 @@
     const { byId, state } = window.ANX;
     const hasSession = !!state.user;
     const demo = !!state.demoMode;
+    const local = !!state.localMode;
     setSessionButtonVisibility(byId('logoutBtn'), hasSession && !demo);
     setSessionButtonVisibility(byId('settingsBtn'), hasSession && !demo);
     setSessionButtonVisibility(byId('adminBtn'), hasSession && !demo && !!state.isAdmin);
     const text = byId('connectionText');
-    if (text) text.textContent = demo ? 'Modo demostración' : (hasSession ? 'Conectado a Supabase' : 'Sin sesión');
+    if (text) text.textContent = local ? 'Modo local' : (demo ? 'Modo demostración' : (hasSession ? 'Conectado a Supabase' : 'Sin sesión'));
   }
 
   window.ANX = window.ANX || {};
