@@ -65,6 +65,10 @@ window.enviarSolicitudAcceso = async function () {
     byId('x').innerHTML = msg('Solicitud enviada. Te avisaremos cuando el acceso haya sido aprobado.', 'success');
     window.ANXAnalytics?.trackEvent?.('access_request_submitted', 'acceso');
   } catch (e) {
+    if (isSupabaseQuotaRestriction(e)) {
+      await enterDemoFromRestriction();
+      return;
+    }
     if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
 };
@@ -155,6 +159,27 @@ window.guardarNuevaPassword = async function () {
   }
 };
 
+function isSupabaseQuotaRestriction(error) {
+  const text = String(error?.message || error || '').toLowerCase();
+  const status = Number(error?.status || error?.statusCode || 0);
+  return status === 402 ||
+    text.includes('402') ||
+    text.includes('exceed_storage_size_quota') ||
+    text.includes('service for this project is restricted') ||
+    text.includes('project is restricted');
+}
+
+async function enterDemoFromRestriction() {
+  state.demoMode = true;
+  state.user = { id: 'demo-public', email: 'demo@acuarionexo.local', user_metadata: { demo: true } };
+  state.adminRole = null;
+  state.isAdmin = false;
+  window.u = state.user;
+  updateSessionHeader();
+  if (typeof window.demoDashboard === 'function') window.demoDashboard();
+  else if (typeof window.biblioteca === 'function') await window.biblioteca();
+}
+
 async function userHasAppAccess() {
   if (state.demoMode) return true;
   if (!state.user) return false;
@@ -237,6 +262,10 @@ async function boot() {
     state.user ? dashboard() : login();
     if (state.user) scheduleLibraryWarmup();
   } catch (e) {
+    if (isSupabaseQuotaRestriction(e)) {
+      await enterDemoFromRestriction();
+      return;
+    }
     render(`<section class="auth-card"><h2>Servicio principal temporalmente limitado</h2>
       ${msg(authMessage(e), 'error')}
       <p class="small">Puedes seguir consultando la Biblioteca pública en modo demostración.</p>
