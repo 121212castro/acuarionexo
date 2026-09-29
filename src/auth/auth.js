@@ -211,6 +211,10 @@ window.iniciar = async function () {
     }
     boot();
   } catch (e) {
+    if (isSupabaseQuotaRestriction(e)) {
+      await enterDemoFromRestriction();
+      return;
+    }
     if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
   }
 };
