@@ -2,14 +2,17 @@
 (function () {
   const config = window.ACUARIONEXO_CONFIG || {};
   const app = document.getElementById('app');
-  const supabase = window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: true,
-      detectSessionInUrl: true,
-      storageKey: 'acuarionexo-auth-v2'
-    }
-  });
+  const useLocalBackend = String(config.DATA_PROVIDER || 'supabase').toLowerCase() === 'local';
+  const supabase = useLocalBackend
+    ? window.ANXLocalBackend.createClient()
+    : window.supabase.createClient(config.SUPABASE_URL, config.SUPABASE_KEY, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: true,
+          detectSessionInUrl: true,
+          storageKey: 'acuarionexo-auth-v2'
+        }
+      });
   const state = {
     user: null,
     aquariums: [],
@@ -21,7 +24,8 @@
     libraryFilter: 'all',
     adminRole: null,
     isAdmin: false,
-    demoMode: false
+    demoMode: false,
+    localMode: useLocalBackend
   };
 
   window.s = supabase;
