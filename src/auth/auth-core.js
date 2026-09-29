@@ -57,11 +57,12 @@
   function updateSessionHeader() {
     const { byId, state } = window.ANX;
     const hasSession = !!state.user;
-    setSessionButtonVisibility(byId('logoutBtn'), hasSession);
-    setSessionButtonVisibility(byId('settingsBtn'), hasSession);
-    setSessionButtonVisibility(byId('adminBtn'), hasSession && !!state.isAdmin);
+    const demo = !!state.demoMode;
+    setSessionButtonVisibility(byId('logoutBtn'), hasSession && !demo);
+    setSessionButtonVisibility(byId('settingsBtn'), hasSession && !demo);
+    setSessionButtonVisibility(byId('adminBtn'), hasSession && !demo && !!state.isAdmin);
     const text = byId('connectionText');
-    if (text) text.textContent = hasSession ? 'Conectado a Supabase' : 'Sin sesión';
+    if (text) text.textContent = demo ? 'Modo demostración' : (hasSession ? 'Conectado a Supabase' : 'Sin sesión');
   }
 
   window.ANX = window.ANX || {};
