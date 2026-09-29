@@ -21,7 +21,7 @@ function login() {
     state.isAdmin = false;
     window.u = state.user;
     updateSessionHeader();
-    if (typeof window.dashboard === 'function') return window.window.dashboard?.();
+    if (typeof window.dashboard === 'function') return window.dashboard();
   }
   render(`<section class="auth-card"><h2>Entrar</h2>
     <label>Email</label><input id="email" type="email" autocomplete="email">
