@@ -2,6 +2,10 @@ name: Migrar Supabase Storage a Cloudflare R2
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'data/r2-migration-trigger.txt'
 
 permissions:
   contents: read
