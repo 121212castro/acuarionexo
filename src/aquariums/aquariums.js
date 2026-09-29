@@ -60,7 +60,11 @@
 
   function recoveryHexToBytes(hex, expectedBytes = 32) {
     const clean = String(hex || '').trim().replace(/\s+/g, '');
-    if (!new RegExp('^[0-9a-fA-F]{' + (expectedBytes * 2) + '}    for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
+    const expectedLength = expectedBytes * 2;
+    const validHex = /^[0-9a-fA-F]+$/.test(clean);
+    if (!validHex || clean.length !== expectedLength) throw new Error('La clave de recuperación no es válida.');
+    const out = new Uint8Array(clean.length / 2);
+    for (let i = 0; i < out.length; i++) out[i] = parseInt(clean.slice(i * 2, i * 2 + 2), 16);
     return out;
   }
 
