@@ -21,7 +21,7 @@ function login() {
     state.isAdmin = false;
     window.u = state.user;
     updateSessionHeader();
-    if (typeof window.dashboard === 'function') return window.dashboard();
+    if (typeof window.dashboard === 'function') return window.window.dashboard?.();
   }
   render(`<section class="auth-card"><h2>Entrar</h2>
     <label>Email</label><input id="email" type="email" autocomplete="email">
@@ -240,7 +240,7 @@ async function boot() {
       state.adminRole = null;
       state.isAdmin = false;
       updateSessionHeader();
-      dashboard();
+      window.dashboard?.();
       return;
     }
     if (state.demoMode) {
@@ -283,7 +283,7 @@ async function boot() {
         login();
       };
     }
-    state.user ? dashboard() : login();
+    state.user ? window.dashboard?.() : login();
     if (state.user) scheduleLibraryWarmup();
   } catch (e) {
     if (isSupabaseQuotaRestriction(e)) {
