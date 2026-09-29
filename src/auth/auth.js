@@ -3,6 +3,7 @@
   const { config, supabase, state, byId, val, msg, isPasswordRecoveryUrl, authRedirectUrl, render } = window.ANX;
   const { authMessage, withAuthTimeout, refreshAdminSafe, clearAuthState, updateSessionHeader } = window.ANX;
 
+const LOCAL_PROVIDER = String(config.DATA_PROVIDER || '').toLowerCase() === 'local';
 const PASSWORD_RULE = 'La contraseña debe tener al menos 12 caracteres, mayúscula, minúscula, número y símbolo.';
 const LEGAL_VERSION = '2026-08-17';
 
@@ -14,6 +15,14 @@ function assertStrongPassword(password) {
 }
 
 function login() {
+  if (LOCAL_PROVIDER) {
+    state.user = { id: 'local-owner', email: 'local@acuarionexo.app', user_metadata: { local_mode: true } };
+    state.adminRole = null;
+    state.isAdmin = false;
+    window.u = state.user;
+    updateSessionHeader();
+    if (typeof window.dashboard === 'function') return window.dashboard();
+  }
   render(`<section class="auth-card"><h2>Entrar</h2>
     <label>Email</label><input id="email" type="email" autocomplete="email">
     <label>Contraseña</label><input id="password" type="password" autocomplete="current-password">
@@ -181,6 +190,7 @@ async function enterDemoFromRestriction() {
 }
 
 async function userHasAppAccess() {
+  if (LOCAL_PROVIDER) return true;
   if (state.demoMode) return true;
   if (!state.user) return false;
   const { data, error } = await supabase.rpc('has_app_access');
@@ -219,6 +229,16 @@ function scheduleLibraryWarmup() {
 
 async function boot() {
   try {
+    if (LOCAL_PROVIDER) {
+      const session = await supabase.auth.getSession();
+      state.user = session.data.session?.user || { id: 'local-owner', email: 'local@acuarionexo.app', user_metadata: { local_mode: true } };
+      window.u = state.user;
+      state.adminRole = null;
+      state.isAdmin = false;
+      updateSessionHeader();
+      dashboard();
+      return;
+    }
     if (state.demoMode) {
       window.u = state.user;
       updateSessionHeader();
