@@ -20,7 +20,8 @@
     libraryRows: [],
     libraryFilter: 'all',
     adminRole: null,
-    isAdmin: false
+    isAdmin: false,
+    demoMode: false
   };
 
   window.s = supabase;
@@ -101,6 +102,12 @@
 
   function bottomNav(active) {
     const item = (id, label, icon, fn) => `<button class="${active === id ? 'active' : ''}" onclick="${fn}"><span>${icon}</span><small>${label}</small></button>`;
+    if (state.demoMode) {
+      return `<nav class="bottom-nav" aria-label="Navegación de demostración">
+        ${item('inicio', 'Inicio', '⌂', 'demoDashboard()')}
+        ${item('biblioteca', 'Biblioteca', '□', 'biblioteca()')}
+      </nav>`;
+    }
     return `<nav class="bottom-nav" aria-label="Navegación principal">
       ${item('inicio', 'Inicio', '⌂', 'dashboard()')}
       ${item('acuarios', 'Acuarios', '▣', 'acuariosHome()')}
@@ -124,6 +131,24 @@
   function panel(title, body, active = 'inicio') {
     render(`<section class="panel"><h2>${esc(title)}</h2>${body}</section>`, active);
   }
+
+  function demoDashboard() {
+    state.demoMode = true;
+    render(`<section class="summary-card"><div><small>Modo demostración</small><h2>AcuarioNexo</h2><p>La plataforma principal está temporalmente limitada por el proveedor. La Biblioteca pública sigue disponible en modo de consulta.</p></div></section>
+      <section class="panel">
+        <h2>Demostración disponible</h2>
+        <p>Este modo utiliza una copia pública de contingencia y no permite guardar cambios, crear cuentas ni acceder a datos privados.</p>
+        <button class="primary" onclick="biblioteca()">Abrir Biblioteca</button>
+        <button onclick="salirModoDemo()">Volver al acceso normal</button>
+      </section>`, 'inicio', true);
+  }
+  window.demoDashboard = demoDashboard;
+  window.salirModoDemo = function () {
+    state.demoMode = false;
+    state.user = null;
+    window.u = null;
+    window.login?.();
+  };
 
   function tabButton(id, label) {
     return `<button class="${state.section === id ? 'active' : ''}" onclick="openAqSection('${id}')">${esc(label)}</button>`;
@@ -171,5 +196,5 @@
     throw new Error('No se pudo subir la foto. Revisa Storage.');
   }
 
-  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadAquariumImage };
+  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, demoDashboard, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadAquariumImage };
 })();
