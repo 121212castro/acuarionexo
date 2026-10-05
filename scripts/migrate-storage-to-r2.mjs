@@ -5,7 +5,7 @@ import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s
 function readSecret(name) {
   const value = String(process.env[name] || "").trim();
   if (!value) throw new Error("Falta " + name);
-  if (/[\\u0000-\\u001f\\u007f-\\u009f]/.test(value)) {
+  if (/[\u0000-\u001f\u007f-\u009f]/.test(value)) {
     throw new Error(name + " contiene caracteres de control; vuelve a copiar ese valor sin espacios internos ni saltos de línea.");
   }
   return value;
