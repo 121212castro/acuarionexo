@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 
 function readSecret(name) {
   const value = String(process.env[name] || "").trim();
@@ -40,17 +40,18 @@ const result = { started_at: new Date().toISOString(), copied: [], skipped: [], 
 for (const [index, item] of manifest.objects.entries()) {
   const key = `supabase/${item.bucket_id}/${item.name}`;
   process.stdout.write(`[${index+1}/${manifest.objects.length}] ${key}\n`);
-  let phase = "r2_head";
+  let phase = "r2_public_head";
   try {
-    try {
-      await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
-      result.skipped.push({ ...item, key, reason: "already_exists" });
+    const publicBase = R2_PUBLIC_BASE_URL.replace(/\/$/, "");
+    const newUrl = publicBase + "/" + encodePath(key);
+    const existingResponse = await fetch(newUrl, { method:"HEAD", cache:"no-store" });
+    if (existingResponse.ok) {
+      const currentLength = Number(existingResponse.headers.get("content-length") || 0);
+      if (item.size && currentLength && currentLength !== Number(item.size)) throw new Error("r2_existing_size_mismatch");
+      result.skipped.push({ ...item, key, reason:"already_exists", old_url:`${SUPABASE_URL}/storage/v1/object/public/${item.bucket_id}/${encodePath(item.name)}`, new_url:newUrl });
       continue;
-    } catch (error) {
-      const status = error?.$metadata?.httpStatusCode;
-      const code = error?.name || error?.Code || "";
-      if (status !== 404 && code !== "NotFound" && code !== "NoSuchKey") throw error;
     }
+    if (existingResponse.status !== 404) throw new Error("r2_public_check_http_" + existingResponse.status);
 
     phase = "source_fetch";
     const sourceUrl = `${SUPABASE_URL}/storage/v1/object/public/${item.bucket_id}/${encodePath(item.name)}`;
@@ -74,18 +75,12 @@ for (const [index, item] of manifest.objects.entries()) {
       }
     }));
     phase = "r2_verify";
-    const verified = await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
-    if (Number(verified.ContentLength) !== body.length) {
-      throw new Error("r2_size_verification_failed");
-    }
+    const verified = await fetch(newUrl, { method:"HEAD", cache:"no-store" });
+    if (!verified.ok) throw new Error("r2_verify_http_" + verified.status);
+    const verifiedLength = Number(verified.headers.get("content-length") || 0);
+    if (verifiedLength && verifiedLength !== body.length) throw new Error("r2_size_verification_failed");
 
-    const publicBase = process.env.R2_PUBLIC_BASE_URL.replace(/\/$/,"");
-    result.copied.push({
-      ...item,
-      key,
-      old_url: sourceUrl,
-      new_url: publicBase + "/" + encodePath(key)
-    });
+    result.copied.push({ ...item, key, old_url:sourceUrl, new_url:newUrl });
   } catch (error) {
     result.failed.push({ ...item, key, phase, error: String(error?.message || error), error_name: String(error?.name || ""), error_code: String(error?.Code || error?.code || ""), error_status: Number(error?.$metadata?.httpStatusCode || 0) || null, cause_code: String(error?.cause?.code || "") });
   }
