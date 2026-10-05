@@ -1,0 +1,55 @@
+name: Stage AcuarioNexo data and auth on Neon/Firebase
+
+on:
+  push:
+    branches:
+      - migration/neon-firebase-r2-20261005
+    paths:
+      - scripts/migrate-supabase-to-neon.mjs
+      - scripts/import-supabase-users-to-firebase.mjs
+      - .github/workflows/migrate-backend-neon.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acuarionexo-neon-migration
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+      NEON_DATABASE_URL: ${{ secrets.NEON_DATABASE_URL }}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+      FIREBASE_PROJECT_ID: acuarionexo
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check required secrets without printing their values
+        shell: bash
+        run: |
+          missing=()
+          for name in SUPABASE_DATABASE_URL NEON_DATABASE_URL FIREBASE_SERVICE_ACCOUNT_JSON; do
+            if [ -z "${!name:-}" ]; then missing+=("$name"); fi
+          done
+          if [ "${#missing[@]}" -ne 0 ]; then
+            echo "::error::Migration secrets not configured: ${missing[*]}"
+            exit 1
+          fi
+
+      - name: Install migration-only dependencies
+        run: npm install --no-save --no-audit --no-fund pg@8.16.3 firebase-admin@13.5.0
+
+      - name: Copy public PostgreSQL schema and data to fresh Neon database
+        run: node scripts/migrate-supabase-to-neon.mjs
+
+      - name: Import Supabase users into Firebase Authentication
+        run: node scripts/import-supabase-users-to-firebase.mjs
