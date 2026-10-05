@@ -76,6 +76,31 @@
     return out;
   }
 
+  window.importarCopiaLocal = function () {
+    if (!state.localMode || !window.ANXLocalBackend) return;
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = '.json,application/json';
+    picker.onchange = async function () {
+      const file = picker.files && picker.files[0];
+      if (!file) return;
+      try {
+        const payload = JSON.parse(await file.text());
+        if (payload?.format !== 'acuarionexo-local-backup-v1' || !payload.tables || typeof payload.tables !== 'object') {
+          throw new Error('El archivo no es una copia local válida de AcuarioNexo.');
+        }
+        const imported = window.ANXLocalBackend.importBackup(payload);
+        state.aquariums = [];
+        state.aquarium = null;
+        alert('Copia importada: ' + imported + ' registros. AcuarioNexo se recargará ahora.');
+        location.reload();
+      } catch (error) {
+        alert('No se pudo importar la copia: ' + (error?.message || error));
+      }
+    };
+    picker.click();
+  };
+
   window.restaurarDatosLocales = async function () {
     if (!state.localMode || !window.ANXLocalBackend) return;
     const secret = prompt('Pega la clave de recuperación de AcuarioNexo:');
@@ -149,7 +174,7 @@
       if (!isCurrent(t)) return;
       render(`<section class="summary-card"><div><small>AcuarioNexo</small><h2>Mis acuarios</h2><p>${list.length} sistemas activos</p></div></section>
         <section class="panel"><div class="panel-head"><h2>Lista de acuarios</h2><button onclick="acuariosHome()">Volver</button></div>
-        ${state.localMode && !list.length ? '<div class="notice">La copia local está vacía en este navegador. Restaura la copia cifrada para recuperar tus acuarios.</div><button class="primary" onclick="restaurarDatosLocales()">Restaurar mis datos</button>' : ''}
+        ${state.localMode && !list.length ? '<div class="notice">La copia local está vacía en este navegador. Importa el archivo JSON descargado para recuperar tus acuarios.</div><button class="primary" onclick="importarCopiaLocal()">Importar copia descargada (.json)</button><button onclick="restaurarDatosLocales()">Restaurar copia cifrada</button>' : ''}
         <div class="tank-list">${list.map(aquariumCard).join('') || '<p class="small">Sin acuarios cargados en este navegador.</p>'}</div></section>`, 'acuarios');
     } catch (e) { if (isCurrent(t)) render(msg(e.message, 'error'), 'acuarios'); }
   };

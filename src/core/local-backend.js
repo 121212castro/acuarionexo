@@ -262,8 +262,19 @@
     let imported = 0;
     for (const name of allowed) {
       if (!Array.isArray(tables[name])) continue;
-      writeTable(name, tables[name]);
-      imported += tables[name].length;
+      const existing = readTable(name);
+      const byId = new Set(existing.map(row => String(row?.id || '')).filter(Boolean));
+      for (const sourceRow of tables[name]) {
+        if (!sourceRow || typeof sourceRow !== 'object' || Array.isArray(sourceRow)) continue;
+        const row = clone(sourceRow);
+        if (row.user_id) row.user_id = 'local-owner';
+        const rowId = String(row.id || '');
+        if (rowId && byId.has(rowId)) continue;
+        existing.push(row);
+        if (rowId) byId.add(rowId);
+        imported += 1;
+      }
+      writeTable(name, existing);
     }
     return imported;
   }
