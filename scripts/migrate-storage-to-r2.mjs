@@ -2,8 +2,24 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { S3Client, PutObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
 
-const required = ["R2_ENDPOINT","R2_ACCESS_KEY_ID","R2_SECRET_ACCESS_KEY","R2_PUBLIC_BASE_URL"];
-for (const key of required) if (!process.env[key]) throw new Error("Falta " + key);
+function readSecret(name) {
+  const value = String(process.env[name] || "").trim();
+  if (!value) throw new Error("Falta " + name);
+  if (/[\\u0000-\\u001f\\u007f-\\u009f]/.test(value)) {
+    throw new Error(name + " contiene caracteres de control; vuelve a copiar ese valor sin espacios internos ni saltos de línea.");
+  }
+  return value;
+}
+const R2_ENDPOINT = readSecret("R2_ENDPOINT");
+const R2_ACCESS_KEY_ID = readSecret("R2_ACCESS_KEY_ID");
+const R2_SECRET_ACCESS_KEY = readSecret("R2_SECRET_ACCESS_KEY");
+const R2_PUBLIC_BASE_URL = readSecret("R2_PUBLIC_BASE_URL");
+let endpointUrl;
+try { endpointUrl = new URL(R2_ENDPOINT); }
+catch { throw new Error("R2_ENDPOINT no es una URL válida; debe ser el endpoint S3 de Cloudflare R2."); }
+if (endpointUrl.protocol !== "https:" || endpointUrl.username || endpointUrl.password || endpointUrl.search || endpointUrl.hash) {
+  throw new Error("R2_ENDPOINT debe ser una URL HTTPS del endpoint S3, sin usuario, contraseña, parámetros ni fragmento.");
+}
 const R2_BUCKET = process.env.R2_BUCKET || "acuarionexo-media";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || "https://vqpxhozavfzgtkqscncs.supabase.co";
@@ -11,10 +27,10 @@ const manifestPath = process.argv[2] || "data/storage-migration-manifest.json";
 const manifest = JSON.parse(await fs.readFile(manifestPath, "utf8"));
 const client = new S3Client({
   region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
+  endpoint: R2_ENDPOINT,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY
+    accessKeyId: R2_ACCESS_KEY_ID,
+    secretAccessKey: R2_SECRET_ACCESS_KEY
   }
 });
 
