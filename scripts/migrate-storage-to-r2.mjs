@@ -29,7 +29,11 @@ for (const [index, item] of manifest.objects.entries()) {
       await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
       result.skipped.push({ ...item, key, reason: "already_exists" });
       continue;
-    } catch {}
+    } catch (error) {
+      const status = error?.$metadata?.httpStatusCode;
+      const code = error?.name || error?.Code || "";
+      if (status !== 404 && code !== "NotFound" && code !== "NoSuchKey") throw error;
+    }
 
     const sourceUrl = `${SUPABASE_URL}/storage/v1/object/public/${item.bucket_id}/${encodePath(item.name)}`;
     const response = await fetch(sourceUrl);
@@ -50,6 +54,10 @@ for (const [index, item] of manifest.objects.entries()) {
         source_etag: String(item.etag || "").replaceAll('"',"")
       }
     }));
+    const verified = await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
+    if (Number(verified.ContentLength) !== body.length) {
+      throw new Error("r2_size_verification_failed");
+    }
 
     const publicBase = process.env.R2_PUBLIC_BASE_URL.replace(/\/$/,"");
     result.copied.push({
@@ -69,8 +77,24 @@ for (const [index, item] of manifest.objects.entries()) {
 
 result.finished_at = new Date().toISOString();
 await fs.writeFile("data/r2-migration-result.json", JSON.stringify(result, null, 2));
+const failureCategories = {};
+for (const item of result.failed) {
+  const error = String(item.error || "");
+  const http = error.match(/source_http_(\\d+)/);
+  const category = http ? "source_http_" + http[1]
+    : /AccessDenied|Forbidden/i.test(error) ? "r2_access_denied"
+    : /SignatureDoesNotMatch|InvalidAccessKeyId/i.test(error) ? "r2_bad_credentials"
+    : error.includes("r2_size_verification_failed") ? "r2_size_verification_failed"
+    : "other";
+  failureCategories[category] = (failureCategories[category] || 0) + 1;
+}
 console.log(JSON.stringify({
   copied: result.copied.length,
   skipped: result.skipped.length,
-  failed: result.failed.length
+  failed: result.failed.length,
+  failure_categories: failureCategories
 }, null, 2));
+if (result.failed.length) {
+  console.error("R2 migration incomplete; inspect the uploaded artifact before retrying.");
+  process.exitCode = 1;
+}
