@@ -23,7 +23,7 @@
   function hasRealPhoto(x) { return !!String(x?.photo_url || '').trim(); }
   function canSeeLibraryEntry(x) {
     const status = String(x.status || '').toLowerCase();
-    if (state.demoMode) return status === 'published' && String(x.visibility || '').toLowerCase() === 'public';
+    if (state.demoMode || state.localMode) return status === 'published' && String(x.visibility || '').toLowerCase() === 'public';
     if (!isAdminReturnContext() && !hasRealPhoto(x)) return false;
     return isAdminLibrary() || isOwnLibraryEntry(x) || ['published', 'validated'].includes(status);
   }
