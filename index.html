@@ -131,9 +131,9 @@
       if (reject) reject.addEventListener('click', function () { setConsent('denied'); });
     })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js"></script>
+  
+  
+  
   <script>
     (function () {
       function enablePhotoChoice(root) {
@@ -159,12 +159,45 @@
       function showError(text) { if (app) app.innerHTML = '<section class="auth-card"><h2>Error de carga</h2><p class="small">' + String(text || 'No se pudo cargar AcuarioNexo.') + '</p></section>'; }
       function loadStyle(href, version) { return new Promise(function (resolve, reject) { var link = document.createElement('link'); link.rel = 'stylesheet'; link.href = href + '?v=' + version; link.onload = resolve; link.onerror = function () { reject(new Error('No se pudo cargar ' + href)); }; document.head.appendChild(link); }); }
       function loadScript(src, version) { return new Promise(function (resolve, reject) { var script = document.createElement('script'); script.src = src + '?v=' + version; script.async = false; script.onload = resolve; script.onerror = function () { reject(new Error('No se pudo cargar ' + src)); }; document.body.appendChild(script); }); }
+      function loadOptionalScript(src, timeoutMs) {
+        return new Promise(function (resolve) {
+          var script = document.createElement('script');
+          var done = false;
+          var timer = setTimeout(function () { finish(false); }, timeoutMs || 2000);
+          function finish(ok) {
+            if (done) return;
+            done = true;
+            clearTimeout(timer);
+            resolve(ok);
+          }
+          script.src = src;
+          script.async = true;
+          script.onload = function () { finish(true); };
+          script.onerror = function () { finish(false); };
+          document.head.appendChild(script);
+        });
+      }
       try {
         await window.ANX_BOOT_READY;
         var version = encodeURIComponent(window.ANX_ASSET_VERSION || window.ANX_ACTIVE_BUILD || window.ACUARIONEXO_BUILD || 'dev');
         var manifest = document.createElement('link'); manifest.rel = 'manifest'; manifest.href = 'manifest.webmanifest?v=' + version; document.head.appendChild(manifest);
         await Promise.all(css.map(function (href) { return loadStyle(href, version); }));
-        for (var i = 0; i < scripts.length; i += 1) await loadScript(scripts[i], version);
+        for (var i = 0; i < scripts.length; i += 1) {
+          if (scripts[i] === 'app.js') {
+            var config = window.ACUARIONEXO_CONFIG || {};
+            var provider = String(config.DATA_PROVIDER || 'supabase').toLowerCase();
+            if (provider !== 'local') {
+              var supabaseReady = await loadOptionalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 2500);
+              if (!supabaseReady) config.DATA_PROVIDER = 'local';
+            }
+          }
+          if (scripts[i] === 'notifications.js') {
+            loadOptionalScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js', 2000).then(function (ready) {
+              if (ready) loadOptionalScript('https://www.gstatic.com/firebasejs/10.12.5/firebase-messaging-compat.js', 2000);
+            });
+          }
+          await loadScript(scripts[i], version);
+        }
       } catch (e) { showError(e.message); }
     })();
   </script>
