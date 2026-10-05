@@ -52,26 +52,42 @@
     window.ANX_BOOT_READY = (async function () {
       var declaredBuild = String(window.ACUARIONEXO_BUILD || 'dev');
       var activeBuild = declaredBuild;
+      var timeoutId = 0;
       try {
-        var response = await fetch('app-version.json?boot=' + Date.now(), {
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' }
+        var controller = typeof AbortController === 'function' ? new AbortController() : null;
+        var timeout = new Promise(function (resolve) {
+          timeoutId = setTimeout(function () {
+            if (controller) controller.abort();
+            resolve(null);
+          }, 3000);
         });
-        if (response.ok) {
+        var request = fetch('app-version.json?boot=' + Date.now(), {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache', 'Expires': '0' },
+          signal: controller ? controller.signal : undefined
+        });
+        var response = await Promise.race([request, timeout]);
+        if (response && response.ok) {
           var remote = await response.json();
           var remoteBuild = String(remote && remote.build || '').trim();
           if (remoteBuild) activeBuild = remoteBuild;
         }
-      } catch (_) {}
+      } catch (_) {
+        // La comprobación de versión es auxiliar; un fallo de red no bloquea el inicio.
+      } finally {
+        clearTimeout(timeoutId);
+      }
       if (activeBuild !== declaredBuild) {
         try {
           if ('caches' in window) {
-            var keys = await caches.keys();
-            await Promise.all(keys.map(function (key) { return caches.delete(key); }));
+            caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (key) { return caches.delete(key); }));
+            }).catch(function () {});
           }
           if ('serviceWorker' in navigator) {
-            var registrations = await navigator.serviceWorker.getRegistrations();
-            await Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+              return Promise.all(registrations.map(function (registration) { return registration.unregister(); }));
+            }).catch(function () {});
           }
         } catch (_) {}
       }
