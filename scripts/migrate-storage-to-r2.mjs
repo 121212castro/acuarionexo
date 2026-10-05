@@ -80,7 +80,7 @@ await fs.writeFile("data/r2-migration-result.json", JSON.stringify(result, null,
 const failureCategories = {};
 for (const item of result.failed) {
   const error = String(item.error || "");
-  const http = error.match(/source_http_(\\d+)/);
+  const http = error.match(/source_http_(\d+)/);
   const category = http ? "source_http_" + http[1]
     : /AccessDenied|Forbidden/i.test(error) ? "r2_access_denied"
     : /SignatureDoesNotMatch|InvalidAccessKeyId/i.test(error) ? "r2_bad_credentials"
