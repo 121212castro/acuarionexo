@@ -1,3 +1,4 @@
 run=2026-09-29T22:26:00+02:00
 Migración solicitada el 2026-10-05; conservar origen hasta verificación.
 retry-at=2026-10-05T11:50:00Z
+diagnostic-retry=2026-10-05T11:53:00Z

@@ -24,6 +24,7 @@ const result = { started_at: new Date().toISOString(), copied: [], skipped: [], 
 for (const [index, item] of manifest.objects.entries()) {
   const key = `supabase/${item.bucket_id}/${item.name}`;
   process.stdout.write(`[${index+1}/${manifest.objects.length}] ${key}\n`);
+  let phase = "r2_head";
   try {
     try {
       await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
@@ -35,6 +36,7 @@ for (const [index, item] of manifest.objects.entries()) {
       if (status !== 404 && code !== "NotFound" && code !== "NoSuchKey") throw error;
     }
 
+    phase = "source_fetch";
     const sourceUrl = `${SUPABASE_URL}/storage/v1/object/public/${item.bucket_id}/${encodePath(item.name)}`;
     const response = await fetch(sourceUrl);
     if (!response.ok) {
@@ -42,6 +44,7 @@ for (const [index, item] of manifest.objects.entries()) {
       throw new Error(`source_http_${response.status}: ${body.slice(0,200)}`);
     }
     const body = Buffer.from(await response.arrayBuffer());
+    phase = "r2_put";
     await client.send(new PutObjectCommand({
       Bucket: R2_BUCKET,
       Key: key,
@@ -54,6 +57,7 @@ for (const [index, item] of manifest.objects.entries()) {
         source_etag: String(item.etag || "").replaceAll('"',"")
       }
     }));
+    phase = "r2_verify";
     const verified = await client.send(new HeadObjectCommand({ Bucket: R2_BUCKET, Key: key }));
     if (Number(verified.ContentLength) !== body.length) {
       throw new Error("r2_size_verification_failed");
@@ -67,7 +71,7 @@ for (const [index, item] of manifest.objects.entries()) {
       new_url: publicBase + "/" + encodePath(key)
     });
   } catch (error) {
-    result.failed.push({ ...item, key, error: String(error?.message || error) });
+    result.failed.push({ ...item, key, phase, error: String(error?.message || error), error_name: String(error?.name || ""), error_code: String(error?.Code || error?.code || ""), error_status: Number(error?.$metadata?.httpStatusCode || 0) || null, cause_code: String(error?.cause?.code || "") });
   }
 
   if ((index + 1) % 25 === 0) {
@@ -81,18 +85,20 @@ const failureCategories = {};
 for (const item of result.failed) {
   const error = String(item.error || "");
   const http = error.match(/source_http_(\d+)/);
+  const details = [item.phase, item.error_status ? "http_" + item.error_status : "", item.error_code || item.cause_code || item.error_name].filter(Boolean);
   const category = http ? "source_http_" + http[1]
     : /AccessDenied|Forbidden/i.test(error) ? "r2_access_denied"
     : /SignatureDoesNotMatch|InvalidAccessKeyId/i.test(error) ? "r2_bad_credentials"
     : error.includes("r2_size_verification_failed") ? "r2_size_verification_failed"
-    : "other";
+    : details.join("/") || "other";
   failureCategories[category] = (failureCategories[category] || 0) + 1;
 }
 console.log(JSON.stringify({
   copied: result.copied.length,
   skipped: result.skipped.length,
   failed: result.failed.length,
-  failure_categories: failureCategories
+  failure_categories: failureCategories,
+  failure_samples: result.failed.slice(0, 3).map(item => ({ phase: item.phase, name: item.error_name, code: item.error_code, status: item.error_status, cause: item.cause_code }))
 }, null, 2));
 if (result.failed.length) {
   console.error("R2 migration incomplete; inspect the uploaded artifact before retrying.");
