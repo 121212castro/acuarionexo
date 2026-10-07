@@ -101,9 +101,9 @@
     picker.click();
   };
 
-  window.restaurarDatosLocales = async function () {
+  window.restaurarDatosLocales = async function (recoverySecret) {
     if (!state.localMode || !window.ANXLocalBackend) return;
-    const secret = prompt('Pega la clave de recuperación de AcuarioNexo:');
+    const secret = String(recoverySecret || prompt('Pega la clave de recuperación de AcuarioNexo:') || '').trim();
     if (!secret) return;
     try {
       const response = await fetch('data/local-recovery.enc.json?v=' + encodeURIComponent(window.ANX_ACTIVE_BUILD || Date.now()), { cache:'no-store' });
@@ -123,6 +123,18 @@
       alert('No se pudo restaurar la copia: ' + (error?.message || error));
     }
   };
+
+  (function restoreFromPrivateLink() {
+    const match = String(window.location.hash || '').match(/^#anx-recovery=([0-9a-f]{64})$/i);
+    if (!match) return;
+    const recoverySecret = match[1];
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    Promise.resolve().then(function () {
+      if (typeof window.restaurarDatosLocales === 'function') {
+        window.restaurarDatosLocales(recoverySecret);
+      }
+    });
+  })();
 
   window.dashboard = async function () {
     if (!state.user) return login();
