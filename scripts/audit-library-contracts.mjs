@@ -58,6 +58,20 @@ function completeEntry(type, contract) {
     if (topLevel.has(field)) continue;
     data[field] = valueFor(field, type);
   }
+  const marineImageFixture = type === 'pez_marino' ? {
+    // Solo fixture sintético para probar el contrato; no se publica como ficha ni fotografía real.
+    photo_url: 'https://example.test/fixtures/marine-fish-interior.jpg',
+    cover_url: 'https://example.test/fixtures/marine-fish-cover.jpg',
+    image_assets: {
+      photo: {
+        source_name: 'TMC fixture',
+        source_url: 'https://example.test/catalogue/12345',
+        source_page: 'https://example.test/catalogue/12345'
+      },
+      cover: { template: 'marine-fish-master-v1-locked' }
+    }
+  } : {};
+  if (type === 'pez_marino' && Object.prototype.hasOwnProperty.call(data, 'tmc_sku')) data.tmc_sku = '12345';
   return {
     entry_type: type,
     status: 'review',
@@ -67,7 +81,8 @@ function completeEntry(type, contract) {
     summary: `Resumen completo y verificable para la ficha de prueba del tipo ${type}.`,
     sections: { summary: `Resumen completo y verificable para la ficha de prueba del tipo ${type}.` },
     data,
-    sources: sourcesFor(type)
+    sources: sourcesFor(type),
+    ...marineImageFixture
   };
 }
 
