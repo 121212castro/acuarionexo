@@ -98,7 +98,7 @@ function checkDuplicateWindows() {
     for (const script of scriptsToCheck) {
       if (wrapperExclusions[name]?.has(script)) continue;
       const code = read(script);
-      const count = (code.match(new RegExp(`window\\.${name}\\s*=`, 'g')) || []).length;
+      const count = (code.match(new RegExp(`window\\.${name}\\s*=(?!=)`, 'g')) || []).length;
       if (count) found.push(`${script} (${count})`);
     }
     if (found.length > 1) fail(`Duplicated window.${name}: ${found.join(', ')}`);
