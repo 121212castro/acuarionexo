@@ -156,7 +156,24 @@
       var app = document.getElementById('app');
       var css = ['styles.css','dashboard.css','aquarium-map.css','login-reef.css','legal-auth.css','aquarium-cards.css','aquariums-mobile-fix.css','aquarium-form-ux.css','mobile-form-fix.css','library-mobile-overflow-fix.css','library-clean.css','library-images.css','inventory-accordion.css','microfauna-mobile.css','notifications.css','settings.css','support.css','status.css','src/library/review-field-highlights.css'];
       var scripts = ['config.js','src/core/local-backend.js','app.js','site-analytics.js','src/aquariums/aquariums-core.js','src/aquariums/aquariums-form.js','src/aquariums/aquariums-save.js','src/aquariums/aquariums.js','src/admin/admin-core.js','src/admin/admin-analytics.js','src/admin/admin-access.js','src/core/module-loader.js','src/library/core/library-invertebrate-contract.js','src/auth/auth-core.js','src/auth/auth.js','src/auth/access-request-email.js','update-manager.js','notifications.js','src/library/review-field-highlights.js','src/library/review-workflow.js'];
-      function showError(text) { if (app) app.innerHTML = '<section class="auth-card"><h2>AcuarioNexo no ha podido iniciar</h2><p class="small">' + String(text || 'No se pudo cargar AcuarioNexo.').replace(/[&<>\"']/g, function (m) { return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',\"'\":'&#039;'}[m]); }) + '</p><button type="button" onclick="location.reload()">Reintentar</button></section>'; }
+      function showError(text) {
+        if (!app) return;
+        var section = document.createElement('section');
+        section.className = 'auth-card';
+        var heading = document.createElement('h2');
+        heading.textContent = 'AcuarioNexo no ha podido iniciar';
+        var paragraph = document.createElement('p');
+        paragraph.className = 'small';
+        paragraph.textContent = String(text || 'No se pudo cargar AcuarioNexo.');
+        var retry = document.createElement('button');
+        retry.type = 'button';
+        retry.textContent = 'Reintentar';
+        retry.addEventListener('click', function () { location.reload(); });
+        section.appendChild(heading);
+        section.appendChild(paragraph);
+        section.appendChild(retry);
+        app.replaceChildren(section);
+      }
       window.addEventListener('error', function (event) { if (app && /Cargando|Comprobando la última versión/.test(app.textContent || '')) showError('Error JavaScript: ' + (event.message || 'fallo de ejecución') + (event.filename ? ' · ' + event.filename.split('/').pop() : '') + (event.lineno ? ':' + event.lineno : '')); });
       window.addEventListener('unhandledrejection', function (event) { if (app && /Cargando|Comprobando la última versión/.test(app.textContent || '')) showError('Error de inicio: ' + String(event.reason && (event.reason.message || event.reason) || 'fallo asíncrono')); });
       function loadStyle(href, version) { return new Promise(function (resolve, reject) { var done = false; var link = document.createElement('link'); var timer = setTimeout(function () { finish(new Error('Tiempo de espera agotado al cargar estilos: ' + href)); }, 12000); function finish(error) { if (done) return; done = true; clearTimeout(timer); if (error) reject(error); else resolve(); } link.rel = 'stylesheet'; link.href = href + '?v=' + version; link.onload = function () { finish(); }; link.onerror = function () { finish(new Error('No se pudo cargar ' + href)); }; document.head.appendChild(link); }); }
