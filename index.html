@@ -187,8 +187,17 @@
             var config = window.ACUARIONEXO_CONFIG || {};
             var provider = String(config.DATA_PROVIDER || 'supabase').toLowerCase();
             if (provider !== 'local') {
-              var supabaseReady = await loadOptionalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 8000);
-              if (!supabaseReady) throw new Error('No se pudo cargar la conexión de Supabase. Comprueba la conexión e inténtalo de nuevo; no se activará el modo local para evitar mostrar datos vacíos.');
+              var supabaseSources = [
+                'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+                'https://unpkg.com/@supabase/supabase-js@2'
+              ];
+              var supabaseReady = false;
+              for (var si = 0; si < supabaseSources.length; si += 1) {
+                supabaseReady = await loadOptionalScript(supabaseSources[si], 10000);
+                if (supabaseReady && window.supabase && typeof window.supabase.createClient === 'function') break;
+                supabaseReady = false;
+              }
+              if (!supabaseReady) throw new Error('No se pudo cargar el módulo de conexión de AcuarioNexo. Abre la web con conexión a Internet y vuelve a intentarlo.');
             }
           }
           if (scripts[i] === 'notifications.js') {
