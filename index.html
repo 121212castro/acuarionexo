@@ -187,8 +187,8 @@
             var config = window.ACUARIONEXO_CONFIG || {};
             var provider = String(config.DATA_PROVIDER || 'supabase').toLowerCase();
             if (provider !== 'local') {
-              var supabaseReady = await loadOptionalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 2500);
-              if (!supabaseReady) config.DATA_PROVIDER = 'local';
+              var supabaseReady = await loadOptionalScript('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2', 8000);
+              if (!supabaseReady) throw new Error('No se pudo cargar la conexión de Supabase. Comprueba la conexión e inténtalo de nuevo; no se activará el modo local para evitar mostrar datos vacíos.');
             }
           }
           if (scripts[i] === 'notifications.js') {
