@@ -58,7 +58,7 @@
           <div class="quick-actions">
             ${metric('Visitantes externos', d.accessVisitors30d || 0, 'Vieron la pantalla de acceso')}
             ${metric('Intentaron entrar', d.accessFormOpens30d || 0, 'Abrieron la solicitud de acceso')}
-            ${metric('Solicitaron acceso', d.accessRequests30d || 0, 'Solicitudes reales recibidas')}
+            ${metric('Interés en acceder', d.accessRequests30d || 0, 'Solicitudes reales recibidas')}
             ${metric('Pendientes', d.accessPending || 0, 'Esperan tu aprobación ahora')}
           </div>
           <p class="small"><b>Estos son los números importantes para saber cuánta gente está intentando entrar.</b> Las visitas y aperturas solo incluyen sesiones con analítica aceptada y excluyen navegadores reconocidos como administrador. Las solicitudes y pendientes proceden directamente del registro de permisos.</p>
