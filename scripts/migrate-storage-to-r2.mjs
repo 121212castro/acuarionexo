@@ -44,7 +44,7 @@ for (const [index, item] of manifest.objects.entries()) {
   try {
     const publicBase = R2_PUBLIC_BASE_URL.replace(/\/$/, "");
     const newUrl = publicBase + "/" + encodePath(key);
-    const existingResponse = await fetch(newUrl, { method:"HEAD", cache:"no-store" });
+    const existingResponse = await fetch(newUrl, { method:"HEAD", cache:"no-store", signal: AbortSignal.timeout(30000) });
     if (existingResponse.ok) {
       const currentLength = Number(existingResponse.headers.get("content-length") || 0);
       if (item.size && currentLength && currentLength !== Number(item.size)) throw new Error("r2_existing_size_mismatch");
@@ -55,7 +55,7 @@ for (const [index, item] of manifest.objects.entries()) {
 
     phase = "source_fetch";
     const sourceUrl = `${SUPABASE_URL}/storage/v1/object/public/${item.bucket_id}/${encodePath(item.name)}`;
-    const response = await fetch(sourceUrl);
+    const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(60000) });
     if (!response.ok) {
       const body = await response.text().catch(() => "");
       throw new Error(`source_http_${response.status}: ${body.slice(0,200)}`);
@@ -75,7 +75,7 @@ for (const [index, item] of manifest.objects.entries()) {
       }
     }));
     phase = "r2_verify";
-    const verified = await fetch(newUrl, { method:"HEAD", cache:"no-store" });
+    const verified = await fetch(newUrl, { method:"HEAD", cache:"no-store", signal: AbortSignal.timeout(30000) });
     if (!verified.ok) throw new Error("r2_verify_http_" + verified.status);
     const verifiedLength = Number(verified.headers.get("content-length") || 0);
     if (verifiedLength && verifiedLength !== body.length) throw new Error("r2_size_verification_failed");
