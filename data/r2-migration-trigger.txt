@@ -1,2 +1,1 @@
-run=2026-10-22T12:00:00Z
-Migración solicitada: copiar medios públicos de Biblioteca a Cloudflare R2; no borrar el origen hasta verificar todas las URLs.
+R2 migration retry after adding per-request timeouts; 2026-10-22T12:13:00.066Z
