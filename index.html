@@ -200,7 +200,7 @@
         await window.ANX_BOOT_READY;
         var version = encodeURIComponent(window.ANX_ASSET_VERSION || window.ANX_ACTIVE_BUILD || window.ACUARIONEXO_BUILD || 'dev');
         var manifest = document.createElement('link'); manifest.rel = 'manifest'; manifest.href = 'manifest.webmanifest?v=' + version; document.head.appendChild(manifest);
-        await Promise.all(css.map(function (href) { return loadStyle(href, version); }));
+        await Promise.all(css.map(function (href) { return loadStyle(href, version).catch(function (error) { console.warn('[AcuarioNexo] Estilo no disponible; se continúa el arranque:', href, error); }); }));
         for (var i = 0; i < scripts.length; i += 1) {
           if (scripts[i] === 'app.js') {
             var config = window.ACUARIONEXO_CONFIG || {};
