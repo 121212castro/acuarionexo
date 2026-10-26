@@ -286,10 +286,8 @@ async function boot() {
     state.user ? window.dashboard?.() : login();
     if (state.user) scheduleLibraryWarmup();
   } catch (e) {
-    if (isSupabaseQuotaRestriction(e)) {
-      await enterDemoFromRestriction();
-      return;
-    }
+    // No sustituir automáticamente los datos reales por acuarios de muestra.
+    // Mostrar el error y permitir reintentar el acceso a producción.
     render(`<section class="auth-card"><h2>Servicio principal temporalmente limitado</h2>
       ${msg(authMessage(e), 'error')}
       <p class="small">Puedes seguir consultando la Biblioteca pública en modo demostración.</p>
