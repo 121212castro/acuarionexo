@@ -63,6 +63,9 @@ function checkRefs() {
     visited.add(current);
     if (!/\.(?:html|js)$/i.test(current)) continue;
     for (const ref of quotedLocalAssets(read(current))) {
+      // Official cover references are immutable archival metadata (filename + SHA-256),
+      // not bundled runtime assets. Validate them separately when restored.
+      if (current === 'src/library/ficha/library-cover-contract.js' && /\.(?:png|jpg|jpeg)$/i.test(ref)) continue;
       if (!exists(ref)) {
         fail(`Missing referenced asset: ${current} -> ${ref}`);
         continue;
@@ -187,7 +190,7 @@ function checkLibraryPerformance() {
   if (!auth.includes('scheduleLibraryWarmup()') || !loader.includes('ANX.preloadLibrary')) fail('Biblioteca debe prepararse en segundo plano después de iniciar sesión.');
 
   let rendered = '';
-  const state = { user:{id:'user-1'}, isAdmin:false, libraryRows:Array.from({ length:120 }, (_, i) => ({ id:`card-${i}`, user_id:'owner', title:`Pez ${i}`, entry_type:'pez_marino', status:'published', visibility:'public', summary:'Ficha', cover_url:`https://example.com/${i}.jpg`, photo_url:`https://example.com/${i}.jpg`, tags:[], _libraryCardOnly:true })), libraryFilter:'all' };
+  const state = { user:{id:'user-1'}, isAdmin:false, libraryRows:Array.from({ length:120 }, (_, i) => ({ id:`card-${i}`, user_id:'owner', title:`Pez ${i}`, entry_type:'pez_marino', status:'published', visibility:'public', summary:'Ficha', cover_url:`https://example.com/${i}.jpg`, photo_url:`https://example.com/${i}.jpg`, image_assets:{cover:{template:'manual-approved',original:`https://example.com/${i}.jpg`}}, tags:[], _libraryCardOnly:true })), libraryFilter:'all' };
   const context = {
     document:{getElementById(){return null}}, localStorage:{getItem(){return null},setItem(){}},
     ANX:{supabase:{},state,esc:value=>String(value ?? ''),val(){return ''},msg:text=>`<div>${text}</div>`,token(){return 1},isCurrent(){return true},render(htmlText){rendered=htmlText},LibrarySchema:{normalizeSources(){return []}}}
