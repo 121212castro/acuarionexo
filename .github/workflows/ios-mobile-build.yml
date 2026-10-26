@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Synchronize release markers
+        run: node scripts/stamp-release.mjs "$GITHUB_SHA"
+
       - name: Validate web app
         run: npm run check
 
