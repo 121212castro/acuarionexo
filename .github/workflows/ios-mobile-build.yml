@@ -17,6 +17,7 @@ on:
       - 'package.json'
       - 'capacitor.config.json'
       - 'scripts/prepare-mobile-bundle.mjs'
+      - 'scripts/validate-app.mjs'
       - '.github/workflows/ios-mobile-build.yml'
 
 jobs:
