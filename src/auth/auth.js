@@ -75,7 +75,7 @@ window.enviarSolicitudAcceso = async function () {
     window.ANXAnalytics?.trackEvent?.('access_request_submitted', 'acceso');
   } catch (e) {
     if (isSupabaseQuotaRestriction(e)) {
-      await enterDemoFromRestriction();
+      if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
       return;
     }
     if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
@@ -212,7 +212,7 @@ window.iniciar = async function () {
     boot();
   } catch (e) {
     if (isSupabaseQuotaRestriction(e)) {
-      await enterDemoFromRestriction();
+      if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
       return;
     }
     if (byId('x')) byId('x').innerHTML = msg(authMessage(e), 'error');
