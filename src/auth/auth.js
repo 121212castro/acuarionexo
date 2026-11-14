@@ -27,7 +27,6 @@ function login() {
     <label>Email</label><input id="email" type="email" autocomplete="email">
     <label>Contraseña</label><input id="password" type="password" autocomplete="current-password">
     <button class="primary" onclick="iniciar()">Entrar</button>
-    <button onclick="entrarModoDemo()">Entrar en modo demostración</button>
     <button onclick="solicitarAcceso()">Solicitar acceso</button>
     <button onclick="activarAccesoForm()">Ya tengo acceso aprobado</button>
     <button onclick="recuperarPassword()">Olvidé mi contraseña</button>
@@ -37,20 +36,9 @@ function login() {
 }
 window.login = login;
 
-window.entrarModoDemo = async function () {
-  state.demoMode = true;
-  state.user = { id: 'demo-public', email: 'demo@acuarionexo.local', user_metadata: { demo: true } };
-  state.adminRole = null;
-  state.isAdmin = false;
-  window.u = state.user;
-  updateSessionHeader();
-  if (typeof window.demoDashboard === 'function') window.demoDashboard();
-  else await biblioteca();
-};
-
 window.solicitarAcceso = function () {
   render(`<section class="auth-card"><h2>Solicitar acceso</h2>
-    <p class="small">AcuarioNexo está en beta cerrada, sin suscripciones ni cobros. Las nuevas cuentas requieren aprobación.</p>
+    <p class="small">AcuarioNexo utiliza acceso aprobado para proteger los datos privados. Las nuevas cuentas requieren aprobación.</p>
     <label>Nombre</label><input id="accessName" type="text" autocomplete="name">
     <label>Email</label><input id="accessEmail" type="email" autocomplete="email">
     <label>Mensaje (opcional)</label><textarea id="accessMessage" rows="4" placeholder="Cuéntanos brevemente para qué quieres utilizar AcuarioNexo"></textarea>
@@ -178,20 +166,8 @@ function isSupabaseQuotaRestriction(error) {
     text.includes('project is restricted');
 }
 
-async function enterDemoFromRestriction() {
-  state.demoMode = true;
-  state.user = { id: 'demo-public', email: 'demo@acuarionexo.local', user_metadata: { demo: true } };
-  state.adminRole = null;
-  state.isAdmin = false;
-  window.u = state.user;
-  updateSessionHeader();
-  if (typeof window.demoDashboard === 'function') window.demoDashboard();
-  else if (typeof window.biblioteca === 'function') await window.biblioteca();
-}
-
 async function userHasAppAccess() {
   if (LOCAL_PROVIDER) return true;
-  if (state.demoMode) return true;
   if (!state.user) return false;
   const { data, error } = await supabase.rpc('has_app_access');
   if (error) throw error;
@@ -243,12 +219,6 @@ async function boot() {
       window.dashboard?.();
       return;
     }
-    if (state.demoMode) {
-      window.u = state.user;
-      updateSessionHeader();
-      demoDashboard();
-      return;
-    }
     const session = await withAuthTimeout(supabase.auth.getSession(), 8);
     state.user = session.data.session?.user || null;
     window.u = state.user;
@@ -286,20 +256,17 @@ async function boot() {
     state.user ? window.dashboard?.() : login();
     if (state.user) scheduleLibraryWarmup();
   } catch (e) {
-    // No sustituir automáticamente los datos reales por acuarios de muestra.
-    // Mostrar el error y permitir reintentar el acceso a producción.
     render(`<section class="auth-card"><h2>Servicio principal temporalmente limitado</h2>
       ${msg(authMessage(e), 'error')}
-      <p class="small">Puedes seguir consultando la Biblioteca pública en modo demostración.</p>
-      <button class="primary" onclick="entrarModoDemo()">Entrar en modo demostración</button>
-      <button onclick="login()">Reintentar acceso normal</button>
+      <p class="small">AcuarioNexo trabaja únicamente con los datos reales de producción. No se cargarán acuarios ni mediciones de muestra.</p>
+      <button class="primary" onclick="location.reload()">Reintentar conexión</button>
+      <button onclick="login()">Volver al acceso</button>
     </section>`, 'inicio', false);
   }
 }
 
 byId('version').textContent = config.APP_VERSION || 'AcuarioNexo';
 supabase.auth.onAuthStateChange(async function (_event, session) {
-  if (state.demoMode) return;
   state.user = session?.user || null;
   window.u = state.user;
   if (state.user) await refreshAdminSafe();
