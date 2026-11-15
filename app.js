@@ -164,6 +164,21 @@
     return row?.__signed_photo_url || row?.image_url || row?.photo_url || row?.public_url || row?.url || row?.cover_url || '';
   }
 
+  async function uploadCloudinaryMedia(file, path) {
+    const endpoint = String(config.CLOUDINARY_UPLOAD_ENDPOINT || '').trim();
+    if (!endpoint) throw new Error('Cloudinary aún no tiene configurado el servicio de subida segura.');
+    const session = await supabase.auth.getSession();
+    const token = session.data?.session?.access_token || '';
+    if (!token) throw new Error('Inicia sesión para subir imágenes.');
+    const form = new FormData();
+    form.append('file', file);
+    form.append('path', path);
+    const response = await fetch(endpoint, { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: form });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.url) throw new Error(result.error || 'Error al subir la imagen a Cloudinary.');
+    return result.url;
+  }
+
   async function uploadExternalMedia(file, path) {
     const endpoint = String(config.MEDIA_API_URL || '').replace(/\/$/, '');
     if (!endpoint) throw new Error('El servicio externo de imágenes no está configurado.');
@@ -184,6 +199,7 @@
   }
 
   async function uploadMediaObject(file, path, options = {}) {
+    if (String(config.MEDIA_PROVIDER || '').toLowerCase() === 'cloudinary') return uploadCloudinaryMedia(file, path);
     if (String(config.MEDIA_PROVIDER || '').toLowerCase() === 'r2' && config.MEDIA_API_URL) {
       return uploadExternalMedia(file, path);
     }
@@ -201,6 +217,7 @@
     const aq = currentAquarium();
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
     const path = `${folder}/${state.user.id}/${aq.id}/${Date.now()}.${ext}`;
+    if (String(config.MEDIA_PROVIDER || '').toLowerCase() === 'cloudinary') return uploadCloudinaryMedia(file, 'aquarium-photos/' + path);
     if (String(config.MEDIA_PROVIDER || '').toLowerCase() === 'r2' && config.MEDIA_API_URL) {
       return uploadExternalMedia(file, 'aquarium-photos/' + path);
     }
@@ -211,5 +228,5 @@
     throw new Error('No se pudo subir la foto. Revisa Storage.');
   }
 
-  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadExternalMedia, uploadMediaObject, uploadAquariumImage };
+  window.ANX = { config, app, supabase, state, esc, byId, val, num, msg, token, isCurrent, dateText, currentAquarium, authRedirectUrl, isPasswordRecoveryUrl, render, panel, aqHeader, aquariumIcon, photoUrl, storageAsset, storageReference, signedPhotoUrl, hydratePrivatePhoto, uploadExternalMedia, uploadCloudinaryMedia, uploadMediaObject, uploadAquariumImage };
 })();
