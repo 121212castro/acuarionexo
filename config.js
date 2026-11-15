@@ -5,6 +5,7 @@ window.ACUARIONEXO_CONFIG = {
   DATA_PROVIDER: "supabase",
   MEDIA_PROVIDER: "supabase",
   MEDIA_API_URL: "",
+  CLOUDINARY_UPLOAD_ENDPOINT: "https://vqpxhozavfzgtkqscncs.supabase.co/functions/v1/cloudinary-upload",
   MEDIA_PUBLIC_BASE_URL: "",
   FIREBASE_CONFIG: {
     apiKey: "AIzaSyCOSMcEEHG97qgtSeetB03fDYk8r-0420c",
